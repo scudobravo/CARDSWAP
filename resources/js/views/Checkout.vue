@@ -1,0 +1,819 @@
+<template>
+  <div class="bg-gray-50">
+    <div class="mx-auto max-w-2xl px-4 pt-16 pb-24 sm:px-6 lg:max-w-7xl lg:px-8">
+      <h2 class="sr-only">Checkout</h2>
+
+      <form @submit.prevent="processPayment" class="lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16">
+        <div>
+          <!-- Informazioni di contatto -->
+          <div>
+            <h2 class="text-lg font-medium text-gray-900">Informazioni di contatto</h2>
+
+            <div class="mt-4">
+              <label for="email-address" class="block text-sm/6 font-medium text-gray-700">Indirizzo email</label>
+              <div class="mt-2">
+                <input 
+                  type="email" 
+                  id="email-address" 
+                  name="email-address" 
+                  v-model="formData.email"
+                  autocomplete="email" 
+                  class="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6" 
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Informazioni di spedizione -->
+          <div class="mt-10 border-t border-gray-200 pt-10">
+            <h2 class="text-lg font-medium text-gray-900">Informazioni di spedizione</h2>
+
+            <!-- Selezione indirizzo esistente -->
+            <div v-if="userAddresses.length > 0" class="mt-4">
+              <h3 class="text-sm font-medium text-gray-700 mb-3">Seleziona un indirizzo salvato</h3>
+              <div class="space-y-3">
+                <div v-for="address in userAddresses" :key="address.id"
+                     class="border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-blue-300 transition-colors"
+                     :class="{ 'border-blue-500 bg-blue-50': selectedAddress?.id === address.id }"
+                     @click="selectAddress(address)">
+                  <div class="flex items-start justify-between">
+                    <div>
+                      <p class="font-medium text-gray-900">{{ address.label }}</p>
+                      <p class="text-sm text-gray-600">
+                        {{ address.first_name }} {{ address.last_name }}
+                      </p>
+                      <p class="text-sm text-gray-600">
+                        {{ address.address_line_1 }}{{ address.address_line_2 ? ', ' + address.address_line_2 : '' }}
+                      </p>
+                      <p class="text-sm text-gray-600">
+                        {{ address.postal_code }} {{ address.city }}, {{ address.country }}
+                      </p>
+                      <p v-if="address.phone" class="text-sm text-gray-600">
+                        Tel: {{ address.phone }}
+                      </p>
+                    </div>
+                    <div v-if="selectedAddress?.id === address.id" class="text-blue-600">
+                      <CheckCircleIcon class="w-5 h-5" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Form nuovo indirizzo -->
+            <div class="mt-4 grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4">
+              <div>
+                <label for="first-name" class="block text-sm/6 font-medium text-gray-700">Nome</label>
+                <div class="mt-2">
+                  <input 
+                    type="text" 
+                    id="first-name" 
+                    name="first-name" 
+                    v-model="formData.firstName"
+                    autocomplete="given-name" 
+                    class="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6" 
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label for="last-name" class="block text-sm/6 font-medium text-gray-700">Cognome</label>
+                <div class="mt-2">
+                  <input 
+                    type="text" 
+                    id="last-name" 
+                    name="last-name" 
+                    v-model="formData.lastName"
+                    autocomplete="family-name" 
+                    class="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6" 
+                  />
+                </div>
+              </div>
+
+              <div class="sm:col-span-2">
+                <label for="company" class="block text-sm/6 font-medium text-gray-700">Azienda (opzionale)</label>
+                <div class="mt-2">
+                  <input 
+                    type="text" 
+                    name="company" 
+                    id="company" 
+                    v-model="formData.company"
+                    class="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6" 
+                  />
+                </div>
+              </div>
+
+              <div class="sm:col-span-2">
+                <label for="address" class="block text-sm/6 font-medium text-gray-700">Indirizzo</label>
+                <div class="mt-2">
+                  <input 
+                    type="text" 
+                    name="address" 
+                    id="address" 
+                    v-model="formData.address"
+                    autocomplete="street-address" 
+                    class="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6" 
+                  />
+                </div>
+              </div>
+
+              <div class="sm:col-span-2">
+                <label for="apartment" class="block text-sm/6 font-medium text-gray-700">Appartamento, interno, ecc.</label>
+                <div class="mt-2">
+                  <input 
+                    type="text" 
+                    name="apartment" 
+                    id="apartment" 
+                    v-model="formData.apartment"
+                    class="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6" 
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label for="city" class="block text-sm/6 font-medium text-gray-700">Città</label>
+                <div class="mt-2">
+                  <input 
+                    type="text" 
+                    name="city" 
+                    id="city" 
+                    v-model="formData.city"
+                    autocomplete="address-level2" 
+                    class="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6" 
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label for="country" class="block text-sm/6 font-medium text-gray-700">Paese</label>
+                <div class="mt-2 grid grid-cols-1">
+                  <select 
+                    id="country" 
+                    name="country" 
+                    v-model="formData.country"
+                    autocomplete="country-name" 
+                    class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white py-2 pr-8 pl-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6"
+                  >
+                    <option value="IT">Italia</option>
+                    <option value="FR">Francia</option>
+                    <option value="DE">Germania</option>
+                    <option value="ES">Spagna</option>
+                    <option value="GB">Regno Unito</option>
+                    <option value="US">Stati Uniti</option>
+                  </select>
+                  <ChevronDownIcon class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4" aria-hidden="true" />
+                </div>
+              </div>
+
+              <div>
+                <label for="region" class="block text-sm/6 font-medium text-gray-700">Regione / Provincia</label>
+                <div class="mt-2">
+                  <input 
+                    type="text" 
+                    name="region" 
+                    id="region" 
+                    v-model="formData.region"
+                    autocomplete="address-level1" 
+                    class="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6" 
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label for="postal-code" class="block text-sm/6 font-medium text-gray-700">CAP</label>
+                <div class="mt-2">
+                  <input 
+                    type="text" 
+                    name="postal-code" 
+                    id="postal-code" 
+                    v-model="formData.postalCode"
+                    autocomplete="postal-code" 
+                    class="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6" 
+                  />
+                </div>
+              </div>
+
+              <div class="sm:col-span-2">
+                <label for="phone" class="block text-sm/6 font-medium text-gray-700">Telefono</label>
+                <div class="mt-2">
+                  <input 
+                    type="text" 
+                    name="phone" 
+                    id="phone" 
+                    v-model="formData.phone"
+                    autocomplete="tel" 
+                    class="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6" 
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Metodi di spedizione per venditore -->
+          <div class="mt-10 border-t border-gray-200 pt-10">
+            <h2 class="text-lg font-medium text-gray-900">Metodi di spedizione</h2>
+            
+            <!-- Selezione spedizione per ogni venditore -->
+            <div v-for="seller in cartStore.sellers" :key="seller.id" class="mt-6">
+              <div class="bg-gray-50 rounded-lg p-4">
+                <div class="flex items-center space-x-3 mb-4">
+                  <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span class="text-blue-600 font-semibold text-sm">
+                      {{ seller.name.charAt(0).toUpperCase() }}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 class="text-sm font-medium text-gray-900">{{ seller.name }}</h3>
+                    <p class="text-xs text-gray-500">{{ seller.items.length }} articoli</p>
+                  </div>
+                </div>
+
+                <fieldset>
+                  <legend class="sr-only">Metodo di spedizione per {{ seller.name }}</legend>
+                  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <label v-for="deliveryMethod in getShippingMethodsForSeller(seller.id)" :key="`${seller.id}-${deliveryMethod.id}`" 
+                           class="group relative flex rounded-lg border border-gray-300 bg-white p-3 has-checked:outline-2 has-checked:-outline-offset-2 has-checked:outline-blue-600">
+                      <input 
+                        type="radio" 
+                        :name="`delivery-method-${seller.id}`" 
+                        :value="deliveryMethod.id" 
+                        v-model="selectedShippingMethods[seller.id]"
+                        class="absolute inset-0 appearance-none focus:outline-none" 
+                      />
+                      <div class="flex-1">
+                        <span class="block text-sm font-medium text-gray-900">{{ deliveryMethod.title }}</span>
+                        <span class="mt-1 block text-xs text-gray-500">{{ deliveryMethod.turnaround }}</span>
+                        <span class="mt-2 block text-sm font-medium text-gray-900">{{ deliveryMethod.price }}</span>
+                      </div>
+                      <CheckCircleIcon class="invisible size-4 text-blue-600 group-has-checked:visible" aria-hidden="true" />
+                    </label>
+                  </div>
+                </fieldset>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pagamento -->
+          <div class="mt-10 border-t border-gray-200 pt-10">
+            <h2 class="text-lg font-medium text-gray-900">Pagamento</h2>
+
+            <fieldset class="mt-4">
+              <legend class="sr-only">Tipo di pagamento</legend>
+              <div class="space-y-4 sm:flex sm:items-center sm:space-y-0 sm:space-x-10">
+                <div v-for="(paymentMethod, paymentMethodIdx) in paymentMethods" :key="paymentMethod.id" class="flex items-center">
+                  <input 
+                    :id="paymentMethod.id" 
+                    name="payment-type" 
+                    type="radio" 
+                    v-model="formData.paymentMethod"
+                    :value="paymentMethod.id"
+                    class="relative size-4 appearance-none rounded-full border border-gray-300 bg-white before:absolute before:inset-1 before:rounded-full before:bg-white not-checked:before:hidden checked:border-blue-600 checked:bg-blue-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:border-gray-300 disabled:bg-gray-100 disabled:before:bg-gray-400 forced-colors:appearance-auto forced-colors:before:hidden" 
+                  />
+                  <label :for="paymentMethod.id" class="ml-3 block text-sm/6 font-medium text-gray-700">{{ paymentMethod.title }}</label>
+                </div>
+              </div>
+            </fieldset>
+
+            <!-- Dettagli carta di credito -->
+            <div v-if="formData.paymentMethod === 'credit-card'" class="mt-6 grid grid-cols-4 gap-x-4 gap-y-6">
+              <div class="col-span-4">
+                <label for="card-number" class="block text-sm/6 font-medium text-gray-700">Numero carta</label>
+                <div class="mt-2">
+                  <input 
+                    type="text" 
+                    id="card-number" 
+                    name="card-number" 
+                    autocomplete="cc-number" 
+                    class="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6" 
+                  />
+                </div>
+              </div>
+
+              <div class="col-span-4">
+                <label for="name-on-card" class="block text-sm/6 font-medium text-gray-700">Nome sulla carta</label>
+                <div class="mt-2">
+                  <input 
+                    type="text" 
+                    id="name-on-card" 
+                    name="name-on-card" 
+                    autocomplete="cc-name" 
+                    class="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6" 
+                  />
+                </div>
+              </div>
+
+              <div class="col-span-3">
+                <label for="expiration-date" class="block text-sm/6 font-medium text-gray-700">Data di scadenza (MM/AA)</label>
+                <div class="mt-2">
+                  <input 
+                    type="text" 
+                    name="expiration-date" 
+                    id="expiration-date" 
+                    autocomplete="cc-exp" 
+                    class="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6" 
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label for="cvc" class="block text-sm/6 font-medium text-gray-700">CVC</label>
+                <div class="mt-2">
+                  <input 
+                    type="text" 
+                    name="cvc" 
+                    id="cvc" 
+                    autocomplete="csc" 
+                    class="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6" 
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Riepilogo ordine -->
+        <div class="mt-10 lg:mt-0">
+          <h2 class="text-lg font-medium text-gray-900">Riepilogo ordine</h2>
+
+          <div class="mt-4 rounded-lg border border-gray-200 bg-white shadow-xs">
+            <h3 class="sr-only">Articoli nel tuo carrello</h3>
+            <ul role="list" class="divide-y divide-gray-200">
+              <li v-for="product in cartProducts" :key="product.id" class="flex px-4 py-6 sm:px-6">
+                <div class="shrink-0">
+                  <img 
+                    :src="product.imageSrc || '/images/placeholder-card.jpg'" 
+                    :alt="product.imageAlt || product.title" 
+                    class="w-20 rounded-md" 
+                  />
+                </div>
+
+                <div class="ml-6 flex flex-1 flex-col">
+                  <div class="flex">
+                    <div class="min-w-0 flex-1">
+                      <h4 class="text-sm">
+                        <a :href="product.href" class="font-medium text-gray-700 hover:text-gray-800">{{ product.title }}</a>
+                      </h4>
+                      <p class="mt-1 text-sm text-gray-500">{{ product.condition }}</p>
+                      <p class="mt-1 text-sm text-gray-500">{{ product.seller }}</p>
+                    </div>
+
+                    <div class="ml-4 flow-root shrink-0">
+                      <button 
+                        type="button" 
+                        @click="removeFromCart(product)"
+                        class="-m-2.5 flex items-center justify-center bg-white p-2.5 text-gray-400 hover:text-gray-500"
+                      >
+                        <span class="sr-only">Rimuovi</span>
+                        <TrashIcon class="size-5" aria-hidden="true" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="flex flex-1 items-end justify-between pt-2">
+                    <p class="mt-1 text-sm font-medium text-gray-900">€{{ (product.price * product.quantity).toFixed(2) }}</p>
+
+                    <div class="ml-4">
+                      <div class="grid grid-cols-1">
+                        <select 
+                          v-model="product.quantity"
+                          @change="updateQuantity(product)"
+                          aria-label="Quantità" 
+                          class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white py-2 pr-8 pl-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6"
+                        >
+                          <option v-for="qty in Array.from({length: Math.min(product.maxQuantity, 8)}, (_, i) => i + 1)" :key="qty" :value="qty">{{ qty }}</option>
+                        </select>
+                        <ChevronDownIcon class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4" aria-hidden="true" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            </ul>
+            <dl class="space-y-6 border-t border-gray-200 px-4 py-6 sm:px-6">
+              <div class="flex items-center justify-between">
+                <dt class="text-sm">Subtotale</dt>
+                <dd class="text-sm font-medium text-gray-900">€{{ orderSummary.subtotal.toFixed(2) }}</dd>
+              </div>
+              <div class="flex items-center justify-between">
+                <dt class="text-sm">Spedizione</dt>
+                <dd class="text-sm font-medium text-gray-900">€{{ orderSummary.shipping.toFixed(2) }}</dd>
+              </div>
+              <div class="flex items-center justify-between">
+                <dt class="text-sm">IVA</dt>
+                <dd class="text-sm font-medium text-gray-900">€{{ orderSummary.tax.toFixed(2) }}</dd>
+              </div>
+              <div class="flex items-center justify-between border-t border-gray-200 pt-6">
+                <dt class="text-base font-medium">Totale</dt>
+                <dd class="text-base font-medium text-gray-900">€{{ orderSummary.total.toFixed(2) }}</dd>
+              </div>
+            </dl>
+
+            <div class="border-t border-gray-200 px-4 py-6 sm:px-6">
+              <button 
+                type="submit" 
+                :disabled="!canProcessPayment || isProcessing"
+                class="w-full rounded-md border border-transparent bg-blue-600 px-4 py-3 text-base font-medium text-white shadow-xs hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-50 focus:outline-hidden disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                <span v-if="isProcessing">Elaborazione...</span>
+                <span v-else>Conferma ordine</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useCartStore } from '@/stores/cart'
+import { useAuthStore } from '@/stores/auth'
+import { ChevronDownIcon } from '@heroicons/vue/16/solid'
+import { CheckCircleIcon, TrashIcon } from '@heroicons/vue/20/solid'
+import axios from 'axios'
+
+const router = useRouter()
+const cartStore = useCartStore()
+const authStore = useAuthStore()
+
+// Stato reattivo
+const userAddresses = ref([])
+const selectedAddress = ref(null)
+const isProcessing = ref(false)
+const stripe = ref(null)
+const cardElement = ref(null)
+const selectedShippingMethods = ref({})
+
+// Dati del form
+const formData = ref({
+  email: '',
+  firstName: '',
+  lastName: '',
+  company: '',
+  address: '',
+  apartment: '',
+  city: '',
+  country: 'IT',
+  region: '',
+  postalCode: '',
+  phone: '',
+  paymentMethod: 'credit-card'
+})
+
+// Metodi di spedizione
+const deliveryMethods = ref([
+  { id: 'standard', title: 'Standard', turnaround: '4-10 giorni lavorativi', price: '€5.00' },
+  { id: 'express', title: 'Express', turnaround: '2-5 giorni lavorativi', price: '€16.00' }
+])
+
+// Metodi di pagamento
+const paymentMethods = ref([
+  { id: 'credit-card', title: 'Carta di credito/debito' },
+  { id: 'paypal', title: 'PayPal' },
+  { id: 'stripe', title: 'Stripe' }
+])
+
+// Computed
+const cartProducts = computed(() => {
+  return cartStore.allCartItems.map(item => ({
+    id: item.id,
+    title: item.cardModel?.name || 'Prodotto',
+    condition: item.condition,
+    seller: item.seller?.name || 'Venditore',
+    price: parseFloat(item.price),
+    quantity: item.quantity,
+    maxQuantity: item.available ? 8 : item.quantity,
+    imageSrc: item.images?.[0] || '/images/placeholder-card.jpg',
+    imageAlt: item.cardModel?.name || 'Prodotto',
+    href: `/product/${item.id}`
+  }))
+})
+
+const orderSummary = computed(() => {
+  const sellers = cartStore.sellers
+  const subtotal = sellers.reduce((sum, seller) => sum + seller.subtotal, 0)
+  
+  // Calcola spedizione per ogni venditore basata sul metodo selezionato
+  const shipping = sellers.reduce((sum, seller) => {
+    const selectedMethod = selectedShippingMethods.value[seller.id]
+    const shippingCost = getShippingCostForMethod(selectedMethod)
+    return sum + shippingCost
+  }, 0)
+  
+  const tax = subtotal * 0.22 // 22% IVA
+  const total = subtotal + shipping + tax
+  
+  return {
+    subtotal,
+    shipping,
+    tax,
+    total
+  }
+})
+
+const canProcessPayment = computed(() => {
+  const hasAddress = selectedAddress.value || (
+    formData.value.firstName && 
+    formData.value.lastName && 
+    formData.value.address && 
+    formData.value.city && 
+    formData.value.postalCode && 
+    formData.value.country
+  )
+  
+  // Verifica che sia selezionato un metodo di spedizione per ogni venditore
+  const hasShippingMethods = cartStore.sellers.every(seller => 
+    selectedShippingMethods.value[seller.id]
+  )
+  
+  return hasAddress && cartProducts.value.length > 0 && formData.value.paymentMethod && hasShippingMethods
+})
+
+// Metodi
+const selectAddress = (address) => {
+  selectedAddress.value = address
+  // Popola il form con i dati dell'indirizzo selezionato
+  formData.value.firstName = address.first_name
+  formData.value.lastName = address.last_name
+  formData.value.company = address.company || ''
+  formData.value.address = address.address_line_1
+  formData.value.apartment = address.address_line_2 || ''
+  formData.value.city = address.city
+  formData.value.country = address.country
+  formData.value.region = address.state_province || ''
+  formData.value.postalCode = address.postal_code
+  formData.value.phone = address.phone || ''
+}
+
+const removeFromCart = async (product) => {
+  try {
+    const result = await cartStore.removeFromCart(product.id, product.seller_id)
+    if (!result.success) {
+      console.error('Errore nella rimozione:', result.message)
+    }
+  } catch (error) {
+    console.error('Errore nella rimozione dal carrello:', error)
+  }
+}
+
+const updateQuantity = async (product) => {
+  try {
+    const result = await cartStore.updateQuantity(product.id, product.seller_id, product.quantity)
+    if (!result.success) {
+      console.error('Errore nell\'aggiornamento quantità:', result.message)
+      // Ripristina la quantità precedente
+      product.quantity = product.quantity === 1 ? 1 : product.quantity - 1
+    }
+  } catch (error) {
+    console.error('Errore nell\'aggiornamento quantità:', error)
+  }
+}
+
+const loadUserAddresses = async () => {
+  try {
+    const response = await axios.get('/api/user/addresses')
+    if (response.data.success) {
+      userAddresses.value = response.data.data
+      // Seleziona l'indirizzo predefinito se disponibile
+      const defaultAddress = userAddresses.value.find(addr => addr.is_default)
+      if (defaultAddress) {
+        selectAddress(defaultAddress)
+      }
+    }
+  } catch (error) {
+    console.error('Errore nel caricamento indirizzi:', error)
+  }
+}
+
+const saveNewAddress = async () => {
+  try {
+    const addressData = {
+      label: formData.value.firstName + ' ' + formData.value.lastName,
+      first_name: formData.value.firstName,
+      last_name: formData.value.lastName,
+      company: formData.value.company,
+      address_line_1: formData.value.address,
+      address_line_2: formData.value.apartment,
+      city: formData.value.city,
+      country: formData.value.country,
+      state_province: formData.value.region,
+      postal_code: formData.value.postalCode,
+      phone: formData.value.phone,
+      is_default: userAddresses.value.length === 0
+    }
+
+    const response = await axios.post('/api/user/addresses', addressData)
+    if (response.data.success) {
+      userAddresses.value.push(response.data.data)
+      selectAddress(response.data.data)
+    }
+  } catch (error) {
+    console.error('Errore nel salvataggio indirizzo:', error)
+  }
+}
+
+const initializeStripe = async () => {
+  try {
+    // Carica Stripe.js se non è già caricato
+    if (!window.Stripe) {
+      const script = document.createElement('script')
+      script.src = 'https://js.stripe.com/v3/'
+      script.async = true
+      document.head.appendChild(script)
+      
+      await new Promise((resolve) => {
+        script.onload = resolve
+      })
+    }
+    
+    stripe.value = window.Stripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
+    
+    // Inizializza Stripe Elements se necessario
+    if (formData.value.paymentMethod === 'credit-card') {
+      const elements = stripe.value.elements()
+      cardElement.value = elements.create('card')
+      cardElement.value.mount('#card-element')
+    }
+  } catch (error) {
+    console.error('Errore nell\'inizializzazione Stripe:', error)
+  }
+}
+
+// Metodi di utilità
+const getShippingMethodsForSeller = (sellerId) => {
+  // Ottieni i metodi di spedizione disponibili per questo venditore
+  // Per ora restituisce i metodi standard, ma potrebbero essere personalizzati per venditore
+  return deliveryMethods.value
+}
+
+const getShippingCostForMethod = (methodId) => {
+  const method = deliveryMethods.value.find(m => m.id === methodId)
+  if (!method) return 0
+  
+  // Estrai il costo dal prezzo (rimuovi € e converti)
+  const priceStr = method.price.replace('€', '').replace(',', '.')
+  return parseFloat(priceStr) || 0
+}
+
+const processPayment = async () => {
+  if (!canProcessPayment.value) return
+  
+  isProcessing.value = true
+  
+  try {
+    // Salva l'indirizzo se non è selezionato uno esistente
+    if (!selectedAddress.value) {
+      await saveNewAddress()
+    }
+
+    // Prepara i dati per il pagamento con metodi di spedizione per venditore
+    const paymentData = {
+      address: selectedAddress.value || {
+        first_name: formData.value.firstName,
+        last_name: formData.value.lastName,
+        company: formData.value.company,
+        address_line_1: formData.value.address,
+        address_line_2: formData.value.apartment,
+        city: formData.value.city,
+        country: formData.value.country,
+        state_province: formData.value.region,
+        postal_code: formData.value.postalCode,
+        phone: formData.value.phone
+      },
+      shipping_methods: selectedShippingMethods.value, // Metodi per venditore
+      payment_method: formData.value.paymentMethod,
+      cart_data: cartStore.getCartData()
+    }
+
+    // Crea l'ordine e processa il pagamento
+    const response = await axios.post('/api/checkout/create-order', paymentData)
+    
+    if (response.data.success) {
+      // Se il pagamento è stato processato con successo
+      if (response.data.payment_intent) {
+        // Conferma il pagamento con Stripe
+        const { error } = await stripe.value.confirmCardPayment(
+          response.data.payment_intent.client_secret
+        )
+        
+        if (error) {
+          throw new Error(error.message)
+        }
+      }
+      
+      // Svuota il carrello
+      await cartStore.clearCart()
+      
+      // Redirect alla pagina di conferma
+      router.push(`/order-confirmation/${response.data.order_id}`)
+    } else {
+      throw new Error(response.data.message || 'Errore nel processamento dell\'ordine')
+    }
+    
+  } catch (error) {
+    console.error('Errore nel pagamento:', error)
+    // Mostra messaggio di errore all'utente
+    alert('Errore nel processamento del pagamento: ' + error.message)
+  } finally {
+    isProcessing.value = false
+  }
+}
+
+// Lifecycle
+onMounted(async () => {
+  // Inizializza il carrello
+  await cartStore.initialize()
+  
+  // Carica gli indirizzi dell'utente
+  await loadUserAddresses()
+  
+  // Popola l'email dell'utente se autenticato
+  if (authStore.user) {
+    formData.value.email = authStore.user.email
+  }
+  
+  // Inizializza i metodi di spedizione per ogni venditore
+  initializeShippingMethods()
+  
+  // Inizializza Stripe
+  await initializeStripe()
+})
+
+// Inizializza i metodi di spedizione per ogni venditore
+const initializeShippingMethods = () => {
+  cartStore.sellers.forEach(seller => {
+    if (!selectedShippingMethods.value[seller.id]) {
+      // Seleziona il metodo standard come default
+      selectedShippingMethods.value[seller.id] = 'standard'
+    }
+  })
+}
+
+onUnmounted(() => {
+  // Cleanup Stripe Elements se necessario
+  if (cardElement.value) {
+    cardElement.value.destroy()
+  }
+})
+</script>
+
+<style scoped>
+/* Stili personalizzati per il checkout */
+.has-checked\:outline-2:checked {
+  outline-width: 2px;
+}
+
+.has-checked\:-outline-offset-2:checked {
+  outline-offset: -2px;
+}
+
+.has-checked\:outline-blue-600:checked {
+  outline-color: #2563eb;
+}
+
+.has-focus-visible\:outline-3:focus-visible {
+  outline-width: 3px;
+}
+
+.has-focus-visible\:-outline-offset-1:focus-visible {
+  outline-offset: -1px;
+}
+
+.has-disabled\:border-gray-400:disabled {
+  border-color: #9ca3af;
+}
+
+.has-disabled\:bg-gray-200:disabled {
+  background-color: #e5e7eb;
+}
+
+.has-disabled\:opacity-25:disabled {
+  opacity: 0.25;
+}
+
+.group-has-checked\:visible:checked {
+  visibility: visible;
+}
+
+.not-checked\:before\:hidden:not(:checked)::before {
+  display: none;
+}
+
+.checked\:border-blue-600:checked {
+  border-color: #2563eb;
+}
+
+.checked\:bg-blue-600:checked {
+  background-color: #2563eb;
+}
+
+.forced-colors\:appearance-auto {
+  appearance: auto;
+}
+
+.forced-colors\:before\:hidden::before {
+  display: none;
+}
+</style>

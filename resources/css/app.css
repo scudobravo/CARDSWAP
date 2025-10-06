@@ -1,0 +1,133 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Font personalizzati di Alessia - CORRETTI */
+@import url('https://fonts.googleapis.com/css2?family=Gill+Sans:wght@400;600&display=swap');
+
+/* Variabili CSS personalizzate per i colori di Alessia */
+:root {
+  --color-primary: #0b1d3a;      /* Blu Navy Profondo */
+  --color-secondary: #c9a14a;     /* Oro Caldo */
+  --color-accent: #009b77;        /* Verde Smeraldo */
+  --color-accent-red: #e10600;    /* Rosso Vivo */
+  --color-text-dark: #1c1c1c;     /* Grigio Antracite */
+  --color-text-light: #6b7280;    /* Testo chiaro */
+  --color-background: #ffffff;    /* Bianco puro */
+  --color-gray-light: #f4f4f4;    /* Grigio Neutro */
+  --color-gray-medium: #e5e5e5;   /* Grigio Neutro alternativo */
+  --color-gray-dark: #1c1c1c;     /* Grigio Antracite */
+}
+
+/* Stili base per i font di Alessia */
+body {
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+/* Font Futura Bold per titoli e brand */
+.font-futura-bold {
+  font-family: 'Futura', 'Futura PT', 'Trebuchet MS', Arial, sans-serif;
+  font-weight: 700;
+}
+
+/* Font Gill Sans per testi e menu */
+.font-gill-sans {
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+}
+
+.font-gill-sans-semibold {
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+  font-weight: 600;
+}
+
+/* Classi utility per i colori */
+.text-primary {
+  color: var(--color-primary);
+}
+
+.text-secondary {
+  color: var(--color-secondary);
+}
+
+.text-accent {
+  color: var(--color-accent);
+}
+
+.text-accent-red {
+  color: var(--color-accent-red);
+}
+
+.bg-primary {
+  background-color: var(--color-primary);
+}
+
+.bg-secondary {
+  background-color: var(--color-secondary);
+}
+
+.bg-accent {
+  background-color: var(--color-accent);
+}
+
+.bg-accent-red {
+  background-color: var(--color-accent-red);
+}
+
+.bg-gray-light {
+  background-color: var(--color-gray-light);
+}
+
+.bg-gray-medium {
+  background-color: var(--color-gray-medium);
+}
+
+.bg-gray-dark {
+  background-color: var(--color-gray-dark);
+}
+
+.border-primary {
+  border-color: var(--color-primary);
+}
+
+.border-secondary {
+  border-color: var(--color-secondary);
+}
+
+.border-accent {
+  border-color: var(--color-accent);
+}
+
+/* Hover states personalizzati */
+.hover\:bg-primary:hover {
+  background-color: var(--color-primary);
+}
+
+.hover\:bg-secondary:hover {
+  background-color: var(--color-secondary);
+}
+
+.hover\:text-primary:hover {
+  color: var(--color-primary);
+}
+
+.hover\:text-secondary:hover {
+  color: var(--color-secondary);
+}
+
+/* CTA con radius 8px come richiesto da Alessia */
+.cta-primary {
+  @apply bg-secondary text-primary px-6 py-3 rounded-lg font-semibold transition-colors;
+  border-radius: 8px;
+}
+
+.cta-secondary {
+  @apply bg-primary text-white px-6 py-3 rounded-lg font-semibold transition-colors;
+  border-radius: 8px;
+}
+
+.cta-outline {
+  @apply border-2 border-primary text-primary px-6 py-3 rounded-lg font-semibold transition-colors;
+  border-radius: 8px;
+}

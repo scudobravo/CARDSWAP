@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Auth - CARDSWAP</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; font-size: 12px; }
+        button { padding: 10px 15px; margin: 5px; background-color: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug Auth State - CARDSWAP</h1>
+        
+        <div class="section info">
+            <h3>📋 Istruzioni:</h3>
+            <ol>
+                <li>Clicca "Ottieni Token" per vedere i token disponibili</li>
+                <li>Copia un token e clicca "Testa Token"</li>
+                <li>Verifica i risultati nel browser</li>
+            </ol>
+        </div>
+        
+        <div class="section">
+            <h2>1. 🔑 Token Disponibili</h2>
+            <div id="tokens-info"></div>
+            <button onclick="getTokens()">Ottieni Token</button>
+        </div>
+        
+        <div class="section">
+            <h2>2. 📊 Test Token</h2>
+            <div id="token-test"></div>
+            <input type="text" id="token-input" placeholder="Incolla qui il token" style="width: 300px; padding: 8px; margin: 5px;">
+            <button onclick="testToken()">Testa Token</button>
+        </div>
+        
+        <div class="section">
+            <h2>3. 🌐 Test API Dashboard</h2>
+            <div id="dashboard-test"></div>
+            <button onclick="testDashboard()">Testa Dashboard API</button>
+        </div>
+        
+        <div class="section">
+            <h2>4. 🛠️ Azioni</h2>
+            <button onclick="clearStorage()">Pulisci LocalStorage</button>
+            <button onclick="checkStorage()">Verifica LocalStorage</button>
+            <button onclick="location.reload()">Ricarica Pagina</button>
+        </div>
+    </div>
+
+    <script>
+        function getTokens() {
+            const result = document.getElementById('tokens-info');
+            result.innerHTML = '<div class="info">Caricamento token...</div>';
+            
+            fetch('/debug-tokens')
+                .then(response => response.json())
+                .then(data => {
+                    let html = '<h3>Token Disponibili:</h3>';
+                    html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    
+                    if (data.users && data.users.length > 0) {
+                        html += '<h4>Utenti:</h4>';
+                        data.users.forEach(user => {
+                            html += `<div class="info" style="margin: 5px 0; padding: 10px;">`;
+                            html += `<strong>${user.name}</strong> (${user.email})<br>`;
+                            html += `KYC: ${user.kyc_status}<br>`;
+                            if (user.remember_token) {
+                                html += `Token: ${user.remember_token.substring(0, 20)}...<br>`;
+                                html += `<button onclick="useToken('${user.remember_token}')">Usa questo token</button>`;
+                            }
+                            html += `</div>`;
+                        });
+                    }
+                    
+                    result.innerHTML = html;
+                })
+                .catch(error => {
+                    result.innerHTML = '<div class="error">❌ Errore: ' + error.message + '</div>';
+                });
+        }
+        
+        function useToken(token) {
+            document.getElementById('token-input').value = token;
+            testToken();
+        }
+        
+        function testToken() {
+            const token = document.getElementById('token-input').value;
+            const result = document.getElementById('token-test');
+            
+            if (!token) {
+                result.innerHTML = '<div class="error">❌ Inserisci un token</div>';
+                return;
+            }
+            
+            result.innerHTML = '<div class="info">Testando token...</div>';
+            
+            fetch(`/debug-auth?token=${token}`)
+                .then(response => response.json())
+                .then(data => {
+                    let html = '<h3>Risultato Test Token:</h3>';
+                    html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    
+                    if (data.success) {
+                        html += '<div class="success">✅ Token valido!</div>';
+                        html += `<h4>Dati Utente:</h4>`;
+                        html += `<ul>`;
+                        html += `<li>Nome: ${data.user.name}</li>`;
+                        html += `<li>Email: ${data.user.email}</li>`;
+                        html += `<li>KYC: ${data.user.kyc_status}</li>`;
+                        html += `</ul>`;
+                        
+                        html += `<h4>Statistiche:</h4>`;
+                        html += `<ul>`;
+                        html += `<li>Ordini: ${data.stats.orders.total}</li>`;
+                        html += `<li>Inserzioni: ${data.stats.listings.total}</li>`;
+                        html += `<li>Wishlist: ${data.stats.wishlist.total_items}</li>`;
+                        html += `<li>Notifiche: ${data.stats.notifications.unread}</li>`;
+                        html += `</ul>`;
+                    } else {
+                        html += '<div class="error">❌ Token non valido: ' + data.message + '</div>';
+                    }
+                    
+                    result.innerHTML = html;
+                })
+                .catch(error => {
+                    result.innerHTML = '<div class="error">❌ Errore: ' + error.message + '</div>';
+                });
+        }
+        
+        function testDashboard() {
+            const result = document.getElementById('dashboard-test');
+            result.innerHTML = '<div class="info">Testando API Dashboard...</div>';
+            
+            fetch('/api/dashboard', {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    let html = '<h3>Risultato API Dashboard:</h3>';
+                    html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    
+                    if (data.data) {
+                        html += '<div class="success">✅ API Dashboard funziona</div>';
+                    } else {
+                        html += '<div class="error">❌ API Dashboard non funziona</div>';
+                    }
+                    
+                    result.innerHTML = html;
+                })
+                .catch(error => {
+                    result.innerHTML = '<div class="error">❌ Errore API Dashboard: ' + error.message + '</div>';
+                });
+        }
+        
+        function clearStorage() {
+            localStorage.clear();
+            alert('LocalStorage pulito!');
+            checkStorage();
+        }
+        
+        function checkStorage() {
+            const result = document.getElementById('token-test');
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            let html = '<h3>LocalStorage:</h3>';
+            html += `<p>Token: ${token ? 'Presente (' + token.substring(0, 20) + '...)' : 'Assente'}</p>`;
+            html += `<p>User: ${user ? 'Presente' : 'Assente'}</p>`;
+            
+            if (token) {
+                html += '<div class="success">✅ Token trovato nel localStorage</div>';
+            } else {
+                html += '<div class="warning">⚠️ Nessun token nel localStorage</div>';
+            }
+            
+            result.innerHTML = html;
+        }
+        
+        // Carica automaticamente i token all'avvio
+        window.onload = function() {
+            getTokens();
+            checkStorage();
+        };
+    </script>
+</body>
+</html>

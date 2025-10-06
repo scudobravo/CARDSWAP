@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Auth State</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        button { padding: 10px 15px; margin: 5px; background-color: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Auth State - CARDSWAP</h1>
+    
+    <div class="section">
+        <h2>1. 📊 Stato LocalStorage</h2>
+        <div id="localStorage-info"></div>
+        <button onclick="checkLocalStorage()">Aggiorna LocalStorage</button>
+    </div>
+    
+    <div class="section">
+        <h2>2. 🔑 Test Token API</h2>
+        <div id="token-test"></div>
+        <button onclick="testToken()">Testa Token</button>
+    </div>
+    
+    <div class="section">
+        <h2>3. 👤 Test API User</h2>
+        <div id="user-test"></div>
+        <button onclick="testUser()">Testa User API</button>
+    </div>
+    
+    <div class="section">
+        <h2>4. 📊 Test API Dashboard</h2>
+        <div id="dashboard-test"></div>
+        <button onclick="testDashboard()">Testa Dashboard API</button>
+    </div>
+    
+    <div class="section">
+        <h2>5. 🛠️ Azioni Debug</h2>
+        <button onclick="clearAuth()">Pulisci Auth</button>
+        <button onclick="loginTest()">Login Test</button>
+        <button onclick="refreshPage()">Ricarica Pagina</button>
+    </div>
+
+    <script>
+        function checkLocalStorage() {
+            const info = document.getElementById('localStorage-info');
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            let html = '<h3>LocalStorage Contents:</h3>';
+            html += '<pre>';
+            html += `Token: ${token ? 'Presente (' + token.substring(0, 20) + '...)' : 'Assente'}\n`;
+            html += `User: ${user ? 'Presente' : 'Assente'}\n`;
+            html += `All keys: ${Object.keys(localStorage).join(', ')}\n`;
+            html += '</pre>';
+            
+            if (token) {
+                html += '<div class="success">✅ Token trovato nel localStorage</div>';
+            } else {
+                html += '<div class="error">❌ Token non trovato nel localStorage</div>';
+            }
+            
+            if (user) {
+                html += '<div class="success">✅ User trovato nel localStorage</div>';
+            } else {
+                html += '<div class="warning">⚠️ User non trovato nel localStorage</div>';
+            }
+            
+            info.innerHTML = html;
+        }
+        
+        async function testToken() {
+            const result = document.getElementById('token-test');
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                result.innerHTML = '<div class="error">❌ Nessun token trovato</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/auth/user', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                let html = '<h3>Risposta API User:</h3>';
+                html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                
+                if (response.ok) {
+                    html += '<div class="success">✅ Token valido - API User funziona</div>';
+                } else {
+                    html += '<div class="error">❌ Token non valido - ' + data.message + '</div>';
+                }
+                
+                result.innerHTML = html;
+            } catch (error) {
+                result.innerHTML = '<div class="error">❌ Errore nella chiamata API: ' + error.message + '</div>';
+            }
+        }
+        
+        async function testUser() {
+            const result = document.getElementById('user-test');
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                result.innerHTML = '<div class="error">❌ Nessun token trovato</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/user/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                let html = '<h3>Risposta API Profile:</h3>';
+                html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                
+                if (response.ok) {
+                    html += '<div class="success">✅ API Profile funziona</div>';
+                } else {
+                    html += '<div class="error">❌ Errore API Profile: ' + data.message + '</div>';
+                }
+                
+                result.innerHTML = html;
+            } catch (error) {
+                result.innerHTML = '<div class="error">❌ Errore nella chiamata API: ' + error.message + '</div>';
+            }
+        }
+        
+        async function testDashboard() {
+            const result = document.getElementById('dashboard-test');
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                result.innerHTML = '<div class="error">❌ Nessun token trovato</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/dashboard', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                let html = '<h3>Risposta API Dashboard:</h3>';
+                html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                
+                if (response.ok) {
+                    html += '<div class="success">✅ API Dashboard funziona</div>';
+                    
+                    // Analizza i dati
+                    if (data.data && data.data.stats) {
+                        const stats = data.data.stats;
+                        html += '<h4>Analisi Dati Dashboard:</h4>';
+                        html += '<ul>';
+                        html += `<li>Ordini totali: ${stats.orders?.total || 0}</li>`;
+                        html += `<li>Inserzioni totali: ${stats.listings?.total || 0}</li>`;
+                        html += `<li>Wishlist: ${stats.wishlist?.total_items || 0}</li>`;
+                        html += `<li>Notifiche: ${stats.notifications?.unread || 0}</li>`;
+                        html += `<li>KYC Status: ${stats.kyc?.status || 'unknown'}</li>`;
+                        html += '</ul>';
+                        
+                        if (stats.orders?.total > 0 || stats.listings?.total > 0) {
+                            html += '<div class="warning">⚠️ Dati presenti nel database (potrebbero essere di test)</div>';
+                        } else {
+                            html += '<div class="success">✅ Database vuoto come previsto</div>';
+                        }
+                    }
+                } else {
+                    html += '<div class="error">❌ Errore API Dashboard: ' + data.message + '</div>';
+                }
+                
+                result.innerHTML = html;
+            } catch (error) {
+                result.innerHTML = '<div class="error">❌ Errore nella chiamata API: ' + error.message + '</div>';
+            }
+        }
+        
+        function clearAuth() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            alert('Auth data cleared!');
+            checkLocalStorage();
+        }
+        
+        async function loginTest() {
+            const result = document.getElementById('user-test');
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'scudobravo@hotmail.com',
+                        password: 'password' // Sostituisci con la password corretta
+                    })
+                });
+                
+                const data = await response.json();
+                
+                let html = '<h3>Test Login:</h3>';
+                html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                
+                if (response.ok) {
+                    html += '<div class="success">✅ Login riuscito</div>';
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    checkLocalStorage();
+                } else {
+                    html += '<div class="error">❌ Login fallito: ' + data.message + '</div>';
+                }
+                
+                result.innerHTML = html;
+            } catch (error) {
+                result.innerHTML = '<div class="error">❌ Errore nel login: ' + error.message + '</div>';
+            }
+        }
+        
+        function refreshPage() {
+            window.location.reload();
+        }
+        
+        // Esegui controlli automatici al caricamento
+        window.onload = function() {
+            checkLocalStorage();
+        };
+    </script>
+</body>
+</html>

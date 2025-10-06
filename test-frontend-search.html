@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Ricerca Frontend</title>
+</head>
+<body>
+    <h1>🧪 Test Ricerca Frontend - Lionel Messi</h1>
+    
+    <div id="results"></div>
+    
+    <script>
+        // Test della ricerca con i parametri corretti
+        async function testSearch() {
+            const resultsDiv = document.getElementById('results');
+            
+            try {
+                // Parametri per Lionel Messi
+                const filters = {
+                    player_id: 19,        // Lionel Messi
+                    team_id: 9,           // Inter Miami Cf
+                    card_set_id: 5,       // TOPPS FINEST MLS
+                    rarity: 'common',
+                    year: 2024
+                };
+                
+                // Rimuovi parametri vuoti
+                const cleanFilters = Object.fromEntries(
+                    Object.entries(filters).filter(([_, value]) => value !== null && value !== undefined && value !== '')
+                );
+                
+                // Crea query string
+                const queryParams = new URLSearchParams(cleanFilters).toString();
+                const url = `/api/cards/search?${queryParams}`;
+                
+                console.log('🔍 URL richiesta:', url);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                console.log('🔍 Response status:', response.status);
+                
+                const data = await response.json();
+                console.log('🔍 Response data:', data);
+                
+                const cards = data.cards || [];
+                console.log('🔍 Carte trovate:', cards.length);
+                
+                // Mostra risultati
+                resultsDiv.innerHTML = `
+                    <h2>✅ Risultati della Ricerca</h2>
+                    <p><strong>URL:</strong> ${url}</p>
+                    <p><strong>Status:</strong> ${response.status}</p>
+                    <p><strong>Carte trovate:</strong> ${cards.length}</p>
+                    
+                    ${cards.length > 0 ? `
+                        <h3>📋 Carte Trovate:</h3>
+                        ${cards.map(card => `
+                            <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+                                <p><strong>ID:</strong> ${card.id}</p>
+                                <p><strong>Giocatore:</strong> ${card.player?.name || 'N/A'}</p>
+                                <p><strong>Squadra:</strong> ${card.team?.name || 'N/A'}</p>
+                                <p><strong>Set:</strong> ${card.card_set?.brand || 'N/A'} ${card.card_set?.name || 'N/A'}</p>
+                                <p><strong>Anno:</strong> ${card.year}</p>
+                                <p><strong>Rarità:</strong> ${card.rarity}</p>
+                                <p><strong>Prezzo:</strong> €${card.price || 'N/A'}</p>
+                            </div>
+                        `).join('')}
+                    ` : '<p>❌ Nessuna carta trovata</p>'}
+                `;
+                
+            } catch (error) {
+                console.error('❌ Errore:', error);
+                resultsDiv.innerHTML = `
+                    <h2>❌ Errore nella Ricerca</h2>
+                    <p><strong>Errore:</strong> ${error.message}</p>
+                `;
+            }
+        }
+        
+        // Esegui il test quando la pagina si carica
+        window.addEventListener('load', testSearch);
+    </script>
+</body>
+</html>

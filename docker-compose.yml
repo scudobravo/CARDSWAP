@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: cardswap_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: cardswap
+      MYSQL_USER: cardswap
+      MYSQL_PASSWORD: cardswap
+    ports:
+      - "13306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+    networks:
+      - cardswap_network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: cardswap_phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root
+    ports:
+      - "18080:80"
+    depends_on:
+      - mysql
+    networks:
+      - cardswap_network
+
+volumes:
+  mysql_data:
+
+networks:
+  cardswap_network:
+    driver: bridge

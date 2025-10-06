@@ -1,0 +1,431 @@
+{
+  "app": {
+    "name": "CARDSWAP",
+    "tagline": "La piattaforma definitiva per collezionisti di carte",
+    "loading": "Caricamento...",
+    "error": "Errore",
+    "success": "Successo",
+    "cancel": "Annulla",
+    "save": "Salva",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "confirm": "Conferma",
+    "back": "Indietro",
+    "next": "Avanti",
+    "previous": "Precedente",
+    "search": "Cerca",
+    "filter": "Filtra",
+    "sort": "Ordina",
+    "view": "Visualizza",
+    "add": "Aggiungi",
+    "remove": "Rimuovi",
+    "close": "Chiudi",
+    "open": "Apri",
+    "yes": "Sì",
+    "no": "No",
+    "all": "Tutti",
+    "none": "Nessuno",
+    "select": "Seleziona",
+    "clear": "Pulisci",
+    "apply": "Applica",
+    "reset": "Ripristina",
+    "submit": "Invia",
+    "no_results": "Nessun risultato trovato",
+    "no_data": "Nessun dato disponibile",
+    "per_page": "per pagina",
+    "showing": "Mostrando",
+    "of": "di",
+    "total": "totale",
+    "items": "elementi",
+    "page": "pagina",
+    "pages": "pagine"
+  },
+  "navigation": {
+    "home": "Home",
+    "catalog": "Catalogo",
+    "categories": "Categorie",
+    "sets": "Set",
+    "players": "Giocatori",
+    "teams": "Squadre",
+    "sell": "Vendi",
+    "account": "Account",
+    "profile": "Profilo",
+    "listings": "Le mie inserzioni",
+    "orders": "I miei ordini",
+    "wishlist": "Lista desideri",
+    "logout": "Esci",
+    "login": "Accedi",
+    "register": "Registrati"
+  },
+  "home": {
+    "hero": {
+      "title": "Scopri il mondo delle carte da collezione",
+      "subtitle": "La piattaforma definitiva per collezionisti e venditori",
+      "cta": "Inizia a esplorare",
+      "search_placeholder": "Cerca carte, giocatori, squadre..."
+    },
+    "featured_categories": "Categorie in evidenza",
+    "popular_sets": "Set popolari",
+    "featured_cards": "Carte in evidenza",
+    "leagues_section": "Leghe e competizioni",
+    "teams_section": "Squadre più popolari",
+    "trending": "In tendenza",
+    "statistics": {
+      "total_cards": "Carte totali",
+      "total_listings": "Inserzioni attive",
+      "total_categories": "Categorie",
+      "total_sets": "Set disponibili",
+      "total_leagues": "Leghe",
+      "total_teams": "Squadre",
+      "total_players": "Giocatori"
+    }
+  },
+  "catalog": {
+    "search": {
+      "title": "Cerca nel catalogo",
+      "placeholder": "Cerca carte, giocatori, squadre, set...",
+      "advanced_filters": "Filtri avanzati",
+      "results": "Risultati ricerca",
+      "no_results": "Nessun risultato trovato per la tua ricerca",
+      "suggestions": "Suggerimenti di ricerca"
+    },
+    "filters": {
+      "title": "Filtri",
+      "category": "Categoria",
+      "set": "Set",
+      "year": "Anno",
+      "year_from": "Anno da",
+      "year_to": "Anno a",
+      "rarity": "Rarità",
+      "condition": "Condizione",
+      "price": "Prezzo",
+      "price_min": "Prezzo minimo",
+      "price_max": "Prezzo massimo",
+      "language": "Lingua",
+      "is_rookie": "Rookie",
+      "is_star": "Star",
+      "is_legend": "Legend",
+      "is_foil": "Foil",
+      "is_signed": "Firmata",
+      "is_altered": "Alterata",
+      "is_first_edition": "Prima edizione",
+      "grading_company": "Società di grading",
+      "grading_score": "Punteggio grading",
+      "grading_score_min": "Punteggio minimo",
+      "grading_score_max": "Punteggio massimo",
+      "clear_filters": "Pulisci filtri",
+      "apply_filters": "Applica filtri"
+    },
+    "sorting": {
+      "title": "Ordina per",
+      "name_asc": "Nome A-Z",
+      "name_desc": "Nome Z-A",
+      "price_asc": "Prezzo più basso",
+      "price_desc": "Prezzo più alto",
+      "year_asc": "Anno più vecchio",
+      "year_desc": "Anno più recente",
+      "rarity_asc": "Rarità crescente",
+      "rarity_desc": "Rarità decrescente",
+      "created_asc": "Più vecchie",
+      "created_desc": "Più recenti"
+    },
+    "view": {
+      "grid": "Griglia",
+      "list": "Lista",
+      "compact": "Compatto"
+    }
+  },
+  "cards": {
+    "model": {
+      "title": "Modello carta",
+      "details": "Dettagli carta",
+      "name": "Nome",
+      "description": "Descrizione",
+      "set_name": "Nome set",
+      "year": "Anno",
+      "rarity": "Rarità",
+      "card_number": "Numero carta",
+      "card_number_in_set": "Numero nel set",
+      "parallel_type": "Tipo parallelo",
+      "insert_type": "Tipo insert",
+      "artist": "Artista",
+      "is_rookie": "Rookie",
+      "is_star": "Star",
+      "is_legend": "Legend",
+      "grading": "Grading",
+      "grading_company": "Società",
+      "grading_score": "Punteggio",
+      "grading_notes": "Note grading",
+      "attributes": "Attributi",
+      "category": "Categoria",
+      "set": "Set",
+      "player": "Giocatore",
+      "team": "Squadra",
+      "league": "Lega",
+      "image": "Immagine",
+      "no_image": "Nessuna immagine disponibile"
+    },
+    "listing": {
+      "title": "Inserzione",
+      "seller": "Venditore",
+      "price": "Prezzo",
+      "condition": "Condizione",
+      "quantity": "Quantità",
+      "language": "Lingua",
+      "description": "Descrizione",
+      "images": "Immagini",
+      "shipping_zones": "Zone di spedizione",
+      "status": "Stato",
+      "created": "Creata il",
+      "updated": "Aggiornata il",
+      "actions": {
+        "add_to_cart": "Aggiungi al carrello",
+        "add_to_wishlist": "Aggiungi alla wishlist",
+        "contact_seller": "Contatta venditore",
+        "view_details": "Visualizza dettagli"
+      }
+    }
+  },
+  "conditions": {
+    "mint": "Mint",
+    "near_mint": "Near Mint",
+    "excellent": "Eccellente",
+    "good": "Buona",
+    "light_played": "Leggermente giocata",
+    "played": "Giocata",
+    "poor": "Scarsa"
+  },
+  "languages": {
+    "italian": "Italiano",
+    "english": "Inglese",
+    "spanish": "Spagnolo",
+    "french": "Francese",
+    "german": "Tedesco",
+    "portuguese": "Portoghese"
+  },
+  "priorities": {
+    "low": "Bassa",
+    "medium": "Media",
+    "high": "Alta"
+  },
+  "wishlist": {
+    "title": "Lista desideri",
+    "my_wishlist": "La mia lista desideri",
+    "add_item": "Aggiungi elemento",
+    "edit_item": "Modifica elemento",
+    "remove_item": "Rimuovi elemento",
+    "type": {
+      "want": "Desidero",
+      "have": "Possiedo"
+    },
+    "notes": "Note",
+    "priority": "Priorità",
+    "max_price": "Prezzo massimo",
+    "condition_preference": "Condizione preferita",
+    "lowest_price": "Prezzo più basso disponibile",
+    "has_active_listings": "Inserzioni attive disponibili",
+    "no_items": "Nessun elemento nella wishlist",
+    "add_multiple": "Aggiungi multipli",
+    "export": "Esporta",
+    "statistics": "Statistiche",
+    "search": "Cerca nella wishlist",
+    "filters": {
+      "type": "Tipo",
+      "priority": "Priorità",
+      "category": "Categoria"
+    },
+    "messages": {
+      "added": "Elemento aggiunto alla wishlist",
+      "updated": "Elemento aggiornato",
+      "removed": "Elemento rimosso dalla wishlist",
+      "already_exists": "Elemento già presente nella wishlist",
+      "multiple_added": "Elementi aggiunti alla wishlist",
+      "export_success": "Wishlist esportata con successo"
+    }
+  },
+  "listings": {
+    "title": "Inserzioni",
+    "my_listings": "Le mie inserzioni",
+    "create_listing": "Crea inserzione",
+    "edit_listing": "Modifica inserzione",
+    "duplicate_listing": "Duplica inserzione",
+    "delete_listing": "Elimina inserzione",
+    "status": {
+      "draft": "Bozza",
+      "active": "Attiva",
+      "paused": "In pausa",
+      "inactive": "Inattiva"
+    },
+    "form": {
+      "card_model": "Modello carta",
+      "select_card": "Seleziona carta",
+      "price": "Prezzo",
+      "condition": "Condizione",
+      "quantity": "Quantità",
+      "language": "Lingua",
+      "description": "Descrizione",
+      "images": "Immagini",
+      "upload_images": "Carica immagini",
+      "shipping_zones": "Zone di spedizione",
+      "select_zones": "Seleziona zone",
+      "status": "Stato",
+      "save_draft": "Salva come bozza",
+      "publish": "Pubblica",
+      "update": "Aggiorna inserzione"
+    },
+    "messages": {
+      "created": "Inserzione creata con successo",
+      "updated": "Inserzione aggiornata con successo",
+      "deleted": "Inserzione eliminata con successo",
+      "duplicated": "Inserzione duplicata con successo",
+      "status_changed": "Stato inserzione aggiornato",
+      "only_sellers": "Solo i venditori possono creare inserzioni",
+      "not_authorized": "Non autorizzato a modificare questa inserzione"
+    },
+    "actions": {
+      "edit": "Modifica",
+      "duplicate": "Duplica",
+      "pause": "Metti in pausa",
+      "activate": "Attiva",
+      "delete": "Elimina",
+      "view": "Visualizza"
+    }
+  },
+  "images": {
+    "upload": "Carica immagine",
+    "upload_multiple": "Carica immagini multiple",
+    "delete": "Elimina immagine",
+    "optimize": "Ottimizza immagine",
+    "drag_drop": "Trascina e rilascia qui o clicca per selezionare",
+    "select_files": "Seleziona file",
+    "max_size": "Dimensione massima: 5MB",
+    "supported_formats": "Formati supportati: JPEG, PNG, JPG, GIF, WebP",
+    "type": {
+      "card_model": "Modello carta",
+      "listing": "Inserzione",
+      "avatar": "Avatar"
+    },
+    "messages": {
+      "uploaded": "Immagine caricata con successo",
+      "multiple_uploaded": "Immagini caricate con successo",
+      "deleted": "Immagine eliminata con successo",
+      "optimized": "Immagine ottimizzata con successo",
+      "error": "Errore durante il caricamento dell'immagine"
+    }
+  },
+  "search": {
+    "placeholder": "Cerca carte, giocatori, squadre, set...",
+    "suggestions": "Suggerimenti",
+    "recent_searches": "Ricerche recenti",
+    "popular_searches": "Ricerche popolari",
+    "no_suggestions": "Nessun suggerimento disponibile",
+    "types": {
+      "card": "Carta",
+      "player": "Giocatore",
+      "team": "Squadra",
+      "set": "Set"
+    }
+  },
+  "pagination": {
+    "showing": "Mostrando",
+    "to": "a",
+    "of": "di",
+    "entries": "risultati",
+    "previous": "Precedente",
+    "next": "Successivo",
+    "first": "Prima",
+    "last": "Ultima"
+  },
+  "errors": {
+    "general": "Si è verificato un errore",
+    "validation": "Errore di validazione",
+    "not_found": "Risorsa non trovata",
+    "unauthorized": "Non autorizzato",
+    "forbidden": "Accesso negato",
+    "server_error": "Errore del server",
+    "network_error": "Errore di rete",
+    "timeout": "Timeout della richiesta",
+    "unknown": "Errore sconosciuto"
+  },
+  "messages": {
+    "success": "Operazione completata con successo",
+    "error": "Si è verificato un errore",
+    "warning": "Attenzione",
+    "info": "Informazione",
+    "confirm_delete": "Sei sicuro di voler eliminare questo elemento?",
+    "confirm_action": "Sei sicuro di voler eseguire questa azione?",
+    "changes_saved": "Modifiche salvate con successo",
+    "changes_discarded": "Modifiche scartate"
+  },
+  "validation": {
+    "required": "Questo campo è obbligatorio",
+    "email": "Inserisci un indirizzo email valido",
+    "min_length": "Minimo {min} caratteri",
+    "max_length": "Massimo {max} caratteri",
+    "numeric": "Questo campo deve essere numerico",
+    "min_value": "Valore minimo: {min}",
+    "max_value": "Valore massimo: {max}",
+    "url": "Inserisci un URL valido",
+    "exists": "Il valore selezionato non esiste",
+    "unique": "Questo valore è già utilizzato"
+  },
+  "cookie_banner": {
+    "title": "Utilizziamo i cookie",
+    "description": "Utilizziamo cookie per migliorare la tua esperienza, analizzare il traffico e personalizzare i contenuti. Leggi la nostra",
+    "privacy_policy": "Privacy Policy",
+    "and": "e i nostri",
+    "terms_of_service": "Termini di Servizio",
+    "accept_all": "Accetta tutti",
+    "necessary_only": "Solo necessari",
+    "preferences": "Preferenze"
+  },
+  "cookie_preferences": {
+    "title": "Preferenze Cookie",
+    "save_preferences": "Salva preferenze",
+    "always_active": "Sempre attivo",
+    "necessary": {
+      "title": "Cookie Necessari",
+      "description": "Questi cookie sono essenziali per il funzionamento del sito web e non possono essere disattivati. Includono cookie per l'autenticazione, la sicurezza e le funzionalità di base."
+    },
+    "analytics": {
+      "title": "Cookie Analitici",
+      "description": "Questi cookie ci aiutano a capire come gli utenti interagiscono con il nostro sito web raccogliendo informazioni in forma anonima. Ci aiutano a migliorare le prestazioni e l'esperienza utente."
+    },
+    "marketing": {
+      "title": "Cookie di Marketing",
+      "description": "Questi cookie vengono utilizzati per fornire annunci più pertinenti per te e i tuoi interessi. Possono anche essere utilizzati per limitare il numero di volte che vedi un annuncio e misurare l'efficacia delle campagne pubblicitarie."
+    }
+  },
+  "common": {
+    "cancel": "Annulla",
+    "save": "Salva",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "confirm": "Conferma",
+    "back": "Indietro",
+    "next": "Avanti",
+    "previous": "Precedente",
+    "search": "Cerca",
+    "filter": "Filtra",
+    "sort": "Ordina",
+    "view": "Visualizza",
+    "add": "Aggiungi",
+    "remove": "Rimuovi",
+    "close": "Chiudi",
+    "open": "Apri",
+    "yes": "Sì",
+    "no": "No",
+    "all": "Tutti",
+    "none": "Nessuno",
+    "select": "Seleziona",
+    "clear": "Pulisci",
+    "apply": "Applica",
+    "reset": "Ripristina",
+    "submit": "Invia",
+    "loading": "Caricamento...",
+    "error": "Errore",
+    "success": "Successo",
+    "warning": "Attenzione",
+    "info": "Informazione"
+  }
+}
