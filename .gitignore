@@ -6,6 +6,11 @@
 *.txt
 *.sh
 
+# Large log files
+import_optimized.log
+import_full.log
+import.log
+
 # Laravel specific
 /vendor/
 /node_modules/
