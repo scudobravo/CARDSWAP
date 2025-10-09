@@ -38,8 +38,13 @@ window.axios.interceptors.response.use(
             localStorage.removeItem('token');
             delete window.axios.defaults.headers.common['Authorization'];
             
-            // Reindirizza alla pagina di login se non siamo già lì
-            if (window.location.pathname !== '/login') {
+            // NON reindirizzare automaticamente al login
+            // Lascia che sia l'applicazione a decidere come gestire l'errore 401
+            // Solo se siamo su una pagina protetta (dashboard, account, etc)
+            const protectedPaths = ['/dashboard', '/account/', '/purchases/', '/sales/', '/settings/', '/checkout', '/orders'];
+            const isProtectedPath = protectedPaths.some(path => window.location.pathname.startsWith(path));
+            
+            if (isProtectedPath && window.location.pathname !== '/login') {
                 window.location.href = '/login';
             }
         }

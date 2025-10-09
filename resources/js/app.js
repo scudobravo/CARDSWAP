@@ -144,10 +144,40 @@ app.use(i18n);
 
 // Inizializza l'authStore per caricare l'utente se autenticato
 const authStore = useAuthStore();
-if (authStore.isAuthenticated && !authStore.user) {
-  authStore.fetchUser().catch(error => {
-    console.error('Errore nel caricamento utente:', error);
-  });
-}
+
+// Navigation guard per verificare l'autenticazione solo sulle pagine protette
+router.beforeEach(async (to, from, next) => {
+  // Pagine pubbliche che non richiedono autenticazione
+  const publicPages = ['/', '/login', '/register', '/categories', '/category/football', '/category/basketball', '/category/pokemon', '/terms-and-conditions', '/privacy-policy', '/cookie-policy', '/contact', '/search']
+  const isPublicPage = publicPages.includes(to.path) || to.path.startsWith('/category/') || to.path.match(/^\/[^\/]+\/[^\/]+$/)
+  
+  // Se è una pagina pubblica, lascia passare senza controlli
+  if (isPublicPage) {
+    next()
+    return
+  }
+  
+  // Per pagine protette, verifica l'autenticazione
+  if (authStore.token && !authStore.user) {
+    try {
+      await authStore.fetchUser()
+    } catch (error) {
+      console.error('Errore nel caricamento utente:', error)
+      // Se il token non è valido, reindirizza al login solo se non siamo già lì
+      if (to.path !== '/login') {
+        next('/login')
+        return
+      }
+    }
+  }
+  
+  // Se la pagina richiede autenticazione ma l'utente non è loggato
+  if (!authStore.isAuthenticated && !isPublicPage) {
+    next('/login')
+    return
+  }
+  
+  next()
+})
 
 app.mount('#app');

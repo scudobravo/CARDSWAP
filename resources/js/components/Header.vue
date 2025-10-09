@@ -134,14 +134,23 @@ const wishlistItemsCount = computed(() => wishlistStore.totalItems)
 onMounted(async () => {
   console.log('Header mounted')
   
-  // Inizializza i store
-  await cartStore.initialize()
-  await wishlistStore.initialize()
-  
   // Se c'è un token ma non c'è l'utente, caricalo
   if (authStore.token && !authStore.user) {
     console.log('Carico dati utente...')
-    await authStore.fetchUser()
+    try {
+      await authStore.fetchUser()
+    } catch (error) {
+      console.error('Errore nel caricamento utente:', error)
+    }
+  }
+  
+  // Inizializza i store solo se l'utente è autenticato
+  if (authStore.isAuthenticated) {
+    await cartStore.initialize()
+    await wishlistStore.initialize()
+  } else {
+    // Per utenti non autenticati, carica solo il cart dal localStorage
+    await cartStore.initialize()
   }
 })
 

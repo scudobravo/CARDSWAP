@@ -118,13 +118,19 @@ export const useAuthStore = defineStore('auth', () => {
       if (response.ok) {
         const data = await response.json()
         setUser(data.user)
-      } else {
+      } else if (response.status === 401) {
+        // Solo se il token non è valido (401), fai logout
         logout()
+        throw new Error('Token non valido')
+      } else {
+        // Altri errori (500, 404, ecc) non causano logout automatico
+        throw new Error('Errore nel caricamento utente')
       }
     } catch (error) {
       console.error('Errore nel fetch utente:', error)
-      // Non fare fallback, lascia che l'errore si propaghi
-      logout()
+      // Se è un errore di rete, non fare logout automatico
+      // Solo rilancia l'errore per gestirlo nel chiamante
+      throw error
     }
   }
 

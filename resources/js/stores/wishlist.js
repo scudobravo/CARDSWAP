@@ -14,15 +14,26 @@ export const useWishlistStore = defineStore('wishlist', () => {
 
   // Carica la wishlist dal backend
   const loadWishlist = async () => {
+    // Verifica se c'è un token prima di caricare
+    const token = localStorage.getItem('token')
+    if (!token) {
+      wishlistItems.value = []
+      return
+    }
+    
     try {
       const response = await axios.get('/api/wishlist')
       if (response.data.success) {
         wishlistItems.value = response.data.data || []
       }
     } catch (error) {
-      console.error('Errore nel caricamento wishlist:', error)
-      // Se l'utente non è autenticato, la wishlist sarà vuota
-      wishlistItems.value = []
+      // Ignora gli errori 401 (non autenticato)
+      if (error.response?.status === 401) {
+        wishlistItems.value = []
+      } else {
+        console.error('Errore nel caricamento wishlist:', error)
+        wishlistItems.value = []
+      }
     }
   }
 
