@@ -369,11 +369,11 @@ export const useCartStore = defineStore('cart', () => {
   const initialize = async () => {
     loadFromLocalStorage()
     
-    // Se l'utente è autenticato, sincronizza con il backend
-    const token = localStorage.getItem('token')
-    if (token) {
-      await syncWithBackend()
-    }
+    // TODO: Implementare sincronizzazione con backend quando necessario
+    // const token = localStorage.getItem('token')
+    // if (token) {
+    //   await syncWithBackend()
+    // }
   }
 
   return {

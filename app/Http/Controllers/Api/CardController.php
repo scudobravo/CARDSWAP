@@ -347,6 +347,412 @@ class CardController extends Controller
     }
 
     /**
+     * Get card details by category and slug
+     */
+    public function getCardDetailsBySlug($category, $slug): JsonResponse
+    {
+        try {
+            // Mappa le categorie URL alle categorie del database
+            $categoryMap = [
+                'football' => 'calcio',
+                'basketball' => 'basketball', 
+                'pokemon' => 'pokemon'
+            ];
+
+            $dbCategory = $categoryMap[$category] ?? $category;
+
+            // Prima prova a cercare per slug esatto
+            $card = CardModel::with(['category', 'player', 'team', 'cardSet'])
+                ->whereHas('category', function($q) use ($dbCategory) {
+                    $q->where('slug', $dbCategory);
+                })
+                ->where('slug', $slug)
+                ->first();
+            
+            // Se non trovato per slug, prova con il nome
+            if (!$card) {
+                $cardName = str_replace('-', ' ', $slug);
+                $cardName = ucwords($cardName); // Converte in formato nome (es. "lionel messi")
+                
+                $card = CardModel::with(['category', 'player', 'team', 'cardSet'])
+                    ->whereHas('category', function($q) use ($dbCategory) {
+                        $q->where('slug', $dbCategory);
+                    })
+                    ->where('name', 'LIKE', '%' . $cardName . '%')
+                    ->first();
+            }
+
+            if (!$card) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Carta non trovata'
+                ], 404);
+            }
+
+            // Transform card data (stesso formato del metodo precedente)
+            $transformedCard = [
+                'id' => $card->id,
+                'name' => $card->player_name ?: $card->name ?: 'Player',
+                'team' => $this->getTeamName($card),
+                'set_name' => $card->set_name ?: 'Set Name',
+                'year' => $card->year ?: date('Y'),
+                'rarity' => $card->rarity ?: 'Rare',
+                'price' => $this->getEstimatedPrice($card),
+                'rating' => $this->getEstimatedRating($card),
+                'image_url' => $card->image_url,
+                'category' => $this->getCategoryType($card),
+                'description' => $card->description,
+                'condition' => $card->condition ?: 'LIGHT PLAYED',
+                'is_numbered' => $card->is_numbered ?? true,
+                'is_autograph' => $card->is_autograph ?? true,
+                'is_relic' => $card->is_relic ?? true,
+                'is_rookie' => $card->is_rookie ?? true,
+                'is_star' => $card->is_star ?? false,
+                'is_legend' => $card->is_legend ?? false,
+                'card_number' => $card->card_number,
+                'serial_number' => $card->serial_number ?: '10',
+                'created_at' => $card->created_at,
+                'updated_at' => $card->updated_at
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $transformedCard
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching card details by slug', [
+                'category' => $category,
+                'slug' => $slug,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Errore nel recupero dei dettagli della carta: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get related products for a specific card
+     */
+    public function getRelatedProducts($cardId, Request $request): JsonResponse
+    {
+        try {
+            $limit = $request->get('limit', 8);
+            
+            // Prima recupera la carta principale
+            $mainCard = CardModel::with(['category', 'player', 'team', 'cardSet'])
+                ->where('id', $cardId)
+                ->first();
+
+            if (!$mainCard) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Carta principale non trovata'
+                ], 404);
+            }
+
+            // Query per carte correlate usando criteri multipli
+            $relatedQuery = CardModel::with(['category', 'player', 'team', 'cardSet'])
+                ->where('id', '!=', $cardId) // Esclude la carta principale
+                ->where('is_active', true);
+
+            // Applica filtri basati sui criteri di similarità
+            $this->applyRelatedFilters($relatedQuery, $mainCard);
+
+            // Ordina per rilevanza (priorità: stesso set, stessa squadra, stesso anno, stessa rarità)
+            $relatedQuery->orderByRaw("
+                CASE 
+                    WHEN card_set_id = ? AND player_id != ? THEN 1
+                    WHEN team_id = ? AND player_id != ? THEN 2  
+                    WHEN year = ? AND category_id = ? AND player_id != ? THEN 3
+                    WHEN rarity = ? AND category_id = ? AND player_id != ? THEN 4
+                    WHEN category_id = ? AND player_id != ? THEN 5
+                    ELSE 6
+                END,
+                created_at DESC
+            ", [
+                $mainCard->card_set_id, $mainCard->player_id,
+                $mainCard->team_id, $mainCard->player_id,
+                $mainCard->year, $mainCard->category_id, $mainCard->player_id,
+                $mainCard->rarity, $mainCard->category_id, $mainCard->player_id,
+                $mainCard->category_id, $mainCard->player_id
+            ]);
+
+            $relatedCards = $relatedQuery->limit($limit)->get();
+
+            // Se non abbiamo abbastanza risultati con i criteri principali, 
+            // espandiamo la ricerca nella stessa categoria
+            if ($relatedCards->count() < $limit) {
+                $remainingLimit = $limit - $relatedCards->count();
+                $fallbackCards = CardModel::with(['category', 'player', 'team', 'cardSet'])
+                    ->where('id', '!=', $cardId)
+                    ->where('is_active', true)
+                    ->where('category_id', $mainCard->category_id)
+                    ->whereNotIn('id', $relatedCards->pluck('id'))
+                    ->orderBy('created_at', 'desc')
+                    ->limit($remainingLimit)
+                    ->get();
+
+                $relatedCards = $relatedCards->merge($fallbackCards);
+            }
+
+            // Trasforma i dati per il frontend
+            $transformedCards = $relatedCards->map(function ($card) {
+                return [
+                    'id' => $card->id,
+                    'name' => $card->player_name ?: $card->name ?: 'Player',
+                    'team' => $this->getTeamName($card),
+                    'type' => $this->getCategoryType($card->category->name ?? ''),
+                    'price' => $this->getEstimatedPrice($card),
+                    'rating' => $this->getEstimatedRating($card),
+                    'image_url' => $card->image_url,
+                    'set_name' => $card->set_name,
+                    'year' => $card->year,
+                    'rarity' => $card->rarity,
+                    'slug' => $card->slug,
+                    'category_slug' => $this->getCategorySlug($card->category->slug ?? ''),
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $transformedCards,
+                'count' => $transformedCards->count(),
+                'criteria' => $this->getRelatedCriteria($mainCard)
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching related products', [
+                'card_id' => $cardId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Errore nel recupero dei prodotti correlati: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Apply related product filters based on main card criteria
+     */
+    private function applyRelatedFilters($query, $mainCard): void
+    {
+        // Criteri di similarità in ordine di priorità (escludendo stesso giocatore):
+        
+        // 1. Stesso set (se disponibile) - carte diverse dello stesso set
+        if ($mainCard->card_set_id) {
+            $query->where('card_set_id', $mainCard->card_set_id)
+                  ->where('player_id', '!=', $mainCard->player_id); // Esclude stesso giocatore
+        }
+        
+        // 2. Stessa squadra (se disponibile) - altri giocatori della stessa squadra
+        if ($mainCard->team_id) {
+            $query->orWhere(function($q) use ($mainCard) {
+                $q->where('team_id', $mainCard->team_id)
+                  ->where('player_id', '!=', $mainCard->player_id); // Esclude stesso giocatore
+            });
+        }
+        
+        // 3. Stesso anno e stessa categoria - carte di altri giocatori dello stesso anno
+        if ($mainCard->year) {
+            $query->orWhere(function($q) use ($mainCard) {
+                $q->where('year', $mainCard->year)
+                  ->where('category_id', $mainCard->category_id)
+                  ->where('player_id', '!=', $mainCard->player_id); // Esclude stesso giocatore
+            });
+        }
+        
+        // 4. Stessa rarità e stessa categoria - carte di altri giocatori con stessa rarità
+        if ($mainCard->rarity) {
+            $query->orWhere(function($q) use ($mainCard) {
+                $q->where('rarity', $mainCard->rarity)
+                  ->where('category_id', $mainCard->category_id)
+                  ->where('player_id', '!=', $mainCard->player_id); // Esclude stesso giocatore
+            });
+        }
+        
+        // 5. Fallback: stessa categoria (sempre applicata come ultimo criterio)
+        $query->orWhere(function($q) use ($mainCard) {
+            $q->where('category_id', $mainCard->category_id)
+              ->where('player_id', '!=', $mainCard->player_id); // Esclude stesso giocatore
+        });
+    }
+
+    /**
+     * Get category slug for URL generation
+     */
+    private function getCategorySlug($categorySlug): string
+    {
+        $categoryMap = [
+            'calcio' => 'football',
+            'basketball' => 'basketball',
+            'pokemon' => 'pokemon'
+        ];
+        
+        return $categoryMap[$categorySlug] ?? $categorySlug;
+    }
+
+    /**
+     * Get related products for a card by category and slug
+     */
+    public function getRelatedProductsBySlug($category, $slug, Request $request): JsonResponse
+    {
+        try {
+            $limit = $request->get('limit', 8);
+            
+            // Mappa le categorie URL alle categorie del database
+            $categoryMap = [
+                'football' => 'calcio',
+                'basketball' => 'basketball', 
+                'pokemon' => 'pokemon'
+            ];
+
+            $dbCategory = $categoryMap[$category] ?? $category;
+
+            // Prima prova a cercare per slug esatto
+            $mainCard = CardModel::with(['category', 'player', 'team', 'cardSet'])
+                ->whereHas('category', function($q) use ($dbCategory) {
+                    $q->where('slug', $dbCategory);
+                })
+                ->where('slug', $slug)
+                ->first();
+            
+            // Se non trovato per slug, prova con il nome
+            if (!$mainCard) {
+                $cardName = str_replace('-', ' ', $slug);
+                $cardName = ucwords($cardName); // Converte in formato nome (es. "lionel messi")
+                
+                $mainCard = CardModel::with(['category', 'player', 'team', 'cardSet'])
+                    ->whereHas('category', function($q) use ($dbCategory) {
+                        $q->where('slug', $dbCategory);
+                    })
+                    ->where('name', 'LIKE', '%' . $cardName . '%')
+                    ->first();
+            }
+
+            if (!$mainCard) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Carta principale non trovata'
+                ], 404);
+            }
+
+            // Query per carte correlate usando criteri multipli
+            $relatedQuery = CardModel::with(['category', 'player', 'team', 'cardSet'])
+                ->where('id', '!=', $mainCard->id) // Esclude la carta principale
+                ->where('is_active', true);
+
+            // Applica filtri basati sui criteri di similarità
+            $this->applyRelatedFilters($relatedQuery, $mainCard);
+
+            // Ordina per rilevanza (priorità: stesso set, stessa squadra, stesso anno, stessa rarità)
+            $relatedQuery->orderByRaw("
+                CASE 
+                    WHEN card_set_id = ? AND player_id != ? THEN 1
+                    WHEN team_id = ? AND player_id != ? THEN 2  
+                    WHEN year = ? AND category_id = ? AND player_id != ? THEN 3
+                    WHEN rarity = ? AND category_id = ? AND player_id != ? THEN 4
+                    WHEN category_id = ? AND player_id != ? THEN 5
+                    ELSE 6
+                END,
+                created_at DESC
+            ", [
+                $mainCard->card_set_id, $mainCard->player_id,
+                $mainCard->team_id, $mainCard->player_id,
+                $mainCard->year, $mainCard->category_id, $mainCard->player_id,
+                $mainCard->rarity, $mainCard->category_id, $mainCard->player_id,
+                $mainCard->category_id, $mainCard->player_id
+            ]);
+
+            $relatedCards = $relatedQuery->limit($limit)->get();
+
+            // Se non abbiamo abbastanza risultati con i criteri principali, 
+            // espandiamo la ricerca nella stessa categoria
+            if ($relatedCards->count() < $limit) {
+                $remainingLimit = $limit - $relatedCards->count();
+                $fallbackCards = CardModel::with(['category', 'player', 'team', 'cardSet'])
+                    ->where('id', '!=', $mainCard->id)
+                    ->where('is_active', true)
+                    ->where('category_id', $mainCard->category_id)
+                    ->whereNotIn('id', $relatedCards->pluck('id'))
+                    ->orderBy('created_at', 'desc')
+                    ->limit($remainingLimit)
+                    ->get();
+
+                $relatedCards = $relatedCards->merge($fallbackCards);
+            }
+
+            // Trasforma i dati per il frontend
+            $transformedCards = $relatedCards->map(function ($card) {
+                return [
+                    'id' => $card->id,
+                    'name' => $card->player_name ?: $card->name ?: 'Player',
+                    'team' => $this->getTeamName($card),
+                    'type' => $this->getCategoryType($card->category->name ?? ''),
+                    'price' => $this->getEstimatedPrice($card),
+                    'rating' => $this->getEstimatedRating($card),
+                    'image_url' => $card->image_url,
+                    'set_name' => $card->set_name,
+                    'year' => $card->year,
+                    'rarity' => $card->rarity,
+                    'slug' => $card->slug,
+                    'category_slug' => $this->getCategorySlug($card->category->slug ?? ''),
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $transformedCards,
+                'count' => $transformedCards->count(),
+                'criteria' => $this->getRelatedCriteria($mainCard)
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching related products by slug', [
+                'category' => $category,
+                'slug' => $slug,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Errore nel recupero dei prodotti correlati: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get criteria used for related products matching
+     */
+    private function getRelatedCriteria($mainCard): array
+    {
+        return [
+            'player_id' => $mainCard->player_id,
+            'card_set_id' => $mainCard->card_set_id,
+            'team_id' => $mainCard->team_id,
+            'category_id' => $mainCard->category_id,
+            'year' => $mainCard->year,
+            'rarity' => $mainCard->rarity,
+            'criteria_explanation' => [
+                'Stesso set (altri giocatori)' => $mainCard->card_set_id ? 'Applicato' : 'Non disponibile',
+                'Stessa squadra (altri giocatori)' => $mainCard->team_id ? 'Applicato' : 'Non disponibile',
+                'Stesso anno e categoria (altri giocatori)' => $mainCard->year ? 'Applicato' : 'Non disponibile',
+                'Stessa rarità e categoria (altri giocatori)' => $mainCard->rarity ? 'Applicato' : 'Non disponibile',
+                'Stessa categoria (altri giocatori)' => 'Sempre applicato come fallback',
+                'Esclusione stesso giocatore' => 'Sempre applicato'
+            ]
+        ];
+    }
+
+    /**
      * Get all available categories
      */
     public function getCategories(): JsonResponse

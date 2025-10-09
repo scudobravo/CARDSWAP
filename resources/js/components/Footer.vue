@@ -39,17 +39,17 @@
           
           <!-- Center links -->
           <div class="flex flex-wrap justify-center space-x-8 mb-6 md:mb-0">
-            <a href="#" class="text-white font-futura-bold hover:text-secondary transition-colors font-gill-sans text-sm">Termini e Condizioni</a>
-            <a href="#" class="text-white font-futura-bold hover:text-secondary transition-colors font-gill-sans text-sm">Privacy Policy</a>
-            <a href="#" class="text-white font-futura-bold hover:text-secondary transition-colors font-gill-sans text-sm">Cookie Policy</a>
+            <router-link to="/terms-and-conditions" class="text-white font-futura-bold hover:text-secondary transition-colors font-gill-sans text-sm">Termini e Condizioni</router-link>
+            <router-link to="/privacy-policy" class="text-white font-futura-bold hover:text-secondary transition-colors font-gill-sans text-sm">Privacy Policy</router-link>
+            <router-link to="/cookie-policy" class="text-white font-futura-bold hover:text-secondary transition-colors font-gill-sans text-sm">Cookie Policy</router-link>
           </div>
           
           <!-- Right side - Contact -->
           <div class="flex items-center space-x-4">
             <span class="text-white font-futura-bold font-gill-sans text-sm">Need help?</span>
-            <button class="bg-secondary text-primary px-4 py-2 rounded-lg font-futura-bold text-sm hover:bg-secondary/90 transition-colors">
+            <router-link to="/contact" class="bg-secondary text-primary px-4 py-2 rounded-lg font-futura-bold text-sm hover:bg-secondary/90 transition-colors">
               Contattaci
-            </button>
+            </router-link>
           </div>
         </div>
       </div>

@@ -1,7 +1,11 @@
 <template>
-  <div class="bg-white">
-    <div class="mx-auto max-w-2xl px-4 pt-16 pb-24 sm:px-6 lg:max-w-7xl lg:px-8">
-      <h1 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Carrello</h1>
+  <div class="bg-gray-light min-h-screen">
+    <!-- Header -->
+    <Header />
+    
+    <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-24 pb-6">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-futura-bold text-primary mb-8">Carrello</h1>
       
       <!-- Carrello vuoto -->
       <div v-if="isEmpty" class="empty-cart text-center py-12">
@@ -26,10 +30,19 @@
 
           <ul role="list" class="divide-y divide-gray-200 border-t border-b border-gray-200">
             <li v-for="(product, productIdx) in allCartItems" :key="product.id" class="flex py-6 sm:py-10">
-              <div class="shrink-0">
-                <img :src="getProductImage(product)" 
+              <div class="shrink-0 relative">
+                <img v-if="getProductImage(product)" 
+                     :src="getProductImage(product)" 
                      :alt="product.cardModel?.name || 'Carta'" 
                      class="size-24 rounded-md object-cover sm:size-48" />
+                <div v-else class="absolute inset-0 flex items-center justify-center bg-gray-300 rounded-md size-24 sm:size-48">
+                  <div class="text-center text-gray-500">
+                    <svg class="w-16 h-16 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <p class="text-sm font-gill-sans">Immagine non disponibile</p>
+                  </div>
+                </div>
               </div>
 
               <div class="ml-4 flex flex-1 flex-col justify-between sm:ml-6">
@@ -37,7 +50,7 @@
                   <div>
                     <div class="flex justify-between">
                       <h3 class="text-sm">
-                        <router-link :to="`/product/${product.id}`" 
+                        <router-link :to="getCardUrl(product)" 
                                      class="font-medium text-gray-700 hover:text-gray-800">
                           {{ product.cardModel?.name || 'Carta' }}
                         </router-link>
@@ -132,7 +145,11 @@
           </div>
         </section>
       </form>
-    </div>
+      </div>
+    </main>
+    
+    <!-- Footer -->
+    <Footer />
   </div>
 </template>
 
@@ -140,11 +157,29 @@
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '../stores/cart'
+import Header from '../components/Header.vue'
+import Footer from '../components/Footer.vue'
 import { ChevronDownIcon } from '@heroicons/vue/16/solid'
 import { CheckIcon, ClockIcon, QuestionMarkCircleIcon, XMarkIcon } from '@heroicons/vue/20/solid'
 
 const router = useRouter()
 const cartStore = useCartStore()
+
+// Functions
+const getCardUrl = (product) => {
+  // Determina la categoria dal prodotto
+  const category = product.cardModel?.category?.slug || 'football'
+  
+  // Genera lo slug dal nome della carta
+  const slug = (product.cardModel?.name || 'carta')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '') // Rimuove caratteri speciali
+    .replace(/\s+/g, '-') // Sostituisce spazi con trattini
+    .replace(/-+/g, '-') // Rimuove trattini multipli
+    .replace(/^-+|-+$/g, '') // Rimuove trattini all'inizio e alla fine
+  
+  return `/${category}/${slug}`
+}
 
 // Computed properties
 const isEmpty = computed(() => cartStore.isEmpty)
@@ -181,7 +216,7 @@ const getProductImage = (product) => {
   if (product.images && product.images.length > 0) {
     return product.images[0]
   }
-  return '/images/placeholder-card.jpg'
+  return null
 }
 
 const getConditionLabel = (condition) => {

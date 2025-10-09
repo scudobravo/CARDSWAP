@@ -271,7 +271,8 @@ class HomeController extends Controller
             $suggestions = [];
 
             // Suggerimenti da modelli di carte
-            $cardSuggestions = CardModel::select('id', 'name', 'set_name', 'year')
+            $cardSuggestions = CardModel::with('category')
+                ->select('id', 'name', 'slug', 'set_name', 'year', 'category_id')
                 ->where('is_active', true)
                 ->where(function ($q) use ($query) {
                     $q->where('name', 'LIKE', "%{$query}%")
@@ -281,12 +282,26 @@ class HomeController extends Controller
                 ->get();
 
             foreach ($cardSuggestions as $card) {
+                // Mappa le categorie del database agli slug URL
+                $categoryMap = [
+                    'calcio' => 'football',
+                    'basketball' => 'basketball',
+                    'pokemon' => 'pokemon'
+                ];
+                
+                $categorySlug = $categoryMap[$card->category->slug] ?? $card->category->slug;
+                // Usa lo slug esistente o genera uno nuovo se mancante
+                $cardSlug = $card->slug;
+                if (!$cardSlug) {
+                    $cardSlug = $this->generateSlug($card->name);
+                }
+                
                 $suggestions[] = [
                     'type' => 'card',
                     'id' => $card->id,
                     'text' => $card->name,
                     'subtext' => $card->set_name . ' (' . $card->year . ')',
-                    'url' => "/cards/{$card->id}",
+                    'url' => "/{$categorySlug}/{$cardSlug}",
                 ];
             }
 
@@ -408,5 +423,24 @@ class HomeController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Generate SEO-friendly slug from card name
+     */
+    private function generateSlug($name)
+    {
+        // Rimuove caratteri speciali e converte in lowercase
+        $slug = strtolower($name);
+        // Sostituisce spazi e caratteri non alfanumerici con trattini
+        $slug = preg_replace('/[^a-z0-9\s-]/', '', $slug);
+        // Sostituisce spazi multipli con un singolo trattino
+        $slug = preg_replace('/\s+/', '-', $slug);
+        // Rimuove trattini multipli
+        $slug = preg_replace('/-+/', '-', $slug);
+        // Rimuove trattini all'inizio e alla fine
+        $slug = trim($slug, '-');
+        
+        return $slug;
     }
 }

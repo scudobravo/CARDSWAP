@@ -9,7 +9,7 @@
         <ol class="flex items-center space-x-2 text-sm font-gill-sans">
           <li><a href="/" class="text-primary hover:text-secondary">Home</a></li>
           <li class="text-gray-500">></li>
-          <li><a :href="`/category/${category}`" class="text-primary hover:text-secondary">{{ categoryName }}</a></li>
+          <li><a :href="`/category/${getCategorySlug()}`" class="text-primary hover:text-secondary">{{ getCategoryDisplayName() }}</a></li>
           <li class="text-gray-500">></li>
           <li class="text-gray-500">{{ subcategoryName }}</li>
         </ol>
@@ -207,7 +207,7 @@
                   <!-- Product Details -->
                   <div class="flex-1 p-4 flex flex-col justify-between">
                     <div>
-                      <router-link :to="`/product/${product.id}`" class="text-lg font-bold text-gray-900 hover:text-primary">
+                      <router-link :to="getCardUrl(product)" class="text-lg font-bold text-gray-900 hover:text-primary">
                         {{ product.name }}
                       </router-link>
                       
@@ -381,7 +381,16 @@ const subcategoryName = computed(() => {
 })
 
 const subcategoryIcon = computed(() => {
-  return `/images/icons/sottocategoria ${subcategory.value}.png`
+  // Mappa i valori delle sottocategorie ai nomi corretti dei file
+  const subcategoryMap = {
+    'singles': 'singles',
+    'sealed-packs': 'sealed packs',
+    'sealed-boxes': 'sealed boxes',
+    'lot': 'lot'
+  }
+  
+  const fileName = subcategoryMap[subcategory.value] || subcategory.value
+  return `/images/icons/sottocategoria ${fileName}.png`
 })
 
 // Sort options
@@ -495,6 +504,44 @@ const displayedProducts = computed(() => {
 })
 
 // Functions
+
+const getApiEndpoint = (category) => {
+  switch (category) {
+    case 'football':
+      return '/api/football/filters/products'
+    case 'basketball':
+      return '/api/basketball/filters/products'
+    case 'pokemon':
+      return '/api/pokemon/filters/products'
+    default:
+      return '/api/football/filters/products' // Fallback
+  }
+}
+
+const getCardUrl = (product) => {
+  // Genera lo slug dal nome della carta
+  const slug = product.name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '') // Rimuove caratteri speciali
+    .replace(/\s+/g, '-') // Sostituisce spazi con trattini
+    .replace(/-+/g, '-') // Rimuove trattini multipli
+    .replace(/^-+|-+$/g, '') // Rimuove trattini all'inizio e alla fine
+  
+  return `/${category.value}/${slug}`
+}
+
+const getCategorySlug = () => {
+  return category.value
+}
+
+const getCategoryDisplayName = () => {
+  const categoryMap = {
+    'football': 'Calcio',
+    'basketball': 'Basketball',
+    'pokemon': 'Pokemon'
+  }
+  return categoryMap[category.value] || 'Categoria'
+}
 
 const setSortOption = (option) => {
   currentSortOption.value = option
@@ -665,8 +712,14 @@ const loadProducts = async (reset = false) => {
       })
     }
 
-    // Chiamata API
-    const response = await fetch(`/api/football/filters/products?${params.toString()}`)
+    // Aggiungi filtro per sottocategoria
+    if (subcategory.value) {
+      params.append('subcategory', subcategory.value)
+    }
+
+    // Chiamata API dinamica in base alla categoria
+    const apiEndpoint = getApiEndpoint(category.value)
+    const response = await fetch(`${apiEndpoint}?${params.toString()}`)
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
@@ -708,8 +761,8 @@ const loadProducts = async (reset = false) => {
 // loadMoreProducts is now handled directly by the IntersectionObserver
 
 const goToProduct = (product) => {
-  // Naviga alla pagina del prodotto
-  window.location.href = `/product/${product.id}`
+  // Naviga alla pagina del prodotto usando URL SEO-friendly
+  window.location.href = getCardUrl(product)
 }
 
 const handleAddToCart = (product) => {

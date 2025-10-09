@@ -28,9 +28,9 @@ class WishlistController extends Controller
                 'cardModel.league'
             ])->where('user_id', Auth::id());
 
-            // Filtra per tipo se specificato
-            if ($request->has('type')) {
-                $query->where('type', $request->type);
+            // Filtra per condition_preference se specificato
+            if ($request->has('condition')) {
+                $query->where('condition_preference', $request->condition);
             }
 
             // Ordinamento
@@ -83,11 +83,9 @@ class WishlistController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'card_model_id' => 'required|exists:card_models,id',
-            'type' => 'required|in:want,have',
-            'notes' => 'nullable|string|max:500',
-            'priority' => 'nullable|in:low,medium,high',
             'max_price' => 'nullable|numeric|min:0.01',
-            'condition_preference' => 'nullable|in:mint,near_mint,excellent,good,light_played,played,poor',
+            'condition_preference' => 'nullable|in:any,mint,near_mint,excellent,good',
+            'notify_on_match' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -101,7 +99,6 @@ class WishlistController extends Controller
             // Verifica se l'elemento è già nella wishlist
             $existingItem = Wishlist::where('user_id', Auth::id())
                 ->where('card_model_id', $request->card_model_id)
-                ->where('type', $request->type)
                 ->first();
 
             if ($existingItem) {
@@ -111,8 +108,13 @@ class WishlistController extends Controller
                 ], 409);
             }
 
-            $wishlistData = $request->all();
-            $wishlistData['user_id'] = Auth::id();
+            $wishlistData = [
+                'user_id' => Auth::id(),
+                'card_model_id' => $request->card_model_id,
+                'max_price' => $request->max_price,
+                'condition_preference' => $request->condition_preference ?? 'any',
+                'notify_on_match' => $request->notify_on_match ?? true,
+            ];
 
             $wishlist = Wishlist::create($wishlistData);
 
@@ -220,18 +222,72 @@ class WishlistController extends Controller
     }
 
     /**
+     * Remove item from wishlist by card model ID
+     */
+    public function destroyByCardModel(Request $request, $cardModelId): JsonResponse
+    {
+        try {
+            $wishlist = Wishlist::where('user_id', Auth::id())
+                ->where('card_model_id', $cardModelId)
+                ->first();
+
+            if (!$wishlist) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Elemento non trovato nella wishlist'
+                ], 404);
+            }
+
+            $wishlist->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Elemento rimosso dalla wishlist'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Errore durante la rimozione dell\'elemento',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Clear all items from wishlist
+     */
+    public function clear(Request $request): JsonResponse
+    {
+        try {
+            $deletedCount = Wishlist::where('user_id', Auth::id())->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Wishlist svuotata con successo',
+                'deleted_count' => $deletedCount
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Errore durante lo svuotamento della wishlist',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Add multiple items to wishlist
      */
-    public function addMultiple(Request $request): JsonResponse
+public function addMultiple(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'items' => 'required|array|min:1',
             'items.*.card_model_id' => 'required|exists:card_models,id',
-            'items.*.type' => 'required|in:want,have',
-            'items.*.notes' => 'nullable|string|max:500',
-            'items.*.priority' => 'nullable|in:low,medium,high',
             'items.*.max_price' => 'nullable|numeric|min:0.01',
-            'items.*.condition_preference' => 'nullable|in:mint,near_mint,excellent,good,light_played,played,poor',
+            'items.*.condition_preference' => 'nullable|in:any,mint,near_mint,excellent,good',
+            'items.*.notify_on_match' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -251,7 +307,6 @@ class WishlistController extends Controller
                 // Verifica se l'elemento è già nella wishlist
                 $existingItem = Wishlist::where('user_id', Auth::id())
                     ->where('card_model_id', $itemData['card_model_id'])
-                    ->where('type', $itemData['type'])
                     ->first();
 
                 if ($existingItem) {
@@ -262,8 +317,14 @@ class WishlistController extends Controller
                     continue;
                 }
 
-                $itemData['user_id'] = Auth::id();
-                $wishlist = Wishlist::create($itemData);
+                $wishlistData = [
+                    'user_id' => Auth::id(),
+                    'card_model_id' => $itemData['card_model_id'],
+                    'max_price' => $itemData['max_price'] ?? null,
+                    'condition_preference' => $itemData['condition_preference'] ?? 'any',
+                    'notify_on_match' => $itemData['notify_on_match'] ?? true,
+                ];
+                $wishlist = Wishlist::create($wishlistData);
                 
                 $addedItems[] = $wishlist->load([
                     'cardModel.category',

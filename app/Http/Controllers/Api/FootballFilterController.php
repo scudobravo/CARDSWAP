@@ -512,6 +512,46 @@ class FootballFilterController extends Controller
             $query->where('card_models.grading_score', '<=', $filters['grading_score_max']);
         }
 
+        // Filtro per sottocategoria (singles, sealed-packs, sealed-boxes, lot)
+        if (isset($filters['subcategory']) && !empty($filters['subcategory'])) {
+            $subcategory = $filters['subcategory'];
+            
+            switch ($subcategory) {
+                case 'singles':
+                    // Carte singole: quantity = 1, non sealed
+                    $query->whereHas('cardListings', function($q) {
+                        $q->where('quantity', 1)
+                          ->where('is_limited', false);
+                    });
+                    break;
+                    
+                case 'sealed-packs':
+                    // Buste sigillate: quantity > 1, sealed
+                    $query->whereHas('cardListings', function($q) {
+                        $q->where('quantity', '>', 1)
+                          ->where('quantity', '<=', 20) // Range ragionevole per buste
+                          ->where('is_limited', true);
+                    });
+                    break;
+                    
+                case 'sealed-boxes':
+                    // Scatole sigillate: quantity molto alta, sealed
+                    $query->whereHas('cardListings', function($q) {
+                        $q->where('quantity', '>', 20) // Molte carte = scatola
+                          ->where('is_limited', true);
+                    });
+                    break;
+                    
+                case 'lot':
+                    // Lotti: quantity > 1, non sealed
+                    $query->whereHas('cardListings', function($q) {
+                        $q->where('quantity', '>', 1)
+                          ->where('is_limited', false);
+                    });
+                    break;
+            }
+        }
+
         if (isset($filters['grading_companies']) && is_array($filters['grading_companies']) && !empty($filters['grading_companies'])) {
             $query->whereIn('card_models.grading_company_id', $filters['grading_companies']);
         }

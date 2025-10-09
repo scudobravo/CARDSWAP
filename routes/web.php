@@ -98,3 +98,9 @@ Route::get('/debug-tokens', function () {
         'message' => 'Usa uno di questi token con /debug-auth?token=TOKEN'
     ]);
 });
+
+// SPA Routes - Catch all routes for Vue.js frontend
+// This must be at the end to catch all frontend routes
+Route::get('/{any}', function () {
+    return view('welcome');
+})->where('any', '.*');

@@ -115,4 +115,16 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Email Address
+    |--------------------------------------------------------------------------
+    |
+    | This email address is used for receiving reports and administrative
+    | notifications from the application.
+    |
+    */
+
+    'admin_email' => env('MAIL_ADMIN_EMAIL', 'info@cardswaptcg.com'),
+
 ];

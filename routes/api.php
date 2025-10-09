@@ -279,6 +279,17 @@ Route::prefix('images')->group(function () {
     Route::get('/info', [ImageController::class, 'info']);
 });
 
+// Rotte per carrello (pubbliche per permettere carrello anche a utenti non autenticati)
+Route::prefix('cart')->group(function () {
+    Route::get('/', [CartController::class, 'index']);
+    Route::post('/add', [CartController::class, 'addItem']);
+    Route::put('/update-quantity', [CartController::class, 'updateQuantity']);
+    Route::delete('/remove', [CartController::class, 'removeItem']);
+    Route::post('/shipping-costs', [CartController::class, 'getShippingCosts']);
+    Route::post('/validate', [CartController::class, 'validate']);
+    Route::delete('/clear', [CartController::class, 'clear']);
+});
+
 // Rotte per homepage e navigazione (pubbliche)
 Route::prefix('home')->group(function () {
     Route::get('/', [HomeController::class, 'index']);
@@ -338,22 +349,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [WishlistController::class, 'store']);
         Route::put('/{wishlist}', [WishlistController::class, 'update']);
         Route::delete('/{wishlist}', [WishlistController::class, 'destroy']);
+        Route::delete('/card/{cardModelId}', [WishlistController::class, 'destroyByCardModel']);
+        Route::delete('/clear', [WishlistController::class, 'clear']);
         Route::post('/multiple', [WishlistController::class, 'addMultiple']);
         Route::get('/statistics', [WishlistController::class, 'statistics']);
         Route::get('/search', [WishlistController::class, 'search']);
         Route::get('/export', [WishlistController::class, 'export']);
     });
 
-    // Rotte per carrello (protette per utenti autenticati)
-    Route::prefix('cart')->group(function () {
-        Route::get('/', [CartController::class, 'index']);
-        Route::post('/add', [CartController::class, 'addItem']);
-        Route::put('/update-quantity', [CartController::class, 'updateQuantity']);
-        Route::delete('/remove', [CartController::class, 'removeItem']);
-        Route::post('/shipping-costs', [CartController::class, 'getShippingCosts']);
-        Route::post('/validate', [CartController::class, 'validate']);
-        Route::delete('/clear', [CartController::class, 'clear']);
-    });
 
     // Rotte per gestione utenti
     Route::prefix('user')->group(function () {
@@ -412,12 +415,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('orders')->group(function () {
         Route::get('/', [OrderController::class, 'index']);
         Route::get('/statistics', [OrderController::class, 'statistics']);
-        Route::get('/{order}', [OrderController::class, 'show']);
-        Route::patch('/{order}/status', [OrderController::class, 'updateStatus']);
-        Route::patch('/{order}/cancel', [OrderController::class, 'cancel']);
+        Route::get('/seller', [OrderController::class, 'getSellerOrders']);
+        Route::get('/seller/statistics', [OrderController::class, 'getSellerStatistics']);
+        Route::get('/{id}', [OrderController::class, 'show']);
+        Route::patch('/{id}/status', [OrderController::class, 'updateStatus']);
         // Tracking
-        Route::get('/{order}/tracking', [TrackingController::class, 'history']);
-        Route::post('/{order}/tracking/events', [TrackingController::class, 'addEvent']);
+        Route::get('/{id}/tracking', [TrackingController::class, 'history']);
+        Route::post('/{id}/tracking/events', [TrackingController::class, 'addEvent']);
+    });
+
+    // Rotte per statistiche vendite
+    Route::prefix('sales')->group(function () {
+        Route::get('/statistics', [App\Http\Controllers\Api\SalesStatisticsController::class, 'getSalesStatistics']);
+        Route::get('/feedback', [App\Http\Controllers\Api\SalesFeedbackController::class, 'getSellerFeedbacks']);
+        Route::get('/feedback/statistics', [App\Http\Controllers\Api\SalesFeedbackController::class, 'getFeedbackStatistics']);
+        Route::post('/feedback/{feedback}/response', [App\Http\Controllers\Api\SalesFeedbackController::class, 'respondToFeedback']);
     });
 
     // Conversazioni e messaggi ordine (non realtime)
@@ -479,6 +491,9 @@ if (config('app.env') === 'local') {
 Route::get('/category/categories', [App\Http\Controllers\Api\CardController::class, 'getCategories']);
 Route::get('/category/cards', [App\Http\Controllers\Api\CardController::class, 'getCardsByCategory']);
 Route::get('/card/{id}', [App\Http\Controllers\Api\CardController::class, 'getCardDetails']);
+Route::get('/card/{category}/{slug}', [App\Http\Controllers\Api\CardController::class, 'getCardDetailsBySlug']);
+Route::get('/card/{id}/related', [App\Http\Controllers\Api\CardController::class, 'getRelatedProducts']);
+Route::get('/card/{category}/{slug}/related', [App\Http\Controllers\Api\CardController::class, 'getRelatedProductsBySlug']);
 
 // Report API routes
 Route::post('/reports', [App\Http\Controllers\Api\ReportController::class, 'submitReport']);
@@ -508,13 +523,6 @@ Route::middleware('auth:sanctum')->prefix('user')->group(function () {
     Route::post('/addresses/{id}/set-default', [UserAddressController::class, 'setDefault']);
 });
 
-// Rotte per ordini (protette)
-Route::middleware('auth:sanctum')->prefix('orders')->group(function () {
-    Route::get('/', [OrderController::class, 'index']);
-    Route::get('/seller', [OrderController::class, 'getSellerOrders']);
-    Route::get('/{id}', [OrderController::class, 'show']);
-    Route::put('/{id}/status', [OrderController::class, 'updateStatus']);
-});
 
 // Shippo shipping routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -529,3 +537,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // Shippo webhook (no auth required)
 Route::post('/webhooks/shippo', [App\Http\Controllers\Api\ShippoWebhookController::class, 'handleWebhook']);
+
+// Contact form (no auth required)
+Route::post('/contact', [App\Http\Controllers\Api\ContactController::class, 'sendMessage']);

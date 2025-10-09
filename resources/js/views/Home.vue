@@ -31,7 +31,9 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <ProductCarousel 
           title="Top Player" 
-          :products="topPlayers" 
+          :products="topPlayers"
+          category="football"
+          see-all-url="/category/football"
         />
       </div>
     </section>
@@ -41,7 +43,9 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <ProductCarousel 
           title="Top Pokemon" 
-          :products="topPokemon" 
+          :products="topPokemon"
+          category="pokemon"
+          see-all-url="/category/pokemon"
         />
       </div>
     </section>
@@ -54,7 +58,9 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <ProductCarousel 
           title="Ultime uscite" 
-          :products="latestReleases" 
+          :products="latestReleases"
+          category="basketball"
+          see-all-url="/category/basketball"
         />
       </div>
     </section>

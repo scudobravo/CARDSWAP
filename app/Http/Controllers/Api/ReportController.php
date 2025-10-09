@@ -90,7 +90,7 @@ class ReportController extends Controller
         ];
 
         // Send to admin email
-        $adminEmail = config('mail.admin_email', 'admin@cardswap.com');
+        $adminEmail = config('mail.admin_email', 'info@cardswaptcg.com');
         
         Mail::send('emails.report', $emailData, function ($message) use ($adminEmail, $reportData) {
             $message->to($adminEmail)

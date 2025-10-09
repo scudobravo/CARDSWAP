@@ -10,7 +10,7 @@
           <ol class="flex items-center space-x-2">
             <li>
               <router-link to="/" class="text-gray-500 hover:text-primary transition-colors font-gill-sans text-sm">
-                All Products
+                Home
               </router-link>
             </li>
             <li>
@@ -19,8 +19,8 @@
               </svg>
             </li>
             <li>
-              <router-link to="/categories" class="text-gray-500 hover:text-primary transition-colors font-gill-sans text-sm">
-                Category
+              <router-link :to="`/category/${getCategorySlug()}`" class="text-gray-500 hover:text-primary transition-colors font-gill-sans text-sm">
+                {{ getCategoryName() }}
               </router-link>
             </li>
             <li>
@@ -29,15 +29,7 @@
               </svg>
             </li>
             <li>
-              <span class="text-gray-500 font-gill-sans text-sm">Subcategory</span>
-            </li>
-            <li>
-              <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-              </svg>
-            </li>
-            <li>
-              <span class="text-gray-500 font-gill-sans text-sm">Products</span>
+              <span class="text-gray-500 font-gill-sans text-sm">{{ product.name }}</span>
             </li>
           </ol>
         </nav>
@@ -77,7 +69,21 @@
         <div class="lg:col-span-2">
           <div class="space-y-4">
             <!-- Main Image -->
-            <div class="aspect-[3/4] bg-gray-200 rounded-lg flex items-center justify-center">
+            <div class="relative aspect-[3/4] bg-gray-200 rounded-lg flex items-center justify-center">
+              <!-- Wishlist Button -->
+              <button 
+                @click="toggleWishlist"
+                :disabled="isTogglingWishlist"
+                class="absolute top-4 right-4 z-10 p-2 rounded-full transition-all duration-200 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                :class="[
+                  isInWishlist ? 'bg-secondary text-primary' : 'bg-white/80 text-gray-600 hover:bg-secondary hover:text-primary'
+                ]"
+              >
+                <svg class="w-6 h-6" :fill="isInWishlist ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+              </button>
+              
               <div v-if="product.image_url" class="w-full h-full bg-cover bg-center rounded-lg" :style="{ backgroundImage: `url(${product.image_url})` }"></div>
               <div v-else class="text-center text-gray-500">
                 <svg class="w-24 h-24 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -195,9 +201,26 @@
             </div>
             
             <!-- Add to Cart Button -->
-            <button class="w-full bg-primary text-white py-3 px-6 rounded-lg font-futura-bold text-lg hover:bg-primary/90 transition-colors">
-              ADD TO CART
+            <button 
+              @click="addToCart"
+              :disabled="isAddingToCart || !listing"
+              class="w-full bg-primary text-white py-3 px-6 rounded-lg font-futura-bold text-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span v-if="isAddingToCart">Aggiungendo...</span>
+              <span v-else>ADD TO CART</span>
             </button>
+            
+            <!-- Add to Cart Message -->
+            <div v-if="addToCartMessage" class="mt-3 text-center">
+              <p 
+                :class="[
+                  'text-sm font-gill-sans',
+                  addToCartMessage.includes('aggiunto') ? 'text-green-600' : 'text-red-600'
+                ]"
+              >
+                {{ addToCartMessage }}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -250,7 +273,10 @@
           </div>
           
           <div class="flex space-x-3">
-            <button class="bg-primary text-white px-4 py-2 rounded-lg font-futura-bold text-sm hover:bg-primary/90 transition-colors">
+            <button 
+              @click="showChatModal = true"
+              class="bg-primary text-white px-4 py-2 rounded-lg font-futura-bold text-sm hover:bg-primary/90 transition-colors"
+            >
               Chat
             </button>
             <button 
@@ -271,6 +297,9 @@
           :category="product.category"
           :section="'related'"
           :use-dynamic-data="false"
+          :loading="relatedProductsLoading"
+          :error="relatedProductsError"
+          :hide-see-all="true"
         />
       </div>
       </div>
@@ -286,24 +315,52 @@
       :seller-name="sellerName"
       @close="showReportPopup = false"
     />
+
+    <!-- Chat Modal -->
+    <VendorChatModal 
+      :is-open="showChatModal"
+      :product-id="product.id || 'temp'"
+      :vendor-id="vendorId"
+      :vendor-name="vendorName"
+      :product-name="product.name"
+      @close="showChatModal = false"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useCartStore } from '../stores/cart.js'
+import { useWishlistStore } from '../stores/wishlist.js'
 import Header from '../components/Header.vue'
 import Footer from '../components/Footer.vue'
 import ProductCarousel from '../components/ProductCarousel.vue'
 import ReportPopup from '../components/ReportPopup.vue'
+import VendorChatModal from '../components/VendorChatModal.vue'
 import BarChart from '../components/BarChart.vue'
 import cardService from '../services/cardService.js'
 
 const route = useRoute()
+const cartStore = useCartStore()
+const wishlistStore = useWishlistStore()
+
+// Determina se stiamo usando ID o slug
+const isSlugRoute = computed(() => {
+  return route.name === 'card.detail'
+})
+
+const productId = computed(() => {
+  if (isSlugRoute.value) {
+    // Per le route slug, dobbiamo cercare l'ID basandoci sullo slug
+    return null // Sarà risolto tramite API
+  }
+  return route.params.id
+})
 
 // Product data
 const product = ref({
-  id: route.params.id,
+  id: productId.value,
   name: 'Player',
   team: 'Team Name',
   set_name: 'Set Name',
@@ -328,53 +385,106 @@ const error = ref(null)
 const showReportPopup = ref(false)
 const sellerName = ref('Nome Venditore')
 
+// Wishlist
+const isTogglingWishlist = ref(false)
+
+// Computed per controllare se l'articolo è nella wishlist
+const isInWishlist = computed(() => {
+  if (!product.value?.id) return false
+  return wishlistStore.isInWishlist(product.value.id)
+})
+
+// Chat modal
+const showChatModal = ref(false)
+const vendorId = ref(1) // ID del venditore (da ottenere dai dati del prodotto)
+const vendorName = ref('Nome Venditore')
+
+// Cart functionality
+const isAddingToCart = ref(false)
+const addToCartMessage = ref('')
+const listing = ref(null) // Dati del listing per il carrello
+
 // Related products
-const relatedProducts = ref([
-  {
-    id: 1,
-    name: 'Related Player 1',
-    team: 'Team A',
-    type: 'Calcio',
-    price: '€120.00',
-    rating: '4.8',
-    image_url: null
-  },
-  {
-    id: 2,
-    name: 'Related Player 2',
-    team: 'Team B',
-    type: 'Calcio',
-    price: '€85.00',
-    rating: '4.6',
-    image_url: null
-  },
-  {
-    id: 3,
-    name: 'Related Player 3',
-    team: 'Team C',
-    type: 'Calcio',
-    price: '€150.00',
-    rating: '4.9',
-    image_url: null
-  },
-  {
-    id: 4,
-    name: 'Related Player 4',
-    team: 'Team D',
-    type: 'Calcio',
-    price: '€75.00',
-    rating: '4.5',
-    image_url: null
-  }
-])
+const relatedProducts = ref([])
+const relatedProductsLoading = ref(false)
+const relatedProductsError = ref(null)
 
 // Methods
+const addToCart = async () => {
+  if (!listing.value) {
+    addToCartMessage.value = 'Dati del prodotto non disponibili'
+    return
+  }
+
+  isAddingToCart.value = true
+  addToCartMessage.value = ''
+
+  try {
+    const result = await cartStore.addToCart(listing.value, 1)
+    
+    if (result.success) {
+      addToCartMessage.value = 'Prodotto aggiunto al carrello!'
+      // Reset message after 3 seconds
+      setTimeout(() => {
+        addToCartMessage.value = ''
+      }, 3000)
+    } else {
+      addToCartMessage.value = result.message || 'Errore nell\'aggiunta al carrello'
+    }
+  } catch (error) {
+    console.error('Error adding to cart:', error)
+    addToCartMessage.value = 'Errore nell\'aggiunta al carrello'
+  } finally {
+    isAddingToCart.value = false
+  }
+}
+
+// Toggle wishlist
+const toggleWishlist = async () => {
+  if (!product.value?.id) {
+    console.error('Nessun ID prodotto disponibile')
+    return
+  }
+
+  isTogglingWishlist.value = true
+
+  try {
+    if (isInWishlist.value) {
+      // Rimuovi dalla wishlist
+      const result = await wishlistStore.removeFromWishlist(product.value.id)
+      if (result.success) {
+        console.log('Rimosso dalla wishlist')
+      }
+    } else {
+      // Aggiungi alla wishlist
+      const result = await wishlistStore.addToWishlist(product.value.id)
+      if (result.success) {
+        console.log('Aggiunto alla wishlist')
+      }
+    }
+  } catch (error) {
+    console.error('Errore nel toggle wishlist:', error)
+  } finally {
+    isTogglingWishlist.value = false
+  }
+}
+
 const loadProductDetails = async () => {
   loading.value = true
   error.value = null
 
   try {
-    const response = await cardService.getCardDetails(route.params.id)
+    let response
+    
+    if (isSlugRoute.value) {
+      // Per route slug, usiamo categoria e slug
+      const category = route.params.category
+      const cardSlug = route.params.cardSlug
+      response = await cardService.getCardDetailsBySlug(category, cardSlug)
+    } else {
+      // Per route ID tradizionale
+      response = await cardService.getCardDetails(route.params.id)
+    }
     
     if (response.success) {
       // Merge database data with fallback data, preserving fallback values for missing attributes
@@ -388,6 +498,45 @@ const loadProductDetails = async () => {
         is_rookie: true,
         serial_number: '10'
       }
+      
+      // Create mock listing data for cart functionality
+      // TODO: In futuro, questo dovrebbe essere ottenuto da un'API reale
+      listing.value = {
+        id: `listing_${product.value.id}`,
+        card_model_id: product.value.id,
+        seller_id: 1, // Mock seller ID
+        price: parseFloat(product.value.price?.replace('€', '') || '95'),
+        quantity: 1,
+        condition: product.value.condition || 'LIGHT PLAYED',
+        description: product.value.description || 'Carta in ottime condizioni',
+        images: product.value.image_url ? [product.value.image_url] : [],
+        available: true,
+        seller: {
+          id: 1,
+          name: 'Venditore Mock',
+          email: 'vendor@example.com'
+        },
+        card_model: {
+          id: product.value.id,
+          name: product.value.name,
+          category: product.value.category
+        },
+        shipping_zones: []
+      }
+      
+      // Update vendor info for chat
+      vendorId.value = listing.value.seller_id
+      vendorName.value = listing.value.seller.name
+      sellerName.value = listing.value.seller.name
+      
+      // Load related products after main product is loaded
+      if (isSlugRoute.value) {
+        // Per route slug, carica direttamente usando categoria e slug
+        await loadRelatedProducts(null) // Passiamo null perché useremo la route
+      } else {
+        await loadRelatedProducts(product.value.id)
+      }
+      
     } else {
       error.value = response.error
       console.error('Error loading product:', response.error)
@@ -398,9 +547,114 @@ const loadProductDetails = async () => {
   } finally {
     loading.value = false
   }
+  
+  // Se non abbiamo dati del listing, crea un mock per il testing
+  if (!listing.value && product.value.id) {
+    listing.value = {
+      id: `listing_${product.value.id}`,
+      card_model_id: product.value.id,
+      seller_id: 1,
+      price: parseFloat(product.value.price?.replace('€', '') || '95'),
+      quantity: 1,
+      condition: product.value.condition || 'LIGHT PLAYED',
+      description: product.value.description || 'Carta in ottime condizioni',
+      images: product.value.image_url ? [product.value.image_url] : [],
+      available: true,
+      seller: {
+        id: 1,
+        name: 'Venditore Mock',
+        email: 'vendor@example.com'
+      },
+      card_model: {
+        id: product.value.id,
+        name: product.value.name,
+        category: product.value.category
+      },
+      shipping_zones: []
+    }
+    
+    // Update vendor info
+    vendorId.value = listing.value.seller_id
+    vendorName.value = listing.value.seller.name
+    sellerName.value = listing.value.seller.name
+    
+    // Load related products if we have a product ID
+    if (isSlugRoute.value) {
+      await loadRelatedProducts(null) // Per route slug, useremo categoria e slug
+    } else if (product.value.id) {
+      await loadRelatedProducts(product.value.id)
+    }
+  }
 }
 
-onMounted(() => {
+// Load related products
+const loadRelatedProducts = async (cardId) => {
+  relatedProductsLoading.value = true
+  relatedProductsError.value = null
+  
+  try {
+    let response
+    
+    if (isSlugRoute.value) {
+      // Per route slug, usiamo categoria e slug
+      const category = route.params.category
+      const cardSlug = route.params.cardSlug
+      console.log('Loading related products for slug route:', category, cardSlug)
+      response = await cardService.getRelatedProductsBySlug(category, cardSlug, 8)
+    } else {
+      // Per route ID tradizionale
+      if (!cardId || cardId === null || cardId === 'temp') {
+        console.log('Skipping related products load - invalid cardId:', cardId)
+        return
+      }
+      console.log('Loading related products for ID route:', cardId)
+      response = await cardService.getRelatedProducts(cardId, 8)
+    }
+    
+    if (response.success) {
+      relatedProducts.value = response.data
+      console.log('Related products loaded:', response.data.length, 'products')
+      console.log('Criteria used:', response.criteria)
+    } else {
+      relatedProductsError.value = response.error
+      console.error('Error loading related products:', response.error)
+    }
+  } catch (error) {
+    relatedProductsError.value = 'Errore nel caricamento dei prodotti correlati'
+    console.error('Error loading related products:', error)
+  } finally {
+    relatedProductsLoading.value = false
+  }
+}
+
+const getCategorySlug = () => {
+  if (isSlugRoute.value) {
+    return route.params.category
+  }
+  // Per route ID, determina dalla categoria del prodotto
+  const categoryMap = {
+    'Calcio': 'football',
+    'Basketball': 'basketball',
+    'Pokemon': 'pokemon'
+  }
+  return categoryMap[product.value.category] || 'football'
+}
+
+const getCategoryName = () => {
+  if (isSlugRoute.value) {
+    const categoryMap = {
+      'football': 'Calcio',
+      'basketball': 'Basketball', 
+      'pokemon': 'Pokemon'
+    }
+    return categoryMap[route.params.category] || 'Categoria'
+  }
+  return product.value.category || 'Categoria'
+}
+
+onMounted(async () => {
+  // Inizializza il wishlist store
+  await wishlistStore.initialize()
   loadProductDetails()
 })
 </script>

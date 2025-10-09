@@ -55,6 +55,65 @@ class CardService {
   }
 
   /**
+   * Get single card details by category and slug
+   */
+  async getCardDetailsBySlug(category, cardSlug) {
+    try {
+      const response = await this.axios.get(`/card/${category}/${cardSlug}`)
+      return response.data
+    } catch (error) {
+      console.error('Error fetching card details by slug:', error)
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Errore nel recupero dei dettagli della carta',
+        data: null
+      }
+    }
+  }
+
+  /**
+   * Get related products for a specific card
+   */
+  async getRelatedProducts(cardId, limit = 8) {
+    try {
+      const response = await this.axios.get(`/card/${cardId}/related`, {
+        params: {
+          limit
+        }
+      })
+      return response.data
+    } catch (error) {
+      console.error('Error fetching related products:', error)
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Errore nel recupero dei prodotti correlati',
+        data: []
+      }
+    }
+  }
+
+  /**
+   * Get related products for a card by category and slug
+   */
+  async getRelatedProductsBySlug(category, slug, limit = 8) {
+    try {
+      const response = await this.axios.get(`/card/${category}/${slug}/related`, {
+        params: {
+          limit
+        }
+      })
+      return response.data
+    } catch (error) {
+      console.error('Error fetching related products by slug:', error)
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Errore nel recupero dei prodotti correlati',
+        data: []
+      }
+    }
+  }
+
+  /**
    * Get all available categories
    */
   async getCategories() {

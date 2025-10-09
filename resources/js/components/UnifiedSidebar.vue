@@ -97,12 +97,12 @@
               <router-link 
                 to="/purchases/orders" 
                 :class="[
-                  $route.path.startsWith('/purchases') ? 'bg-gray-50 text-primary' : 'text-gray-700 hover:bg-gray-50 hover:text-primary',
+                  $route.path === '/purchases/orders' || $route.path.startsWith('/purchases/orders/') ? 'bg-gray-50 text-primary' : 'text-gray-700 hover:bg-gray-50 hover:text-primary',
                   'group flex gap-x-3 rounded-md p-2 text-sm/6 font-gill-sans-semibold'
                 ]"
               >
                 <ShoppingBagIcon :class="[
-                  $route.path.startsWith('/purchases') ? 'text-primary' : 'text-gray-400 group-hover:text-primary',
+                  $route.path === '/purchases/orders' || $route.path.startsWith('/purchases/orders/') ? 'text-primary' : 'text-gray-400 group-hover:text-primary',
                   'size-6 shrink-0'
                 ]" aria-hidden="true" />
                 I miei Ordini

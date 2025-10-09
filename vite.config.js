@@ -22,4 +22,7 @@ export default defineConfig({
             '@': '/resources/js',
         },
     },
+    define: {
+        'import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY': JSON.stringify(process.env.STRIPE_KEY || 'pk_test_51S43mAARmgIGJlKNpNChJnLQDrRhwf2XPjJDPzo3RgV2EdMzM4fYtwAqwRTON338K85Wr7q6vVjskH1b5pUD0QxS00nPKdCkgj'),
+    },
 });

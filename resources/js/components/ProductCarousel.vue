@@ -3,8 +3,8 @@
     <!-- Section header -->
     <div class="mb-4">
       <h2 class="text-3xl font-futura-bold text-primary">{{ title }}</h2>
-      <div class="mt-0 text-right">
-        <a href="#" class="text-primary hover:text-secondary transition-colors font-gill-sans-semibold text-sm">
+      <div v-if="!hideSeeAll" class="mt-0 text-right">
+        <a :href="seeAllUrl || '#'" class="text-primary hover:text-secondary transition-colors font-gill-sans-semibold text-sm">
           {{ seeAllText }}
           <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -114,6 +114,14 @@ const props = defineProps({
   useDynamicData: {
     type: Boolean,
     default: false
+  },
+  hideSeeAll: {
+    type: Boolean,
+    default: false
+  },
+  seeAllUrl: {
+    type: String,
+    default: null
   }
 })
 
@@ -217,9 +225,30 @@ const scrollRight = () => {
 }
 
 const goToProduct = (product) => {
-  // Naviga al dettaglio del prodotto
-  console.log('Navigating to product:', product.id)
-  router.push({ name: 'product.detail', params: { id: product.id } })
+  // Mappa i tipi italiani ai tipi URL
+  const typeMap = {
+    'Calcio': 'football',
+    'Basketball': 'basketball', 
+    'Pokemon': 'pokemon'
+  }
+  
+  // Determina la categoria
+  let category = props.category || 'football'
+  if (product.type && typeMap[product.type]) {
+    category = typeMap[product.type]
+  }
+  
+  // Genera lo slug dal nome
+  const slug = product.name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '') // Rimuove caratteri speciali
+    .replace(/\s+/g, '-') // Sostituisce spazi con trattini
+    .replace(/-+/g, '-') // Rimuove trattini multipli
+    .replace(/^-+|-+$/g, '') // Rimuove trattini all'inizio e alla fine
+  
+  const url = `/${category}/${slug}`
+  console.log('Navigating to product:', url)
+  window.location.href = url
 }
 
 const updateDimensions = () => {

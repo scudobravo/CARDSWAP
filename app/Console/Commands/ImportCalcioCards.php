@@ -329,7 +329,7 @@ class ImportCalcioCards extends Command
         $isRookie = !empty(trim($row['ROOKIE'] ?? ''));
         $teamName = trim($row['Team'] ?? '');
         $rarity = trim($row['Rarity'] ?? 'Base card');
-        $brand = trim($row['BRAND'] ?? '');
+        $brand = strtoupper(trim($row['BRAND'] ?? '')); // Normalizza in uppercase
         $setName = trim($row['SET'] ?? '');
         $year = trim($row['YEAR'] ?? '');
         

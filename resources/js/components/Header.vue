@@ -15,17 +15,25 @@
           <!-- Icone a destra: carrello, cuore, chat, login/signup -->
           <div class="flex items-center space-x-6">
             <!-- Carrello -->
-            <router-link to="/cart" class="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+            <router-link to="/cart" class="relative flex items-center space-x-2 hover:opacity-80 transition-opacity">
               <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
               </svg>
+              <!-- Badge contatore carrello -->
+              <div v-if="cartItemsCount > 0" class="absolute -top-2 -right-2 bg-secondary text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
+                {{ cartItemsCount }}
+              </div>
             </router-link>
             
             <!-- Cuore (wishlist) -->
-            <router-link to="/wishlist" class="hover:opacity-80 transition-opacity">
+            <router-link to="/purchases/wishlist" class="relative hover:opacity-80 transition-opacity">
               <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
+              <!-- Badge contatore wishlist -->
+              <div v-if="wishlistItemsCount > 0" class="absolute -top-2 -right-2 bg-secondary text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
+                {{ wishlistItemsCount }}
+              </div>
             </router-link>
             
             
@@ -72,7 +80,7 @@
     </div>
 
     <!-- Secondary section - Bianco con pulsante CATEGORY e campo ricerca -->
-    <div class="bg-white border-b border-gray-200">
+    <div v-if="!hideSecondaryBar" class="bg-white border-b border-gray-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center h-16 space-x-4">
           <!-- Pulsante CATEGORY -->
@@ -80,18 +88,9 @@
             CATEGORY
           </router-link>
           
-          <!-- Campo ricerca con icona lente d'ingrandimento -->
+          <!-- Campo ricerca con autocomplete -->
           <div class="flex-1 relative">
-            <div class="relative">
-              <svg class="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input 
-                type="text" 
-                placeholder="Cerca su CardSwap" 
-                class="w-full bg-gray-50 text-gray-900 placeholder-gray-400 rounded-full pl-12 pr-4 py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent font-gill-sans text-sm"
-              />
-            </div>
+            <SearchAutocomplete />
           </div>
         </div>
       </div>
@@ -103,22 +102,41 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth.js'
+import { useCartStore } from '../stores/cart.js'
+import { useWishlistStore } from '../stores/wishlist.js'
+import SearchAutocomplete from './SearchAutocomplete.vue'
 
-// Usa il Pinia store per l'autenticazione
+// Usa i Pinia store
 const authStore = useAuthStore()
+const cartStore = useCartStore()
+const wishlistStore = useWishlistStore()
 const route = useRoute()
 const router = useRouter()
 
 // Computed per determinare se siamo nella dashboard
 const isInDashboard = computed(() => route.path === '/dashboard')
 
+// Computed per determinare se nascondere la barra secondaria (pagine di solo testo e contatti)
+const hideSecondaryBar = computed(() => {
+  const textOnlyPages = ['/privacy-policy', '/terms-and-conditions', '/cookie-policy', '/contact']
+  return textOnlyPages.includes(route.path)
+})
+
 // Computed per lo stato di login e nome utente
 const isLoggedIn = computed(() => authStore.isAuthenticated)
 const userName = computed(() => authStore.user?.name || authStore.user?.first_name || 'Guest')
 
+// Computed per i contatori
+const cartItemsCount = computed(() => cartStore.totalItems)
+const wishlistItemsCount = computed(() => wishlistStore.totalItems)
+
 // Carica i dati utente se c'è un token ma non l'utente
 onMounted(async () => {
   console.log('Header mounted')
+  
+  // Inizializza i store
+  await cartStore.initialize()
+  await wishlistStore.initialize()
   
   // Se c'è un token ma non c'è l'utente, caricalo
   if (authStore.token && !authStore.user) {

@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderFeedback extends Model
 {
+    protected $table = 'order_feedbacks';
+    
     protected $fillable = [
         'order_id',
         'buyer_id',
@@ -15,12 +17,15 @@ class OrderFeedback extends Model
         'comment',
         'is_public',
         'is_hidden',
+        'seller_response',
+        'seller_response_at',
     ];
 
     protected $casts = [
         'rating' => 'integer',
         'is_public' => 'boolean',
         'is_hidden' => 'boolean',
+        'seller_response_at' => 'datetime',
     ];
 
     public function order(): BelongsTo

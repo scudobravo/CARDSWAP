@@ -8,6 +8,8 @@ use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
 {
@@ -42,7 +44,7 @@ class OrderController extends Controller
     /**
      * Ottieni i dettagli di un ordine specifico
      */
-    public function show(int $id): JsonResponse
+    public function show($id): JsonResponse
     {
         try {
             $user = Auth::user();
@@ -98,15 +100,30 @@ class OrderController extends Controller
     /**
      * Ottieni gli ordini come venditore
      */
-    public function getSellerOrders(): JsonResponse
+    public function getSellerOrders(Request $request): JsonResponse
     {
         try {
             $user = Auth::user();
             
-            $orders = Order::where('seller_id', $user->id)
-                ->with(['orderItems.cardListing.cardModel', 'buyer'])
-                ->orderBy('created_at', 'desc')
-                ->get();
+            $query = Order::where('seller_id', $user->id)
+                ->with(['orderItems.cardListing.cardModel', 'buyer']);
+
+            // Filtri
+            if ($request->has('status') && !empty($request->status)) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->has('date_from') && !empty($request->date_from)) {
+                $query->whereDate('created_at', '>=', $request->date_from);
+            }
+
+            if ($request->has('date_to') && !empty($request->date_to)) {
+                $query->whereDate('created_at', '<=', $request->date_to);
+            }
+
+            // Paginazione
+            $perPage = $request->get('per_page', 15);
+            $orders = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
             return response()->json([
                 'success' => true,
@@ -126,7 +143,7 @@ class OrderController extends Controller
     /**
      * Aggiorna lo stato di un ordine (solo per venditori)
      */
-    public function updateStatus(Request $request, int $id): JsonResponse
+    public function updateStatus(Request $request, $id): JsonResponse
     {
         try {
             $user = Auth::user();
@@ -140,7 +157,7 @@ class OrderController extends Controller
                 ], 404);
             }
 
-            $validator = \Validator::make($request->all(), [
+            $validator = Validator::make($request->all(), [
                 'status' => 'required|string|in:pending,shipped,delivered,cancelled',
                 'tracking_number' => 'nullable|string|max:255',
                 'notes' => 'nullable|string|max:1000'
@@ -178,6 +195,9 @@ class OrderController extends Controller
 
             $order->update($updateData);
 
+            // Invia notifica all'acquirente
+            $this->sendOrderStatusNotification($order, $request->input('status'));
+
             return response()->json([
                 'success' => true,
                 'order' => $order,
@@ -191,5 +211,97 @@ class OrderController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Invia notifica per aggiornamento stato ordine
+     */
+    private function sendOrderStatusNotification(Order $order, string $status): void
+    {
+        try {
+            $buyer = $order->buyer;
+            if (!$buyer) return;
+
+            $statusMessages = [
+                'confirmed' => 'Il tuo ordine #' . $order->order_number . ' è stato confermato e sarà preparato per la spedizione.',
+                'shipped' => 'Il tuo ordine #' . $order->order_number . ' è stato spedito!' . 
+                           ($order->tracking_number ? ' Numero di tracking: ' . $order->tracking_number : ''),
+                'delivered' => 'Il tuo ordine #' . $order->order_number . ' è stato consegnato con successo!',
+                'cancelled' => 'Il tuo ordine #' . $order->order_number . ' è stato cancellato.'
+            ];
+
+            $message = $statusMessages[$status] ?? 'Lo stato del tuo ordine #' . $order->order_number . ' è stato aggiornato.';
+
+            // Crea notifica nel database
+            $buyer->notifications()->create([
+                'type' => 'order_status_update',
+                'title' => 'Aggiornamento Ordine #' . $order->order_number,
+                'message' => $message,
+                'data' => [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'status' => $status,
+                    'tracking_number' => $order->tracking_number
+                ]
+            ]);
+
+            // TODO: Invia email di notifica
+            // Mail::to($buyer->email)->send(new OrderStatusUpdate($order, $status));
+
+        } catch (\Exception $e) {
+            Log::error('Errore nell\'invio notifica ordine: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Ottieni statistiche ordini venditore
+     */
+    public function getSellerStatistics(): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            
+            $stats = [
+                'pending' => Order::where('seller_id', $user->id)->where('status', 'pending')->count(),
+                'shipped' => Order::where('seller_id', $user->id)->where('status', 'shipped')->count(),
+                'delivered' => Order::where('seller_id', $user->id)->where('status', 'delivered')->count(),
+                'cancelled' => Order::where('seller_id', $user->id)->where('status', 'cancelled')->count(),
+                'total_sales' => Order::where('seller_id', $user->id)
+                    ->whereIn('status', ['delivered', 'shipped'])
+                    ->sum('total_amount'),
+                'total_orders' => Order::where('seller_id', $user->id)->count(),
+                'this_month_orders' => Order::where('seller_id', $user->id)
+                    ->whereMonth('created_at', now()->month)
+                    ->whereYear('created_at', now()->year)
+                    ->count(),
+                'this_month_sales' => Order::where('seller_id', $user->id)
+                    ->whereIn('status', ['delivered', 'shipped'])
+                    ->whereMonth('created_at', now()->month)
+                    ->whereYear('created_at', now()->year)
+                    ->sum('total_amount')
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $stats,
+                'message' => 'Statistiche ordini recuperate con successo'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Errore nel recupero delle statistiche',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Ottieni statistiche dettagliate per venditore (alias per compatibilità)
+     */
+    public function getDetailedStatistics(Request $request): JsonResponse
+    {
+        $salesController = new \App\Http\Controllers\Api\SalesStatisticsController();
+        return $salesController->getSalesStatistics($request);
     }
 }

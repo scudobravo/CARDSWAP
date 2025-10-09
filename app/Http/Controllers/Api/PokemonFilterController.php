@@ -534,6 +534,46 @@ class PokemonFilterController extends Controller
             $query->where('card_models.card_number_in_set', '<=', $filters['numbered_max']);
         }
 
+        // Filtro per sottocategoria (singles, sealed-packs, sealed-boxes, lot)
+        if (isset($filters['subcategory']) && !empty($filters['subcategory'])) {
+            $subcategory = $filters['subcategory'];
+            
+            switch ($subcategory) {
+                case 'singles':
+                    // Carte singole: quantity = 1, non sealed
+                    $query->whereHas('cardListings', function($q) {
+                        $q->where('quantity', 1)
+                          ->where('is_limited', false);
+                    });
+                    break;
+                    
+                case 'sealed-packs':
+                    // Buste sigillate: quantity > 1, sealed
+                    $query->whereHas('cardListings', function($q) {
+                        $q->where('quantity', '>', 1)
+                          ->where('quantity', '<=', 20) // Range ragionevole per buste
+                          ->where('is_limited', true);
+                    });
+                    break;
+                    
+                case 'sealed-boxes':
+                    // Scatole sigillate: quantity molto alta, sealed
+                    $query->whereHas('cardListings', function($q) {
+                        $q->where('quantity', '>', 20) // Molte carte = scatola
+                          ->where('is_limited', true);
+                    });
+                    break;
+                    
+                case 'lot':
+                    // Lotti: quantity > 1, non sealed
+                    $query->whereHas('cardListings', function($q) {
+                        $q->where('quantity', '>', 1)
+                          ->where('is_limited', false);
+                    });
+                    break;
+            }
+        }
+
         // Ordinamento
         $sortBy = $filters['sort_by'] ?? 'created_at';
         $sortOrder = $filters['sort_order'] ?? 'desc';

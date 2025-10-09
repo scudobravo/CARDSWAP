@@ -1,7 +1,11 @@
 <template>
-  <div class="bg-gray-50">
-    <div class="mx-auto max-w-2xl px-4 pt-16 pb-24 sm:px-6 lg:max-w-7xl lg:px-8">
-      <h2 class="sr-only">Checkout</h2>
+  <div class="bg-gray-light min-h-screen">
+    <!-- Header -->
+    <Header />
+    
+    <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-24 pb-6">
+      <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-futura-bold text-primary mb-8">Checkout</h1>
 
       <form @submit.prevent="processPayment" class="lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16">
         <div>
@@ -257,75 +261,28 @@
           <div class="mt-10 border-t border-gray-200 pt-10">
             <h2 class="text-lg font-medium text-gray-900">Pagamento</h2>
 
-            <fieldset class="mt-4">
-              <legend class="sr-only">Tipo di pagamento</legend>
-              <div class="space-y-4 sm:flex sm:items-center sm:space-y-0 sm:space-x-10">
-                <div v-for="(paymentMethod, paymentMethodIdx) in paymentMethods" :key="paymentMethod.id" class="flex items-center">
-                  <input 
-                    :id="paymentMethod.id" 
-                    name="payment-type" 
-                    type="radio" 
-                    v-model="formData.paymentMethod"
-                    :value="paymentMethod.id"
-                    class="relative size-4 appearance-none rounded-full border border-gray-300 bg-white before:absolute before:inset-1 before:rounded-full before:bg-white not-checked:before:hidden checked:border-blue-600 checked:bg-blue-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:border-gray-300 disabled:bg-gray-100 disabled:before:bg-gray-400 forced-colors:appearance-auto forced-colors:before:hidden" 
-                  />
-                  <label :for="paymentMethod.id" class="ml-3 block text-sm/6 font-medium text-gray-700">{{ paymentMethod.title }}</label>
+            <div class="mt-4">
+              <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.274 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.407-2.354 1.407-1.903 0-4.357-.921-6.03-1.757L4.35 24.553c1.395.49 3.76.922 6.029.922 2.469 0 4.536-.636 6.03-1.876 1.512-1.251 2.38-3.146 2.38-5.432 0-4.194-2.467-5.95-6.476-7.219z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-lg font-medium text-gray-900">Pagamento sicuro con Stripe</h3>
+                  <p class="text-sm text-gray-600">I tuoi dati di pagamento sono protetti e crittografati</p>
                 </div>
               </div>
-            </fieldset>
+            </div>
 
-            <!-- Dettagli carta di credito -->
-            <div v-if="formData.paymentMethod === 'credit-card'" class="mt-6 grid grid-cols-4 gap-x-4 gap-y-6">
-              <div class="col-span-4">
-                <label for="card-number" class="block text-sm/6 font-medium text-gray-700">Numero carta</label>
-                <div class="mt-2">
-                  <input 
-                    type="text" 
-                    id="card-number" 
-                    name="card-number" 
-                    autocomplete="cc-number" 
-                    class="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6" 
-                  />
+            <!-- Stripe Elements per carta di credito -->
+            <div class="mt-6">
+              <div class="bg-white border border-gray-300 rounded-lg p-4">
+                <label class="block text-sm font-medium text-gray-700 mb-3">Dettagli carta di credito</label>
+                <div id="card-element" class="p-3 border border-gray-300 rounded-md">
+                  <!-- Stripe Elements verrà montato qui -->
                 </div>
-              </div>
-
-              <div class="col-span-4">
-                <label for="name-on-card" class="block text-sm/6 font-medium text-gray-700">Nome sulla carta</label>
-                <div class="mt-2">
-                  <input 
-                    type="text" 
-                    id="name-on-card" 
-                    name="name-on-card" 
-                    autocomplete="cc-name" 
-                    class="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6" 
-                  />
-                </div>
-              </div>
-
-              <div class="col-span-3">
-                <label for="expiration-date" class="block text-sm/6 font-medium text-gray-700">Data di scadenza (MM/AA)</label>
-                <div class="mt-2">
-                  <input 
-                    type="text" 
-                    name="expiration-date" 
-                    id="expiration-date" 
-                    autocomplete="cc-exp" 
-                    class="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6" 
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label for="cvc" class="block text-sm/6 font-medium text-gray-700">CVC</label>
-                <div class="mt-2">
-                  <input 
-                    type="text" 
-                    name="cvc" 
-                    id="cvc" 
-                    autocomplete="csc" 
-                    class="block w-full rounded-md bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6" 
-                  />
-                </div>
+                <div id="card-errors" class="mt-2 text-sm text-red-600" role="alert"></div>
               </div>
             </div>
           </div>
@@ -339,12 +296,19 @@
             <h3 class="sr-only">Articoli nel tuo carrello</h3>
             <ul role="list" class="divide-y divide-gray-200">
               <li v-for="product in cartProducts" :key="product.id" class="flex px-4 py-6 sm:px-6">
-                <div class="shrink-0">
-                  <img 
-                    :src="product.imageSrc || '/images/placeholder-card.jpg'" 
-                    :alt="product.imageAlt || product.title" 
-                    class="w-20 rounded-md" 
-                  />
+                <div class="shrink-0 relative">
+                  <img v-if="product.imageSrc" 
+                       :src="product.imageSrc" 
+                       :alt="product.imageAlt || product.title" 
+                       class="w-20 rounded-md" />
+                  <div v-else class="w-20 h-20 flex items-center justify-center bg-gray-300 rounded-md">
+                    <div class="text-center text-gray-500">
+                      <svg class="w-8 h-8 mx-auto mb-1 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                      </svg>
+                      <p class="text-xs font-gill-sans">Immagine non disponibile</p>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="ml-6 flex flex-1 flex-col">
@@ -421,14 +385,20 @@
           </div>
         </div>
       </form>
-    </div>
+      </div>
+    </main>
+    
+    <!-- Footer -->
+    <Footer />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
+import Header from '../components/Header.vue'
+import Footer from '../components/Footer.vue'
 import { useAuthStore } from '@/stores/auth'
 import { ChevronDownIcon } from '@heroicons/vue/16/solid'
 import { CheckCircleIcon, TrashIcon } from '@heroicons/vue/20/solid'
@@ -437,6 +407,22 @@ import axios from 'axios'
 const router = useRouter()
 const cartStore = useCartStore()
 const authStore = useAuthStore()
+
+// Functions
+const getCardUrl = (item) => {
+  // Determina la categoria dal prodotto
+  const category = item.cardModel?.category?.slug || 'football'
+  
+  // Genera lo slug dal nome della carta
+  const slug = (item.cardModel?.name || 'carta')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '') // Rimuove caratteri speciali
+    .replace(/\s+/g, '-') // Sostituisce spazi con trattini
+    .replace(/-+/g, '-') // Rimuove trattini multipli
+    .replace(/^-+|-+$/g, '') // Rimuove trattini all'inizio e alla fine
+  
+  return `/${category}/${slug}`
+}
 
 // Stato reattivo
 const userAddresses = ref([])
@@ -459,7 +445,7 @@ const formData = ref({
   region: '',
   postalCode: '',
   phone: '',
-  paymentMethod: 'credit-card'
+  paymentMethod: 'stripe'
 })
 
 // Metodi di spedizione
@@ -468,12 +454,8 @@ const deliveryMethods = ref([
   { id: 'express', title: 'Express', turnaround: '2-5 giorni lavorativi', price: '€16.00' }
 ])
 
-// Metodi di pagamento
-const paymentMethods = ref([
-  { id: 'credit-card', title: 'Carta di credito/debito' },
-  { id: 'paypal', title: 'PayPal' },
-  { id: 'stripe', title: 'Stripe' }
-])
+// Metodo di pagamento fisso: Stripe
+const paymentMethod = 'stripe'
 
 // Computed
 const cartProducts = computed(() => {
@@ -485,9 +467,9 @@ const cartProducts = computed(() => {
     price: parseFloat(item.price),
     quantity: item.quantity,
     maxQuantity: item.available ? 8 : item.quantity,
-    imageSrc: item.images?.[0] || '/images/placeholder-card.jpg',
+    imageSrc: item.images?.[0] || null,
     imageAlt: item.cardModel?.name || 'Prodotto',
-    href: `/product/${item.id}`
+    href: getCardUrl(item)
   }))
 })
 
@@ -630,16 +612,140 @@ const initializeStripe = async () => {
     
     stripe.value = window.Stripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
     
-    // Inizializza Stripe Elements se necessario
-    if (formData.value.paymentMethod === 'credit-card') {
-      const elements = stripe.value.elements()
-      cardElement.value = elements.create('card')
-      cardElement.value.mount('#card-element')
+    // Inizializza Stripe Elements
+    if (stripe.value) {
+      const elements = stripe.value.elements({
+        appearance: {
+          theme: 'stripe',
+          variables: {
+            colorPrimary: '#1f2937', // primary color
+            colorBackground: '#ffffff',
+            colorText: '#374151',
+            colorDanger: '#dc2626',
+            fontFamily: 'Inter, system-ui, sans-serif',
+            spacingUnit: '4px',
+            borderRadius: '8px',
+          }
+        }
+      })
+      
+      cardElement.value = elements.create('card', {
+        style: {
+          base: {
+            fontSize: '16px',
+            color: '#374151',
+            '::placeholder': {
+              color: '#9ca3af',
+            },
+          },
+        },
+      })
+      
+      // Monta l'elemento quando il DOM è pronto
+      await nextTick()
+      const cardElementDiv = document.getElementById('card-element')
+      if (cardElementDiv) {
+        cardElement.value.mount('#card-element')
+        
+        // Gestisci errori di validazione
+        cardElement.value.on('change', ({error}) => {
+          const displayError = document.getElementById('card-errors')
+          if (error) {
+            displayError.textContent = error.message
+          } else {
+            displayError.textContent = ''
+          }
+        })
+      }
     }
   } catch (error) {
     console.error('Errore nell\'inizializzazione Stripe:', error)
   }
 }
+
+// Funzione per precompilare i dati dell'utente
+const populateUserData = () => {
+  if (authStore.user) {
+    console.log('🔍 Debug populateUserData - Dati utente completi:', authStore.user)
+    
+    // Informazioni di contatto
+    formData.value.email = authStore.user.email || ''
+    formData.value.phone = authStore.user.phone || ''
+    console.log('📧 Email precompilata:', formData.value.email)
+    console.log('📞 Telefono precompilato:', formData.value.phone)
+    
+    // Estrai nome e cognome dal campo 'name' se first_name e last_name sono null
+    if (authStore.user.first_name && authStore.user.last_name) {
+      formData.value.firstName = authStore.user.first_name
+      formData.value.lastName = authStore.user.last_name
+    } else if (authStore.user.name) {
+      const nameParts = authStore.user.name.trim().split(' ')
+      formData.value.firstName = nameParts[0] || ''
+      formData.value.lastName = nameParts.slice(1).join(' ') || ''
+    } else {
+      formData.value.firstName = authStore.user.first_name || ''
+      formData.value.lastName = authStore.user.last_name || ''
+    }
+    console.log('👤 Nome precompilato:', formData.value.firstName)
+    console.log('👤 Cognome precompilato:', formData.value.lastName)
+    
+    // Informazioni aziendali (se disponibili)
+    formData.value.company = authStore.user.business_name || ''
+    console.log('🏢 Azienda precompilata:', formData.value.company)
+    
+    // Indirizzo principale (se disponibile direttamente nel modello User)
+    console.log('🏠 Debug indirizzo utente:')
+    console.log('  - address:', authStore.user.address)
+    console.log('  - city:', authStore.user.city)
+    console.log('  - postal_code:', authStore.user.postal_code)
+    console.log('  - country:', authStore.user.country)
+    
+    if (authStore.user.address) {
+      formData.value.address = authStore.user.address
+      console.log('✅ Indirizzo precompilato:', formData.value.address)
+    }
+    if (authStore.user.city) {
+      formData.value.city = authStore.user.city
+      console.log('✅ Città precompilata:', formData.value.city)
+    }
+    if (authStore.user.postal_code) {
+      formData.value.postalCode = authStore.user.postal_code
+      console.log('✅ CAP precompilato:', formData.value.postalCode)
+    }
+    if (authStore.user.country) {
+      formData.value.country = authStore.user.country
+      console.log('✅ Paese precompilato:', formData.value.country)
+    }
+    
+    console.log('📋 Form finale precompilato:', formData.value)
+  }
+}
+
+// Watcher per reagire quando l'utente viene caricato
+watch(() => authStore.user, (newUser) => {
+  if (newUser) {
+    populateUserData()
+  }
+}, { immediate: true })
+
+// Watcher per reagire quando gli indirizzi vengono caricati
+watch(() => userAddresses.value, (newAddresses) => {
+  if (newAddresses.length > 0 && authStore.user) {
+    const defaultAddress = newAddresses.find(addr => addr.is_default) || newAddresses[0]
+    if (defaultAddress) {
+      selectAddress(defaultAddress)
+    }
+  } else if (authStore.user && !authStore.user.address) {
+    // Se non ci sono indirizzi salvati ma l'utente ha dati di indirizzo nel profilo,
+    // precompila i campi del form con quelli
+    if (authStore.user.address || authStore.user.city || authStore.user.postal_code) {
+      formData.value.address = authStore.user.address || ''
+      formData.value.city = authStore.user.city || ''
+      formData.value.postalCode = authStore.user.postal_code || ''
+      formData.value.country = authStore.user.country || 'IT'
+    }
+  }
+}, { immediate: true })
 
 // Metodi di utilità
 const getShippingMethodsForSeller = (sellerId) => {
@@ -683,31 +789,54 @@ const processPayment = async () => {
         phone: formData.value.phone
       },
       shipping_methods: selectedShippingMethods.value, // Metodi per venditore
-      payment_method: formData.value.paymentMethod,
+      payment_method: paymentMethod, // Sempre Stripe
       cart_data: cartStore.getCartData()
     }
 
     // Crea l'ordine e processa il pagamento
-    const response = await axios.post('/api/checkout/create-order', paymentData)
+    const response = await axios.post('/api/payments/create', paymentData)
     
     if (response.data.success) {
       // Se il pagamento è stato processato con successo
       if (response.data.payment_intent) {
-        // Conferma il pagamento con Stripe
-        const { error } = await stripe.value.confirmCardPayment(
-          response.data.payment_intent.client_secret
+        // Conferma il pagamento con Stripe Elements
+        const { error, paymentIntent } = await stripe.value.confirmCardPayment(
+          response.data.payment_intent.client_secret,
+          {
+            payment_method: {
+              card: cardElement.value,
+              billing_details: {
+                name: `${formData.value.firstName} ${formData.value.lastName}`,
+                email: formData.value.email,
+                address: {
+                  line1: formData.value.address,
+                  line2: formData.value.apartment,
+                  city: formData.value.city,
+                  state: formData.value.region,
+                  postal_code: formData.value.postalCode,
+                  country: formData.value.country,
+                }
+              }
+            }
+          }
         )
         
         if (error) {
           throw new Error(error.message)
         }
+        
+        if (paymentIntent.status === 'succeeded') {
+          // Svuota il carrello
+          await cartStore.clearCart()
+          
+          // Redirect alla pagina di conferma
+          router.push(`/order-confirmation/${response.data.order_id}`)
+        }
+      } else {
+        // Se non c'è payment_intent, l'ordine è già stato processato
+        await cartStore.clearCart()
+        router.push(`/order-confirmation/${response.data.order_id}`)
       }
-      
-      // Svuota il carrello
-      await cartStore.clearCart()
-      
-      // Redirect alla pagina di conferma
-      router.push(`/order-confirmation/${response.data.order_id}`)
     } else {
       throw new Error(response.data.message || 'Errore nel processamento dell\'ordine')
     }
@@ -729,10 +858,12 @@ onMounted(async () => {
   // Carica gli indirizzi dell'utente
   await loadUserAddresses()
   
-  // Popola l'email dell'utente se autenticato
-  if (authStore.user) {
-    formData.value.email = authStore.user.email
+  // Se l'utente è autenticato ma non caricato, caricalo
+  if (authStore.isAuthenticated && !authStore.user) {
+    await authStore.fetchUser()
   }
+  
+  // I dati dell'utente vengono precompilati dal watcher
   
   // Inizializza i metodi di spedizione per ogni venditore
   initializeShippingMethods()

@@ -4,6 +4,7 @@ import { createPinia } from 'pinia';
 import { createRouter, createWebHistory } from 'vue-router';
 import { createI18n } from 'vue-i18n';
 import App from './App.vue';
+import { useAuthStore } from './stores/auth.js';
 
 // Import delle viste
 import Home from './views/Home.vue';
@@ -46,6 +47,17 @@ import SettingsLanguage from './views/SettingsLanguage.vue';
 // Import KYC View
 import KycPage from './views/KycPage.vue';
 
+// Import Contact View
+import Contact from './views/Contact.vue';
+
+// Import Legal Views
+import TermsAndConditions from './views/TermsAndConditions.vue';
+import PrivacyPolicy from './views/PrivacyPolicy.vue';
+import CookiePolicy from './views/CookiePolicy.vue';
+
+// Import Search Views
+import SearchResults from './views/SearchResults.vue';
+
 // Import dei file di traduzione
 import it from './locales/it.json';
 
@@ -60,13 +72,13 @@ const routes = [
     { path: '/category/basketball', component: BasketballCategory, name: 'basketball.category' },
     { path: '/category/pokemon', component: PokemonCategory, name: 'pokemon.category' },
     { path: '/categories/:category/:subcategory', component: SubcategoryPage, name: 'subcategory' },
+    { path: '/:category/:cardSlug', component: ProductDetail, name: 'card.detail' },
     { path: '/product/:id', component: ProductDetail, name: 'product.detail' },
     { path: '/dashboard', component: Dashboard, name: 'dashboard' },
     { path: '/cart', component: Cart, name: 'cart' },
     { path: '/checkout', component: Checkout, name: 'checkout' },
     { path: '/orders', component: Orders, name: 'orders' },
     { path: '/order-confirmation/:id', component: OrderConfirmation, name: 'order-confirmation' },
-    { path: '/wishlist', component: () => import('./views/Wishlist.vue'), name: 'wishlist' },
     { path: '/chat', component: () => import('./views/Chat.vue'), name: 'chat' },
     
     // Account Management Routes
@@ -94,6 +106,17 @@ const routes = [
     
     // KYC Route
     { path: '/kyc', component: KycPage, name: 'kyc' },
+    
+    // Contact Route
+    { path: '/contact', component: Contact, name: 'contact' },
+    
+    // Legal Routes
+    { path: '/terms-and-conditions', component: TermsAndConditions, name: 'terms' },
+    { path: '/privacy-policy', component: PrivacyPolicy, name: 'privacy' },
+    { path: '/cookie-policy', component: CookiePolicy, name: 'cookies' },
+    
+    // Search Routes
+    { path: '/search', component: SearchResults, name: 'search' },
 ];
 
 const router = createRouter({
@@ -118,5 +141,13 @@ const pinia = createPinia();
 app.use(pinia);
 app.use(router);
 app.use(i18n);
+
+// Inizializza l'authStore per caricare l'utente se autenticato
+const authStore = useAuthStore();
+if (authStore.isAuthenticated && !authStore.user) {
+  authStore.fetchUser().catch(error => {
+    console.error('Errore nel caricamento utente:', error);
+  });
+}
 
 app.mount('#app');

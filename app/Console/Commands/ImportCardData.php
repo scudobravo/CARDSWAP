@@ -101,7 +101,11 @@ class ImportCardData extends Command
         
         foreach ($data as $row) {
             $name = trim($row[0]);
-            if (empty($name) || $name === 'GRADING COMPANY') continue;
+            
+            // Salta header, valori vuoti e punti
+            if (empty($name) || $name === 'GRADING COMPANY' || $name === '.' || $name === '..') {
+                continue;
+            }
             
             $slug = Str::slug($name);
             
@@ -190,7 +194,7 @@ class ImportCardData extends Command
                     $this->info("  Processate {$rowCount} righe...");
                 }
                 
-                $brand = trim($row[7] ?? '');
+                $brand = strtoupper(trim($row[7] ?? '')); // Normalizza in uppercase
                 $setName = trim($row[8] ?? '');
                 $year = intval($row[9] ?? 0);
                 
@@ -271,7 +275,7 @@ class ImportCardData extends Command
                 $playerName = trim($row[1] ?? '');
                 $teamName = trim($row[4] ?? '');
                 $rarity = $this->mapRarity(trim($row[5] ?? ''));
-                $brand = trim($row[7] ?? '');
+                $brand = strtoupper(trim($row[7] ?? '')); // Normalizza in uppercase
                 $setName = trim($row[8] ?? '');
                 $year = intval($row[9] ?? 0);
                 $cardNumber = trim($row[0] ?? '');

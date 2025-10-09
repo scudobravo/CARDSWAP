@@ -8,9 +8,9 @@
       <!-- Breadcrumbs -->
       <nav class="mb-6">
         <ol class="flex items-center space-x-2 text-sm font-gill-sans">
-          <li><a href="/" class="text-primary hover:text-secondary">All Products</a></li>
+          <li><a href="/categories" class="text-primary hover:text-secondary">Categories</a></li>
           <li class="text-gray-500">></li>
-          <li class="text-gray-500">Category</li>
+          <li class="text-gray-500">Pokemon</li>
         </ol>
       </nav>
 

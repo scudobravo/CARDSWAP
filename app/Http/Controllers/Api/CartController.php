@@ -22,6 +22,15 @@ class CartController extends Controller
             $user = Auth::user();
             $cartData = $request->get('cart_data', []);
             
+            // Se l'utente non è autenticato, restituisci carrello vuoto
+            if (!$user && empty($cartData)) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [],
+                    'message' => 'Carrello vuoto'
+                ]);
+            }
+            
             if (empty($cartData)) {
                 return response()->json([
                     'success' => true,
@@ -100,7 +109,7 @@ class CartController extends Controller
     public function addItem(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'listing_id' => 'required|exists:card_listings,id',
+            'listing_id' => 'required|string', // Cambiato da exists:card_listings,id per supportare mock IDs
             'quantity' => 'required|integer|min:1|max:100'
         ]);
 
@@ -112,6 +121,41 @@ class CartController extends Controller
         }
 
         try {
+            // Per ora, gestiamo solo mock listings per il testing
+            // In futuro, questo dovrebbe cercare nel database
+            if (str_starts_with($request->listing_id, 'listing_')) {
+                // Mock listing data
+                $cartItem = [
+                    'id' => $request->listing_id,
+                    'card_model_id' => str_replace('listing_', '', $request->listing_id),
+                    'seller_id' => 1,
+                    'price' => 95.00,
+                    'quantity' => $request->quantity,
+                    'condition' => 'LIGHT PLAYED',
+                    'description' => 'Carta in ottime condizioni',
+                    'images' => [],
+                    'available' => true,
+                    'seller' => [
+                        'id' => 1,
+                        'name' => 'Venditore Mock',
+                        'email' => 'vendor@example.com'
+                    ],
+                    'cardModel' => [
+                        'id' => str_replace('listing_', '', $request->listing_id),
+                        'name' => 'Mock Card',
+                        'category' => 'football'
+                    ],
+                    'shippingZones' => []
+                ];
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Articolo aggiunto al carrello',
+                    'data' => $cartItem
+                ]);
+            }
+
+            // Per listing reali dal database (quando implementato)
             $listing = CardListing::with([
                 'cardModel.category',
                 'cardModel.cardSet',
