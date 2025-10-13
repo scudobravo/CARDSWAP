@@ -732,7 +732,7 @@ const selectCardModel = (card) => {
   selectedCardModel.value = card
   listingData.value.card_model_id = card.id
   
-  // Popola automaticamente i dati del form con i dati della carta
+  // Popola automaticamente SOLO i dati informativi (non i filtri di ricerca)
   if (card) {
     // Popola i dati base della carta
     listingData.value.card_model_id = card.id
@@ -742,63 +742,27 @@ const selectCardModel = (card) => {
       filters.value.price = card.price
     }
     
-    // Popola tutti i dati disponibili
+    // Popola solo i dati non-filtro (rarity, year, brand sono informativi)
     if (card.rarity) {
       filters.value.rarity = card.rarity
     }
     if (card.year) {
       filters.value.year = card.year
     }
-    
-    // Popola Team
-    if (card.team && card.team.id) {
-      filters.value.team = card.team.id
-    }
-    
-    // Popola Set
-    if (card.card_set && card.card_set.id) {
-      filters.value.set = card.card_set.id
-    }
-    
-    // Popola Brand
     if (card.card_set && card.card_set.brand) {
       filters.value.brand = card.card_set.brand
     }
     
-    // Popola Player
-    if (card.player && card.player.id) {
-      filters.value.player = card.player.id
-    }
+    // NON popoliamo più automaticamente Team, Set e Player
+    // L'utente deve selezionarli manualmente se necessario
     
     console.log('✅ Dati form popolati automaticamente:', {
       card_model_id: card.id,
       price: card.price,
       rarity: card.rarity,
       year: card.year,
-      team: card.team?.name,
-      team_id: card.team?.id,
-      set: card.card_set?.name,
-      set_id: card.card_set?.id,
-      brand: card.card_set?.brand,
-      player: card.player?.name,
-      player_id: card.player?.id
+      brand: card.card_set?.brand
     })
-    
-    // Forza l'aggiornamento dei filtri per mostrare i valori popolati
-    setTimeout(() => {
-      // Emetti l'evento per aggiornare i filtri nel componente ChainedFilters
-      const event = new CustomEvent('filters-populated', {
-        detail: {
-          team: card.team,
-          card_set: card.card_set,
-          player: card.player,
-          rarity: card.rarity,
-          year: card.year,
-          brand: card.card_set?.brand
-        }
-      })
-      window.dispatchEvent(event)
-    }, 100)
   }
 }
 

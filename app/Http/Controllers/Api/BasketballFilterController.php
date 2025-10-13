@@ -96,17 +96,24 @@ class BasketballFilterController extends Controller
     {
         $query = $request->get('q', '');
         
-        if (strlen($query) < 2) {
-            return response()->json([]);
-        }
-
-        $players = Player::where('name', 'LIKE', "%{$query}%")
+        // Filtra solo i player che hanno carte Basketball
+        // NON carichiamo la relazione 'team' per rendere il giocatore indipendente
+        $playersQuery = Player::whereHas('cardModels', function($q) {
+                $q->whereHas('category', function($catQuery) {
+                    $catQuery->where('slug', 'basketball');
+                });
+            })
             ->active()
-            ->ordered()
-            ->limit(10)
-            ->get(['id', 'name', 'slug', 'position', 'team_id']);
+            ->orderBy('name');
+        
+        // Se c'è una query di ricerca, filtra i risultati
+        if (!empty($query)) {
+            $playersQuery->where('name', 'LIKE', "%{$query}%");
+        }
+        
+        $players = $playersQuery->limit(50)->get(['id', 'name', 'slug', 'position', 'nationality']);
 
-        return response()->json($players);
+        return response()->json(['players' => $players]);
     }
 
     /**
@@ -116,17 +123,24 @@ class BasketballFilterController extends Controller
     {
         $query = $request->get('q', '');
         
-        if (strlen($query) < 2) {
-            return response()->json([]);
-        }
-
-        $teams = Team::where('name', 'LIKE', "%{$query}%")
+        // Filtra solo i team che hanno carte Basketball
+        $teamsQuery = Team::with('league')
+            ->whereHas('cardModels', function($q) {
+                $q->whereHas('category', function($catQuery) {
+                    $catQuery->where('slug', 'basketball');
+                });
+            })
             ->active()
-            ->ordered()
-            ->limit(10)
-            ->get(['id', 'name', 'slug', 'city', 'league_id']);
+            ->orderBy('name');
+        
+        // Se c'è una query di ricerca, filtra i risultati
+        if (!empty($query)) {
+            $teamsQuery->where('name', 'LIKE', "%{$query}%");
+        }
+        
+        $teams = $teamsQuery->limit(50)->get(['id', 'name', 'slug', 'city', 'league_id']);
 
-        return response()->json($teams);
+        return response()->json(['teams' => $teams]);
     }
 
     /**
@@ -136,17 +150,78 @@ class BasketballFilterController extends Controller
     {
         $query = $request->get('q', '');
         
-        if (strlen($query) < 2) {
-            return response()->json([]);
+        // Filtra solo i set che hanno carte Basketball
+        $cardSetsQuery = CardSet::whereHas('cardModels', function($q) {
+                $q->whereHas('category', function($catQuery) {
+                    $catQuery->where('slug', 'basketball');
+                });
+            })
+            ->active()
+            ->orderBy('name');
+        
+        // Se c'è una query di ricerca, filtra i risultati
+        if (!empty($query)) {
+            $cardSetsQuery->where('name', 'LIKE', "%{$query}%");
+        }
+        
+        $cardSets = $cardSetsQuery->limit(50)->get(['id', 'name', 'slug', 'brand', 'year', 'season']);
+
+        return response()->json(['card_sets' => $cardSets]);
+    }
+
+    /**
+     * Get a single player by ID
+     * NON carichiamo la relazione 'team' per mantenere il giocatore indipendente dalla squadra
+     */
+    public function getPlayerById($id)
+    {
+        $player = Player::find($id);
+        
+        if (!$player) {
+            return response()->json([
+                'error' => 'Player not found'
+            ], 404);
         }
 
-        $cardSets = CardSet::where('name', 'LIKE', "%{$query}%")
-            ->active()
-            ->ordered()
-            ->limit(10)
-            ->get(['id', 'name', 'slug', 'brand', 'year']);
+        return response()->json([
+            'player' => $player
+        ]);
+    }
 
-        return response()->json($cardSets);
+    /**
+     * Get a single team by ID
+     */
+    public function getTeamById($id)
+    {
+        $team = Team::find($id);
+        
+        if (!$team) {
+            return response()->json([
+                'error' => 'Team not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'team' => $team
+        ]);
+    }
+
+    /**
+     * Get a single card set by ID
+     */
+    public function getCardSetById($id)
+    {
+        $cardSet = CardSet::find($id);
+        
+        if (!$cardSet) {
+            return response()->json([
+                'error' => 'Card set not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'card_set' => $cardSet
+        ]);
     }
 
     /**
@@ -454,6 +529,10 @@ class BasketballFilterController extends Controller
     {
         $filters = $request->all();
         
+        // Determina se la sottocategoria è sealed (packs o boxes)
+        $isSealed = isset($filters['subcategory']) && 
+                    in_array($filters['subcategory'], ['sealed-packs', 'sealed-boxes']);
+        
         // Base query per card_models con join per ordinamento
         $query = CardModel::with(['player', 'team', 'cardSet', 'gradingCompany'])
             ->leftJoin('players', 'card_models.player_id', '=', 'players.id')
@@ -464,19 +543,67 @@ class BasketballFilterController extends Controller
                 $query->where('slug', 'basketball');
             });
 
-        // Applica filtri a catena: Player → Team → Set → Year → Brand → Rarity
-        if (isset($filters['player_id']) && !empty($filters['player_id'])) {
-            if (is_array($filters['player_id'])) {
-                $query->whereIn('card_models.player_id', $filters['player_id']);
-            } else {
-                $query->where('card_models.player_id', $filters['player_id']);
+        // Per sealed packs/boxes, applica solo Set, Year e Brand
+        // Per altri, applica tutti i filtri disponibili
+        if (!$isSealed) {
+            // Applica filtri a catena: Player → Team → Set → Year → Brand → Rarity
+            if (isset($filters['player_id']) && !empty($filters['player_id'])) {
+                if (is_array($filters['player_id'])) {
+                    $query->whereIn('card_models.player_id', $filters['player_id']);
+                } else {
+                    $query->where('card_models.player_id', $filters['player_id']);
+                }
+            }
+
+            if (isset($filters['team_id']) && !empty($filters['team_id'])) {
+                $query->where('card_models.team_id', $filters['team_id']);
+            }
+
+            if (isset($filters['rarity']) && !empty($filters['rarity'])) {
+                $query->where('card_models.rarity', $filters['rarity']);
+            }
+
+            // Filtri per grading
+            if (isset($filters['grading']) && $filters['grading'] !== '') {
+                if ($filters['grading'] === 'yes') {
+                    $query->whereNotNull('card_models.grading_company_id');
+                } elseif ($filters['grading'] === 'no') {
+                    $query->whereNull('card_models.grading_company_id');
+                }
+            }
+
+            if (isset($filters['grading_company_id']) && !empty($filters['grading_company_id'])) {
+                $query->where('card_models.grading_company_id', $filters['grading_company_id']);
+            }
+
+            if (isset($filters['grading_score_min']) && !empty($filters['grading_score_min'])) {
+                $query->where('card_models.grading_score', '>=', $filters['grading_score_min']);
+            }
+
+            if (isset($filters['grading_score_max']) && !empty($filters['grading_score_max'])) {
+                $query->where('card_models.grading_score', '<=', $filters['grading_score_max']);
+            }
+
+            // Filtri per rookie
+            if (isset($filters['rookie']) && $filters['rookie'] !== '') {
+                if ($filters['rookie'] === 'yes') {
+                    $query->where('card_models.is_rookie', true);
+                } elseif ($filters['rookie'] === 'no') {
+                    $query->where('card_models.is_rookie', false);
+                }
+            }
+
+            // Filtri per numbered
+            if (isset($filters['numbered_min']) && !empty($filters['numbered_min'])) {
+                $query->where('card_models.card_number_in_set', '>=', $filters['numbered_min']);
+            }
+
+            if (isset($filters['numbered_max']) && !empty($filters['numbered_max'])) {
+                $query->where('card_models.card_number_in_set', '<=', $filters['numbered_max']);
             }
         }
-
-        if (isset($filters['team_id']) && !empty($filters['team_id'])) {
-            $query->where('card_models.team_id', $filters['team_id']);
-        }
-
+        
+        // Filtri comuni a tutte le sottocategorie: Set, Year, Brand
         if (isset($filters['set_id']) && !empty($filters['set_id'])) {
             $query->where('card_models.card_set_id', $filters['set_id']);
         }
@@ -491,87 +618,53 @@ class BasketballFilterController extends Controller
             });
         }
 
-        if (isset($filters['rarity']) && !empty($filters['rarity'])) {
-            $query->where('card_models.rarity', $filters['rarity']);
-        }
-
-        // Filtri per grading
-        if (isset($filters['grading']) && $filters['grading'] !== '') {
-            if ($filters['grading'] === 'yes') {
-                $query->whereNotNull('card_models.grading_company_id');
-            } elseif ($filters['grading'] === 'no') {
-                $query->whereNull('card_models.grading_company_id');
-            }
-        }
-
-        if (isset($filters['grading_company_id']) && !empty($filters['grading_company_id'])) {
-            $query->where('card_models.grading_company_id', $filters['grading_company_id']);
-        }
-
-        if (isset($filters['grading_score_min']) && !empty($filters['grading_score_min'])) {
-            $query->where('card_models.grading_score', '>=', $filters['grading_score_min']);
-        }
-
-        if (isset($filters['grading_score_max']) && !empty($filters['grading_score_max'])) {
-            $query->where('card_models.grading_score', '<=', $filters['grading_score_max']);
-        }
-
-        // Filtri per rookie
-        if (isset($filters['rookie']) && $filters['rookie'] !== '') {
-            if ($filters['rookie'] === 'yes') {
-                $query->where('card_models.is_rookie', true);
-            } elseif ($filters['rookie'] === 'no') {
-                $query->where('card_models.is_rookie', false);
-            }
-        }
-
-        // Filtri per numbered
-        if (isset($filters['numbered_min']) && !empty($filters['numbered_min'])) {
-            $query->where('card_models.card_number_in_set', '>=', $filters['numbered_min']);
-        }
-
-        if (isset($filters['numbered_max']) && !empty($filters['numbered_max'])) {
-            $query->where('card_models.card_number_in_set', '<=', $filters['numbered_max']);
-        }
-
         // Filtro per sottocategoria (singles, sealed-packs, sealed-boxes, lot)
+        // NOTA: Questo filtro è basato su card_listings. Se non ci sono listings, il filtro viene ignorato
         if (isset($filters['subcategory']) && !empty($filters['subcategory'])) {
             $subcategory = $filters['subcategory'];
             
-            switch ($subcategory) {
-                case 'singles':
-                    // Carte singole: quantity = 1, non sealed
-                    $query->whereHas('cardListings', function($q) {
-                        $q->where('quantity', 1)
-                          ->where('is_limited', false);
-                    });
-                    break;
-                    
-                case 'sealed-packs':
-                    // Buste sigillate: quantity > 1, sealed
-                    $query->whereHas('cardListings', function($q) {
-                        $q->where('quantity', '>', 1)
-                          ->where('quantity', '<=', 20) // Range ragionevole per buste
-                          ->where('is_limited', true);
-                    });
-                    break;
-                    
-                case 'sealed-boxes':
-                    // Scatole sigillate: quantity molto alta, sealed
-                    $query->whereHas('cardListings', function($q) {
-                        $q->where('quantity', '>', 20) // Molte carte = scatola
-                          ->where('is_limited', true);
-                    });
-                    break;
-                    
-                case 'lot':
-                    // Lotti: quantity > 1, non sealed
-                    $query->whereHas('cardListings', function($q) {
-                        $q->where('quantity', '>', 1)
-                          ->where('is_limited', false);
-                    });
-                    break;
+            // Verifica se esistono card_listings nel database
+            $hasListings = \App\Models\CardModel::whereHas('cardListings')->exists();
+            
+            // Applica il filtro solo se ci sono listings
+            if ($hasListings) {
+                switch ($subcategory) {
+                    case 'singles':
+                        // Carte singole: quantity = 1, non sealed
+                        $query->whereHas('cardListings', function($q) {
+                            $q->where('quantity', 1)
+                              ->where('is_limited', false);
+                        });
+                        break;
+                        
+                    case 'sealed-packs':
+                        // Buste sigillate: quantity > 1, sealed
+                        $query->whereHas('cardListings', function($q) {
+                            $q->where('quantity', '>', 1)
+                              ->where('quantity', '<=', 20) // Range ragionevole per buste
+                              ->where('is_limited', true);
+                        });
+                        break;
+                        
+                    case 'sealed-boxes':
+                        // Scatole sigillate: quantity molto alta, sealed
+                        $query->whereHas('cardListings', function($q) {
+                            $q->where('quantity', '>', 20) // Molte carte = scatola
+                              ->where('is_limited', true);
+                        });
+                        break;
+                        
+                    case 'lot':
+                        // Lotti: quantity > 1, non sealed
+                        $query->whereHas('cardListings', function($q) {
+                            $q->where('quantity', '>', 1)
+                              ->where('is_limited', false);
+                        });
+                        break;
+                }
             }
+            // Se non ci sono listings, il filtro subcategory viene ignorato
+            // e vengono restituiti tutti i card_models che matchano gli altri filtri
         }
 
         // Ordinamento

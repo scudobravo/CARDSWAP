@@ -149,7 +149,7 @@ const authStore = useAuthStore();
 router.beforeEach(async (to, from, next) => {
   // Pagine pubbliche che non richiedono autenticazione
   const publicPages = ['/', '/login', '/register', '/categories', '/category/football', '/category/basketball', '/category/pokemon', '/terms-and-conditions', '/privacy-policy', '/cookie-policy', '/contact', '/search']
-  const isPublicPage = publicPages.includes(to.path) || to.path.startsWith('/category/') || to.path.match(/^\/[^\/]+\/[^\/]+$/)
+  const isPublicPage = publicPages.includes(to.path) || to.path.startsWith('/category/') || to.path.startsWith('/categories/') || to.path.match(/^\/[^\/]+\/[^\/]+$/)
   
   // Se è una pagina pubblica, lascia passare senza controlli
   if (isPublicPage) {

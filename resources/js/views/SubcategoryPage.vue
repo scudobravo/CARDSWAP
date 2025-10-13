@@ -153,6 +153,8 @@
             <!-- Advanced Filters Component -->
             <AdvancedFilters
               :filters="filters"
+              :category="category"
+              :subcategory="subcategory"
               :grading-companies="gradingCompanies"
               :condition-options="conditionOptions"
               :numbered-presets="numberedPresets"

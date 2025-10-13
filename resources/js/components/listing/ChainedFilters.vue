@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <!-- Player Selection (Solo per Single Card) -->
+      <!-- Player Selection (Solo per Single Card) -->
     <div v-if="showPlayer" class="mb-4">
       <label class="block text-sm font-medium text-gray-700 mb-2">Player *</label>
       <div class="relative">
@@ -10,11 +10,12 @@
           placeholder="Cerca giocatore..."
           class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
           @input="searchPlayers"
+          @focus="onPlayerFocus"
+          @blur="onPlayerBlur"
         />
-        <div v-if="filteredPlayers.length > 0 && localFilters.playerSearch" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+        <div v-if="filteredPlayers.length > 0 && showPlayerDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
           <div v-for="player in filteredPlayers" :key="player.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectPlayer(player)">
             <span class="font-normal block truncate">{{ player.name }}</span>
-            <span v-if="player.team" class="text-sm text-gray-500">{{ player.team.name }}</span>
           </div>
         </div>
       </div>
@@ -42,8 +43,10 @@
             placeholder="Cerca team..."
             class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
             @input="searchTeams"
+            @focus="onTeamFocus"
+            @blur="onTeamBlur"
           />
-          <div v-if="filteredTeams.length > 0 && localFilters.teamSearch" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+          <div v-if="filteredTeams.length > 0 && showTeamDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
             <div v-for="team in filteredTeams" :key="team.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectTeam(team)">
               <span class="font-normal block truncate">{{ team.name }}</span>
             </div>
@@ -71,8 +74,10 @@
             placeholder="Cerca set..."
             class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
             @input="searchCardSets"
+            @focus="onSetFocus"
+            @blur="onSetBlur"
           />
-          <div v-if="filteredCardSets.length > 0 && localFilters.setSearch" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+          <div v-if="filteredCardSets.length > 0 && showSetDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
             <div v-for="set in filteredCardSets" :key="set.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectCardSet(set)">
               <span class="font-normal block truncate">{{ set.name }} ({{ set.year }})</span>
             </div>
@@ -252,6 +257,11 @@ const availableBrands = ref([])
 const availableRarities = ref([])
 const availableYears = ref([])
 
+// Dropdown visibility state
+const showPlayerDropdown = ref(false)
+const showTeamDropdown = ref(false)
+const showSetDropdown = ref(false)
+
 // Computed
 const canSearch = computed(() => {
   return localFilters.value.team || localFilters.value.set || localFilters.value.brand || localFilters.value.rarity || localFilters.value.year
@@ -268,16 +278,13 @@ const searchPlayers = async () => {
   
   // Set new timeout for debounced search
   searchTimeout = setTimeout(async () => {
-    if (localFilters.value.playerSearch?.length < 2) {
-      filteredPlayers.value = []
-      return
-    }
+    const query = localFilters.value.playerSearch || ''
     
-    console.log('Ricerca giocatori per:', localFilters.value.playerSearch)
+    console.log('Ricerca giocatori per:', query)
     console.log('Categoria:', props.category)
     
     try {
-      const url = `/api/${props.category}/filters/players/search?q=${encodeURIComponent(localFilters.value.playerSearch)}`
+      const url = `/api/${props.category}/filters/players/search?q=${encodeURIComponent(query)}`
       console.log('URL:', url)
       
       const response = await fetch(url)
@@ -295,16 +302,26 @@ const searchPlayers = async () => {
   }, 300) // 300ms debounce
 }
 
+const onPlayerFocus = async () => {
+  showPlayerDropdown.value = true
+  // Carica tutti i giocatori disponibili quando si fa focus
+  await searchPlayers()
+}
+
+const onPlayerBlur = () => {
+  // Ritarda la chiusura per permettere il click su un elemento
+  setTimeout(() => {
+    showPlayerDropdown.value = false
+  }, 200)
+}
+
 const searchTeams = async () => {
-  if (localFilters.value.teamSearch?.length < 2) {
-    filteredTeams.value = []
-    return
-  }
+  const query = localFilters.value.teamSearch || ''
   
-  console.log('Ricerca team per:', localFilters.value.teamSearch)
+  console.log('Ricerca team per:', query)
   
   try {
-    const url = `/api/${props.category}/filters/teams/search?q=${encodeURIComponent(localFilters.value.teamSearch)}`
+    const url = `/api/${props.category}/filters/teams/search?q=${encodeURIComponent(query)}`
     console.log('URL team:', url)
     
     const response = await fetch(url)
@@ -321,16 +338,26 @@ const searchTeams = async () => {
   }
 }
 
+const onTeamFocus = async () => {
+  showTeamDropdown.value = true
+  // Carica tutte le squadre disponibili quando si fa focus
+  await searchTeams()
+}
+
+const onTeamBlur = () => {
+  // Ritarda la chiusura per permettere il click su un elemento
+  setTimeout(() => {
+    showTeamDropdown.value = false
+  }, 200)
+}
+
 const searchCardSets = async () => {
-  if (localFilters.value.setSearch?.length < 2) {
-    filteredCardSets.value = []
-    return
-  }
+  const query = localFilters.value.setSearch || ''
   
-  console.log('Ricerca set per:', localFilters.value.setSearch)
+  console.log('Ricerca set per:', query)
   
   try {
-    const url = `/api/${props.category}/filters/card-sets/search?q=${encodeURIComponent(localFilters.value.setSearch)}`
+    const url = `/api/${props.category}/filters/card-sets/search?q=${encodeURIComponent(query)}`
     console.log('URL set:', url)
     
     const response = await fetch(url)
@@ -347,11 +374,25 @@ const searchCardSets = async () => {
   }
 }
 
+const onSetFocus = async () => {
+  showSetDropdown.value = true
+  // Carica tutti i set disponibili quando si fa focus
+  await searchCardSets()
+}
+
+const onSetBlur = () => {
+  // Ritarda la chiusura per permettere il click su un elemento
+  setTimeout(() => {
+    showSetDropdown.value = false
+  }, 200)
+}
+
 const selectPlayer = (player) => {
   selectedPlayer.value = player
   localFilters.value.player = player.id
   localFilters.value.playerSearch = ''
   filteredPlayers.value = []
+  showPlayerDropdown.value = false
   onFiltersChanged()
 }
 
@@ -366,6 +407,7 @@ const selectTeam = (team) => {
   localFilters.value.team = team.id
   localFilters.value.teamSearch = ''
   filteredTeams.value = []
+  showTeamDropdown.value = false
   onFiltersChanged()
 }
 
@@ -380,6 +422,7 @@ const selectCardSet = (set) => {
   localFilters.value.set = set.id
   localFilters.value.setSearch = ''
   filteredCardSets.value = []
+  showSetDropdown.value = false
   onFiltersChanged()
 }
 
@@ -497,9 +540,57 @@ const loadInitialData = async () => {
   }
 }
 
+// Ripristina gli oggetti completi quando abbiamo solo gli ID
+const restoreSelectedEntities = async () => {
+  console.log('🔄 Ripristino entità selezionate da initialFilters:', props.initialFilters)
+  
+  // Ripristina player se abbiamo un ID ma non l'oggetto
+  if (localFilters.value.player && !selectedPlayer.value) {
+    try {
+      const response = await fetch(`/api/${props.category}/filters/players/${localFilters.value.player}`)
+      if (response.ok) {
+        const data = await response.json()
+        selectedPlayer.value = data.player
+        console.log('✅ Player ripristinato:', selectedPlayer.value)
+      }
+    } catch (error) {
+      console.error('❌ Errore nel ripristino player:', error)
+    }
+  }
+  
+  // Ripristina team se abbiamo un ID ma non l'oggetto
+  if (localFilters.value.team && !selectedTeam.value) {
+    try {
+      const response = await fetch(`/api/${props.category}/filters/teams/${localFilters.value.team}`)
+      if (response.ok) {
+        const data = await response.json()
+        selectedTeam.value = data.team
+        console.log('✅ Team ripristinato:', selectedTeam.value)
+      }
+    } catch (error) {
+      console.error('❌ Errore nel ripristino team:', error)
+    }
+  }
+  
+  // Ripristina set se abbiamo un ID ma non l'oggetto
+  if (localFilters.value.set && !selectedCardSet.value) {
+    try {
+      const response = await fetch(`/api/${props.category}/filters/card-sets/${localFilters.value.set}`)
+      if (response.ok) {
+        const data = await response.json()
+        selectedCardSet.value = data.card_set
+        console.log('✅ Set ripristinato:', selectedCardSet.value)
+      }
+    } catch (error) {
+      console.error('❌ Errore nel ripristino set:', error)
+    }
+  }
+}
+
 // Lifecycle
-onMounted(() => {
-  loadInitialData()
+onMounted(async () => {
+  await loadInitialData()
+  await restoreSelectedEntities()
   
   // Ascolta l'evento per popolare i filtri quando viene selezionata una carta
   window.addEventListener('filters-populated', handleFiltersPopulated)
@@ -514,8 +605,10 @@ onUnmounted(() => {
 })
 
 // Watch for external filter changes
-watch(() => props.initialFilters, (newFilters) => {
+watch(() => props.initialFilters, async (newFilters) => {
+  console.log('🔄 initialFilters cambiati:', newFilters)
   localFilters.value = { ...localFilters.value, ...newFilters }
+  await restoreSelectedEntities()
   loadChainedData()
 }, { deep: true })
 

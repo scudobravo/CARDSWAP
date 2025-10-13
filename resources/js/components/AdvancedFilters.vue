@@ -3,7 +3,7 @@
     <!-- Main Filters -->
     <div class="space-y-6">
       <!-- Player Filter -->
-      <div class="space-y-2">
+      <div v-if="!isSealed" class="space-y-2">
         <div class="relative">
           <input 
             v-model="localFilters.playerSearch"
@@ -11,8 +11,10 @@
             placeholder="Cerca giocatore..."
             class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
             @input="searchPlayers"
+            @focus="onPlayerFocus"
+            @blur="onPlayerBlur"
           />
-          <div v-if="filteredPlayers.length > 0 && localFilters.playerSearch" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+          <div v-if="filteredPlayers.length > 0 && showPlayerDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
             <div v-for="player in filteredPlayers" :key="player.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectPlayer(player)">
               <span class="font-normal block truncate">{{ player.name }}</span>
             </div>
@@ -31,7 +33,7 @@
       </div>
 
       <!-- Team Filter -->
-      <div class="space-y-2">
+      <div v-if="!isSealed" class="space-y-2">
         <div class="relative">
           <input 
             v-model="localFilters.teamSearch"
@@ -39,8 +41,10 @@
             placeholder="Cerca squadra..."
             class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
             @input="searchTeams"
+            @focus="onTeamFocus"
+            @blur="onTeamBlur"
           />
-          <div v-if="filteredTeams.length > 0 && localFilters.teamSearch" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+          <div v-if="filteredTeams.length > 0 && showTeamDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
             <div v-for="team in filteredTeams" :key="team.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectTeam(team)">
               <span class="font-normal block truncate">{{ team.name }}</span>
             </div>
@@ -67,8 +71,10 @@
             placeholder="Cerca set..."
             class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
             @input="searchCardSets"
+            @focus="onSetFocus"
+            @blur="onSetBlur"
           />
-          <div v-if="filteredCardSets.length > 0 && localFilters.setSearch" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+          <div v-if="filteredCardSets.length > 0 && showSetDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
             <div v-for="set in filteredCardSets" :key="set.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectCardSet(set)">
               <span class="font-normal block truncate">{{ set.name }} ({{ set.year }})</span>
             </div>
@@ -87,7 +93,7 @@
       </div>
 
       <!-- Rarity Filter -->
-      <div class="space-y-2">
+      <div v-if="!isSealed" class="space-y-2">
         <select 
           v-model="localFilters.rarity"
           class="col-start-1 row-start-1 w-full appearance-none rounded-md border border-gray-300 bg-white py-2 pr-8 pl-3 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm/6"
@@ -120,7 +126,8 @@
       </div>
 
       <!-- Numbered Filter -->
-      <div class="space-y-2">
+      <div v-if="!isSealed" class="space-y-2">
+        <label class="block text-sm font-medium text-gray-900">Numerazione /</label>
         <div class="space-y-3">
           <div class="flex items-center space-x-4">
             <input 
@@ -155,7 +162,7 @@
     </div>
 
     <!-- Extra Filters (Collapsible) -->
-    <Disclosure as="div" class="border-t border-gray-200 py-6" v-slot="{ open }">
+    <Disclosure v-if="!isSealed" as="div" class="border-t border-gray-200 py-6" v-slot="{ open }">
       <h3 class="-my-3 flow-root">
         <DisclosureButton class="flex w-full items-center justify-between bg-white py-3 text-sm text-gray-400 hover:text-gray-500">
           <span class="font-medium text-gray-900">Filtri Extra</span>
@@ -246,7 +253,7 @@
     </Disclosure>
 
     <!-- Grading Filters (Collapsible) -->
-    <Disclosure as="div" class="border-t border-gray-200 py-6" v-slot="{ open }">
+    <Disclosure v-if="!isSealed" as="div" class="border-t border-gray-200 py-6" v-slot="{ open }">
       <h3 class="-my-3 flow-root">
         <DisclosureButton class="flex w-full items-center justify-between bg-white py-3 text-sm text-gray-400 hover:text-gray-500">
           <span class="font-medium text-gray-900">Grading</span>
@@ -351,7 +358,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
 import { MinusIcon, PlusIcon } from '@heroicons/vue/20/solid'
 
@@ -364,6 +371,10 @@ const props = defineProps({
   category: {
     type: String,
     default: 'football'
+  },
+  subcategory: {
+    type: String,
+    default: 'singles'
   },
   gradingCompanies: {
     type: Array,
@@ -404,6 +415,16 @@ const databaseBrands = ref([])
 const gradingAvailable = ref(true)
 const conditionAvailable = ref(true)
 
+// Dropdown visibility state
+const showPlayerDropdown = ref(false)
+const showTeamDropdown = ref(false)
+const showSetDropdown = ref(false)
+
+// Computed property per determinare se mostrare solo i filtri essenziali
+const isSealed = computed(() => {
+  return props.subcategory === 'sealed-packs' || props.subcategory === 'sealed-boxes'
+})
+
 // REMOVED: Watch for external filter changes - this was causing infinite recursion
 // watch(() => props.filters, (newFilters) => {
 //   localFilters.value = { ...newFilters }
@@ -417,10 +438,8 @@ watch(localFilters, (newFilters) => {
 
 // Watch for specific filter changes to trigger chained filters
 watch(() => localFilters.value.year, (newYear, oldYear) => {
-  if (newYear !== oldYear) {
-    // Reset brand e rarity quando cambia year
-    localFilters.value.brand = ''
-    localFilters.value.rarity = ''
+  if (newYear !== oldYear && oldYear !== undefined) {
+    // Non resettare altri filtri, lascia che il backend determini cosa è disponibile
     setTimeout(() => {
       loadChainedFilters()
     }, 100)
@@ -428,30 +447,27 @@ watch(() => localFilters.value.year, (newYear, oldYear) => {
 })
 
 watch(() => localFilters.value.brand, (newBrand, oldBrand) => {
-  if (newBrand !== oldBrand) {
-    // Reset rarity quando cambia brand
-    localFilters.value.rarity = ''
+  if (newBrand !== oldBrand && oldBrand !== undefined) {
+    // Non resettare altri filtri, lascia che il backend determini cosa è disponibile
     setTimeout(() => {
       loadChainedFilters()
     }, 100)
   }
 })
 
-watch(() => localFilters.value.rarity, () => {
-  setTimeout(() => {
-    loadChainedFilters()
-  }, 100)
+watch(() => localFilters.value.rarity, (newRarity, oldRarity) => {
+  if (newRarity !== oldRarity && oldRarity !== undefined) {
+    setTimeout(() => {
+      loadChainedFilters()
+    }, 100)
+  }
 })
 
 // Functions
 const searchPlayers = async () => {
-  if (localFilters.value.playerSearch.length < 2) {
-    filteredPlayers.value = []
-    return
-  }
-  
   try {
-    const response = await fetch(`/api/${props.category}/filters/players/search?q=${encodeURIComponent(localFilters.value.playerSearch)}`)
+    const query = localFilters.value.playerSearch || ''
+    const response = await fetch(`/api/${props.category}/filters/players/search?q=${encodeURIComponent(query)}`)
     const data = await response.json()
     filteredPlayers.value = data.players || []
   } catch (error) {
@@ -460,14 +476,23 @@ const searchPlayers = async () => {
   }
 }
 
+const onPlayerFocus = async () => {
+  showPlayerDropdown.value = true
+  // Carica tutti i giocatori disponibili quando si fa focus
+  await searchPlayers()
+}
+
+const onPlayerBlur = () => {
+  // Ritarda la chiusura per permettere il click su un elemento
+  setTimeout(() => {
+    showPlayerDropdown.value = false
+  }, 200)
+}
+
 const searchTeams = async () => {
-  if (localFilters.value.teamSearch.length < 2) {
-    filteredTeams.value = []
-    return
-  }
-  
   try {
-    const response = await fetch(`/api/${props.category}/filters/teams/search?q=${encodeURIComponent(localFilters.value.teamSearch)}`)
+    const query = localFilters.value.teamSearch || ''
+    const response = await fetch(`/api/${props.category}/filters/teams/search?q=${encodeURIComponent(query)}`)
     const data = await response.json()
     filteredTeams.value = data.teams || []
   } catch (error) {
@@ -476,20 +501,42 @@ const searchTeams = async () => {
   }
 }
 
+const onTeamFocus = async () => {
+  showTeamDropdown.value = true
+  // Carica tutte le squadre disponibili quando si fa focus
+  await searchTeams()
+}
+
+const onTeamBlur = () => {
+  // Ritarda la chiusura per permettere il click su un elemento
+  setTimeout(() => {
+    showTeamDropdown.value = false
+  }, 200)
+}
+
 const searchCardSets = async () => {
-  if (localFilters.value.setSearch.length < 2) {
-    filteredCardSets.value = []
-    return
-  }
-  
   try {
-    const response = await fetch(`/api/${props.category}/filters/card-sets/search?q=${encodeURIComponent(localFilters.value.setSearch)}`)
+    const query = localFilters.value.setSearch || ''
+    const response = await fetch(`/api/${props.category}/filters/card-sets/search?q=${encodeURIComponent(query)}`)
     const data = await response.json()
     filteredCardSets.value = data.card_sets || []
   } catch (error) {
     console.error('Errore nella ricerca set:', error)
     filteredCardSets.value = []
   }
+}
+
+const onSetFocus = async () => {
+  showSetDropdown.value = true
+  // Carica tutti i set disponibili quando si fa focus
+  await searchCardSets()
+}
+
+const onSetBlur = () => {
+  // Ritarda la chiusura per permettere il click su un elemento
+  setTimeout(() => {
+    showSetDropdown.value = false
+  }, 200)
 }
 
 const loadFilterData = async () => {
@@ -544,34 +591,48 @@ const loadChainedFilters = async () => {
 }
 
 const updateAvailableFilters = (data) => {
-  // Aggiorna teams se disponibili
+  // Aggiorna teams se disponibili - IMPORTANTE: limita le squadre disponibili nei filtri
   if (data.teams) {
-    // Non aggiorniamo filteredTeams perché è per l'autocomplete
-    // Ma potremmo usare questi dati per limitare l'autocomplete
-    console.log('Teams disponibili per il giocatore selezionato:', data.teams)
+    // Se ci sono teams filtrati, usa solo quelli quando si caricano le squadre
+    // Questo verrà usato quando l'utente fa focus sul campo team
+    console.log('Teams disponibili filtrate:', data.teams)
   }
   
-  // Aggiorna card sets se disponibili
+  // Aggiorna card sets se disponibili - IMPORTANTE: limita i set disponibili
   if (data.card_sets) {
-    // Non aggiorniamo filteredCardSets perché è per l'autocomplete
-    // Ma potremmo usare questi dati per limitare l'autocomplete
-    console.log('Set disponibili per il giocatore selezionato:', data.card_sets)
+    // Se ci sono card_sets filtrati, usa solo quelli
+    console.log('Set disponibili filtrati:', data.card_sets)
   }
   
   // Aggiorna anni, brand, rarità - QUESTI DEVONO ESSERE AGGIORNATI
   if (data.years && Array.isArray(data.years)) {
     databaseYears.value = data.years
     console.log('Anni aggiornati:', data.years)
+    
+    // Se l'anno selezionato non è più disponibile, resettalo
+    if (localFilters.value.year && !data.years.includes(localFilters.value.year)) {
+      localFilters.value.year = ''
+    }
   }
   
   if (data.brands && Array.isArray(data.brands)) {
     databaseBrands.value = data.brands
     console.log('Brand aggiornati:', data.brands)
+    
+    // Se il brand selezionato non è più disponibile, resettalo
+    if (localFilters.value.brand && !data.brands.includes(localFilters.value.brand)) {
+      localFilters.value.brand = ''
+    }
   }
   
   if (data.rarities && Array.isArray(data.rarities)) {
     availableRarities.value = data.rarities
     console.log('Rarità aggiornate:', data.rarities)
+    
+    // Se la rarità selezionata non è più disponibile, resettala
+    if (localFilters.value.rarity && !data.rarities.includes(localFilters.value.rarity)) {
+      localFilters.value.rarity = ''
+    }
   }
   
   // Aggiorna range numerato
@@ -641,6 +702,7 @@ const selectPlayer = (player) => {
   }
   localFilters.value.playerSearch = ''
   filteredPlayers.value = []
+  showPlayerDropdown.value = false
 }
 
 const resetDependentFilters = () => {
@@ -685,6 +747,7 @@ const selectTeam = (team) => {
   localFilters.value.team = team.id
   localFilters.value.teamSearch = ''
   filteredTeams.value = []
+  showTeamDropdown.value = false
   
   // Reset filtri dipendenti (set, year, brand, rarity)
   selectedCardSet.value = null
@@ -725,6 +788,7 @@ const selectCardSet = (set) => {
   localFilters.value.set = set.id
   localFilters.value.setSearch = ''
   filteredCardSets.value = []
+  showSetDropdown.value = false
   
   // Reset filtri dipendenti (year, brand, rarity)
   localFilters.value.year = ''

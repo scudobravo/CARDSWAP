@@ -12,7 +12,7 @@
         placeholder="Cerca su CardSwap" 
         class="w-full bg-gray-50 text-gray-900 placeholder-gray-400 rounded-full pl-12 pr-4 py-3 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent font-gill-sans text-sm"
         @input="handleSearch"
-        @focus="showSuggestions = true"
+        @focus="handleFocus"
         @keydown="handleKeydown"
         @blur="handleBlur"
       />
@@ -31,14 +31,14 @@
       v-if="showSuggestions" 
       class="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto"
     >
-      <!-- Messaggio di istruzioni -->
-      <div v-if="!isLoading && suggestions.length === 0 && searchQuery.length < 2" class="p-4 text-gray-500 text-center">
-        Digita almeno 2 caratteri per cercare...
+      <!-- Messaggio se nessun risultato -->
+      <div v-if="!isLoading && suggestions.length === 0 && searchQuery.length > 0" class="p-4 text-gray-500 text-center">
+        Nessun risultato trovato per "{{ searchQuery }}"
       </div>
       
-      <!-- Messaggio se nessun risultato -->
-      <div v-else-if="!isLoading && suggestions.length === 0 && searchQuery.length >= 2" class="p-4 text-gray-500 text-center">
-        Nessun risultato trovato per "{{ searchQuery }}"
+      <!-- Messaggio iniziale quando si fa focus -->
+      <div v-else-if="!isLoading && suggestions.length === 0 && searchQuery.length === 0" class="p-4 text-gray-500 text-center">
+        Inizia a digitare per cercare...
       </div>
       
       <!-- Lista suggerimenti -->
@@ -110,6 +110,15 @@ const isLoading = ref(false)
 // Debounce timer
 let searchTimeout = null
 
+// Funzione per gestire il focus
+const handleFocus = () => {
+  showSuggestions.value = true
+  // Carica suggerimenti iniziali quando si fa focus
+  if (searchQuery.value.length === 0) {
+    fetchSuggestions()
+  }
+}
+
 // Funzione per gestire la ricerca
 const handleSearch = () => {
   // Cancella il timeout precedente
@@ -120,12 +129,6 @@ const handleSearch = () => {
   // Reset dell'indice selezionato
   selectedIndex.value = -1
   
-  // Se la query è troppo corta, non cercare
-  if (searchQuery.value.length < 2) {
-    suggestions.value = []
-    return
-  }
-  
   // Imposta un timeout per evitare troppe richieste
   searchTimeout = setTimeout(() => {
     fetchSuggestions()
@@ -134,14 +137,10 @@ const handleSearch = () => {
 
 // Funzione per recuperare i suggerimenti
 const fetchSuggestions = async () => {
-  if (searchQuery.value.length < 2) {
-    suggestions.value = []
-    return
-  }
-  
   isLoading.value = true
   
   try {
+    // Passa anche query vuota per ottenere suggerimenti iniziali
     const response = await fetch(`/api/home/search-suggestions?q=${encodeURIComponent(searchQuery.value)}`, {
       headers: {
         'Accept': 'application/json',
@@ -199,13 +198,22 @@ const handleKeydown = (event) => {
 
 // Funzione per selezionare un suggerimento
 const selectSuggestion = (suggestion) => {
-  searchQuery.value = suggestion.text
   showSuggestions.value = false
   selectedIndex.value = -1
   
   // Naviga alla pagina appropriata
-  if (suggestion.url) {
-    router.push(suggestion.url)
+  if (suggestion.url && suggestion.type === 'card') {
+    // Solo per le carte, naviga direttamente
+    router.push(suggestion.url).catch(err => {
+      console.error('Errore navigazione:', err)
+      // Se la navigazione fallisce, fai una ricerca generale
+      searchQuery.value = suggestion.text
+      performGeneralSearch()
+    })
+  } else {
+    // Per altri tipi o se manca l'URL, fai una ricerca generale
+    searchQuery.value = suggestion.text
+    performGeneralSearch()
   }
 }
 
@@ -229,9 +237,6 @@ const handleBlur = () => {
 
 // Watch per resettare quando la query cambia
 watch(searchQuery, (newQuery) => {
-  if (newQuery.length < 2) {
-    suggestions.value = []
-    // Non nascondere il dropdown se è aperto, solo svuota i suggerimenti
-  }
+  // Non fare nulla, gestiamo tutto in handleSearch
 })
 </script>

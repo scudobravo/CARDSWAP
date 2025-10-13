@@ -260,11 +260,9 @@ class HomeController extends Controller
     {
         $query = $request->get('q', '');
         
+        // Se non c'è query, restituisci suggerimenti popolari
         if (strlen($query) < 2) {
-            return response()->json([
-                'success' => true,
-                'data' => []
-            ]);
+            return $this->getPopularSuggestions();
         }
 
         try {
@@ -305,54 +303,14 @@ class HomeController extends Controller
                 ];
             }
 
-            // Suggerimenti da giocatori
-            $playerSuggestions = DB::table('players')
-                ->select('id', 'name', 'team_id')
-                ->where('name', 'LIKE', "%{$query}%")
-                ->limit(3)
-                ->get();
+            // Suggerimenti da giocatori (non mostrarli - non hanno pagina propria)
+            // I giocatori sono accessibili solo tramite la pagina delle carte
 
-            foreach ($playerSuggestions as $player) {
-                $suggestions[] = [
-                    'type' => 'player',
-                    'id' => $player->id,
-                    'text' => $player->name,
-                    'subtext' => 'Giocatore',
-                    'url' => "/players/{$player->id}",
-                ];
-            }
+            // Suggerimenti da squadre (non mostrarli - non hanno pagina propria)
+            // Le squadre sono accessibili solo tramite la pagina delle carte
 
-            // Suggerimenti da squadre
-            $teamSuggestions = Team::select('id', 'name', 'league_id')
-                ->where('name', 'LIKE', "%{$query}%")
-                ->limit(3)
-                ->get();
-
-            foreach ($teamSuggestions as $team) {
-                $suggestions[] = [
-                    'type' => 'team',
-                    'id' => $team->id,
-                    'text' => $team->name,
-                    'subtext' => 'Squadra',
-                    'url' => "/teams/{$team->id}",
-                ];
-            }
-
-            // Suggerimenti da set
-            $setSuggestions = CardSet::select('id', 'name', 'year', 'brand')
-                ->where('name', 'LIKE', "%{$query}%")
-                ->limit(3)
-                ->get();
-
-            foreach ($setSuggestions as $set) {
-                $suggestions[] = [
-                    'type' => 'set',
-                    'id' => $set->id,
-                    'text' => $set->name,
-                    'subtext' => $set->brand . ' (' . $set->year . ')',
-                    'url' => "/sets/{$set->id}",
-                ];
-            }
+            // Suggerimenti da set (non mostrarli - non hanno pagina propria)
+            // I set sono accessibili solo tramite i filtri delle categorie
 
             return response()->json([
                 'success' => true,
@@ -442,5 +400,58 @@ class HomeController extends Controller
         $slug = trim($slug, '-');
         
         return $slug;
+    }
+    
+    /**
+     * Get popular suggestions when no search query
+     */
+    private function getPopularSuggestions(): JsonResponse
+    {
+        try {
+            $suggestions = [];
+
+            // Carte più popolari o recenti
+            $popularCards = CardModel::with('category')
+                ->select('id', 'name', 'slug', 'set_name', 'year', 'category_id')
+                ->where('is_active', true)
+                ->orderBy('created_at', 'desc')
+                ->limit(8)
+                ->get();
+
+            foreach ($popularCards as $card) {
+                // Mappa le categorie del database agli slug URL
+                $categoryMap = [
+                    'calcio' => 'football',
+                    'basketball' => 'basketball',
+                    'pokemon' => 'pokemon'
+                ];
+                
+                $categorySlug = $categoryMap[$card->category->slug] ?? $card->category->slug;
+                // Usa lo slug esistente o genera uno nuovo se mancante
+                $cardSlug = $card->slug;
+                if (!$cardSlug) {
+                    $cardSlug = $this->generateSlug($card->name);
+                }
+                
+                $suggestions[] = [
+                    'type' => 'card',
+                    'id' => $card->id,
+                    'text' => $card->name,
+                    'subtext' => $card->set_name . ' (' . $card->year . ')',
+                    'url' => "/{$categorySlug}/{$cardSlug}",
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $suggestions
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => true,
+                'data' => []
+            ]);
+        }
     }
 }

@@ -329,7 +329,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCartStore } from '../stores/cart.js'
 import { useWishlistStore } from '../stores/wishlist.js'
@@ -657,4 +657,13 @@ onMounted(async () => {
   await wishlistStore.initialize()
   loadProductDetails()
 })
+
+// Watch per ricaricare i dati quando cambia la route (navigazione tra carte diverse)
+watch(() => route.params, (newParams, oldParams) => {
+  // Ricarica solo se cambia l'ID o lo slug della carta
+  if (newParams.id !== oldParams?.id || newParams.cardSlug !== oldParams?.cardSlug) {
+    console.log('Route params changed, reloading product details...')
+    loadProductDetails()
+  }
+}, { deep: true })
 </script>

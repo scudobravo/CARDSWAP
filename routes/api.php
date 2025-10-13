@@ -171,11 +171,14 @@ Route::get('/categories/{category}', [CategoryController::class, 'show']);
 Route::prefix('football/filters')->group(function () {
     Route::get('/options', [FootballFilterController::class, 'getFilterOptions']);
     Route::get('/teams/search', [FootballFilterController::class, 'searchTeams']);
+    Route::get('/teams/{id}', [FootballFilterController::class, 'getTeamById']);
     Route::get('/teams/by-league', [FootballFilterController::class, 'getTeamsByLeague']);
     Route::get('/players/search', [FootballFilterController::class, 'searchPlayers']);
+    Route::get('/players/{id}', [FootballFilterController::class, 'getPlayerById']);
     Route::get('/players/by-team', [FootballFilterController::class, 'getPlayersByTeam']);
     Route::get('/players/by-league', [FootballFilterController::class, 'getPlayersByLeague']);
     Route::get('/card-sets/search', [FootballFilterController::class, 'searchCardSets']);
+    Route::get('/card-sets/{id}', [FootballFilterController::class, 'getCardSetById']);
     Route::get('/card-sets/by-year', [FootballFilterController::class, 'getCardSetsByYear']);
     Route::get('/card-sets/by-brand', [FootballFilterController::class, 'getCardSetsByBrand']);
     Route::get('/years/available', [FootballFilterController::class, 'getAvailableYears']);
@@ -191,11 +194,14 @@ Route::prefix('football/filters')->group(function () {
 Route::prefix('basketball/filters')->group(function () {
     Route::get('/options', [BasketballFilterController::class, 'getFilterOptions']);
     Route::get('/teams/search', [BasketballFilterController::class, 'searchTeams']);
+    Route::get('/teams/{id}', [BasketballFilterController::class, 'getTeamById']);
     Route::get('/teams/by-league', [BasketballFilterController::class, 'getTeamsByLeague']);
     Route::get('/players/search', [BasketballFilterController::class, 'searchPlayers']);
+    Route::get('/players/{id}', [BasketballFilterController::class, 'getPlayerById']);
     Route::get('/players/by-team', [BasketballFilterController::class, 'getPlayersByTeam']);
     Route::get('/players/by-league', [BasketballFilterController::class, 'getPlayersByLeague']);
     Route::get('/card-sets/search', [BasketballFilterController::class, 'searchCardSets']);
+    Route::get('/card-sets/{id}', [BasketballFilterController::class, 'getCardSetById']);
     Route::get('/card-sets/by-year', [BasketballFilterController::class, 'getCardSetsByYear']);
     Route::get('/card-sets/by-brand', [BasketballFilterController::class, 'getCardSetsByBrand']);
     Route::get('/years/available', [BasketballFilterController::class, 'getAvailableYears']);
@@ -211,11 +217,14 @@ Route::prefix('basketball/filters')->group(function () {
 Route::prefix('pokemon/filters')->group(function () {
     Route::get('/options', [PokemonFilterController::class, 'getFilterOptions']);
     Route::get('/teams/search', [PokemonFilterController::class, 'searchTeams']);
+    Route::get('/teams/{id}', [PokemonFilterController::class, 'getTeamById']);
     Route::get('/teams/by-league', [PokemonFilterController::class, 'getTeamsByLeague']);
     Route::get('/players/search', [PokemonFilterController::class, 'searchPlayers']);
+    Route::get('/players/{id}', [PokemonFilterController::class, 'getPlayerById']);
     Route::get('/players/by-team', [PokemonFilterController::class, 'getPlayersByTeam']);
     Route::get('/players/by-league', [PokemonFilterController::class, 'getPlayersByLeague']);
     Route::get('/card-sets/search', [PokemonFilterController::class, 'searchCardSets']);
+    Route::get('/card-sets/{id}', [PokemonFilterController::class, 'getCardSetById']);
     Route::get('/card-sets/by-year', [PokemonFilterController::class, 'getCardSetsByYear']);
     Route::get('/card-sets/by-brand', [PokemonFilterController::class, 'getCardSetsByBrand']);
     Route::get('/years/available', [PokemonFilterController::class, 'getAvailableYears']);

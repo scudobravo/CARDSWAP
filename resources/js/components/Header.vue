@@ -126,9 +126,9 @@ const hideSecondaryBar = computed(() => {
 const isLoggedIn = computed(() => authStore.isAuthenticated)
 const userName = computed(() => authStore.user?.name || authStore.user?.first_name || 'Guest')
 
-// Computed per i contatori
-const cartItemsCount = computed(() => cartStore.totalItems)
-const wishlistItemsCount = computed(() => wishlistStore.totalItems)
+// Computed per i contatori - mostra 0 se l'utente non è loggato
+const cartItemsCount = computed(() => isLoggedIn.value ? cartStore.totalItems : 0)
+const wishlistItemsCount = computed(() => isLoggedIn.value ? wishlistStore.totalItems : 0)
 
 // Carica i dati utente se c'è un token ma non l'utente
 onMounted(async () => {
@@ -148,15 +148,18 @@ onMounted(async () => {
   if (authStore.isAuthenticated) {
     await cartStore.initialize()
     await wishlistStore.initialize()
-  } else {
-    // Per utenti non autenticati, carica solo il cart dal localStorage
-    await cartStore.initialize()
   }
+  // Per utenti non autenticati, non caricare nulla
+  // I computed cartItemsCount e wishlistItemsCount restituiranno 0
 })
 
 // Funzione di logout
 const handleLogout = async () => {
   try {
+    // Svuota carrello e wishlist prima del logout (mentre l'utente è ancora autenticato)
+    cartStore.clearCart()
+    await wishlistStore.clearWishlist()
+    
     // Chiama l'API di logout
     await fetch('/api/auth/logout', {
       method: 'POST',
@@ -168,7 +171,7 @@ const handleLogout = async () => {
   } catch (error) {
     console.error('Errore durante logout:', error)
   } finally {
-    // Pulisci lo store
+    // Pulisci lo store di autenticazione
     authStore.logout()
     router.push('/')
   }
