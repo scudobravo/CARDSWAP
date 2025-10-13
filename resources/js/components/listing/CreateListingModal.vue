@@ -35,15 +35,23 @@
               </div>
               <h3 class="text-xl font-semibold text-gray-900 mb-2">Configurazione Richiesta</h3>
               <p class="text-gray-600 mb-6">
-                Prima di creare inserzioni, devi configurare le zone di spedizione.<br>
-                Contatta l'amministratore per configurare le zone di spedizione.
+                Prima di creare inserzioni, devi configurare le tue zone di spedizione.<br>
+                Crea almeno una zona per definire dove puoi spedire le tue carte.
               </p>
-              <button
-                @click="closeModal"
-                class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                Chiudi
-              </button>
+              <div class="flex gap-3 justify-center">
+                <button
+                  @click="closeModal"
+                  class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Chiudi
+                </button>
+                <button
+                  @click="goToShippingZones"
+                  class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark transition-colors"
+                >
+                  Configura Zone
+                </button>
+              </div>
             </div>
             
             <!-- Selezione modalità se ci sono zone -->
@@ -1065,7 +1073,8 @@ const checkShippingZones = async () => {
     console.log('🔄 Controllo esistenza zone di spedizione...')
     const response = await fetch('/api/shipping-zones/check', {
       headers: {
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
     })
     
@@ -1081,6 +1090,11 @@ const checkShippingZones = async () => {
     console.error('❌ Errore nel controllo zone di spedizione:', error)
     hasShippingZones.value = false
   }
+}
+
+const goToShippingZones = () => {
+  closeModal()
+  window.location.href = '/profile/shipping-zones'
 }
 
 const loadShippingZones = async () => {

@@ -4,12 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class ShippingZone extends Model
 {
     use HasFactory;
     protected $fillable = [
+        'user_id',
         'name',
         'country_code',
         'region',
@@ -49,6 +51,14 @@ class ShippingZone extends Model
     ];
 
     /**
+     * Relazione con l'utente proprietario della zona
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
      * Relazione con le inserzioni che supportano questa zona di spedizione
      */
     public function cardListings(): BelongsToMany
@@ -70,6 +80,14 @@ class ShippingZone extends Model
     public function scopeForCountry($query, $countryCode)
     {
         return $query->where('country_code', $countryCode);
+    }
+
+    /**
+     * Scope per zone di un utente specifico
+     */
+    public function scopeForUser($query, $userId)
+    {
+        return $query->where('user_id', $userId);
     }
 
     /**

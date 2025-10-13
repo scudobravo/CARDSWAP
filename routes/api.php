@@ -47,33 +47,36 @@ Route::get('/grading-companies', function () {
     }
 });
 
-// Shipping Zones
-Route::get('/shipping-zones', function () {
-    try {
-        $zones = DB::table('shipping_zones')
-            ->select('id', 'name', 'country_code', 'shipping_cost', 'delivery_days_min', 'delivery_days_max')
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get()
-            ->map(function ($zone) {
-                // Aggiungi una descrizione basata sui dati della zona
-                $zone->description = "Spedizione in {$zone->country_code} - €{$zone->shipping_cost}";
-                return $zone;
-            });
-            
-        return response()->json($zones);
-    } catch (\Exception $e) {
-        return response()->json([
-            'error' => 'Errore nel caricamento zone di spedizione',
-            'message' => $e->getMessage()
-        ], 500);
-    }
+// Shipping Zones - Zone dell'utente autenticato
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/shipping-zones', function (Request $request) {
+        try {
+            $zones = DB::table('shipping_zones')
+                ->select('id', 'name', 'country_code', 'shipping_cost', 'delivery_days_min', 'delivery_days_max', 'is_active')
+                ->where('user_id', $request->user()->id)
+                ->orderBy('name')
+                ->get()
+                ->map(function ($zone) {
+                    // Aggiungi una descrizione basata sui dati della zona
+                    $zone->description = "Spedizione in {$zone->country_code} - €{$zone->shipping_cost}";
+                    return $zone;
+                });
+                
+            return response()->json($zones);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Errore nel caricamento zone di spedizione',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    });
 });
 
-// Check if shipping zones exist (public endpoint)
-Route::get('/shipping-zones/check', function () {
+// Check if shipping zones exist for authenticated user
+Route::get('/shipping-zones/check', function (Request $request) {
     try {
         $zonesCount = DB::table('shipping_zones')
+            ->where('user_id', $request->user()->id)
             ->where('is_active', true)
             ->count();
             
@@ -88,7 +91,7 @@ Route::get('/shipping-zones/check', function () {
             'error' => $e->getMessage()
         ]);
     }
-});
+})->middleware('auth:sanctum');
 
 // Debug routes (senza autenticazione per test)
 Route::get('/debug-tokens', function () {
@@ -505,12 +508,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/kyc/users/{user}/approve', [KycController::class, 'approveKyc']); // Approva KYC
         Route::post('/kyc/users/{user}/reject', [KycController::class, 'rejectKyc']); // Rifiuta KYC
         
-        // Gestione Zone di Spedizione
-        Route::get('/shipping-zones', [AdminController::class, 'shippingZones']); // Lista zone
-        Route::post('/shipping-zones', [AdminController::class, 'createShippingZone']); // Crea zona
-        Route::put('/shipping-zones/{shippingZone}', [AdminController::class, 'updateShippingZone']); // Aggiorna zona
-        Route::delete('/shipping-zones/{shippingZone}', [AdminController::class, 'deleteShippingZone']); // Elimina zona
-        Route::get('/shipping-zones/check', [AdminController::class, 'checkShippingZones']); // Verifica esistenza zone
+        // Gestione Zone di Spedizione - Rimosso (ora gestito per utente)
+    });
+
+    // Gestione Zone di Spedizione per utenti
+    Route::prefix('shipping-zones')->middleware('auth:sanctum')->group(function () {
+        Route::post('/', [UserController::class, 'createShippingZone']); // Crea zona
+        Route::put('/{shippingZone}', [UserController::class, 'updateShippingZone']); // Aggiorna zona
+        Route::delete('/{shippingZone}', [UserController::class, 'deleteShippingZone']); // Elimina zona
     });
 
     // KYC per utenti

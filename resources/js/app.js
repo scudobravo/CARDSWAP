@@ -47,6 +47,9 @@ import SettingsLanguage from './views/SettingsLanguage.vue';
 // Import KYC View
 import KycPage from './views/KycPage.vue';
 
+// Import Profile Views
+import ShippingZonesPage from './views/profile/ShippingZonesPage.vue';
+
 // Import Contact View
 import Contact from './views/Contact.vue';
 
@@ -86,6 +89,9 @@ const routes = [
     { path: '/account/addresses', component: AccountAddresses, name: 'account.addresses' },
     { path: '/account/payment-methods', component: AccountPaymentMethods, name: 'account.payment-methods' },
     { path: '/account/security', component: AccountSecurity, name: 'account.security' },
+    
+    // Profile Routes
+    { path: '/profile/shipping-zones', component: ShippingZonesPage, name: 'profile.shipping-zones' },
     
     // Purchases Routes
     { path: '/purchases/orders', component: PurchasesOrders, name: 'purchases.orders' },

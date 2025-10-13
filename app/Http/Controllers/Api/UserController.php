@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\UserAddress;
 use App\Models\UserPaymentMethod;
 use App\Models\UserNotification;
+use App\Models\ShippingZone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -500,5 +501,130 @@ class UserController extends Controller
             'message' => 'Preferenze notifiche aggiornate con successo',
             'preferences' => $user->notification_preferences
         ]);
+    }
+
+    /**
+     * Crea una nuova zona di spedizione per l'utente
+     */
+    public function createShippingZone(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'country_code' => 'required|string|max:2',
+            'region' => 'nullable|string|max:255',
+            'city' => 'nullable|string|max:255',
+            'postal_code' => 'nullable|string|max:10',
+            'shipping_cost' => 'required|numeric|min:0',
+            'delivery_days_min' => 'required|integer|min:1',
+            'delivery_days_max' => 'required|integer|min:1|gte:delivery_days_min',
+            'is_active' => 'boolean'
+        ]);
+
+        try {
+            $zone = ShippingZone::create([
+                'user_id' => $request->user()->id,
+                'name' => $request->name,
+                'country_code' => $request->country_code,
+                'region' => $request->region,
+                'city' => $request->city,
+                'postal_code' => $request->postal_code,
+                'shipping_cost' => $request->shipping_cost,
+                'delivery_days_min' => $request->delivery_days_min,
+                'delivery_days_max' => $request->delivery_days_max,
+                'is_active' => $request->get('is_active', true)
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Zona di spedizione creata con successo',
+                'data' => $zone
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Errore nella creazione della zona di spedizione',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Aggiorna una zona di spedizione dell'utente
+     */
+    public function updateShippingZone(Request $request, ShippingZone $shippingZone)
+    {
+        // Verifica che la zona appartenga all'utente
+        if ($shippingZone->user_id !== $request->user()->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Accesso negato'
+            ], 403);
+        }
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'country_code' => 'required|string|max:2',
+            'region' => 'nullable|string|max:255',
+            'city' => 'nullable|string|max:255',
+            'postal_code' => 'nullable|string|max:10',
+            'shipping_cost' => 'required|numeric|min:0',
+            'delivery_days_min' => 'required|integer|min:1',
+            'delivery_days_max' => 'required|integer|min:1|gte:delivery_days_min',
+            'is_active' => 'boolean'
+        ]);
+
+        try {
+            $shippingZone->update($request->all());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Zona di spedizione aggiornata con successo',
+                'data' => $shippingZone
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Errore nell\'aggiornamento della zona di spedizione',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Elimina una zona di spedizione dell'utente
+     */
+    public function deleteShippingZone(Request $request, ShippingZone $shippingZone)
+    {
+        // Verifica che la zona appartenga all'utente
+        if ($shippingZone->user_id !== $request->user()->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Accesso negato'
+            ], 403);
+        }
+
+        // Verifica se ci sono inserzioni che usano questa zona
+        $listingsCount = $shippingZone->cardListings()->count();
+        if ($listingsCount > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => "Impossibile eliminare la zona. È utilizzata da {$listingsCount} inserzioni."
+            ], 422);
+        }
+
+        try {
+            $shippingZone->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Zona di spedizione eliminata con successo'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Errore nell\'eliminazione della zona di spedizione',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }
