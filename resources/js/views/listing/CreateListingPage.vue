@@ -189,7 +189,7 @@
                 </div>
                 <div>
                   <button
-                    @click="window.location.href = '/dashboard/kyc'"
+                    @click="goToKyc"
                     class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-gill-sans-semibold rounded-md text-yellow-800 bg-yellow-100 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
                   >
                     Inizia Verifica KYC
@@ -430,6 +430,10 @@ const getStatusLabel = (status) => {
     'sold': 'Venduta'
   }
   return labels[status] || status
+}
+
+const goToKyc = () => {
+  window.location.href = '/dashboard/kyc'
 }
 
 // Lifecycle
