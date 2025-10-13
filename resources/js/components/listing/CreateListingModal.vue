@@ -389,20 +389,20 @@
               <div class="border rounded-lg p-6 bg-white shadow-lg">
                 <div class="flex items-start space-x-4">
                   <img 
-                    :src="selectedCardModel?.image_url || '/images/placeholder-card.jpg'" 
+                    :src="getFirstUploadedImage() || selectedCardModel?.image_url || '/images/placeholder-card.jpg'" 
                     :alt="selectedCardModel?.name"
                     class="w-20 h-28 object-cover rounded"
                   />
                   <div class="flex-1">
                     <h5 class="font-semibold text-gray-900">{{ selectedCardModel?.name }}</h5>
                     <p class="text-sm text-gray-600">{{ selectedCardModel?.set_name }} {{ selectedCardModel?.year }}</p>
-                    <p class="text-sm text-gray-500">{{ listingData.condition }}</p>
+                    <p class="text-sm text-gray-500">{{ additionalDetails.condition || 'mint' }}</p>
                     <div class="mt-2">
-                      <span class="text-lg font-bold text-primary">€ {{ listingData.price }}</span>
-                      <span class="text-sm text-gray-500 ml-2">x{{ listingData.quantity }}</span>
+                      <span class="text-lg font-bold text-primary">€ {{ filters.price || '0.00' }}</span>
+                      <span class="text-sm text-gray-500 ml-2">x1</span>
                     </div>
-                    <div v-if="listingData.description" class="mt-2 text-sm text-gray-600">
-                      {{ listingData.description }}
+                    <div v-if="additionalDetails.notes" class="mt-2 text-sm text-gray-600">
+                      {{ additionalDetails.notes }}
                     </div>
                   </div>
                 </div>
@@ -1385,17 +1385,18 @@ const getSingleCardData = () => {
 const handleImageUploaded = (imagesArray) => {
   console.log('📸 handleImageUploaded chiamata con:', imagesArray)
   
-  // Aggiorna cardImages con l'array completo delle immagini
+  // Aggiorna cardImages con l'array completo delle immagini (mantenendo la struttura di 4 elementi)
   cardImages.value = [...imagesArray]
   console.log('📸 cardImages.value aggiornato:', cardImages.value)
   
-  // Aggiorna anche cardImage per compatibilità (prima immagine)
-  if (imagesArray.length > 0 && imagesArray[0]) {
-    cardImage.value = imagesArray[0].file
-    cardImagePreview.value = imagesArray[0].preview
+  // Aggiorna anche cardImage per compatibilità (prima immagine valida)
+  const firstValidImage = imagesArray.find(img => img && img.file)
+  if (firstValidImage) {
+    cardImage.value = firstValidImage.file
+    cardImagePreview.value = firstValidImage.preview
   }
   
-  // Aggiorna listingData.images con tutti i file
+  // Aggiorna listingData.images con tutti i file validi
   listingData.value.images = imagesArray.filter(img => img && img.file).map(img => img.file)
   console.log('📸 listingData.value.images aggiornato:', listingData.value.images)
 }
@@ -1479,6 +1480,13 @@ const removeBulkRepresentativeImage = () => {
     URL.revokeObjectURL(bulkRepresentativeImage.value.preview)
   }
   bulkRepresentativeImage.value = null
+}
+
+// Get first uploaded image for preview
+const getFirstUploadedImage = () => {
+  // Cerca la prima immagine caricata nell'array cardImages
+  const firstImage = cardImages.value.find(img => img && img.preview)
+  return firstImage ? firstImage.preview : null
 }
 
 // Lifecycle

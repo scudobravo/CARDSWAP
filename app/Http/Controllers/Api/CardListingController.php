@@ -95,13 +95,7 @@ class CardListingController extends Controller
             ], 422);
         }
 
-        // Verifica che l'utente sia un venditore
-        if (!in_array(Auth::user()->role, ['seller', 'admin'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Solo i venditori possono creare inserzioni'
-            ], 403);
-        }
+        // Qualunque utente autenticato può creare inserzioni
 
         try {
             DB::beginTransaction();
@@ -129,7 +123,7 @@ class CardListingController extends Controller
                 $cardListing->shippingZones()->attach($request->shipping_zones);
             }
 
-            // Approvazione automatica per venditori verificati
+            // Approvazione automatica per utenti verificati
             if (Auth::user()->stripe_identity_verified && Auth::user()->kyc_status === 'approved') {
                 $oldStatus = $cardListing->status;
                 $cardListing->publish(); // publish() include già approve() e imposta published_at
@@ -201,13 +195,7 @@ class CardListingController extends Controller
             ], 422);
         }
 
-        // Verifica che l'utente sia un venditore
-        if (!in_array(Auth::user()->role, ['seller', 'admin'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Solo i venditori possono creare inserzioni'
-            ], 403);
-        }
+        // Qualunque utente autenticato può creare inserzioni
 
         $sellerId = Auth::id();
         $createdListings = [];
