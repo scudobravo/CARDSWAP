@@ -66,28 +66,60 @@ class CardModelController extends Controller
         }
         
         // Filtro per autografo
-        if (!empty($filters['autograph'])) {
-            $query->where('attributes->autograph', true);
+        if (isset($filters['autograph']) && $filters['autograph'] !== '') {
+            if ($filters['autograph'] === 'yes') {
+                $query->where('attributes->autograph', true);
+            } elseif ($filters['autograph'] === 'no') {
+                $query->where(function($q) {
+                    $q->whereNull('attributes->autograph')
+                      ->orWhere('attributes->autograph', false);
+                });
+            }
         }
         
         // Filtro per reliquia
-        if (!empty($filters['relic'])) {
-            $query->where('attributes->relic', true);
+        if (isset($filters['relic']) && $filters['relic'] !== '') {
+            if ($filters['relic'] === 'yes') {
+                $query->where('attributes->relic', true);
+            } elseif ($filters['relic'] === 'no') {
+                $query->where(function($q) {
+                    $q->whereNull('attributes->relic')
+                      ->orWhere('attributes->relic', false);
+                });
+            }
         }
         
         // Filtro per on-card autograph
-        if (!empty($filters['onCardAuto'])) {
-            $query->where('attributes->on_card_auto', true);
+        if (isset($filters['onCardAuto']) && $filters['onCardAuto'] !== '') {
+            if ($filters['onCardAuto'] === 'yes') {
+                $query->where('attributes->on_card_auto', true);
+            } elseif ($filters['onCardAuto'] === 'no') {
+                $query->where(function($q) {
+                    $q->whereNull('attributes->on_card_auto')
+                      ->orWhere('attributes->on_card_auto', false);
+                });
+            }
         }
         
         // Filtro per jewel
-        if (!empty($filters['jewel'])) {
-            $query->where('attributes->jewel', true);
+        if (isset($filters['jewel']) && $filters['jewel'] !== '') {
+            if ($filters['jewel'] === 'yes') {
+                $query->where('attributes->jewel', true);
+            } elseif ($filters['jewel'] === 'no') {
+                $query->where(function($q) {
+                    $q->whereNull('attributes->jewel')
+                      ->orWhere('attributes->jewel', false);
+                });
+            }
         }
         
-        // Filtro per rookie
-        if (!empty($filters['rookie'])) {
-            $query->where('attributes->rookie', true);
+        // Filtro per rookie - usa campo diretto is_rookie
+        if (isset($filters['rookie']) && $filters['rookie'] !== '') {
+            if ($filters['rookie'] === 'yes') {
+                $query->where('is_rookie', true);
+            } elseif ($filters['rookie'] === 'no') {
+                $query->where('is_rookie', false);
+            }
         }
         
         // Filtro per multi-player
@@ -96,31 +128,33 @@ class CardModelController extends Controller
         }
         
         // Filtro per multi-autograph
-        if (!empty($filters['multiAutograph']) && is_array($filters['multiAutograph'])) {
-            $query->whereIn('attributes->multi_autograph', $filters['multiAutograph']);
+        if (!empty($filters['multiAutograph'])) {
+            if (is_array($filters['multiAutograph'])) {
+                $query->whereIn('attributes->multi_autograph', $filters['multiAutograph']);
+            } else {
+                // Se è una stringa singola (es. "dual", "triple", ecc.)
+                $query->where('attributes->multi_autograph_' . $filters['multiAutograph'], true);
+            }
         }
         
-        // Filtro per grading
-        if (!empty($filters['grading'])) {
-            $query->where('attributes->grading', $filters['grading']);
+        // Filtro per grading company - usa campo diretto grading_company_id
+        if (!empty($filters['gradingCompany'])) {
+            $query->where('grading_company_id', $filters['gradingCompany']);
         }
         
-        // Filtro per punteggio grading
+        // Filtro per punteggio grading - usa campo diretto grading_score
         if (!empty($filters['gradingScoreMin'])) {
-            $query->where('attributes->grading_score', '>=', $filters['gradingScoreMin']);
+            $query->where('grading_score', '>=', $filters['gradingScoreMin']);
         }
         if (!empty($filters['gradingScoreMax'])) {
-            $query->where('attributes->grading_score', '<=', $filters['gradingScoreMax']);
+            $query->where('grading_score', '<=', $filters['gradingScoreMax']);
         }
         
-        // Filtro per aziende grading
-        if (!empty($filters['gradingCompanies']) && is_array($filters['gradingCompanies'])) {
-            $query->whereIn('attributes->grading_company', $filters['gradingCompanies']);
-        }
-        
-        // Filtro per condizioni
-        if (!empty($filters['conditions']) && is_array($filters['conditions'])) {
-            $query->whereIn('attributes->condition', $filters['conditions']);
+        // Filtro per condizione - questo è per le listings, non per i card models
+        // I card models non hanno condizione, è una proprietà delle listings
+        if (!empty($filters['condition'])) {
+            // Non applicare questo filtro ai card models
+            // Verrà applicato alle listings se necessario
         }
         
         // Ordinamento

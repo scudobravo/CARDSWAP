@@ -11,7 +11,7 @@
             Aggiungi le tue carte alla piattaforma
           </p>
         </div>
-        <div class="mt-4 flex md:mt-0 md:ml-4">
+        <div v-if="kycCompleted" class="mt-4 flex md:mt-0 md:ml-4">
           <button 
             @click="openCreateModal"
             class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-gill-sans-semibold text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
@@ -175,23 +175,49 @@
           </div>
           
           <div v-else class="text-center py-8">
-            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <h3 class="mt-2 text-sm font-medium text-gray-900">Nessuna inserzione</h3>
-            <p class="mt-1 text-sm text-gray-500">
-              Inizia creando la tua prima inserzione.
-            </p>
-            <div class="mt-6">
-              <button 
-                @click="openCreateModal"
-                class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-              >
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Crea Inserzione
-              </button>
+            <!-- Alert KYC se non completato -->
+            <div v-if="!kycCompleted" class="mb-8">
+              <div class="rounded-md bg-yellow-50 p-4 text-center">
+                <div class="flex justify-center items-center mb-2">
+                  <ExclamationTriangleIcon class="h-5 w-5 text-yellow-400 mr-2" />
+                  <h3 class="text-sm font-gill-sans-semibold text-yellow-800">
+                    Verifica KYC Richiesta
+                  </h3>
+                </div>
+                <div class="text-sm text-yellow-700 mb-4">
+                  <p>Per creare inserzioni e vendere carte, devi completare la verifica KYC. Questo processo è necessario per garantire la sicurezza della piattaforma.</p>
+                </div>
+                <div>
+                  <button
+                    @click="window.location.href = '/dashboard/kyc'"
+                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-gill-sans-semibold rounded-md text-yellow-800 bg-yellow-100 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                  >
+                    Inizia Verifica KYC
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Contenuto normale se KYC completato -->
+            <div v-if="kycCompleted">
+              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 class="mt-2 text-sm font-medium text-gray-900">Nessuna inserzione</h3>
+              <p class="mt-1 text-sm text-gray-500">
+                Inizia creando la tua prima inserzione.
+              </p>
+              <div class="mt-6">
+                <button 
+                  @click="openCreateModal"
+                  class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                >
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Crea Inserzione
+                </button>
+              </div>
             </div>
           </div>
     </div>
@@ -218,7 +244,7 @@
 import { ref, onMounted } from 'vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import CreateListingModal from '../../components/listing/CreateListingModal.vue'
-import { PlusIcon } from '@heroicons/vue/24/outline'
+import { PlusIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
 
 // State
 const showCreateModal = ref(false)
@@ -226,8 +252,37 @@ const showEditModal = ref(false)
 const editingListing = ref(null)
 const stats = ref({})
 const recentListings = ref([])
+const kycStatus = ref(null)
+const kycCompleted = ref(false)
 
 // Methods
+const checkKycStatus = async () => {
+  try {
+    console.log('🔄 Controllo stato KYC...')
+    const response = await fetch('/api/kyc/status', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Accept': 'application/json'
+      }
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      console.log('✅ Stato KYC:', data.data)
+      kycStatus.value = data.data
+      kycCompleted.value = data.data.is_kyc_complete
+    } else {
+      console.error('❌ Errore nel controllo KYC:', response.status)
+      kycStatus.value = null
+      kycCompleted.value = false
+    }
+  } catch (error) {
+    console.error('❌ Errore nel controllo KYC:', error)
+    kycStatus.value = null
+    kycCompleted.value = false
+  }
+}
+
 const openCreateModal = () => {
   showCreateModal.value = true
 }
@@ -378,7 +433,8 @@ const getStatusLabel = (status) => {
 }
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
+  await checkKycStatus()
   loadStats()
   loadRecentListings()
 })

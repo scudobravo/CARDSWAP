@@ -51,10 +51,15 @@ Route::get('/grading-companies', function () {
 Route::get('/shipping-zones', function () {
     try {
         $zones = DB::table('shipping_zones')
-            ->select('id', 'name', 'country_code', 'base_cost')
+            ->select('id', 'name', 'country_code', 'shipping_cost', 'delivery_days_min', 'delivery_days_max')
             ->where('is_active', true)
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->map(function ($zone) {
+                // Aggiungi una descrizione basata sui dati della zona
+                $zone->description = "Spedizione in {$zone->country_code} - €{$zone->shipping_cost}";
+                return $zone;
+            });
             
         return response()->json($zones);
     } catch (\Exception $e) {
@@ -62,6 +67,26 @@ Route::get('/shipping-zones', function () {
             'error' => 'Errore nel caricamento zone di spedizione',
             'message' => $e->getMessage()
         ], 500);
+    }
+});
+
+// Check if shipping zones exist (public endpoint)
+Route::get('/shipping-zones/check', function () {
+    try {
+        $zonesCount = DB::table('shipping_zones')
+            ->where('is_active', true)
+            ->count();
+            
+        return response()->json([
+            'has_zones' => $zonesCount > 0,
+            'zones_count' => $zonesCount
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'has_zones' => false,
+            'zones_count' => 0,
+            'error' => $e->getMessage()
+        ]);
     }
 });
 
@@ -479,6 +504,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/kyc/documents/{document}/download', [KycController::class, 'downloadDocument']); // Download documento
         Route::post('/kyc/users/{user}/approve', [KycController::class, 'approveKyc']); // Approva KYC
         Route::post('/kyc/users/{user}/reject', [KycController::class, 'rejectKyc']); // Rifiuta KYC
+        
+        // Gestione Zone di Spedizione
+        Route::get('/shipping-zones', [AdminController::class, 'shippingZones']); // Lista zone
+        Route::post('/shipping-zones', [AdminController::class, 'createShippingZone']); // Crea zona
+        Route::put('/shipping-zones/{shippingZone}', [AdminController::class, 'updateShippingZone']); // Aggiorna zona
+        Route::delete('/shipping-zones/{shippingZone}', [AdminController::class, 'deleteShippingZone']); // Elimina zona
+        Route::get('/shipping-zones/check', [AdminController::class, 'checkShippingZones']); // Verifica esistenza zone
     });
 
     // KYC per utenti

@@ -94,14 +94,38 @@ class BasketballFilterController extends Controller
      */
     public function searchPlayers(Request $request)
     {
+        $request->validate([
+            'q' => 'nullable|string|max:100',
+            'team_id' => 'nullable|integer',
+            'set_id' => 'nullable|integer',
+            'year' => 'nullable|integer',
+            'brand' => 'nullable|string'
+        ]);
+        
         $query = $request->get('q', '');
         
         // Filtra solo i player che hanno carte Basketball
         // NON carichiamo la relazione 'team' per rendere il giocatore indipendente
-        $playersQuery = Player::whereHas('cardModels', function($q) {
+        $playersQuery = Player::whereHas('cardModels', function($q) use ($request) {
                 $q->whereHas('category', function($catQuery) {
                     $catQuery->where('slug', 'basketball');
                 });
+                
+                // Applica filtri aggiuntivi per limitare i risultati
+                if ($request->filled('team_id')) {
+                    $q->where('team_id', $request->team_id);
+                }
+                if ($request->filled('set_id')) {
+                    $q->where('card_set_id', $request->set_id);
+                }
+                if ($request->filled('year')) {
+                    $q->where('year', $request->year);
+                }
+                if ($request->filled('brand')) {
+                    $q->whereHas('cardSet', function($setQuery) use ($request) {
+                        $setQuery->where('brand', $request->brand);
+                    });
+                }
             })
             ->active()
             ->orderBy('name');
@@ -121,14 +145,38 @@ class BasketballFilterController extends Controller
      */
     public function searchTeams(Request $request)
     {
+        $request->validate([
+            'q' => 'nullable|string|max:100',
+            'player_id' => 'nullable|integer',
+            'set_id' => 'nullable|integer',
+            'year' => 'nullable|integer',
+            'brand' => 'nullable|string'
+        ]);
+        
         $query = $request->get('q', '');
         
         // Filtra solo i team che hanno carte Basketball
         $teamsQuery = Team::with('league')
-            ->whereHas('cardModels', function($q) {
+            ->whereHas('cardModels', function($q) use ($request) {
                 $q->whereHas('category', function($catQuery) {
                     $catQuery->where('slug', 'basketball');
                 });
+                
+                // Applica filtri aggiuntivi per limitare i risultati
+                if ($request->filled('player_id')) {
+                    $q->where('player_id', $request->player_id);
+                }
+                if ($request->filled('set_id')) {
+                    $q->where('card_set_id', $request->set_id);
+                }
+                if ($request->filled('year')) {
+                    $q->where('year', $request->year);
+                }
+                if ($request->filled('brand')) {
+                    $q->whereHas('cardSet', function($setQuery) use ($request) {
+                        $setQuery->where('brand', $request->brand);
+                    });
+                }
             })
             ->active()
             ->orderBy('name');
@@ -148,13 +196,37 @@ class BasketballFilterController extends Controller
      */
     public function searchCardSets(Request $request)
     {
+        $request->validate([
+            'q' => 'nullable|string|max:100',
+            'player_id' => 'nullable|integer',
+            'team_id' => 'nullable|integer',
+            'year' => 'nullable|integer',
+            'brand' => 'nullable|string'
+        ]);
+        
         $query = $request->get('q', '');
         
         // Filtra solo i set che hanno carte Basketball
-        $cardSetsQuery = CardSet::whereHas('cardModels', function($q) {
+        $cardSetsQuery = CardSet::whereHas('cardModels', function($q) use ($request) {
                 $q->whereHas('category', function($catQuery) {
                     $catQuery->where('slug', 'basketball');
                 });
+                
+                // Applica filtri aggiuntivi per limitare i risultati
+                if ($request->filled('player_id')) {
+                    $q->where('player_id', $request->player_id);
+                }
+                if ($request->filled('team_id')) {
+                    $q->where('team_id', $request->team_id);
+                }
+                if ($request->filled('year')) {
+                    $q->where('year', $request->year);
+                }
+                if ($request->filled('brand')) {
+                    $q->whereHas('cardSet', function($setQuery) use ($request) {
+                        $setQuery->where('brand', $request->brand);
+                    });
+                }
             })
             ->active()
             ->orderBy('name');

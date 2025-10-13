@@ -12,27 +12,23 @@
 
     <!-- KYC Warning -->
     <div v-if="!kycCompleted" class="mb-8">
-      <div class="rounded-md bg-yellow-50 p-4">
-        <div class="flex">
-          <div class="flex-shrink-0">
-            <ExclamationTriangleIcon class="h-5 w-5 text-yellow-400" />
-          </div>
-          <div class="ml-3">
-            <h3 class="text-sm font-gill-sans-semibold text-yellow-800">
-              Verifica KYC Richiesta
-            </h3>
-            <div class="mt-2 text-sm text-yellow-700">
-              <p>Per completare ordini e accedere a tutte le funzionalità, devi completare la verifica KYC. Questo processo è necessario per garantire la sicurezza della piattaforma.</p>
-            </div>
-            <div class="mt-4">
-              <router-link
-                to="/kyc"
-                class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-gill-sans-semibold rounded-md text-yellow-800 bg-yellow-100 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
-              >
-                Inizia Verifica KYC
-              </router-link>
-            </div>
-          </div>
+      <div class="rounded-md bg-yellow-50 p-4 text-center">
+        <div class="flex justify-center items-center mb-2">
+          <ExclamationTriangleIcon class="h-5 w-5 text-yellow-400 mr-2" />
+          <h3 class="text-sm font-gill-sans-semibold text-yellow-800">
+            Verifica KYC Richiesta
+          </h3>
+        </div>
+        <div class="text-sm text-yellow-700 mb-4">
+          <p>Per completare ordini e accedere a tutte le funzionalità, devi completare la verifica KYC. Questo processo è necessario per garantire la sicurezza della piattaforma.</p>
+        </div>
+        <div>
+          <router-link
+            to="/kyc"
+            class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-gill-sans-semibold rounded-md text-yellow-800 bg-yellow-100 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+          >
+            Inizia Verifica KYC
+          </router-link>
         </div>
       </div>
     </div>

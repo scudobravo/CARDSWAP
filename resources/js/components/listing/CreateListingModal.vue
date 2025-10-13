@@ -24,58 +24,81 @@
 
         <!-- Content -->
         <div class="px-6 py-6">
-          <!-- Step 0: Modalità Selezione -->
+          <!-- Step 0: Controllo Zone di Spedizione -->
           <div v-if="currentStep === 0" class="space-y-6">
-            <div class="text-center">
-              <h4 class="text-xl font-semibold text-gray-900 mb-2">Come vuoi aggiungere le tue carte?</h4>
-              <p class="text-gray-600">Scegli la modalità che preferisci per creare le tue inserzioni</p>
+            <!-- Messaggio se non ci sono zone -->
+            <div v-if="!hasShippingZones" class="text-center">
+              <div class="w-20 h-20 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                <svg class="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+              </div>
+              <h3 class="text-xl font-semibold text-gray-900 mb-2">Configurazione Richiesta</h3>
+              <p class="text-gray-600 mb-6">
+                Prima di creare inserzioni, devi configurare le zone di spedizione.<br>
+                Contatta l'amministratore per configurare le zone di spedizione.
+              </p>
+              <button
+                @click="closeModal"
+                class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Chiudi
+              </button>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <!-- Singola Carta -->
-              <div 
-                class="relative border-2 rounded-lg p-6 cursor-pointer transition-all duration-200 hover:border-primary hover:shadow-lg"
-                :class="{ 'border-primary bg-primary/5': selectedMode === 'single' }"
-                @click="selectMode('single')"
-              >
-                <div class="text-center">
-                  <div class="mx-auto w-100 h-auto mb-4 flex items-center justify-center">
-                    <img src="/images/icons/single card- inserimento carta.svg" alt="Singola Carta" class="w-100 h-auto" />
-                  </div>
-                  <h5 class="text-lg font-semibold text-gray-900 mb-2">Inserimento Singola Carta</h5>
-                  <p class="text-gray-600 text-sm">
-                    Perfetto per carte uniche o speciali. Upload immagini, filtri dettagliati, preview e conferma.
-                  </p>
-                </div>
-                <div v-if="selectedMode === 'single'" class="absolute top-2 right-2">
-                  <div class="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                    <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
+            <!-- Selezione modalità se ci sono zone -->
+            <div v-else>
+              <div class="text-center">
+                <h4 class="text-xl font-semibold text-gray-900 mb-2">Come vuoi aggiungere le tue carte?</h4>
+                <p class="text-gray-600">Scegli la modalità che preferisci per creare le tue inserzioni</p>
               </div>
-
-              <!-- Bulk Cards -->
-              <div 
-                class="relative border-2 rounded-lg p-6 cursor-pointer transition-all duration-200 hover:border-primary hover:shadow-lg"
-                :class="{ 'border-primary bg-primary/5': selectedMode === 'bulk' }"
-                @click="selectMode('bulk')"
-              >
-                <div class="text-center">
-                  <div class="mx-auto w-100 h-auto mb-4 flex items-center justify-center">
-                    <img src="/images/icons/bulk cards - inserimento carta.svg" alt="Bulk Cards" class="w-100 h-auto" />
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                <!-- Singola Carta -->
+                <div 
+                  class="relative border-2 rounded-lg p-6 cursor-pointer transition-all duration-200 hover:border-primary hover:shadow-lg"
+                  :class="{ 'border-primary bg-primary/5': selectedMode === 'single' }"
+                  @click="selectMode('single')"
+                >
+                  <div class="text-center">
+                    <div class="mx-auto w-100 h-auto mb-4 flex items-center justify-center">
+                      <img src="/images/icons/single card- inserimento carta.svg" alt="Singola Carta" class="w-100 h-auto" />
+                    </div>
+                    <h5 class="text-lg font-semibold text-gray-900 mb-2">Inserimento Singola Carta</h5>
+                    <p class="text-gray-600 text-sm">
+                      Perfetto per carte uniche o speciali. Upload immagini, filtri dettagliati, preview e conferma.
+                    </p>
                   </div>
-                  <h5 class="text-lg font-semibold text-gray-900 mb-2">Inserimento Bulk</h5>
-                  <p class="text-gray-600 text-sm">
-                    Ideale per collezioni. Selezione da filtri, tabella modificabile per prezzo e quantità.
-                  </p>
+                  <div v-if="selectedMode === 'single'" class="absolute top-2 right-2">
+                    <div class="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                      <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
-                <div v-if="selectedMode === 'bulk'" class="absolute top-2 right-2">
-                  <div class="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                    <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                    </svg>
+
+                <!-- Bulk Cards -->
+                <div 
+                  class="relative border-2 rounded-lg p-6 cursor-pointer transition-all duration-200 hover:border-primary hover:shadow-lg"
+                  :class="{ 'border-primary bg-primary/5': selectedMode === 'bulk' }"
+                  @click="selectMode('bulk')"
+                >
+                  <div class="text-center">
+                    <div class="mx-auto w-100 h-auto mb-4 flex items-center justify-center">
+                      <img src="/images/icons/bulk cards - inserimento carta.svg" alt="Bulk Cards" class="w-100 h-auto" />
+                    </div>
+                    <h5 class="text-lg font-semibold text-gray-900 mb-2">Inserimento Bulk</h5>
+                    <p class="text-gray-600 text-sm">
+                      Ideale per collezioni. Selezione da filtri, tabella modificabile per prezzo e quantità.
+                    </p>
+                  </div>
+                  <div v-if="selectedMode === 'bulk'" class="absolute top-2 right-2">
+                    <div class="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                      <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -224,74 +247,22 @@
           </div>
 
 
-          <!-- Step 2: Bulk Edit -->
+          <!-- Step 2: Bulk Edit (con immagini integrate) -->
           <div v-if="currentStep === 2 && selectedMode === 'bulk'" class="space-y-6">
             <BulkEditForm 
               :selected-cards="selectedCardsForBulkEdit"
               @go-back="handleBulkEditGoBack"
               @apply-bulk-edit="handleApplyBulkEdit"
+              @bulk-images-uploaded="handleBulkImagesUploaded"
               @next-step="nextStep"
             />
           </div>
 
-          <!-- Step 3: Preview e Immagini (Bulk) -->
+
+
+
+          <!-- Step 3: Zone di Spedizione (Bulk) - era step 4, ora step 3 -->
           <div v-if="currentStep === 3 && selectedMode === 'bulk'" class="space-y-6">
-            <ImagePreviewStep
-              :is-bulk-mode="true"
-              :selected-cards="selectedCardsForBulkEdit"
-              :grading-companies="gradingCompanies"
-              @bulk-images-uploaded="handleBulkImagesUploaded"
-            />
-          </div>
-
-
-
-
-          <!-- Step 3: Zone di Spedizione (Single) -->
-          <div v-if="currentStep === 3 && selectedMode === 'single'" class="space-y-6">
-            <div class="text-center">
-              <h4 class="text-xl font-semibold text-gray-900 mb-2">Zone di Spedizione</h4>
-              <p class="text-gray-600">Seleziona le zone dove vuoi spedire</p>
-              <div class="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p class="text-sm text-yellow-800">
-                  <strong>⚠️ Obbligatorio:</strong> Devi selezionare almeno una zona di spedizione per pubblicare l'inserzione
-                </p>
-              </div>
-            </div>
-            
-            <div class="space-y-4">
-              <div 
-                v-for="zone in shippingZones" 
-                :key="zone.id"
-                class="border rounded-lg p-4 transition-all duration-200 hover:shadow-md"
-                :class="{
-                  'border-primary bg-primary/5': selectedShippingZones.includes(zone.id),
-                  'border-gray-300': !selectedShippingZones.includes(zone.id)
-                }"
-              >
-                <label class="flex items-start space-x-3 cursor-pointer">
-                  <input 
-                    v-model="selectedShippingZones"
-                    :value="zone.id"
-                    type="checkbox"
-                    class="h-5 w-5 text-primary focus:ring-primary border-gray-300 rounded mt-1"
-                  />
-                  <div class="flex-1">
-                    <div class="flex items-center justify-between">
-                      <h6 class="font-medium text-gray-900">{{ zone.name }}</h6>
-                      <span class="text-sm text-gray-500">{{ zone.delivery_days_min }}-{{ zone.delivery_days_max }} giorni</span>
-                    </div>
-                    <p class="text-sm text-gray-600 mt-1">{{ zone.description }}</p>
-                  </div>
-                </label>
-              </div>
-            </div>
-            
-            <!-- Validazione zone di spedizione -->
-          </div>
-
-          <!-- Step 4: Zone di Spedizione (Bulk) -->
-          <div v-if="currentStep === 4 && selectedMode === 'bulk'" class="space-y-6">
             <div class="text-center">
               <h4 class="text-xl font-semibold text-gray-900 mb-2">Zone di Spedizione</h4>
               <p class="text-gray-600">Seleziona le zone dove vuoi spedire</p>
@@ -355,6 +326,49 @@
             </div>
           </div>
 
+          <!-- Step 3: Zone di Spedizione (Single) -->
+          <div v-if="currentStep === 3 && selectedMode === 'single'" class="space-y-6">
+            <div class="text-center">
+              <h4 class="text-xl font-semibold text-gray-900 mb-2">Zone di Spedizione</h4>
+              <p class="text-gray-600">Seleziona le zone dove vuoi spedire</p>
+              <div class="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p class="text-sm text-yellow-800">
+                  <strong>⚠️ Obbligatorio:</strong> Devi selezionare almeno una zona di spedizione per pubblicare l'inserzione
+                </p>
+              </div>
+            </div>
+            
+            <div class="space-y-4">
+              <div 
+                v-for="zone in shippingZones" 
+                :key="zone.id"
+                class="border rounded-lg p-4 transition-all duration-200 hover:shadow-md"
+                :class="{
+                  'border-primary bg-primary/5': selectedShippingZones.includes(zone.id),
+                  'border-gray-300': !selectedShippingZones.includes(zone.id)
+                }"
+              >
+                <label class="flex items-start space-x-3 cursor-pointer">
+                  <input 
+                    v-model="selectedShippingZones"
+                    :value="zone.id"
+                    type="checkbox"
+                    class="h-5 w-5 text-primary focus:ring-primary border-gray-300 rounded mt-1"
+                  />
+                  <div class="flex-1">
+                    <div class="flex items-center justify-between">
+                      <h6 class="font-medium text-gray-900">{{ zone.name }}</h6>
+                      <span class="text-sm text-gray-500">{{ zone.delivery_days_min }}-{{ zone.delivery_days_max }} giorni</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-1">{{ zone.description }}</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+            
+            <!-- Validazione zone di spedizione -->
+          </div>
+
           <!-- Step 4: Anteprima e Conferma (Single) -->
           <div v-if="currentStep === 4 && selectedMode === 'single'" class="space-y-6">
             <div class="text-center">
@@ -390,7 +404,7 @@
         </div>
 
         <!-- Footer -->
-        <div v-if="!(currentStep === 4 && selectedMode === 'bulk') && !(currentStep === 2 && selectedMode === 'bulk')" class="flex items-center justify-between border-t border-gray-200 px-6 py-4">
+        <div v-if="!(currentStep === 3 && selectedMode === 'bulk') && !(currentStep === 2 && selectedMode === 'bulk') && !(currentStep === 1 && selectedMode === 'bulk')" class="flex items-center justify-between border-t border-gray-200 px-6 py-4">
           <button 
             v-if="currentStep > 0"
             @click="previousStep"
@@ -409,7 +423,7 @@
             Avanti
           </button>
           <button 
-            v-else-if="currentStep < totalSteps - 1"
+            v-else-if="currentStep < totalSteps - 1 && !(currentStep === 1 && selectedMode === 'bulk')"
             @click="nextStep"
             :disabled="!canProceed"
             class="px-6 py-2 text-sm font-medium text-white bg-primary border border-transparent rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
@@ -476,6 +490,7 @@ const shippingZones = ref([])
 const bulkListings = ref([]) // For bulk mode
 const isDragOver = ref(false) // For drag & drop
 const selectedCategory = ref('football') // Categoria selezionata
+const hasShippingZones = ref(false) // Controllo esistenza zone di spedizione
 
 // Listing data
 const listingData = ref({
@@ -535,9 +550,9 @@ const filters = ref({
 // Computed
 const totalSteps = computed(() => {
   if (selectedMode.value === 'single') {
-    return 5 // Step 0 (selezione modalità), step 1 (creazione carta + preview e immagini), step 2 (bulk edit), step 3 (zone spedizione), step 4 (anteprima e conferma)
+    return 5 // Step 0 (selezione modalità), step 1 (selezione carta), step 2 (immagini + dettagli), step 3 (zone spedizione), step 4 (anteprima)
   } else {
-    return 5 // Step 0 (selezione modalità), step 1 (selezione carte), step 2 (bulk edit), step 3 (preview e immagini), step 4 (zone spedizione)
+    return 4 // Step 0 (selezione modalità), step 1 (selezione carte), step 2 (dettagli + immagini), step 3 (zone spedizione)
   }
 })
 
@@ -586,7 +601,7 @@ const selectMode = (mode) => {
 const nextStep = () => {
   // Validazione specifica per le zone di spedizione
   if ((currentStep.value === 3 && selectedMode.value === 'single') || 
-      (currentStep.value === 4 && selectedMode.value === 'bulk')) { // Step delle zone di spedizione
+      (currentStep.value === 3 && selectedMode.value === 'bulk')) { // Step delle zone di spedizione
     if (selectedShippingZones.value.length === 0) {
       alert('⚠️ Seleziona almeno una zona di spedizione per continuare')
       return
@@ -846,7 +861,11 @@ const getCurrentFilters = () => {
 }
 
 const handleProceedToBulkEdit = (cards) => {
+  console.log('🎯 CreateListingModal - handleProceedToBulkEdit called with cards:', cards)
+  console.log('🎯 Number of cards received:', cards?.length)
   selectedCardsForBulkEdit.value = cards
+  console.log('🎯 selectedCardsForBulkEdit after assignment:', selectedCardsForBulkEdit.value)
+  console.log('🎯 selectedCardsForBulkEdit length:', selectedCardsForBulkEdit.value?.length)
   nextStep()
 }
 
@@ -1041,6 +1060,29 @@ const loadGradingCompanies = async () => {
   }
 }
 
+const checkShippingZones = async () => {
+  try {
+    console.log('🔄 Controllo esistenza zone di spedizione...')
+    const response = await fetch('/api/shipping-zones/check', {
+      headers: {
+        'Accept': 'application/json'
+      }
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      console.log('✅ Controllo zone di spedizione:', data)
+      hasShippingZones.value = data.has_zones
+    } else {
+      console.error('❌ Errore nel controllo zone di spedizione:', response.status)
+      hasShippingZones.value = false
+    }
+  } catch (error) {
+    console.error('❌ Errore nel controllo zone di spedizione:', error)
+    hasShippingZones.value = false
+  }
+}
+
 const loadShippingZones = async () => {
   try {
     console.log('🔄 Caricamento zone di spedizione...')
@@ -1185,7 +1227,21 @@ const createNewSingleListing = async () => {
   } else {
     const errorData = await response.json()
     console.error('Error creating listing:', errorData)
-    alert(`Errore nella creazione: ${JSON.stringify(errorData.errors)}`)
+    
+    // Gestione specifica per errore KYC
+    if (errorData.requires_kyc) {
+      alert(`⚠️ Verifica identità richiesta!\n\nPer creare inserzioni devi completare la verifica della tua identità.\n\nClicca OK per essere reindirizzato alla pagina di verifica.`)
+      // Reindirizza alla pagina KYC
+      window.location.href = '/dashboard/kyc'
+      return
+    }
+    
+    // Altri errori
+    if (errorData.errors) {
+      alert(`Errore nella creazione: ${JSON.stringify(errorData.errors)}`)
+    } else {
+      alert(`Errore nella creazione: ${errorData.message || 'Errore sconosciuto'}`)
+    }
   }
 }
 
@@ -1251,6 +1307,15 @@ const createBulkListings = async () => {
         console.log(`✅ Inserzione ${i + 1}/${bulkListings.value.length} creata con successo`)
     } catch (error) {
       console.error(`❌ Errore nella creazione inserzione ${i + 1}:`, error)
+      
+      // Gestione specifica per errore KYC
+      if (error.response && error.response.data && error.response.data.requires_kyc) {
+        alert(`⚠️ Verifica identità richiesta!\n\nPer creare inserzioni devi completare la verifica della tua identità.\n\nClicca OK per essere reindirizzato alla pagina di verifica.`)
+        // Reindirizza alla pagina KYC
+        window.location.href = '/dashboard/kyc'
+        return
+      }
+      
       if (error.response && error.response.data && error.response.data.errors) {
         console.error(`❌ Dettagli errore:`, error.response.data.errors)
         alert(`Errore nella creazione inserzione ${i + 1}: ${JSON.stringify(error.response.data.errors)}`)
@@ -1403,8 +1468,11 @@ const removeBulkRepresentativeImage = () => {
 }
 
 // Lifecycle
-onMounted(() => {
-  loadShippingZones()
+onMounted(async () => {
+  await checkShippingZones()
+  if (hasShippingZones.value) {
+    loadShippingZones()
+  }
   loadGradingCompanies()
 })
 

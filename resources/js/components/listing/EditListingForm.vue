@@ -35,68 +35,208 @@
       </button>
     </div>
 
-    <!-- Dettagli Base -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Prezzo (€)</label>
-        <input 
-          v-model="formData.price"
-          type="number"
-          step="0.01"
-          min="0"
-          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none"
-          placeholder="0.00"
-        />
-      </div>
-      
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Quantità</label>
-        <input 
-          v-model="formData.quantity"
-          type="number"
-          min="1"
-          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none"
-          placeholder="1"
-        />
-      </div>
-      
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Condizione</label>
-        <select 
-          v-model="formData.condition"
-          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none"
-        >
-          <option value="">Seleziona condizione</option>
-          <option value="mint">Mint</option>
-          <option value="near_mint">Near Mint</option>
-          <option value="excellent">Excellent</option>
-          <option value="very_good">Very Good</option>
-          <option value="good">Good</option>
-          <option value="fair">Fair</option>
-          <option value="light_played">Light Played</option>
-          <option value="played">Played</option>
-          <option value="poor">Poor</option>
-        </select>
-      </div>
-      
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Lingua</label>
-        <select 
-          v-model="formData.language"
-          class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none"
-        >
-          <option value="">Seleziona lingua</option>
-          <option value="italiano">Italiano</option>
-          <option value="inglese">Inglese</option>
-          <option value="spagnolo">Spagnolo</option>
-          <option value="francese">Francese</option>
-          <option value="tedesco">Tedesco</option>
-          <option value="portoghese">Portoghese</option>
-        </select>
+    <!-- Dettagli Aggiuntivi (stesso stile di ImagePreviewStep) -->
+    <div class="bg-gray-50 rounded-lg p-6">
+      <h4 class="text-md font-medium text-gray-900 mb-4">Dettagli Aggiuntivi</h4>
+      <div class="space-y-4">
+        <!-- Prezzo e Quantità -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Prezzo (€)</label>
+            <input 
+              v-model="formData.price"
+              type="number"
+              step="0.01"
+              min="0"
+              class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm"
+              placeholder="0.00"
+            />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Quantità</label>
+            <input 
+              v-model="formData.quantity"
+              type="number"
+              min="1"
+              class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm"
+              placeholder="1"
+            />
+          </div>
+        </div>
+        
+        <!-- Condition -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Condizione</label>
+          <select 
+            v-model="formData.condition"
+            class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm"
+          >
+            <option value="">Seleziona condizione</option>
+            <option value="mint">Mint</option>
+            <option value="near_mint">Near Mint</option>
+            <option value="excellent">Excellent</option>
+            <option value="very_good">Very Good</option>
+            <option value="good">Good</option>
+            <option value="fair">Fair</option>
+            <option value="light_played">Light Played</option>
+            <option value="played">Played</option>
+            <option value="poor">Poor</option>
+          </select>
+        </div>
+        
+        <!-- Lingua -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Lingua</label>
+          <select 
+            v-model="formData.language"
+            class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm"
+          >
+            <option value="">Seleziona lingua</option>
+            <option value="italiano">Italiano</option>
+            <option value="inglese">Inglese</option>
+            <option value="spagnolo">Spagnolo</option>
+            <option value="francese">Francese</option>
+            <option value="tedesco">Tedesco</option>
+            <option value="portoghese">Portoghese</option>
+          </select>
+        </div>
+
+        <!-- Grading Company -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Grading Company</label>
+          <select 
+            v-model="formData.gradingCompany"
+            class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm"
+          >
+            <option value="">Seleziona grading company</option>
+            <option v-for="company in gradingCompanies" :key="company.id" :value="company.id">
+              {{ company.name }}
+            </option>
+          </select>
+        </div>
+        
+        <!-- Grading Score -->
+        <div v-if="formData.gradingCompany">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Grading Score</label>
+          <input 
+            v-model="formData.gradingScore"
+            type="text"
+            placeholder="Es. 10, 9.5, 9"
+            class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm"
+          />
+        </div>
+
+        <!-- Separatore Caratteristiche Speciali -->
+        <div class="border-t border-gray-200 pt-4 mt-4">
+          <h5 class="text-sm font-semibold text-gray-900 mb-3">Caratteristiche Speciali</h5>
+        </div>
+
+        <!-- Autograph -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Autograph</label>
+          <select 
+            v-model="formData.autograph"
+            class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm"
+          >
+            <option value="">Non specificato</option>
+            <option value="yes">Sì</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+
+        <!-- Relic -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Relic</label>
+          <select 
+            v-model="formData.relic"
+            class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm"
+          >
+            <option value="">Non specificato</option>
+            <option value="yes">Sì</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+
+        <!-- On Card Auto -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">On Card Auto</label>
+          <select 
+            v-model="formData.onCardAuto"
+            class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm"
+          >
+            <option value="">Non specificato</option>
+            <option value="yes">Sì</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+
+        <!-- Rookie -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Rookie</label>
+          <select 
+            v-model="formData.rookie"
+            class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm"
+          >
+            <option value="">Non specificato</option>
+            <option value="yes">Sì</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+
+        <!-- Jewel -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Jewel</label>
+          <select 
+            v-model="formData.jewel"
+            class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm"
+          >
+            <option value="">Non specificato</option>
+            <option value="yes">Sì</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+
+        <!-- Multi-Autograph -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Multi-Autograph</label>
+          <select 
+            v-model="formData.multiAutograph"
+            class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm"
+          >
+            <option value="">Non specificato</option>
+            <option value="dual">Dual</option>
+            <option value="triple">Triple</option>
+            <option value="quad">Quad</option>
+            <option value="booklet">Booklet</option>
+          </select>
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Descrizione</label>
+          <textarea
+            v-model="formData.description"
+            rows="4"
+            placeholder="Descrizione della carta..."
+            class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm"
+          ></textarea>
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Note</label>
+          <textarea
+            v-model="formData.notes"
+            rows="3"
+            placeholder="Note aggiuntive sulla carta..."
+            class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm"
+          ></textarea>
+        </div>
       </div>
     </div>
 
-    <!-- Caratteristiche Speciali -->
+    <!-- Caratteristiche Speciali Booleane (Foil, Firmata, etc.) -->
     <div>
       <label class="block text-sm font-medium text-gray-700 mb-3">Caratteristiche Speciali</label>
       <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -274,7 +414,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import CardModelSelector from './CardModelSelector.vue'
 
 // Props
@@ -291,18 +431,32 @@ const emit = defineEmits(['save', 'cancel'])
 // State
 const showCardModelSelector = ref(false)
 const isDragOver = ref(false) // For drag & drop
+const gradingCompanies = ref([])
+
 const formData = ref({
   cardModel: props.listing.cardModel,
   price: props.listing.price || '',
   quantity: props.listing.quantity || 1,
   condition: props.listing.condition || '',
   language: props.listing.language || '',
+  // Grading
+  gradingCompany: props.listing.gradingCompany || '',
+  gradingScore: props.listing.gradingScore || '',
+  // Filtri Extra
+  autograph: props.listing.autograph || '',
+  relic: props.listing.relic || '',
+  onCardAuto: props.listing.onCardAuto || '',
+  rookie: props.listing.rookie || '',
+  jewel: props.listing.jewel || '',
+  multiAutograph: props.listing.multiAutograph || '',
+  // Caratteristiche booleane
   is_foil: props.listing.is_foil || false,
   is_signed: props.listing.is_signed || false,
   is_altered: props.listing.is_altered || false,
   is_first_edition: props.listing.is_first_edition || false,
   is_negotiable: props.listing.is_negotiable || false,
   description: props.listing.description || '',
+  notes: props.listing.notes || '',
   images: props.listing.images || []
 })
 
@@ -395,6 +549,23 @@ const save = () => {
   emit('save', updatedListing)
 }
 
+// Carica le grading companies
+const loadGradingCompanies = async () => {
+  try {
+    const response = await fetch('/api/grading-companies')
+    if (response.ok) {
+      gradingCompanies.value = await response.json()
+    }
+  } catch (error) {
+    console.error('Errore nel caricamento grading companies:', error)
+  }
+}
+
+// Lifecycle
+onMounted(() => {
+  loadGradingCompanies()
+})
+
 // Watch for changes in props
 watch(() => props.listing, (newListing) => {
   formData.value = {
@@ -403,12 +574,24 @@ watch(() => props.listing, (newListing) => {
     quantity: newListing.quantity || 1,
     condition: newListing.condition || '',
     language: newListing.language || '',
+    // Grading
+    gradingCompany: newListing.gradingCompany || '',
+    gradingScore: newListing.gradingScore || '',
+    // Filtri Extra
+    autograph: newListing.autograph || '',
+    relic: newListing.relic || '',
+    onCardAuto: newListing.onCardAuto || '',
+    rookie: newListing.rookie || '',
+    jewel: newListing.jewel || '',
+    multiAutograph: newListing.multiAutograph || '',
+    // Caratteristiche booleane
     is_foil: newListing.is_foil || false,
     is_signed: newListing.is_signed || false,
     is_altered: newListing.is_altered || false,
     is_first_edition: newListing.is_first_edition || false,
     is_negotiable: newListing.is_negotiable || false,
     description: newListing.description || '',
+    notes: newListing.notes || '',
     images: newListing.images || []
   }
 }, { deep: true })

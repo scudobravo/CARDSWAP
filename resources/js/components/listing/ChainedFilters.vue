@@ -284,7 +284,14 @@ const searchPlayers = async () => {
     console.log('Categoria:', props.category)
     
     try {
-      const url = `/api/${props.category}/filters/players/search?q=${encodeURIComponent(query)}`
+      // Costruisci i parametri con i filtri correnti per interdipendenza
+      const params = new URLSearchParams({ q: query })
+      if (localFilters.value.team) params.append('team_id', localFilters.value.team)
+      if (localFilters.value.set) params.append('set_id', localFilters.value.set)
+      if (localFilters.value.year) params.append('year', localFilters.value.year)
+      if (localFilters.value.brand) params.append('brand', localFilters.value.brand)
+      
+      const url = `/api/${props.category}/filters/players/search?${params.toString()}`
       console.log('URL:', url)
       
       const response = await fetch(url)
@@ -321,7 +328,14 @@ const searchTeams = async () => {
   console.log('Ricerca team per:', query)
   
   try {
-    const url = `/api/${props.category}/filters/teams/search?q=${encodeURIComponent(query)}`
+    // Costruisci i parametri con i filtri correnti per interdipendenza
+    const params = new URLSearchParams({ q: query })
+    if (localFilters.value.player) params.append('player_id', localFilters.value.player)
+    if (localFilters.value.set) params.append('set_id', localFilters.value.set)
+    if (localFilters.value.year) params.append('year', localFilters.value.year)
+    if (localFilters.value.brand) params.append('brand', localFilters.value.brand)
+    
+    const url = `/api/${props.category}/filters/teams/search?${params.toString()}`
     console.log('URL team:', url)
     
     const response = await fetch(url)
@@ -357,7 +371,14 @@ const searchCardSets = async () => {
   console.log('Ricerca set per:', query)
   
   try {
-    const url = `/api/${props.category}/filters/card-sets/search?q=${encodeURIComponent(query)}`
+    // Costruisci i parametri con i filtri correnti per interdipendenza
+    const params = new URLSearchParams({ q: query })
+    if (localFilters.value.player) params.append('player_id', localFilters.value.player)
+    if (localFilters.value.team) params.append('team_id', localFilters.value.team)
+    if (localFilters.value.year) params.append('year', localFilters.value.year)
+    if (localFilters.value.brand) params.append('brand', localFilters.value.brand)
+    
+    const url = `/api/${props.category}/filters/card-sets/search?${params.toString()}`
     console.log('URL set:', url)
     
     const response = await fetch(url)

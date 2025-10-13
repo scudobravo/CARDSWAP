@@ -28,6 +28,9 @@ class StripeService
     public function createIdentityVerificationSession(User $user, array $options = []): array
     {
         try {
+            Log::info('Creating Stripe Identity session for user: ' . $user->id);
+            Log::info('Stripe API Key: ' . substr(config('services.stripe.secret'), 0, 10) . '...');
+            
             $session = VerificationSession::create([
                 'type' => 'document',
                 'metadata' => [

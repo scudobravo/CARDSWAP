@@ -467,7 +467,14 @@ watch(() => localFilters.value.rarity, (newRarity, oldRarity) => {
 const searchPlayers = async () => {
   try {
     const query = localFilters.value.playerSearch || ''
-    const response = await fetch(`/api/${props.category}/filters/players/search?q=${encodeURIComponent(query)}`)
+    // Costruisci i parametri con i filtri correnti per interdipendenza
+    const params = new URLSearchParams({ q: query })
+    if (localFilters.value.team) params.append('team_id', localFilters.value.team)
+    if (localFilters.value.set) params.append('set_id', localFilters.value.set)
+    if (localFilters.value.year) params.append('year', localFilters.value.year)
+    if (localFilters.value.brand) params.append('brand', localFilters.value.brand)
+    
+    const response = await fetch(`/api/${props.category}/filters/players/search?${params.toString()}`)
     const data = await response.json()
     filteredPlayers.value = data.players || []
   } catch (error) {
@@ -492,7 +499,17 @@ const onPlayerBlur = () => {
 const searchTeams = async () => {
   try {
     const query = localFilters.value.teamSearch || ''
-    const response = await fetch(`/api/${props.category}/filters/teams/search?q=${encodeURIComponent(query)}`)
+    // Costruisci i parametri con i filtri correnti per interdipendenza
+    const params = new URLSearchParams({ q: query })
+    // Se c'è un giocatore selezionato, filtra solo i team di quel giocatore
+    if (localFilters.value.selectedPlayers && localFilters.value.selectedPlayers.length > 0) {
+      params.append('player_id', localFilters.value.selectedPlayers[0])
+    }
+    if (localFilters.value.set) params.append('set_id', localFilters.value.set)
+    if (localFilters.value.year) params.append('year', localFilters.value.year)
+    if (localFilters.value.brand) params.append('brand', localFilters.value.brand)
+    
+    const response = await fetch(`/api/${props.category}/filters/teams/search?${params.toString()}`)
     const data = await response.json()
     filteredTeams.value = data.teams || []
   } catch (error) {
@@ -517,7 +534,17 @@ const onTeamBlur = () => {
 const searchCardSets = async () => {
   try {
     const query = localFilters.value.setSearch || ''
-    const response = await fetch(`/api/${props.category}/filters/card-sets/search?q=${encodeURIComponent(query)}`)
+    // Costruisci i parametri con i filtri correnti per interdipendenza
+    const params = new URLSearchParams({ q: query })
+    // Se c'è un giocatore selezionato, filtra solo i set di quel giocatore
+    if (localFilters.value.selectedPlayers && localFilters.value.selectedPlayers.length > 0) {
+      params.append('player_id', localFilters.value.selectedPlayers[0])
+    }
+    if (localFilters.value.team) params.append('team_id', localFilters.value.team)
+    if (localFilters.value.year) params.append('year', localFilters.value.year)
+    if (localFilters.value.brand) params.append('brand', localFilters.value.brand)
+    
+    const response = await fetch(`/api/${props.category}/filters/card-sets/search?${params.toString()}`)
     const data = await response.json()
     filteredCardSets.value = data.card_sets || []
   } catch (error) {

@@ -109,6 +109,73 @@
                 />
               </div>
 
+              <!-- Separatore Filtri Extra -->
+              <div class="border-t border-gray-200 pt-4 mt-4">
+                <h5 class="text-sm font-semibold text-gray-900 mb-3">Caratteristiche Speciali</h5>
+              </div>
+
+              <!-- Autograph -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Autograph</label>
+                <select v-model="additionalDetails.autograph" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm">
+                  <option value="">Non specificato</option>
+                  <option value="yes">Sì</option>
+                  <option value="no">No</option>
+                </select>
+              </div>
+
+              <!-- Relic -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Relic</label>
+                <select v-model="additionalDetails.relic" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm">
+                  <option value="">Non specificato</option>
+                  <option value="yes">Sì</option>
+                  <option value="no">No</option>
+                </select>
+              </div>
+
+              <!-- On Card Auto -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">On Card Auto</label>
+                <select v-model="additionalDetails.onCardAuto" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm">
+                  <option value="">Non specificato</option>
+                  <option value="yes">Sì</option>
+                  <option value="no">No</option>
+                </select>
+              </div>
+
+              <!-- Rookie -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Rookie</label>
+                <select v-model="additionalDetails.rookie" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm">
+                  <option value="">Non specificato</option>
+                  <option value="yes">Sì</option>
+                  <option value="no">No</option>
+                </select>
+              </div>
+
+              <!-- Jewel -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Jewel</label>
+                <select v-model="additionalDetails.jewel" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm">
+                  <option value="">Non specificato</option>
+                  <option value="yes">Sì</option>
+                  <option value="no">No</option>
+                </select>
+              </div>
+
+              <!-- Multi-Autograph -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Multi-Autograph</label>
+                <select v-model="additionalDetails.multiAutograph" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm">
+                  <option value="">Non specificato</option>
+                  <option value="dual">Dual</option>
+                  <option value="triple">Triple</option>
+                  <option value="quad">Quad</option>
+                  <option value="booklet">Booklet</option>
+                </select>
+              </div>
+
               <!-- Description -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Descrizione</label>
@@ -287,6 +354,13 @@ const additionalDetails = ref({
   condition: '',
   gradingCompany: '',
   gradingScore: '',
+  // Filtri Extra
+  autograph: '',
+  relic: '',
+  onCardAuto: '',
+  rookie: '',
+  jewel: '',
+  multiAutograph: '',
   description: '',
   notes: ''
 })
@@ -331,6 +405,13 @@ watch(() => props.cardData, (newCardData) => {
       condition: newCardData.condition || '',
       gradingCompany: newCardData.gradingCompany || '',
       gradingScore: newCardData.gradingScore || '',
+      // Filtri Extra
+      autograph: newCardData.autograph || '',
+      relic: newCardData.relic || '',
+      onCardAuto: newCardData.onCardAuto || '',
+      rookie: newCardData.rookie || '',
+      jewel: newCardData.jewel || '',
+      multiAutograph: newCardData.multiAutograph || '',
       description: newCardData.description || '',
       notes: newCardData.notes || ''
     }
