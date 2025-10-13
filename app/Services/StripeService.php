@@ -30,6 +30,8 @@ class StripeService
         try {
             Log::info('Creating Stripe Identity session for user: ' . $user->id);
             Log::info('Stripe API Key: ' . substr(config('services.stripe.secret'), 0, 10) . '...');
+            Log::info('App URL: ' . config('app.url'));
+            Log::info('Environment: ' . config('app.env'));
             
             $session = VerificationSession::create([
                 'type' => 'document',
@@ -45,10 +47,12 @@ class StripeService
                         'require_matching_selfie' => true,
                     ],
                 ],
-                'return_url' => config('app.url') . '/kyc/verify/return',
+                'return_url' => config('app.url') . '/dashboard/kyc',
                 ...$options
             ]);
 
+            Log::info('Stripe Identity session created successfully: ' . $session->id);
+            
             return [
                 'success' => true,
                 'session_id' => $session->id,
@@ -57,6 +61,20 @@ class StripeService
             ];
         } catch (ApiErrorException $e) {
             Log::error('Stripe Identity Error: ' . $e->getMessage());
+            Log::error('Stripe Error Code: ' . $e->getStripeCode());
+            Log::error('Stripe Error Type: ' . $e->getError()->type ?? 'unknown');
+            Log::error('Stripe Error Param: ' . $e->getError()->param ?? 'unknown');
+            
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'stripe_code' => $e->getStripeCode(),
+                'stripe_type' => $e->getError()->type ?? 'unknown',
+            ];
+        } catch (\Exception $e) {
+            Log::error('General Error in Stripe Identity: ' . $e->getMessage());
+            Log::error('Error Trace: ' . $e->getTraceAsString());
+            
             return [
                 'success' => false,
                 'error' => $e->getMessage(),

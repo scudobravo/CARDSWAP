@@ -525,50 +525,70 @@ class KycController extends Controller
      */
     public function startKyc(Request $request): JsonResponse
     {
-        $user = $request->user();
-        $stripeService = new \App\Services\StripeService();
-
-        // Verifica se l'utente ha già una sessione di verifica attiva
-        if ($user->stripe_verification_session_id) {
-            $sessionStatus = $stripeService->getVerificationSessionStatus($user->stripe_verification_session_id);
+        try {
+            Log::info('Starting KYC process for user: ' . $request->user()->id);
             
-            if ($sessionStatus['success'] && $sessionStatus['status'] === 'requires_input' && isset($sessionStatus['url'])) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Sessione di verifica già attiva',
-                    'data' => [
-                        'verification_url' => $sessionStatus['url'],
-                        'session_id' => $user->stripe_verification_session_id
-                    ]
-                ]);
-            }
-        }
+            $user = $request->user();
+            $stripeService = new \App\Services\StripeService();
 
-        // Crea nuova sessione di verifica
-        $result = $stripeService->createIdentityVerificationSession($user);
-        
-        if (!$result['success']) {
+            // Verifica se l'utente ha già una sessione di verifica attiva
+            if ($user->stripe_verification_session_id) {
+                Log::info('User has existing verification session: ' . $user->stripe_verification_session_id);
+                $sessionStatus = $stripeService->getVerificationSessionStatus($user->stripe_verification_session_id);
+                
+                if ($sessionStatus['success'] && $sessionStatus['status'] === 'requires_input' && isset($sessionStatus['url'])) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Sessione di verifica già attiva',
+                        'data' => [
+                            'verification_url' => $sessionStatus['url'],
+                            'session_id' => $user->stripe_verification_session_id
+                        ]
+                    ]);
+                }
+            }
+
+            // Crea nuova sessione di verifica
+            Log::info('Creating new verification session for user: ' . $user->id);
+            $result = $stripeService->createIdentityVerificationSession($user);
+            
+            if (!$result['success']) {
+                Log::error('Failed to create verification session: ' . json_encode($result));
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Errore nella creazione della sessione di verifica',
+                    'error' => $result['error'],
+                    'stripe_code' => $result['stripe_code'] ?? null,
+                    'stripe_type' => $result['stripe_type'] ?? null,
+                ], 500);
+            }
+
+            // Salva l'ID della sessione
+            $user->update([
+                'stripe_verification_session_id' => $result['session_id'],
+                'kyc_status' => 'pending'
+            ]);
+
+            Log::info('Verification session created successfully: ' . $result['session_id']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sessione di verifica creata con successo',
+                'data' => [
+                    'verification_url' => $result['url'],
+                    'session_id' => $result['session_id']
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Unexpected error in startKyc: ' . $e->getMessage());
+            Log::error('Error trace: ' . $e->getTraceAsString());
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Errore nella creazione della sessione di verifica',
-                'error' => $result['error']
+                'message' => 'Errore interno del server',
+                'error' => $e->getMessage()
             ], 500);
         }
-
-        // Salva l'ID della sessione
-        $user->update([
-            'stripe_verification_session_id' => $result['session_id'],
-            'kyc_status' => 'pending'
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Sessione di verifica creata con successo',
-            'data' => [
-                'verification_url' => $result['url'],
-                'session_id' => $result['session_id']
-            ]
-        ]);
     }
 
     /**
