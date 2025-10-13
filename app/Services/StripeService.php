@@ -18,8 +18,20 @@ class StripeService
 
     public function __construct()
     {
-        Stripe::setApiKey(config('services.stripe.secret'));
-        $this->stripe = new StripeClient(config('services.stripe.secret'));
+        $stripeSecret = config('services.stripe.secret');
+        
+        if (empty($stripeSecret)) {
+            Log::error('Stripe secret key is not configured');
+            throw new \Exception('Stripe secret key is not configured');
+        }
+        
+        if (!str_starts_with($stripeSecret, 'sk_')) {
+            Log::error('Invalid Stripe secret key format');
+            throw new \Exception('Invalid Stripe secret key format');
+        }
+        
+        Stripe::setApiKey($stripeSecret);
+        $this->stripe = new StripeClient($stripeSecret);
     }
 
     /**
@@ -32,6 +44,16 @@ class StripeService
             Log::info('Stripe API Key: ' . substr(config('services.stripe.secret'), 0, 10) . '...');
             Log::info('App URL: ' . config('app.url'));
             Log::info('Environment: ' . config('app.env'));
+            Log::info('Stripe Identity Enabled: ' . (config('services.stripe.identity_enabled') ? 'true' : 'false'));
+            
+            // Verifica che Stripe Identity sia abilitato
+            if (!config('services.stripe.identity_enabled')) {
+                Log::error('Stripe Identity is not enabled in configuration');
+                return [
+                    'success' => false,
+                    'error' => 'Stripe Identity is not enabled',
+                ];
+            }
             
             $session = VerificationSession::create([
                 'type' => 'document',
