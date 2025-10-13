@@ -553,6 +553,6 @@ const saveChanges = async () => {
 
 const startKycProcess = () => {
   // Redirect to KYC process
-  router.push('/kyc')
+  router.push('/dashboard/kyc')
 }
 </script>

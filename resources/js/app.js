@@ -111,7 +111,7 @@ const routes = [
     { path: '/settings/language', component: SettingsLanguage, name: 'settings.language' },
     
     // KYC Route
-    { path: '/kyc', component: KycPage, name: 'kyc' },
+    { path: '/dashboard/kyc', component: KycPage, name: 'kyc' },
     
     // Contact Route
     { path: '/contact', component: Contact, name: 'contact' },
