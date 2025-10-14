@@ -620,9 +620,11 @@ onMounted(async () => {
   
   // Ascolta l'evento per popolare i filtri quando viene selezionata una carta
   window.addEventListener('filters-populated', handleFiltersPopulated)
+  console.log('🎧 Listener filters-populated aggiunto')
   
   // Ascolta l'evento per aggiornare i filtri quando viene selezionata una carta in modalità edit
   window.addEventListener('card-selected', handleCardSelected)
+  console.log('🎧 Listener card-selected aggiunto')
 })
 
 onUnmounted(() => {
@@ -640,6 +642,7 @@ watch(() => props.initialFilters, async (newFilters) => {
 
 // Gestisce l'evento di popolamento filtri
 const handleFiltersPopulated = (event) => {
+  console.log('🎯 handleFiltersPopulated chiamata!')
   const data = event.detail
   console.log('🎯 Evento filters-populated ricevuto:', data)
   console.log('🎯 Brand ricevuto nell\'evento:', data.brand)
