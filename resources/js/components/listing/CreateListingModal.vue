@@ -1594,7 +1594,7 @@ const initializeEditMode = (listing) => {
       ...filters.value,
       price: listing.price,
       condition: listing.condition,
-      brand: listing.card_model?.brand || '',
+      brand: listing.card_model?.card_set?.brand || listing.card_model?.brand || '',
       rarity: listing.card_model?.rarity || '',
       year: listing.card_model?.year || '',
       number: listing.card_model?.number || '',
@@ -1602,6 +1602,9 @@ const initializeEditMode = (listing) => {
       team: listing.card_model?.team?.id || '',
       set: listing.card_model?.card_set?.id || ''
     }
+    
+    console.log('🔍 filters.value dopo impostazione:', filters.value)
+    console.log('🔍 filters.value.brand:', filters.value.brand)
     
     // Imposta additionalDetails con i dati dell'inserzione
     additionalDetails.value = {
