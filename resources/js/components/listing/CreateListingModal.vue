@@ -1373,10 +1373,13 @@ const getSingleCardData = () => {
       is_altered: listingData.value.is_altered,
       is_first_edition: listingData.value.is_first_edition,
       is_negotiable: listingData.value.is_negotiable,
+      // Dati aggiuntivi per il componente ImagePreviewStep
+      gradingCompany: additionalDetails.value.gradingCompany,
+      gradingScore: additionalDetails.value.gradingScore,
+      notes: additionalDetails.value.notes,
       // Immagini esistenti
       existingImages: cardImages.value.filter(img => img !== null)
     }
-    
   }
   
   return baseData
@@ -1521,6 +1524,8 @@ watch(() => props.editingListing, (newListing) => {
 // Inizializza modalità edit
 const initializeEditMode = (listing) => {
   try {
+    console.log('🔄 Inizializzazione modalità edit con listing:', listing)
+    
     // Imposta i dati dell'inserzione
     listingData.value = {
       card_model_id: listing.card_model_id,
@@ -1539,6 +1544,25 @@ const initializeEditMode = (listing) => {
     // Imposta la carta selezionata
     selectedCardModel.value = listing.card_model
     
+    // Imposta i filtri con i dati della carta per compatibilità
+    filters.value = {
+      ...filters.value,
+      price: listing.price,
+      condition: listing.condition,
+      brand: listing.card_model?.brand || '',
+      rarity: listing.card_model?.rarity || '',
+      year: listing.card_model?.year || '',
+      number: listing.card_model?.number || ''
+    }
+    
+    // Imposta additionalDetails con i dati dell'inserzione
+    additionalDetails.value = {
+      condition: listing.condition,
+      gradingCompany: listing.grading_company || '',
+      gradingScore: listing.grading_score || '',
+      notes: listing.description || ''
+    }
+    
     // Imposta le zone di spedizione
     if (listing.shipping_zones) {
       selectedShippingZones.value = listing.shipping_zones.map(zone => zone.id)
@@ -1551,7 +1575,7 @@ const initializeEditMode = (listing) => {
         if (index < 4 && imageUrl) {
           return {
             file: null, // Non abbiamo il file originale
-            preview: imageUrl, // URL dell'immagine esistente
+            preview: imageUrl.startsWith('/storage/') ? imageUrl : `/storage/${imageUrl}`, // Assicura il prefisso corretto
             isExisting: true // Flag per identificare le immagini esistenti
           }
         }
@@ -1563,6 +1587,13 @@ const initializeEditMode = (listing) => {
     // Vai direttamente al primo step (selezione carta)
     currentStep.value = 1
     selectedMode.value = 'single'
+    
+    console.log('✅ Modalità edit inizializzata:', {
+      listingData: listingData.value,
+      additionalDetails: additionalDetails.value,
+      filters: filters.value,
+      selectedCardModel: selectedCardModel.value
+    })
   } catch (error) {
     console.error('❌ Errore nell\'inizializzazione modalità edit:', error)
   }
