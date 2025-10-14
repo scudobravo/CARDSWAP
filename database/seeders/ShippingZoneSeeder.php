@@ -45,6 +45,7 @@ class ShippingZoneSeeder extends Seeder
                     'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'CH', 'NO', 'IS', 
                     'LI', 'MC', 'SM', 'VA', 'AD', 'GB'
                 ],
+                'shipping_cost' => 8.00, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
                 'shippo_markup' => 1.60,
@@ -66,6 +67,7 @@ class ShippingZoneSeeder extends Seeder
                     'TL', 'TR', 'TM', 'AE', 'UZ', 'VN', 'YE'
                 ],
                 'excluded_countries' => ['CN', 'MN'],
+                'shipping_cost' => 12.00, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
                 'shippo_markup' => 1.60,
@@ -86,6 +88,7 @@ class ShippingZoneSeeder extends Seeder
                     'GD', 'GT', 'GY', 'HT', 'HN', 'JM', 'MX', 'NI', 'PA', 'PY', 'PE', 'KN', 'LC', 'VC', 'SR', 
                     'TT', 'US', 'UY', 'VE'
                 ],
+                'shipping_cost' => 18.00, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
                 'shippo_markup' => 1.60,
@@ -102,6 +105,7 @@ class ShippingZoneSeeder extends Seeder
                 'country_code' => 'US',
                 'zone_type' => 'country',
                 'included_countries' => ['US'],
+                'shipping_cost' => 16.00, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
                 'shippo_markup' => 1.60,
@@ -121,6 +125,7 @@ class ShippingZoneSeeder extends Seeder
                     'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 
                     'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'
                 ],
+                'shipping_cost' => 6.00, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
                 'shippo_markup' => 1.60,
@@ -137,6 +142,7 @@ class ShippingZoneSeeder extends Seeder
                 'country_code' => 'JP',
                 'zone_type' => 'country',
                 'included_countries' => ['JP'],
+                'shipping_cost' => 14.00, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
                 'shippo_markup' => 1.60,
@@ -153,6 +159,7 @@ class ShippingZoneSeeder extends Seeder
                 'country_code' => 'CA',
                 'zone_type' => 'country',
                 'included_countries' => ['CA'],
+                'shipping_cost' => 17.00, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
                 'shippo_markup' => 1.60,
@@ -169,6 +176,7 @@ class ShippingZoneSeeder extends Seeder
                 'country_code' => 'AU',
                 'zone_type' => 'country',
                 'included_countries' => ['AU'],
+                'shipping_cost' => 20.00, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
                 'shippo_markup' => 1.60,
@@ -185,6 +193,7 @@ class ShippingZoneSeeder extends Seeder
                 'country_code' => 'FR',
                 'zone_type' => 'country',
                 'included_countries' => ['FR'],
+                'shipping_cost' => 5.50, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
                 'shippo_markup' => 1.60,
@@ -201,6 +210,7 @@ class ShippingZoneSeeder extends Seeder
                 'country_code' => 'ES',
                 'zone_type' => 'country',
                 'included_countries' => ['ES'],
+                'shipping_cost' => 5.50, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
                 'shippo_markup' => 1.60,
@@ -217,6 +227,7 @@ class ShippingZoneSeeder extends Seeder
                 'country_code' => 'RU',
                 'zone_type' => 'country',
                 'included_countries' => ['RU'],
+                'shipping_cost' => 12.00, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
                 'shippo_markup' => 1.60,
@@ -233,6 +244,7 @@ class ShippingZoneSeeder extends Seeder
                 'country_code' => 'GB',
                 'zone_type' => 'country',
                 'included_countries' => ['GB'],
+                'shipping_cost' => 7.50, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
                 'shippo_markup' => 1.60,
@@ -249,6 +261,7 @@ class ShippingZoneSeeder extends Seeder
                 'country_code' => 'AT',
                 'zone_type' => 'country',
                 'included_countries' => ['AT'],
+                'shipping_cost' => 5.50, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
                 'shippo_markup' => 1.60,
@@ -265,6 +278,7 @@ class ShippingZoneSeeder extends Seeder
                 'country_code' => 'IT',
                 'zone_type' => 'country',
                 'included_countries' => ['IT'],
+                'shipping_cost' => 3.50, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
                 'shippo_markup' => 1.60,
