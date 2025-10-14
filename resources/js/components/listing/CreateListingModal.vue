@@ -1653,7 +1653,8 @@ const initializeEditMode = (listing) => {
     
     // Dispatch event per popolare i filtri nel componente ChainedFilters
     if (selectedCardModel.value) {
-      console.log('🎯 Dispatching filters-populated con brand dai filtri:', filters.value.brand)
+      const brandFromSet = selectedCardModel.value.card_set?.brand
+      console.log('🎯 Dispatching filters-populated con brand dal set:', brandFromSet)
       window.dispatchEvent(new CustomEvent('filters-populated', { 
         detail: {
           team: selectedCardModel.value.team,
@@ -1661,7 +1662,7 @@ const initializeEditMode = (listing) => {
           player: selectedCardModel.value.player,
           rarity: filters.value.rarity,
           year: filters.value.year,
-          brand: filters.value.brand,
+          brand: brandFromSet,
           number: filters.value.number
         }
       }))
