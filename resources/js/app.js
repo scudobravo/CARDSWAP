@@ -75,7 +75,6 @@ const routes = [
     { path: '/category/basketball', component: BasketballCategory, name: 'basketball.category' },
     { path: '/category/pokemon', component: PokemonCategory, name: 'pokemon.category' },
     { path: '/categories/:category/:subcategory', component: SubcategoryPage, name: 'subcategory' },
-    { path: '/:category/:cardSlug', component: ProductDetail, name: 'card.detail' },
     { path: '/product/:id', component: ProductDetail, name: 'product.detail' },
     { path: '/dashboard', component: Dashboard, name: 'dashboard' },
     { path: '/cart', component: Cart, name: 'cart' },
@@ -123,6 +122,9 @@ const routes = [
     
     // Search Routes
     { path: '/search', component: SearchResults, name: 'search' },
+    
+    // Generic route for card details (must be last to avoid conflicts)
+    { path: '/:category/:cardSlug', component: ProductDetail, name: 'card.detail' },
 ];
 
 const router = createRouter({

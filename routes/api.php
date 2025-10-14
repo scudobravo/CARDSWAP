@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\ConversationController;
 use App\Http\Controllers\Api\FeedbackController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\CartController;
+use App\Http\Controllers\Api\ShippingZoneController;
 
 // Grading Companies
 Route::get('/grading-companies', function () {
@@ -47,9 +48,18 @@ Route::get('/grading-companies', function () {
     }
 });
 
-// Shipping Zones - Zone dell'utente autenticato
+// Shipping Zones - API pubbliche per selezione zone
+Route::get('/shipping-zones', [ShippingZoneController::class, 'index']);
+Route::post('/shipping-zones', [ShippingZoneController::class, 'store']);
+Route::put('/shipping-zones/{id}', [ShippingZoneController::class, 'update']);
+Route::post('/shipping-zones/calculate-price', [ShippingZoneController::class, 'calculatePrice']);
+Route::post('/shipping-zones/calculate-multiple-prices', [ShippingZoneController::class, 'calculateMultiplePrices']);
+Route::post('/shipping-zones/calculate-country-prices', [ShippingZoneController::class, 'calculateCountryPrices']);
+Route::post('/shipping-zones/check-country-support', [ShippingZoneController::class, 'checkCountrySupport']);
+
+// Shipping Zones - Zone dell'utente autenticato (legacy)
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/shipping-zones', function (Request $request) {
+    Route::get('/user/shipping-zones', function (Request $request) {
         try {
             $zones = DB::table('shipping_zones')
                 ->select('id', 'name', 'country_code', 'shipping_cost', 'delivery_days_min', 'delivery_days_max', 'is_active')
@@ -511,12 +521,12 @@ Route::middleware('auth:sanctum')->group(function () {
         // Gestione Zone di Spedizione - Rimosso (ora gestito per utente)
     });
 
-    // Gestione Zone di Spedizione per utenti
-    Route::prefix('shipping-zones')->middleware('auth:sanctum')->group(function () {
-        Route::post('/', [UserController::class, 'createShippingZone']); // Crea zona
-        Route::put('/{shippingZone}', [UserController::class, 'updateShippingZone']); // Aggiorna zona
-        Route::delete('/{shippingZone}', [UserController::class, 'deleteShippingZone']); // Elimina zona
-    });
+    // Gestione Zone di Spedizione per utenti - RIMOSSO (ora gestito dalle route pubbliche)
+    // Route::prefix('shipping-zones')->middleware('auth:sanctum')->group(function () {
+    //     Route::post('/', [UserController::class, 'createShippingZone']); // Crea zona
+    //     Route::put('/{shippingZone}', [UserController::class, 'updateShippingZone']); // Aggiorna zona
+    //     Route::delete('/{shippingZone}', [UserController::class, 'deleteShippingZone']); // Elimina zona
+    // });
 
     // KYC per utenti
     Route::prefix('kyc')->middleware('auth:sanctum')->group(function () {

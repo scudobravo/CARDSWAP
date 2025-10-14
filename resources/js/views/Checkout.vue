@@ -234,7 +234,17 @@
 
                 <fieldset>
                   <legend class="sr-only">Metodo di spedizione per {{ seller.name }}</legend>
-                  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  
+                  <!-- Indicatore di caricamento -->
+                  <div v-if="loadingShippingRates" class="flex items-center justify-center p-4 bg-gray-50 rounded-lg">
+                    <div class="flex items-center space-x-2">
+                      <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      <span class="text-sm text-gray-600">Calcolo prezzi di spedizione...</span>
+                    </div>
+                  </div>
+                  
+                  <!-- Metodi di spedizione -->
+                  <div v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <label v-for="deliveryMethod in getShippingMethodsForSeller(seller.id)" :key="`${seller.id}-${deliveryMethod.id}`" 
                            class="group relative flex rounded-lg border border-gray-300 bg-white p-3 has-checked:outline-2 has-checked:-outline-offset-2 has-checked:outline-blue-600">
                       <input 
@@ -248,6 +258,7 @@
                         <span class="block text-sm font-medium text-gray-900">{{ deliveryMethod.title }}</span>
                         <span class="mt-1 block text-xs text-gray-500">{{ deliveryMethod.turnaround }}</span>
                         <span class="mt-2 block text-sm font-medium text-gray-900">{{ deliveryMethod.price }}</span>
+                        <span v-if="deliveryMethod.carrier" class="mt-1 block text-xs text-gray-400">{{ deliveryMethod.carrier }}</span>
                       </div>
                       <CheckCircleIcon class="invisible size-4 text-blue-600 group-has-checked:visible" aria-hidden="true" />
                     </label>
@@ -448,11 +459,9 @@ const formData = ref({
   paymentMethod: 'stripe'
 })
 
-// Metodi di spedizione
-const deliveryMethods = ref([
-  { id: 'standard', title: 'Standard', turnaround: '4-10 giorni lavorativi', price: '€5.00' },
-  { id: 'express', title: 'Express', turnaround: '2-5 giorni lavorativi', price: '€16.00' }
-])
+// Metodi di spedizione (dinamici da SHIPPO)
+const deliveryMethods = ref({})
+const loadingShippingRates = ref(false)
 
 // Metodo di pagamento fisso: Stripe
 const paymentMethod = 'stripe'
@@ -480,7 +489,7 @@ const orderSummary = computed(() => {
   // Calcola spedizione per ogni venditore basata sul metodo selezionato
   const shipping = sellers.reduce((sum, seller) => {
     const selectedMethod = selectedShippingMethods.value[seller.id]
-    const shippingCost = getShippingCostForMethod(selectedMethod)
+    const shippingCost = getShippingCostForMethod(selectedMethod, seller.id)
     return sum + shippingCost
   }, 0)
   
@@ -747,20 +756,136 @@ watch(() => userAddresses.value, (newAddresses) => {
   }
 }, { immediate: true })
 
+// Watcher per calcolare i prezzi SHIPPO quando cambia l'indirizzo
+watch([
+  () => formData.value.country,
+  () => formData.value.city,
+  () => formData.value.postalCode,
+  () => cartStore.sellers.length
+], () => {
+  // Calcola i prezzi solo se abbiamo tutti i dati necessari
+  if (formData.value.country && formData.value.city && formData.value.postalCode && cartStore.sellers.length > 0) {
+    calculateShippingRates()
+  }
+}, { deep: true })
+
 // Metodi di utilità
 const getShippingMethodsForSeller = (sellerId) => {
   // Ottieni i metodi di spedizione disponibili per questo venditore
-  // Per ora restituisce i metodi standard, ma potrebbero essere personalizzati per venditore
-  return deliveryMethods.value
+  return deliveryMethods.value[sellerId] || []
 }
 
-const getShippingCostForMethod = (methodId) => {
-  const method = deliveryMethods.value.find(m => m.id === methodId)
-  if (!method) return 0
+// Calcola i prezzi di spedizione usando SHIPPO
+const calculateShippingRates = async () => {
+  if (!formData.value.country || !formData.value.city || !formData.value.postalCode) {
+    return
+  }
+
+  try {
+    loadingShippingRates.value = true
+    
+    // Prepara i dati dei venditori
+    const sellers = cartStore.sellers.map(seller => ({
+      id: seller.id,
+      name: seller.name,
+      address: {
+        street1: 'Via Roma 1', // TODO: Ottenere indirizzo reale del venditore
+        city: 'Milano',
+        state: 'MI',
+        zip: '20100',
+        country: 'IT'
+      }
+    }))
+
+    // Prepara l'indirizzo di spedizione
+    const shippingAddress = {
+      name: `${formData.value.firstName} ${formData.value.lastName}`,
+      street1: formData.value.address,
+      city: formData.value.city,
+      state: formData.value.region,
+      zip: formData.value.postalCode,
+      country: formData.value.country
+    }
+
+    // Chiama l'API SHIPPO
+    const response = await axios.post('/api/shipping/calculate-rates', {
+      sellers,
+      shipping_address: shippingAddress
+    })
+
+    if (response.data.success) {
+      // Processa i risultati per ogni venditore
+      const newDeliveryMethods = {}
+      
+      Object.entries(response.data.data).forEach(([sellerId, sellerData]) => {
+        if (sellerData.rates && sellerData.rates.length > 0) {
+          newDeliveryMethods[sellerId] = sellerData.rates.map(rate => ({
+            id: rate.object_id,
+            title: rate.service_name,
+            turnaround: `${rate.estimated_days || '3-7'} giorni lavorativi`,
+            price: `€${rate.amount.toFixed(2)}`,
+            service_type: rate.service_type,
+            carrier: rate.carrier,
+            original_amount: rate.original_amount
+          }))
+        } else {
+          // Fallback ai prezzi fissi se SHIPPO non restituisce tariffe
+          newDeliveryMethods[sellerId] = [
+            { id: 'standard', title: 'Standard', turnaround: '4-10 giorni lavorativi', price: '€5.00' },
+            { id: 'express', title: 'Express', turnaround: '2-5 giorni lavorativi', price: '€16.00' }
+          ]
+        }
+      })
+      
+      deliveryMethods.value = newDeliveryMethods
+      
+      // Seleziona automaticamente il metodo più economico per ogni venditore
+      Object.keys(newDeliveryMethods).forEach(sellerId => {
+        if (!selectedShippingMethods.value[sellerId] && newDeliveryMethods[sellerId].length > 0) {
+          selectedShippingMethods.value[sellerId] = newDeliveryMethods[sellerId][0].id
+        }
+      })
+    }
+  } catch (error) {
+    console.error('Errore calcolo tariffe SHIPPO:', error)
+    
+    // Fallback ai prezzi fissi in caso di errore
+    const fallbackMethods = [
+      { id: 'standard', title: 'Standard', turnaround: '4-10 giorni lavorativi', price: '€5.00' },
+      { id: 'express', title: 'Express', turnaround: '2-5 giorni lavorativi', price: '€16.00' }
+    ]
+    
+    cartStore.sellers.forEach(seller => {
+      deliveryMethods.value[seller.id] = fallbackMethods
+      if (!selectedShippingMethods.value[seller.id]) {
+        selectedShippingMethods.value[seller.id] = 'standard'
+      }
+    })
+  } finally {
+    loadingShippingRates.value = false
+  }
+}
+
+const getShippingCostForMethod = (methodId, sellerId = null) => {
+  // Se abbiamo un sellerId, cerca nei metodi specifici del venditore
+  if (sellerId && deliveryMethods.value[sellerId]) {
+    const method = deliveryMethods.value[sellerId].find(m => m.id === methodId)
+    if (method) {
+      const priceStr = method.price.replace('€', '').replace(',', '.')
+      return parseFloat(priceStr) || 0
+    }
+  }
   
-  // Estrai il costo dal prezzo (rimuovi € e converti)
-  const priceStr = method.price.replace('€', '').replace(',', '.')
-  return parseFloat(priceStr) || 0
+  // Fallback: cerca in tutti i metodi
+  for (const sellerMethods of Object.values(deliveryMethods.value)) {
+    const method = sellerMethods.find(m => m.id === methodId)
+    if (method) {
+      const priceStr = method.price.replace('€', '').replace(',', '.')
+      return parseFloat(priceStr) || 0
+    }
+  }
+  
+  return 0
 }
 
 const processPayment = async () => {

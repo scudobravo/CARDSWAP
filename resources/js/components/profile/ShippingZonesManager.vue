@@ -1,262 +1,144 @@
 <template>
-  <div class="bg-white rounded-lg border border-gray-200 p-6">
-    <div class="flex justify-between items-center mb-6">
-      <h3 class="text-lg font-medium text-gray-900 font-futura-bold">
-        Le mie zone di spedizione
-      </h3>
-      <button
-        @click="openCreateModal"
-        class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-      >
-        <PlusIcon class="h-4 w-4 mr-2" />
-        Nuova Zona
-      </button>
-    </div>
+  <div class="space-y-6">
+    <!-- Sezione Zone Avanzate -->
+    <div class="bg-white rounded-lg border border-gray-200 p-6">
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h3 class="text-lg font-medium text-gray-900 font-futura-bold">
+            Zone di Spedizione Avanzate
+          </h3>
+          <p class="text-sm text-gray-600 mt-1">
+            Seleziona continenti e paesi con prezzi SHIPPO in tempo reale
+          </p>
+        </div>
+        <button
+          @click="openAdvancedModal"
+          class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+        >
+          <PlusIcon class="h-4 w-4 mr-2" />
+          Nuova Zona Avanzata
+        </button>
+      </div>
 
-    <!-- Lista zone -->
-    <div v-if="zones.length > 0" class="space-y-4">
-      <div
-        v-for="zone in zones"
-        :key="zone.id"
-        class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
-      >
-        <div class="flex justify-between items-start">
-          <div class="flex-1">
-            <div class="flex items-center gap-2 mb-2">
-              <h4 class="text-sm font-medium text-gray-900">{{ zone.name }}</h4>
-              <span
-                :class="zone.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
-                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+      <!-- Lista zone avanzate -->
+      <div v-if="advancedZones.length > 0" class="space-y-4">
+        <div
+          v-for="zone in advancedZones"
+          :key="zone.id"
+          class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
+        >
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-2">
+                <h4 class="text-sm font-medium text-gray-900">{{ zone.name }}</h4>
+                <span
+                  :class="zone.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                >
+                  {{ zone.is_active ? 'Attiva' : 'Inattiva' }}
+                </span>
+                <span
+                  v-if="zone.use_shippo_pricing"
+                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                >
+                  SHIPPO
+                </span>
+              </div>
+              <div class="text-sm text-gray-600 space-y-1">
+                <p><span class="font-medium">Tipo:</span> {{ getZoneTypeLabel(zone.zone_type) }}</p>
+                <p v-if="zone.is_worldwide"><span class="font-medium">Copertura:</span> Tutto il mondo</p>
+                <p v-else-if="zone.included_countries && zone.included_countries.length > 0">
+                  <span class="font-medium">Continente:</span> {{ getContinentFromCountries(zone.included_countries) }}
+                </p>
+                <p v-if="zone.included_countries && zone.included_countries.length > 0">
+                  <span class="font-medium">Paesi inclusi:</span> {{ zone.included_countries.join(', ') }}
+                </p>
+                <p v-if="zone.use_shippo_pricing">
+                  <span class="font-medium">Markup SHIPPO:</span> +€{{ zone.shippo_markup }}
+                </p>
+                <p>
+                  <span class="font-medium">Consegna:</span>
+                  {{ zone.delivery_days_min }}-{{ zone.delivery_days_max }} giorni
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 ml-4">
+              <button
+                @click="openEditAdvancedModal(zone)"
+                class="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
               >
-                {{ zone.is_active ? 'Attiva' : 'Inattiva' }}
-              </span>
-            </div>
-            <div class="text-sm text-gray-600 space-y-1">
-              <p><span class="font-medium">Paese:</span> {{ zone.country_code }}</p>
-              <p v-if="zone.region"><span class="font-medium">Regione:</span> {{ zone.region }}</p>
-              <p v-if="zone.city"><span class="font-medium">Città:</span> {{ zone.city }}</p>
-              <p><span class="font-medium">Costo:</span> €{{ zone.shipping_cost }}</p>
-              <p>
-                <span class="font-medium">Consegna:</span>
-                {{ zone.delivery_days_min }}-{{ zone.delivery_days_max }} giorni
-              </p>
+                Modifica
+              </button>
+              <button
+                @click="deleteZone(zone)"
+                class="text-red-600 hover:text-red-900 text-sm font-medium"
+              >
+                Elimina
+              </button>
             </div>
           </div>
-          <div class="flex items-center gap-2 ml-4">
-            <button
-              @click="openEditModal(zone)"
-              class="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
-            >
-              Modifica
-            </button>
-            <button
-              @click="deleteZone(zone)"
-              class="text-red-600 hover:text-red-900 text-sm font-medium"
-            >
-              Elimina
-            </button>
-          </div>
+        </div>
+      </div>
+
+      <!-- Messaggio se non ci sono zone avanzate -->
+      <div v-else class="text-center py-8">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">Nessuna zona avanzata</h3>
+        <p class="mt-1 text-sm text-gray-500">
+          Crea zone di spedizione avanzate con prezzi SHIPPO in tempo reale.
+        </p>
+        <div class="mt-6">
+          <button
+            @click="openAdvancedModal"
+            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+          >
+            <PlusIcon class="w-4 h-4 mr-2" />
+            Crea Zona Avanzata
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- Messaggio se non ci sono zone -->
-    <div v-else class="text-center py-8">
-      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-      </svg>
-      <h3 class="mt-2 text-sm font-medium text-gray-900">Nessuna zona di spedizione</h3>
-      <p class="mt-1 text-sm text-gray-500">
-        Crea la tua prima zona di spedizione per iniziare a vendere.
-      </p>
-      <div class="mt-6">
-        <button
-          @click="openCreateModal"
-          class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-        >
-          <PlusIcon class="w-4 h-4 mr-2" />
-          Crea Zona di Spedizione
-        </button>
-      </div>
-    </div>
 
-    <!-- Modal Creazione/Modifica -->
+    <!-- Modal Zone Avanzate -->
     <div
-      v-if="showModal"
+      v-if="showAdvancedModal"
       class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
-      @click="closeModal"
+      @click="closeAdvancedModal"
     >
       <div
-        class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white"
+        class="relative top-10 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white"
         @click.stop
       >
         <div class="mt-3">
           <h3 class="text-lg font-medium text-gray-900 mb-4">
-            {{ editingZone ? 'Modifica Zona' : 'Nuova Zona di Spedizione' }}
+            {{ editingAdvancedZone ? 'Modifica Zona Avanzata' : 'Nuova Zona di Spedizione Avanzata' }}
           </h3>
           
-          <form @submit.prevent="saveZone" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                Nome zona *
-              </label>
-              <input
-                v-model="form.name"
-                type="text"
-                required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                placeholder="es. Italia - Spedizione Standard"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                Codice Paese *
-              </label>
-              <input
-                v-model="form.country_code"
-                type="text"
-                required
-                maxlength="2"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                placeholder="IT"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                Regione
-              </label>
-              <input
-                v-model="form.region"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                placeholder="es. Lombardia"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                Città
-              </label>
-              <input
-                v-model="form.city"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                placeholder="es. Milano"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                CAP
-              </label>
-              <input
-                v-model="form.postal_code"
-                type="text"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                placeholder="es. 20100"
-              />
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                Costo spedizione (€) *
-              </label>
-              <input
-                v-model="form.shipping_cost"
-                type="number"
-                step="0.01"
-                min="0"
-                required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                placeholder="3.50"
-              />
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                  Giorni min *
-                </label>
-                <input
-                  v-model="form.delivery_days_min"
-                  type="number"
-                  min="1"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  placeholder="2"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                  Giorni max *
-                </label>
-                <input
-                  v-model="form.delivery_days_max"
-                  type="number"
-                  min="1"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  placeholder="4"
-                />
-              </div>
-            </div>
-
-            <div class="flex items-center">
-              <input
-                v-model="form.is_active"
-                type="checkbox"
-                class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-              />
-              <label class="ml-2 block text-sm text-gray-900">
-                Zona attiva
-              </label>
-            </div>
-
-            <div class="flex justify-end gap-3 pt-4">
-              <button
-                type="button"
-                @click="closeModal"
-                class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-              >
-                Annulla
-              </button>
-              <button
-                type="submit"
-                :disabled="loading"
-                class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
-              >
-                {{ loading ? 'Salvataggio...' : (editingZone ? 'Aggiorna' : 'Crea') }}
-              </button>
-            </div>
-          </form>
+          <!-- Componente Selettore Avanzato -->
+          <ShippingZoneSelectorAdvanced
+            :initial-zone="editingAdvancedZone"
+            @done="handleAdvancedZoneDone"
+            @cancel="closeAdvancedModal"
+          />
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, reactive } from 'vue'
 import { PlusIcon } from '@heroicons/vue/24/outline'
+import ShippingZoneSelectorAdvanced from '@/components/ShippingZoneSelectorAdvanced.vue'
 
-const zones = ref([])
-const showModal = ref(false)
-const editingZone = ref(null)
+const advancedZones = ref([])
+const showAdvancedModal = ref(false)
+const editingAdvancedZone = ref(null)
 const loading = ref(false)
-
-const form = reactive({
-  name: '',
-  country_code: '',
-  region: '',
-  city: '',
-  postal_code: '',
-  shipping_cost: '',
-  delivery_days_min: '',
-  delivery_days_max: '',
-  is_active: true
-})
 
 const loadZones = async () => {
   try {
@@ -268,7 +150,22 @@ const loadZones = async () => {
     })
     
     if (response.ok) {
-      zones.value = await response.json()
+      const responseData = await response.json()
+      console.log('Risposta API zone:', responseData)
+      
+      // Estrai le zone dalla risposta (può essere responseData.data o responseData direttamente)
+      const allZones = responseData.data || responseData
+      
+      if (Array.isArray(allZones)) {
+        // Carica solo zone avanzate (includi anche 'region')
+        advancedZones.value = allZones.filter(zone => 
+          zone.zone_type && ['worldwide', 'continent', 'country', 'region'].includes(zone.zone_type)
+        )
+        console.log('Zone avanzate caricate:', advancedZones.value.length)
+      } else {
+        console.error('Risposta API non è un array:', allZones)
+        advancedZones.value = []
+      }
     } else {
       console.error('Errore nel caricamento zone:', response.status)
     }
@@ -277,53 +174,105 @@ const loadZones = async () => {
   }
 }
 
-const openCreateModal = () => {
-  editingZone.value = null
-  resetForm()
-  showModal.value = true
+const getZoneTypeLabel = (type) => {
+  const labels = {
+    'worldwide': 'Mondiale',
+    'continent': 'Continentale',
+    'country': 'Paese specifico',
+    'region': 'Regione'
+  }
+  return labels[type] || 'Semplice'
 }
 
-const openEditModal = (zone) => {
-  editingZone.value = zone
-  form.name = zone.name
-  form.country_code = zone.country_code
-  form.region = zone.region || ''
-  form.city = zone.city || ''
-  form.postal_code = zone.postal_code || ''
-  form.shipping_cost = zone.shipping_cost
-  form.delivery_days_min = zone.delivery_days_min
-  form.delivery_days_max = zone.delivery_days_max
-  form.is_active = zone.is_active
-  showModal.value = true
-}
-
-const closeModal = () => {
-  showModal.value = false
-  editingZone.value = null
-  resetForm()
-}
-
-const resetForm = () => {
-  form.name = ''
-  form.country_code = ''
-  form.region = ''
-  form.city = ''
-  form.postal_code = ''
-  form.shipping_cost = ''
-  form.delivery_days_min = ''
-  form.delivery_days_max = ''
-  form.is_active = true
-}
-
-const saveZone = async () => {
-  loading.value = true
+const getContinentFromCountries = (countries) => {
+  if (!countries || countries.length === 0) return 'N/A'
   
-  try {
-    const url = editingZone.value 
-      ? `/api/shipping-zones/${editingZone.value.id}`
+  // Mappa dei paesi per continente
+  const continentMap = {
+    'EU': ['IT', 'FR', 'DE', 'ES', 'GB', 'NL', 'BE', 'AT', 'CH', 'SE', 'NO', 'DK', 'FI', 'PL', 'CZ', 'HU', 'PT', 'GR', 'RO', 'BG', 'HR', 'SI', 'SK', 'LT', 'LV', 'EE', 'IE', 'LU', 'MT', 'CY'],
+    'AS': ['CN', 'JP', 'KR', 'IN', 'ID', 'TH', 'VN', 'MY', 'SG', 'PH', 'TW', 'HK', 'MN', 'KZ', 'UZ', 'KG', 'TJ', 'TM', 'AF', 'PK', 'BD', 'LK', 'NP', 'BT', 'MV', 'MM', 'LA', 'KH', 'BN', 'TL'],
+    'AM': ['US', 'CA', 'MX', 'BR', 'AR', 'CL', 'CO', 'PE', 'VE', 'EC', 'BO', 'PY', 'UY', 'GY', 'SR', 'GF', 'CR', 'PA', 'GT', 'HN', 'SV', 'NI', 'CU', 'DO', 'HT', 'JM', 'TT', 'BB', 'BS', 'BZ'],
+    'AF': ['ZA', 'EG', 'NG', 'KE', 'MA', 'TN', 'DZ', 'LY', 'ET', 'GH', 'CI', 'SN', 'ML', 'BF', 'NE', 'TD', 'SD', 'UG', 'TZ', 'ZW', 'ZM', 'BW', 'NA', 'AO', 'MZ', 'MG', 'MU', 'SC', 'RW', 'BI'],
+    'OC': ['AU', 'NZ', 'FJ', 'PG', 'NC', 'VU', 'SB', 'TO', 'WS', 'KI', 'TV', 'NR', 'PW', 'FM', 'MH']
+  }
+  
+  // Controlla quale continente contiene la maggior parte dei paesi
+  let maxMatches = 0
+  let detectedContinent = 'Misto'
+  
+  for (const [continent, continentCountries] of Object.entries(continentMap)) {
+    const matches = countries.filter(country => continentCountries.includes(country)).length
+    if (matches > maxMatches) {
+      maxMatches = matches
+      detectedContinent = continent
+    }
+  }
+  
+  // Mappa i codici continente ai nomi
+  const continentNames = {
+    'EU': 'Europa',
+    'AS': 'Asia',
+    'AM': 'America',
+    'AF': 'Africa',
+    'OC': 'Oceania',
+    'Misto': 'Misto'
+  }
+  
+  return continentNames[detectedContinent] || 'Sconosciuto'
+}
+
+const openAdvancedModal = () => {
+  editingAdvancedZone.value = null
+  showAdvancedModal.value = true
+}
+
+const openEditAdvancedModal = (zone) => {
+  editingAdvancedZone.value = zone
+  showAdvancedModal.value = true
+}
+
+const closeAdvancedModal = () => {
+  showAdvancedModal.value = false
+  editingAdvancedZone.value = null
+}
+
+        const handleAdvancedZoneDone = async (zoneData) => {
+          loading.value = true
+          
+          try {
+            console.log('🔍 zoneData ricevuto:', zoneData)
+            console.log('🔍 zoneData.countries:', zoneData.countries)
+            console.log('🔍 zoneData.excludedCountries:', zoneData.excludedCountries)
+            console.log('🔍 editingAdvancedZone.value:', editingAdvancedZone.value)
+    
+    // Prepara i dati per il salvataggio
+    const saveData = {
+      name: zoneData.name,
+      country_code: zoneData.option === 'worldwide' ? 'WW' : 'EU', // Campo richiesto (max 2 caratteri)
+      zone_type: zoneData.option === 'worldwide' ? 'worldwide' : 'country', // Mappa correttamente i tipi
+      is_worldwide: zoneData.option === 'worldwide',
+      included_countries: zoneData.option === 'worldwide' ? null : zoneData.countries,
+      excluded_countries: zoneData.option === 'worldwide' ? null : zoneData.excludedCountries,
+      // Preserva i dati esistenti per le modifiche
+      shipping_cost: editingAdvancedZone.value?.shipping_cost || 15.00,
+      use_shippo_pricing: editingAdvancedZone.value?.use_shippo_pricing ?? true,
+      shippo_service_type: editingAdvancedZone.value?.shippo_service_type || 'standard',
+      shippo_markup: editingAdvancedZone.value?.shippo_markup || 1.60,
+      delivery_days_min: editingAdvancedZone.value?.delivery_days_min || 7,
+      delivery_days_max: editingAdvancedZone.value?.delivery_days_max || 21,
+      is_active: editingAdvancedZone.value?.is_active ?? true,
+      description: editingAdvancedZone.value?.description || `Zona ${zoneData.option} con prezzi SHIPPO`
+    }
+    
+            console.log('🔍 saveData preparato:', saveData)
+            console.log('🔍 saveData.included_countries:', saveData.included_countries)
+            console.log('🔍 saveData.excluded_countries:', saveData.excluded_countries)
+
+    const url = editingAdvancedZone.value 
+      ? `/api/shipping-zones/${editingAdvancedZone.value.id}`
       : '/api/shipping-zones'
     
-    const method = editingZone.value ? 'PUT' : 'POST'
+    const method = editingAdvancedZone.value ? 'PUT' : 'POST'
     
     const response = await fetch(url, {
       method,
@@ -332,25 +281,29 @@ const saveZone = async () => {
         'Accept': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       },
-      body: JSON.stringify(form)
+      body: JSON.stringify(saveData)
     })
     
-    if (response.ok) {
-      const result = await response.json()
-      console.log('Zona salvata:', result)
-      await loadZones()
-      closeModal()
-    } else {
-      const error = await response.json()
-      alert(`Errore: ${error.message}`)
-    }
+            if (response.ok) {
+              const result = await response.json()
+              console.log('✅ Zona avanzata salvata:', result)
+              console.log('✅ included_countries salvati:', result.data?.included_countries)
+              console.log('✅ excluded_countries salvati:', result.data?.excluded_countries)
+              await loadZones()
+              closeAdvancedModal()
+            } else {
+              const error = await response.json()
+              console.error('❌ Errore nel salvataggio:', error)
+              alert(`Errore: ${error.message}`)
+            }
   } catch (error) {
-    console.error('Errore nel salvataggio:', error)
-    alert('Errore nel salvataggio della zona')
+    console.error('Errore nel salvataggio zona avanzata:', error)
+    alert('Errore nel salvataggio della zona avanzata')
   } finally {
     loading.value = false
   }
 }
+
 
 const deleteZone = async (zone) => {
   if (!confirm(`Sei sicuro di voler eliminare la zona "${zone.name}"?`)) {
