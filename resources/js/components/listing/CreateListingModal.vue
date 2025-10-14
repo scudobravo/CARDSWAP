@@ -1648,6 +1648,22 @@ const initializeEditMode = (listing) => {
       filters: filters.value,
       selectedCardModel: selectedCardModel.value
     })
+    
+    // Dispatch event per popolare i filtri nel componente ChainedFilters
+    if (selectedCardModel.value) {
+      console.log('🎯 Dispatching filters-populated con brand:', selectedCardModel.value.brand)
+      window.dispatchEvent(new CustomEvent('filters-populated', { 
+        detail: {
+          team: selectedCardModel.value.team,
+          card_set: selectedCardModel.value.card_set,
+          player: selectedCardModel.value.player,
+          rarity: selectedCardModel.value.rarity,
+          year: selectedCardModel.value.year,
+          brand: selectedCardModel.value.brand,
+          number: selectedCardModel.value.number
+        }
+      }))
+    }
   } catch (error) {
     console.error('❌ Errore nell\'inizializzazione modalità edit:', error)
   }
