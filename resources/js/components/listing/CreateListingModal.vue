@@ -1656,8 +1656,8 @@ const initializeEditMode = (listing) => {
       const brandFromSet = selectedCardModel.value.card_set?.brand
       console.log('🎯 Dispatching filters-populated con brand dal set:', brandFromSet)
       
-      // Usa nextTick per assicurarsi che il componente ChainedFilters sia montato
-      nextTick(() => {
+      // Usa setTimeout per assicurarsi che il componente ChainedFilters sia montato e i listener attivi
+      setTimeout(() => {
         window.dispatchEvent(new CustomEvent('filters-populated', { 
           detail: {
             team: selectedCardModel.value.team,
@@ -1669,8 +1669,8 @@ const initializeEditMode = (listing) => {
             number: filters.value.number
           }
         }))
-        console.log('🎯 Evento filters-populated dispatchato dopo nextTick')
-      })
+        console.log('🎯 Evento filters-populated dispatchato dopo setTimeout')
+      }, 100)
     }
   } catch (error) {
     console.error('❌ Errore nell\'inizializzazione modalità edit:', error)
