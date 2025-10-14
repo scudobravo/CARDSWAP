@@ -52,6 +52,7 @@ Route::get('/grading-companies', function () {
 Route::get('/shipping-zones', [ShippingZoneController::class, 'index']);
 Route::post('/shipping-zones', [ShippingZoneController::class, 'store']);
 Route::put('/shipping-zones/{id}', [ShippingZoneController::class, 'update']);
+Route::delete('/shipping-zones/{id}', [ShippingZoneController::class, 'destroy']);
 Route::post('/shipping-zones/calculate-price', [ShippingZoneController::class, 'calculatePrice']);
 Route::post('/shipping-zones/calculate-multiple-prices', [ShippingZoneController::class, 'calculateMultiplePrices']);
 Route::post('/shipping-zones/calculate-country-prices', [ShippingZoneController::class, 'calculateCountryPrices']);

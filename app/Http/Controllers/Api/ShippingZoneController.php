@@ -638,4 +638,33 @@ class ShippingZoneController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Elimina una zona di spedizione
+     */
+    public function destroy($id): JsonResponse
+    {
+        try {
+            $zone = ShippingZone::findOrFail($id);
+            
+            \Log::info('Eliminazione zona spedizione:', ['zone_id' => $id, 'zone_name' => $zone->name]);
+            
+            $zone->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Zona di spedizione eliminata con successo'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Errore eliminazione zona spedizione: ' . $e->getMessage(), [
+                'zone_id' => $id
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Errore nell\'eliminazione della zona di spedizione'
+            ], 500);
+        }
+    }
 }
