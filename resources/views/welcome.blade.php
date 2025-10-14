@@ -9,6 +9,14 @@
         <!-- CSRF Token -->
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
+        <!-- Favicon dinamico per dark mode -->
+        <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+        <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-light-16x16.png') }}">
+        <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-light-32x32.png') }}">
+        
+        <!-- Script per favicon dinamico (fallback per browser che non supportano SVG) -->
+        <script src="{{ asset('js/dynamic-favicon.js') }}" defer></script>
+
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />

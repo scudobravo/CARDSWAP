@@ -24,11 +24,14 @@
     <meta property="twitter:description" content="La piattaforma definitiva per collezionisti di carte da collezione">
     <meta property="twitter:image" content="{{ asset('images/logos/cardswap-og-image.png') }}">
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    <!-- Favicon dinamico per dark mode -->
+    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-light-16x16.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-light-32x32.png') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('images/icons/apple-touch-icon.png') }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/icons/favicon-32x32.png') }}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('images/icons/favicon-16x16.png') }}">
+    
+    <!-- Script per favicon dinamico (fallback per browser che non supportano SVG) -->
+    <script src="{{ asset('js/dynamic-favicon.js') }}" defer></script>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">

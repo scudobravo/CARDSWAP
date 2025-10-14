@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <style>
+    .logo-light { fill: #1e40af; }
+    .logo-dark { fill: #ffffff; }
+    
+    @media (prefers-color-scheme: dark) {
+      .logo-light { display: none; }
+      .logo-dark { display: block; }
+    }
+    
+    @media (prefers-color-scheme: light) {
+      .logo-light { display: block; }
+      .logo-dark { display: none; }
+    }
+  </style>
+  
+  <!-- Logo per light mode (blu) -->
+  <g class="logo-light">
+    <circle cx="50" cy="50" r="45" fill="#1e40af"/>
+    <text x="50" y="60" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="white">C</text>
+  </g>
+  
+  <!-- Logo per dark mode (bianco) -->
+  <g class="logo-dark">
+    <circle cx="50" cy="50" r="45" fill="#ffffff"/>
+    <text x="50" y="60" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#1e40af">C</text>
+  </g>
+</svg>

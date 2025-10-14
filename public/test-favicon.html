@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Favicon Dinamico - CARDSWAP</title>
+    
+    <!-- Favicon dinamico per dark mode -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-light-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-light-32x32.png">
+    
+    <!-- Script per favicon dinamico (fallback per browser che non supportano SVG) -->
+    <script src="/js/dynamic-favicon.js" defer></script>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .test-section {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        
+        .dark-mode {
+            background: #333;
+            color: white;
+        }
+        
+        .favicon-preview {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin: 20px 0;
+        }
+        
+        .favicon-item {
+            text-align: center;
+        }
+        
+        .favicon-item img {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        button {
+            background: #1e40af;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #1e3a8a;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Favicon Dinamico - CARDSWAP</h1>
+    
+    <div class="test-section">
+        <h2>📋 Istruzioni per il Test</h2>
+        <ol>
+            <li><strong>Cambia il tema del browser:</strong> Vai nelle impostazioni del browser e cambia tra light e dark mode</li>
+            <li><strong>Osserva il favicon:</strong> Il favicon nella tab del browser dovrebbe cambiare automaticamente</li>
+            <li><strong>Verifica le dimensioni:</strong> Controlla che funzioni sia a 16x16 che a 32x32 pixel</li>
+        </ol>
+    </div>
+    
+    <div class="test-section">
+        <h2>🎨 Anteprima Favicon</h2>
+        <div class="favicon-preview">
+            <div class="favicon-item">
+                <h3>Light Mode (Bianco)</h3>
+                <img src="/favicon-light-16x16.png" alt="Favicon Light 16x16" width="32" height="32">
+                <img src="/favicon-light-32x32.png" alt="Favicon Light 32x32" width="48" height="48">
+            </div>
+            <div class="favicon-item">
+                <h3>Dark Mode (Blu)</h3>
+                <img src="/favicon-dark-16x16.png" alt="Favicon Dark 16x16" width="32" height="32">
+                <img src="/favicon-dark-32x32.png" alt="Favicon Dark 32x32" width="48" height="48">
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🔧 Test Manuale</h2>
+        <p>Usa questi pulsanti per testare manualmente il cambio di favicon:</p>
+        <button onclick="testLightMode()">🌞 Simula Light Mode</button>
+        <button onclick="testDarkMode()">🌙 Simula Dark Mode</button>
+        <button onclick="resetFavicon()">🔄 Reset</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>📱 Compatibilità</h2>
+        <ul>
+            <li>✅ <strong>SVG Favicon:</strong> Supportato da Chrome, Firefox, Safari (moderni)</li>
+            <li>✅ <strong>PNG Favicon:</strong> Supportato da tutti i browser</li>
+            <li>✅ <strong>JavaScript Fallback:</strong> Per browser che non supportano SVG</li>
+        </ul>
+    </div>
+    
+    <div class="test-section">
+        <h2>🎯 Risultato Atteso</h2>
+        <p>Quando cambi il tema del browser da light a dark (o viceversa), il favicon nella tab dovrebbe cambiare automaticamente:</p>
+        <ul>
+            <li><strong>Light Mode:</strong> Favicon bianco su sfondo blu</li>
+            <li><strong>Dark Mode:</strong> Favicon blu su sfondo bianco</li>
+        </ul>
+    </div>
+
+    <script>
+        function testLightMode() {
+            // Simula light mode
+            document.documentElement.style.colorScheme = 'light';
+            const favicon16 = document.querySelector('link[rel="icon"][sizes="16x16"]');
+            const favicon32 = document.querySelector('link[rel="icon"][sizes="32x32"]');
+            if (favicon16) favicon16.href = '/favicon-light-16x16.png';
+            if (favicon32) favicon32.href = '/favicon-light-32x32.png';
+        }
+        
+        function testDarkMode() {
+            // Simula dark mode
+            document.documentElement.style.colorScheme = 'dark';
+            const favicon16 = document.querySelector('link[rel="icon"][sizes="16x16"]');
+            const favicon32 = document.querySelector('link[rel="icon"][sizes="32x32"]');
+            if (favicon16) favicon16.href = '/favicon-dark-16x16.png';
+            if (favicon32) favicon32.href = '/favicon-dark-32x32.png';
+        }
+        
+        function resetFavicon() {
+            // Reset al comportamento automatico
+            document.documentElement.style.colorScheme = '';
+            // Il script dynamic-favicon.js si occuperà di ripristinare il favicon corretto
+            if (window.DynamicFavicon) {
+                new window.DynamicFavicon();
+            }
+        }
+        
+        // Mostra informazioni di debug
+        console.log('🔍 Debug Favicon:');
+        console.log('Current color scheme:', window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        console.log('Favicon elements:', {
+            favicon16: document.querySelector('link[rel="icon"][sizes="16x16"]'),
+            favicon32: document.querySelector('link[rel="icon"][sizes="32x32"]'),
+            faviconSvg: document.querySelector('link[rel="icon"][type="image/svg+xml"]')
+        });
+    </script>
+</body>
+</html>
