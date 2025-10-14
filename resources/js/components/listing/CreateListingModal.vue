@@ -1377,6 +1377,13 @@ const getSingleCardData = () => {
       gradingCompany: additionalDetails.value.gradingCompany,
       gradingScore: additionalDetails.value.gradingScore,
       notes: additionalDetails.value.notes,
+      // Caratteristiche speciali
+      autograph: listingData.value.is_signed ? 'yes' : 'no',
+      relic: listingData.value.is_altered ? 'yes' : 'no',
+      onCardAuto: listingData.value.is_signed ? 'yes' : 'no',
+      rookie: listingData.value.is_first_edition ? 'yes' : 'no',
+      jewel: listingData.value.is_foil ? 'yes' : 'no',
+      multiAutograph: '',
       // Immagini esistenti
       existingImages: cardImages.value.filter(img => img !== null)
     }
@@ -1410,7 +1417,13 @@ const handleAdditionalDetailsChanged = (details) => {
   listingData.value.condition = details.condition
   listingData.value.grading_company = details.gradingCompany
   listingData.value.grading_score = details.gradingScore
-  listingData.value.description = details.notes
+  listingData.value.description = details.notes || details.description
+  
+  // Update special characteristics
+  listingData.value.is_signed = details.autograph === 'yes'
+  listingData.value.is_altered = details.relic === 'yes'
+  listingData.value.is_first_edition = details.rookie === 'yes'
+  listingData.value.is_foil = details.jewel === 'yes'
 }
 
 const handleBulkImagesUploaded = (images) => {
@@ -1592,7 +1605,15 @@ const initializeEditMode = (listing) => {
       condition: listing.condition,
       gradingCompany: listing.grading_company || '',
       gradingScore: listing.grading_score || '',
-      notes: listing.description || ''
+      notes: listing.description || '',
+      // Caratteristiche speciali
+      autograph: listing.is_signed ? 'yes' : 'no',
+      relic: listing.is_altered ? 'yes' : 'no',
+      onCardAuto: listing.is_signed ? 'yes' : 'no',
+      rookie: listing.is_first_edition ? 'yes' : 'no',
+      jewel: listing.is_foil ? 'yes' : 'no',
+      multiAutograph: '',
+      description: listing.description || ''
     }
     
     // Imposta le zone di spedizione
