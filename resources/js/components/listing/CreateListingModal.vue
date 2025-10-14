@@ -1574,8 +1574,6 @@ const initializeEditMode = (listing) => {
     
     // Imposta la carta selezionata
     selectedCardModel.value = listing.card_model
-    console.log('🔍 selectedCardModel.value:', selectedCardModel.value)
-    console.log('🔍 selectedCardModel.value.brand:', selectedCardModel.value?.brand)
     
     // Imposta la categoria basata sulla carta
     if (listing.card_model?.category?.name) {
@@ -1603,8 +1601,6 @@ const initializeEditMode = (listing) => {
       set: listing.card_model?.card_set?.id || ''
     }
     
-    console.log('🔍 filters.value dopo impostazione:', filters.value)
-    console.log('🔍 filters.value.brand:', filters.value.brand)
     
     // Imposta additionalDetails con i dati dell'inserzione
     additionalDetails.value = {
@@ -1647,17 +1643,10 @@ const initializeEditMode = (listing) => {
     currentStep.value = 1
     selectedMode.value = 'single'
     
-    console.log('✅ Modalità edit inizializzata:', {
-      listingData: listingData.value,
-      additionalDetails: additionalDetails.value,
-      filters: filters.value,
-      selectedCardModel: selectedCardModel.value
-    })
     
     // Dispatch event per popolare i filtri nel componente ChainedFilters
     if (selectedCardModel.value) {
       const brandFromSet = selectedCardModel.value.card_set?.brand
-      console.log('🎯 Dispatching filters-populated con brand dal set:', brandFromSet)
       
       // Usa setTimeout per assicurarsi che il componente ChainedFilters sia montato e i listener attivi
       setTimeout(() => {
@@ -1672,7 +1661,6 @@ const initializeEditMode = (listing) => {
             number: filters.value.number
           }
         }))
-        console.log('🎯 Evento filters-populated dispatchato dopo setTimeout')
       }, 100)
     }
   } catch (error) {

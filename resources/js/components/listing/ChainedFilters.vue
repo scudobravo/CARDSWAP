@@ -100,7 +100,7 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
       <!-- Brand Selection -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Brand ({{ availableBrands.length }} opzioni)</label>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Brand</label>
         <select 
           v-model="localFilters.brand"
           @change="onFiltersChanged"
@@ -109,9 +109,6 @@
           <option value="">Seleziona Brand</option>
           <option v-for="brand in availableBrands" :key="brand" :value="brand">{{ brand }}</option>
         </select>
-        <div class="text-xs text-gray-500 mt-1">
-          Debug: {{ availableBrands.length }} brands disponibili
-        </div>
       </div>
 
       <!-- Rarity Selection -->
@@ -620,11 +617,9 @@ onMounted(async () => {
   
   // Ascolta l'evento per popolare i filtri quando viene selezionata una carta
   window.addEventListener('filters-populated', handleFiltersPopulated)
-  console.log('🎧 Listener filters-populated aggiunto')
   
   // Ascolta l'evento per aggiornare i filtri quando viene selezionata una carta in modalità edit
   window.addEventListener('card-selected', handleCardSelected)
-  console.log('🎧 Listener card-selected aggiunto')
 })
 
 onUnmounted(() => {
@@ -642,48 +637,35 @@ watch(() => props.initialFilters, async (newFilters) => {
 
 // Gestisce l'evento di popolamento filtri
 const handleFiltersPopulated = (event) => {
-  console.log('🎯 handleFiltersPopulated chiamata!')
   const data = event.detail
-  console.log('🎯 Evento filters-populated ricevuto:', data)
-  console.log('🎯 Brand ricevuto nell\'evento:', data.brand)
   
   // Popola Team
   if (data.team) {
     selectedTeam.value = data.team
     localFilters.value.team = data.team.id
-    console.log('✅ Team popolato:', data.team.name)
   }
   
   // Popola Set
   if (data.card_set) {
     selectedCardSet.value = data.card_set
     localFilters.value.set = data.card_set.id
-    console.log('✅ Set popolato:', data.card_set.name)
   }
   
   // Popola altri filtri
   if (data.rarity) {
     localFilters.value.rarity = data.rarity
-    console.log('✅ Rarity popolato:', data.rarity)
   }
   if (data.year) {
     localFilters.value.year = data.year
-    console.log('✅ Year popolato:', data.year)
   }
   if (data.brand) {
     localFilters.value.brand = data.brand
-    console.log('✅ Brand popolato:', data.brand)
-    console.log('✅ localFilters.value.brand dopo impostazione:', localFilters.value.brand)
-  } else {
-    console.log('❌ Brand non presente nei dati dell\'evento')
   }
   if (data.number) {
     localFilters.value.number = data.number
-    console.log('✅ Number popolato:', data.number)
   }
   if (data.player) {
     localFilters.value.player = data.player.id
-    console.log('✅ Player popolato:', data.player.name)
   }
   
   // Aggiorna i filtri
@@ -693,46 +675,38 @@ const handleFiltersPopulated = (event) => {
 // Gestisce l'evento di carta selezionata in modalità edit
 const handleCardSelected = (event) => {
   const card = event.detail.card
-  console.log('🎯 Evento card-selected ricevuto:', card)
   
   if (card) {
     // Popola Team se disponibile
     if (card.team) {
       selectedTeam.value = card.team
       localFilters.value.team = card.team.id
-      console.log('✅ Team popolato da card-selected:', card.team.name)
     }
     
     // Popola Set se disponibile
     if (card.card_set) {
       selectedCardSet.value = card.card_set
       localFilters.value.set = card.card_set.id
-      console.log('✅ Set popolato da card-selected:', card.card_set.name)
     }
     
     // Popola Player se disponibile
     if (card.player) {
       selectedPlayer.value = card.player
       localFilters.value.player = card.player.id
-      console.log('✅ Player popolato da card-selected:', card.player.name)
     }
     
     // Popola altri campi se disponibili
     if (card.rarity) {
       localFilters.value.rarity = card.rarity
-      console.log('✅ Rarity popolato da card-selected:', card.rarity)
     }
     if (card.year) {
       localFilters.value.year = card.year
-      console.log('✅ Year popolato da card-selected:', card.year)
     }
     if (card.brand) {
       localFilters.value.brand = card.brand
-      console.log('✅ Brand popolato da card-selected:', card.brand)
     }
     if (card.number) {
       localFilters.value.number = card.number
-      console.log('✅ Number popolato da card-selected:', card.number)
     }
     
     // Aggiorna i filtri
