@@ -662,6 +662,9 @@ const handleFiltersPopulated = (event) => {
   if (data.brand) {
     localFilters.value.brand = data.brand
   }
+  if (data.number) {
+    localFilters.value.number = data.number
+  }
   if (data.player) {
     localFilters.value.player = data.player.id
   }
@@ -695,6 +698,20 @@ const handleCardSelected = (event) => {
       selectedPlayer.value = card.player
       localFilters.value.player = card.player.id
       console.log('✅ Player popolato da card-selected:', card.player.name)
+    }
+    
+    // Popola altri campi se disponibili
+    if (card.rarity) {
+      localFilters.value.rarity = card.rarity
+    }
+    if (card.year) {
+      localFilters.value.year = card.year
+    }
+    if (card.brand) {
+      localFilters.value.brand = card.brand
+    }
+    if (card.number) {
+      localFilters.value.number = card.number
     }
     
     // Aggiorna i filtri

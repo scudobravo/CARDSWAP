@@ -1511,9 +1511,26 @@ watch(() => props.editingListing, (newListing) => {
       nextTick(() => {
         // Forza l'aggiornamento dei componenti figli
         if (selectedCardModel.value) {
-          // Dispatches event per aggiornare ChainedFilters
+          // Dispatches event per aggiornare ChainedFilters con tutti i dati
           window.dispatchEvent(new CustomEvent('card-selected', { 
-            detail: { card: selectedCardModel.value } 
+            detail: { 
+              card: selectedCardModel.value,
+              filters: filters.value,
+              category: selectedCategory.value
+            } 
+          }))
+          
+          // Dispatches anche l'evento filters-populated per compatibilità
+          window.dispatchEvent(new CustomEvent('filters-populated', { 
+            detail: {
+              team: selectedCardModel.value.team,
+              card_set: selectedCardModel.value.card_set,
+              player: selectedCardModel.value.player,
+              rarity: selectedCardModel.value.rarity,
+              year: selectedCardModel.value.year,
+              brand: selectedCardModel.value.brand,
+              number: selectedCardModel.value.number
+            }
           }))
         }
       })
@@ -1544,6 +1561,18 @@ const initializeEditMode = (listing) => {
     // Imposta la carta selezionata
     selectedCardModel.value = listing.card_model
     
+    // Imposta la categoria basata sulla carta
+    if (listing.card_model?.category?.name) {
+      const categoryName = listing.card_model.category.name.toLowerCase()
+      if (categoryName.includes('calcio') || categoryName.includes('football')) {
+        selectedCategory.value = 'football'
+      } else if (categoryName.includes('basketball') || categoryName.includes('basket')) {
+        selectedCategory.value = 'basketball'
+      } else if (categoryName.includes('pokemon')) {
+        selectedCategory.value = 'pokemon'
+      }
+    }
+    
     // Imposta i filtri con i dati della carta per compatibilità
     filters.value = {
       ...filters.value,
@@ -1552,7 +1581,10 @@ const initializeEditMode = (listing) => {
       brand: listing.card_model?.brand || '',
       rarity: listing.card_model?.rarity || '',
       year: listing.card_model?.year || '',
-      number: listing.card_model?.number || ''
+      number: listing.card_model?.number || '',
+      player: listing.card_model?.player?.id || '',
+      team: listing.card_model?.team?.id || '',
+      set: listing.card_model?.card_set?.id || ''
     }
     
     // Imposta additionalDetails con i dati dell'inserzione
