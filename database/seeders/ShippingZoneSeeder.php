@@ -27,7 +27,7 @@ class ShippingZoneSeeder extends Seeder
                 'shipping_cost' => 15.00, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
-                'shippo_markup' => 1.60,
+                'shippo_markup' => 0.00,
                 'delivery_days_min' => 7,
                 'delivery_days_max' => 21,
                 'is_active' => true,
@@ -48,7 +48,7 @@ class ShippingZoneSeeder extends Seeder
                 'shipping_cost' => 8.00, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
-                'shippo_markup' => 1.60,
+                'shippo_markup' => 0.00,
                 'delivery_days_min' => 3,
                 'delivery_days_max' => 7,
                 'is_active' => true,
@@ -70,7 +70,7 @@ class ShippingZoneSeeder extends Seeder
                 'shipping_cost' => 12.00, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
-                'shippo_markup' => 1.60,
+                'shippo_markup' => 0.00,
                 'delivery_days_min' => 7,
                 'delivery_days_max' => 14,
                 'is_active' => true,
@@ -91,7 +91,7 @@ class ShippingZoneSeeder extends Seeder
                 'shipping_cost' => 18.00, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
-                'shippo_markup' => 1.60,
+                'shippo_markup' => 0.00,
                 'delivery_days_min' => 7,
                 'delivery_days_max' => 21,
                 'is_active' => true,
@@ -108,7 +108,7 @@ class ShippingZoneSeeder extends Seeder
                 'shipping_cost' => 16.00, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
-                'shippo_markup' => 1.60,
+                'shippo_markup' => 0.00,
                 'delivery_days_min' => 5,
                 'delivery_days_max' => 10,
                 'is_active' => true,
@@ -128,7 +128,7 @@ class ShippingZoneSeeder extends Seeder
                 'shipping_cost' => 6.00, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
-                'shippo_markup' => 1.60,
+                'shippo_markup' => 0.00,
                 'delivery_days_min' => 2,
                 'delivery_days_max' => 5,
                 'is_active' => true,
@@ -145,7 +145,7 @@ class ShippingZoneSeeder extends Seeder
                 'shipping_cost' => 14.00, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
-                'shippo_markup' => 1.60,
+                'shippo_markup' => 0.00,
                 'delivery_days_min' => 5,
                 'delivery_days_max' => 10,
                 'is_active' => true,
@@ -162,7 +162,7 @@ class ShippingZoneSeeder extends Seeder
                 'shipping_cost' => 17.00, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
-                'shippo_markup' => 1.60,
+                'shippo_markup' => 0.00,
                 'delivery_days_min' => 7,
                 'delivery_days_max' => 14,
                 'is_active' => true,
@@ -179,7 +179,7 @@ class ShippingZoneSeeder extends Seeder
                 'shipping_cost' => 20.00, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
-                'shippo_markup' => 1.60,
+                'shippo_markup' => 0.00,
                 'delivery_days_min' => 10,
                 'delivery_days_max' => 21,
                 'is_active' => true,
@@ -196,7 +196,7 @@ class ShippingZoneSeeder extends Seeder
                 'shipping_cost' => 5.50, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
-                'shippo_markup' => 1.60,
+                'shippo_markup' => 0.00,
                 'delivery_days_min' => 2,
                 'delivery_days_max' => 4,
                 'is_active' => true,
@@ -213,7 +213,7 @@ class ShippingZoneSeeder extends Seeder
                 'shipping_cost' => 5.50, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
-                'shippo_markup' => 1.60,
+                'shippo_markup' => 0.00,
                 'delivery_days_min' => 2,
                 'delivery_days_max' => 4,
                 'is_active' => true,
@@ -230,7 +230,7 @@ class ShippingZoneSeeder extends Seeder
                 'shipping_cost' => 12.00, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
-                'shippo_markup' => 1.60,
+                'shippo_markup' => 0.00,
                 'delivery_days_min' => 7,
                 'delivery_days_max' => 14,
                 'is_active' => true,
@@ -247,7 +247,7 @@ class ShippingZoneSeeder extends Seeder
                 'shipping_cost' => 7.50, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
-                'shippo_markup' => 1.60,
+                'shippo_markup' => 0.00,
                 'delivery_days_min' => 3,
                 'delivery_days_max' => 7,
                 'is_active' => true,
@@ -264,7 +264,7 @@ class ShippingZoneSeeder extends Seeder
                 'shipping_cost' => 5.50, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
-                'shippo_markup' => 1.60,
+                'shippo_markup' => 0.00,
                 'delivery_days_min' => 2,
                 'delivery_days_max' => 4,
                 'is_active' => true,
@@ -281,7 +281,7 @@ class ShippingZoneSeeder extends Seeder
                 'shipping_cost' => 3.50, // Prezzo fallback
                 'use_shippo_pricing' => true,
                 'shippo_service_type' => 'standard',
-                'shippo_markup' => 1.60,
+                'shippo_markup' => 0.00,
                 'delivery_days_min' => 1,
                 'delivery_days_max' => 3,
                 'is_active' => true,

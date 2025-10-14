@@ -5,10 +5,10 @@
       <div class="flex justify-between items-center mb-6">
         <div>
           <h3 class="text-lg font-medium text-gray-900 font-futura-bold">
-            Zone di Spedizione Avanzate
+            Zone di Spedizione
           </h3>
           <p class="text-sm text-gray-600 mt-1">
-            Seleziona continenti e paesi con prezzi SHIPPO in tempo reale
+            Seleziona continenti e paesi
           </p>
         </div>
         <button
@@ -53,7 +53,7 @@
                 <p v-if="zone.included_countries && zone.included_countries.length > 0">
                   <span class="font-medium">Paesi inclusi:</span> {{ zone.included_countries.join(', ') }}
                 </p>
-                <p v-if="zone.use_shippo_pricing">
+                <p v-if="zone.use_shippo_pricing && zone.shippo_markup > 0">
                   <span class="font-medium">Markup SHIPPO:</span> +€{{ zone.shippo_markup }}
                 </p>
                 <p>
@@ -257,7 +257,7 @@ const closeAdvancedModal = () => {
       shipping_cost: editingAdvancedZone.value?.shipping_cost || 15.00,
       use_shippo_pricing: editingAdvancedZone.value?.use_shippo_pricing ?? true,
       shippo_service_type: editingAdvancedZone.value?.shippo_service_type || 'standard',
-      shippo_markup: editingAdvancedZone.value?.shippo_markup || 1.60,
+      shippo_markup: editingAdvancedZone.value?.shippo_markup || 0.00,
       delivery_days_min: editingAdvancedZone.value?.delivery_days_min || 7,
       delivery_days_max: editingAdvancedZone.value?.delivery_days_max || 21,
       is_active: editingAdvancedZone.value?.is_active ?? true,
