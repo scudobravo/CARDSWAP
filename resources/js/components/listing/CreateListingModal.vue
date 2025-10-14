@@ -1534,6 +1534,7 @@ watch(() => props.editingListing, (newListing) => {
           }))
           
           // Dispatches anche l'evento filters-populated per compatibilità
+          console.log('🎯 Dispatching filters-populated con brand:', selectedCardModel.value.brand)
           window.dispatchEvent(new CustomEvent('filters-populated', { 
             detail: {
               team: selectedCardModel.value.team,

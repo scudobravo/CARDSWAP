@@ -100,7 +100,7 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
       <!-- Brand Selection -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Brand</label>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Brand ({{ availableBrands.length }} opzioni)</label>
         <select 
           v-model="localFilters.brand"
           @change="onFiltersChanged"
@@ -109,6 +109,9 @@
           <option value="">Seleziona Brand</option>
           <option v-for="brand in availableBrands" :key="brand" :value="brand">{{ brand }}</option>
         </select>
+        <div class="text-xs text-gray-500 mt-1">
+          Debug: {{ availableBrands.length }} brands disponibili
+        </div>
       </div>
 
       <!-- Rarity Selection -->
@@ -545,9 +548,11 @@ const loadInitialData = async () => {
     
     // Extract brands from card_sets
     if (data.card_sets) {
+      console.log('📊 Card sets raw:', data.card_sets)
       const brands = [...new Set(data.card_sets.map(set => set.brand))].filter(Boolean)
       availableBrands.value = brands
-      console.log('✅ Brands estratti:', brands)
+      console.log('✅ Brands estratti da card_sets:', brands)
+      console.log('✅ availableBrands.value dopo assegnazione:', availableBrands.value)
     } else {
       console.log('❌ Nessun card_sets trovato nei dati')
     }
