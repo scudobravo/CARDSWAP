@@ -280,6 +280,12 @@ class CardController extends Controller
         if ($card->is_legend) {
             $rating += 0.4;
         }
+        if ($card->is_autograph) {
+            $rating += 0.5;
+        }
+        if ($card->is_relic) {
+            $rating += 0.3;
+        }
         
         return number_format(min($rating, 5.0), 1);
     }
@@ -315,14 +321,13 @@ class CardController extends Controller
                 'category' => $this->getCategoryType($card),
                 'description' => $card->description,
                 'condition' => $card->condition ?: 'LIGHT PLAYED',
-                'is_numbered' => $card->is_numbered ?? true,  // Fake data for testing
-                'is_autograph' => $card->is_autograph ?? true,  // Fake data for testing
-                'is_relic' => $card->is_relic ?? true,  // Fake data for testing
-                'is_rookie' => $card->is_rookie ?? true,  // Fake data for testing
+                'card_number_in_set' => $card->card_number_in_set,
+                'is_autograph' => $card->is_autograph ?? false,
+                'is_relic' => $card->is_relic ?? false,
+                'is_rookie' => $card->is_rookie ?? false,
                 'is_star' => $card->is_star ?? false,
                 'is_legend' => $card->is_legend ?? false,
                 'card_number' => $card->card_number,
-                'serial_number' => $card->serial_number ?: '10',  // Fake data for testing
                 'created_at' => $card->created_at,
                 'updated_at' => $card->updated_at
             ];
@@ -403,14 +408,13 @@ class CardController extends Controller
                 'category' => $this->getCategoryType($card),
                 'description' => $card->description,
                 'condition' => $card->condition ?: 'LIGHT PLAYED',
-                'is_numbered' => $card->is_numbered ?? true,
-                'is_autograph' => $card->is_autograph ?? true,
-                'is_relic' => $card->is_relic ?? true,
-                'is_rookie' => $card->is_rookie ?? true,
+                'card_number_in_set' => $card->card_number_in_set,
+                'is_autograph' => $card->is_autograph ?? false,
+                'is_relic' => $card->is_relic ?? false,
+                'is_rookie' => $card->is_rookie ?? false,
                 'is_star' => $card->is_star ?? false,
                 'is_legend' => $card->is_legend ?? false,
                 'card_number' => $card->card_number,
-                'serial_number' => $card->serial_number ?: '10',
                 'created_at' => $card->created_at,
                 'updated_at' => $card->updated_at
             ];

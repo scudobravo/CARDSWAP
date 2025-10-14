@@ -73,6 +73,14 @@ class CardSearchController extends Controller
             $query->legend();
         }
 
+        if ($request->filled('is_autograph') && $request->boolean('is_autograph')) {
+            $query->autograph();
+        }
+
+        if ($request->filled('is_relic') && $request->boolean('is_relic')) {
+            $query->relic();
+        }
+
         // Filtri per grading
         if ($request->filled('grading_company_id')) {
             $query->where('grading_company_id', $request->grading_company_id);

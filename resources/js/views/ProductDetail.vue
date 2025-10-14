@@ -117,10 +117,10 @@
             
             <!-- Card Attributes -->
             <div class="flex flex-wrap gap-3">
-              <!-- Numbered -->
-              <div v-if="product.is_numbered" class="relative group">
+              <!-- Numbered - Mostra solo se card_number_in_set è presente -->
+              <div v-if="product.card_number_in_set" class="relative group">
                 <div class="bg-gray-100 p-3 rounded-lg flex items-center justify-center min-w-[48px] min-h-[48px]">
-                  <span class="text-primary font-futura-bold text-lg">/10</span>
+                  <span class="text-primary font-futura-bold text-lg">{{ product.card_number_in_set }}</span>
                 </div>
                 <!-- Tooltip -->
                 <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-primary text-white text-sm font-futura-bold rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
@@ -129,7 +129,7 @@
                 </div>
               </div>
               
-              <!-- Autograph -->
+              <!-- Autograph - Mostra solo se is_autograph è true -->
               <div v-if="product.is_autograph" class="relative group">
                 <div class="bg-gray-100 p-3 rounded-lg flex items-center justify-center min-w-[48px] min-h-[48px]">
                   <svg class="w-6 h-6 text-primary" fill="currentColor" viewBox="0 0 20 20">
@@ -143,7 +143,7 @@
                 </div>
               </div>
               
-              <!-- Relic -->
+              <!-- Relic - Mostra solo se is_relic è true -->
               <div v-if="product.is_relic" class="relative group">
                 <div class="bg-gray-100 p-3 rounded-lg flex items-center justify-center min-w-[48px] min-h-[48px]">
                   <svg class="w-6 h-6 text-primary" fill="currentColor" viewBox="0 0 20 20">
@@ -157,7 +157,7 @@
                 </div>
               </div>
 
-              <!-- Rookie -->
+              <!-- Rookie - Mostra solo se is_rookie è true -->
               <div v-if="product.is_rookie" class="relative group">
                 <div class="bg-gray-100 p-3 rounded-lg flex items-center justify-center min-w-[48px] min-h-[48px]">
                   <span class="text-primary font-futura-bold text-lg">RC</span>
@@ -165,6 +165,34 @@
                 <!-- Tooltip -->
                 <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-primary text-white text-sm font-futura-bold rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
                   ROOKIE
+                  <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-primary"></div>
+                </div>
+              </div>
+
+              <!-- Star - Mostra solo se is_star è true -->
+              <div v-if="product.is_star" class="relative group">
+                <div class="bg-gray-100 p-3 rounded-lg flex items-center justify-center min-w-[48px] min-h-[48px]">
+                  <svg class="w-6 h-6 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                  </svg>
+                </div>
+                <!-- Tooltip -->
+                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-primary text-white text-sm font-futura-bold rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                  STAR
+                  <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-primary"></div>
+                </div>
+              </div>
+
+              <!-- Legend - Mostra solo se is_legend è true -->
+              <div v-if="product.is_legend" class="relative group">
+                <div class="bg-gray-100 p-3 rounded-lg flex items-center justify-center min-w-[48px] min-h-[48px]">
+                  <svg class="w-6 h-6 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+                <!-- Tooltip -->
+                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-primary text-white text-sm font-futura-bold rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                  LEGEND
                   <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-primary"></div>
                 </div>
               </div>
@@ -370,11 +398,12 @@ const product = ref({
   image_url: null,
   category: 'football',
   condition: 'LIGHT PLAYED',
-  is_numbered: true,
-  is_autograph: true,
-  is_relic: true,
-  is_rookie: true,
-  serial_number: '10'
+  card_number_in_set: null,
+  is_autograph: false,
+  is_relic: false,
+  is_rookie: false,
+  is_star: false,
+  is_legend: false
 })
 
 // Loading and error states
@@ -490,13 +519,7 @@ const loadProductDetails = async () => {
       // Merge database data with fallback data, preserving fallback values for missing attributes
       product.value = {
         ...product.value,
-        ...response.data,
-        // Force attributes to true for testing
-        is_numbered: true,
-        is_autograph: true,
-        is_relic: true,
-        is_rookie: true,
-        serial_number: '10'
+        ...response.data
       }
       
       // Create mock listing data for cart functionality

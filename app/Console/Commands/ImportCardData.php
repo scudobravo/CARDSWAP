@@ -311,6 +311,10 @@ class ImportCardData extends Command
                         'player_id' => $playerId,
                         'team_id' => $teamId,
                         'is_rookie' => $isRookie,
+                        'is_star' => str_contains($rarity, 'Star'),
+                        'is_legend' => str_contains($rarity, 'Legend'),
+                        'is_autograph' => str_contains($rarity, 'Autograph') || str_contains($rarity, 'Auto'),
+                        'is_relic' => str_contains($rarity, 'Relic') || str_contains($rarity, 'Patch'),
                         'is_active' => true,
                         'created_at' => now(),
                         'updated_at' => now()

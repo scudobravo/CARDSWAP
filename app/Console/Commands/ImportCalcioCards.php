@@ -556,6 +556,8 @@ class ImportCalcioCards extends Command
                 'is_rookie' => $isRookie,
                 'is_star' => str_contains($rarity, 'Star'),
                 'is_legend' => str_contains($rarity, 'Legend'),
+                'is_autograph' => str_contains($rarity, 'Autograph') || str_contains($rarity, 'Auto'),
+                'is_relic' => str_contains($rarity, 'Relic') || str_contains($rarity, 'Patch'),
                 'attributes' => $attributes,
                 'is_active' => true,
             ]);

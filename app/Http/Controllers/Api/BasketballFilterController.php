@@ -793,15 +793,19 @@ class BasketballFilterController extends Controller
                 'rarity' => $cardModel->rarity,
                 'condition' => 'excellent', // Default condition since we don't have card_listings yet
                 'price' => number_format($cardModel->price ?? 0, 2),
-                'limitedEdition' => $cardModel->card_number_in_set,
-                'isRookie' => $cardModel->is_rookie ?? false,
+                'card_number_in_set' => $cardModel->card_number_in_set,
+                'is_rookie' => $cardModel->is_rookie ?? false,
+                'is_autograph' => $cardModel->is_autograph ?? false,
+                'is_relic' => $cardModel->is_relic ?? false,
+                'is_star' => $cardModel->is_star ?? false,
+                'is_legend' => $cardModel->is_legend ?? false,
                 'imageUrl' => $cardModel->image_url,
                 'playerId' => $cardModel->player_id,
                 'teamId' => $cardModel->team_id,
                 'setId' => $cardModel->card_set_id,
                 'brand' => $cardModel->cardSet->brand ?? null,
-                'hasAutograph' => false, // TODO: Implementare quando il campo sarà disponibile
-                'hasRelic' => false, // TODO: Implementare quando il campo sarà disponibile
+                'hasAutograph' => $cardModel->is_autograph ?? false,
+                'hasRelic' => $cardModel->is_relic ?? false,
                 'gradingScore' => $cardModel->grading_score,
                 'gradingCompany' => $cardModel->gradingCompany->name ?? null
             ];

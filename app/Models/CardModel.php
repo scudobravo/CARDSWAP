@@ -28,6 +28,8 @@ class CardModel extends Model
         'is_rookie',
         'is_star',
         'is_legend',
+        'is_autograph',
+        'is_relic',
         'artist',
         'image_url',
         'grading_company_id',
@@ -43,6 +45,8 @@ class CardModel extends Model
         'is_rookie' => 'boolean',
         'is_star' => 'boolean',
         'is_legend' => 'boolean',
+        'is_autograph' => 'boolean',
+        'is_relic' => 'boolean',
         'grading_score' => 'decimal:1',
         'price' => 'decimal:2',
         'is_active' => 'boolean',
@@ -183,6 +187,22 @@ class CardModel extends Model
     public function scopeLegend($query)
     {
         return $query->where('is_legend', true);
+    }
+
+    /**
+     * Scope per autograph cards
+     */
+    public function scopeAutograph($query)
+    {
+        return $query->where('is_autograph', true);
+    }
+
+    /**
+     * Scope per relic cards
+     */
+    public function scopeRelic($query)
+    {
+        return $query->where('is_relic', true);
     }
 
     /**

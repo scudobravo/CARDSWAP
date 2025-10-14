@@ -606,24 +606,23 @@ class FootballFilterController extends Controller
             }
 
             // Filtri extra - per ora commentati perché i campi non esistono nella tabella
-            // TODO: Implementare questi filtri quando i campi saranno disponibili
-            /*
+            // Filtri per autograph
             if (isset($filters['autograph']) && $filters['autograph'] !== '') {
                 if ($filters['autograph'] === 'yes') {
-                    $query->where('card_models.has_autograph', true);
+                    $query->where('card_models.is_autograph', true);
                 } elseif ($filters['autograph'] === 'no') {
-                    $query->where('card_models.has_autograph', false);
+                    $query->where('card_models.is_autograph', false);
                 }
             }
 
+            // Filtri per relic
             if (isset($filters['relic']) && $filters['relic'] !== '') {
                 if ($filters['relic'] === 'yes') {
-                    $query->where('card_models.has_relic', true);
+                    $query->where('card_models.is_relic', true);
                 } elseif ($filters['relic'] === 'no') {
-                    $query->where('card_models.has_relic', false);
+                    $query->where('card_models.is_relic', false);
                 }
             }
-            */
 
             if (isset($filters['rookie']) && $filters['rookie'] !== '') {
                 if ($filters['rookie'] === 'yes') {
@@ -778,15 +777,19 @@ class FootballFilterController extends Controller
                 'rarity' => $cardModel->rarity,
                 'condition' => 'excellent', // Default condition since we don't have card_listings yet
                 'price' => number_format($cardModel->price ?? 0, 2),
-                'limitedEdition' => $cardModel->card_number_in_set,
-                'isRookie' => $cardModel->is_rookie ?? false,
+                'card_number_in_set' => $cardModel->card_number_in_set,
+                'is_rookie' => $cardModel->is_rookie ?? false,
+                'is_autograph' => $cardModel->is_autograph ?? false,
+                'is_relic' => $cardModel->is_relic ?? false,
+                'is_star' => $cardModel->is_star ?? false,
+                'is_legend' => $cardModel->is_legend ?? false,
                 'imageUrl' => $cardModel->image_url,
                 'playerId' => $cardModel->player_id,
                 'teamId' => $cardModel->team_id,
                 'setId' => $cardModel->card_set_id,
                 'brand' => $cardModel->cardSet->brand ?? null,
-                'hasAutograph' => false, // TODO: Implementare quando il campo sarà disponibile
-                'hasRelic' => false, // TODO: Implementare quando il campo sarà disponibile
+                'hasAutograph' => $cardModel->is_autograph ?? false,
+                'hasRelic' => $cardModel->is_relic ?? false,
                 'gradingScore' => $cardModel->grading_score,
                 'gradingCompany' => $cardModel->gradingCompany->name ?? null
             ];
