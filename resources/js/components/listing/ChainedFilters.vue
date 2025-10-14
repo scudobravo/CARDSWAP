@@ -655,18 +655,23 @@ const handleFiltersPopulated = (event) => {
   // Popola altri filtri
   if (data.rarity) {
     localFilters.value.rarity = data.rarity
+    console.log('✅ Rarity popolato:', data.rarity)
   }
   if (data.year) {
     localFilters.value.year = data.year
+    console.log('✅ Year popolato:', data.year)
   }
   if (data.brand) {
     localFilters.value.brand = data.brand
+    console.log('✅ Brand popolato:', data.brand)
   }
   if (data.number) {
     localFilters.value.number = data.number
+    console.log('✅ Number popolato:', data.number)
   }
   if (data.player) {
     localFilters.value.player = data.player.id
+    console.log('✅ Player popolato:', data.player.name)
   }
   
   // Aggiorna i filtri
@@ -703,15 +708,19 @@ const handleCardSelected = (event) => {
     // Popola altri campi se disponibili
     if (card.rarity) {
       localFilters.value.rarity = card.rarity
+      console.log('✅ Rarity popolato da card-selected:', card.rarity)
     }
     if (card.year) {
       localFilters.value.year = card.year
+      console.log('✅ Year popolato da card-selected:', card.year)
     }
     if (card.brand) {
       localFilters.value.brand = card.brand
+      console.log('✅ Brand popolato da card-selected:', card.brand)
     }
     if (card.number) {
       localFilters.value.number = card.number
+      console.log('✅ Number popolato da card-selected:', card.number)
     }
     
     // Aggiorna i filtri
