@@ -642,6 +642,7 @@ watch(() => props.initialFilters, async (newFilters) => {
 const handleFiltersPopulated = (event) => {
   const data = event.detail
   console.log('🎯 Evento filters-populated ricevuto:', data)
+  console.log('🎯 Brand ricevuto nell\'evento:', data.brand)
   
   // Popola Team
   if (data.team) {
@@ -669,6 +670,9 @@ const handleFiltersPopulated = (event) => {
   if (data.brand) {
     localFilters.value.brand = data.brand
     console.log('✅ Brand popolato:', data.brand)
+    console.log('✅ localFilters.value.brand dopo impostazione:', localFilters.value.brand)
+  } else {
+    console.log('❌ Brand non presente nei dati dell\'evento')
   }
   if (data.number) {
     localFilters.value.number = data.number
