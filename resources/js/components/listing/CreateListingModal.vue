@@ -1574,6 +1574,8 @@ const initializeEditMode = (listing) => {
     
     // Imposta la carta selezionata
     selectedCardModel.value = listing.card_model
+    console.log('🔍 selectedCardModel.value:', selectedCardModel.value)
+    console.log('🔍 selectedCardModel.value.brand:', selectedCardModel.value?.brand)
     
     // Imposta la categoria basata sulla carta
     if (listing.card_model?.category?.name) {
@@ -1651,16 +1653,16 @@ const initializeEditMode = (listing) => {
     
     // Dispatch event per popolare i filtri nel componente ChainedFilters
     if (selectedCardModel.value) {
-      console.log('🎯 Dispatching filters-populated con brand:', selectedCardModel.value.brand)
+      console.log('🎯 Dispatching filters-populated con brand dai filtri:', filters.value.brand)
       window.dispatchEvent(new CustomEvent('filters-populated', { 
         detail: {
           team: selectedCardModel.value.team,
           card_set: selectedCardModel.value.card_set,
           player: selectedCardModel.value.player,
-          rarity: selectedCardModel.value.rarity,
-          year: selectedCardModel.value.year,
-          brand: selectedCardModel.value.brand,
-          number: selectedCardModel.value.number
+          rarity: filters.value.rarity,
+          year: filters.value.year,
+          brand: filters.value.brand,
+          number: filters.value.number
         }
       }))
     }
