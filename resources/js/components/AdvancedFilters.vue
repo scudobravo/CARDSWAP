@@ -213,6 +213,15 @@
             </select>
           </div>
 
+          <!-- Booklet -->
+          <div class="space-y-2">
+            <select v-model="localFilters.booklet" class="col-start-1 row-start-1 w-full appearance-none rounded-md border border-gray-300 bg-white py-2 pr-8 pl-3 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm/6">
+              <option value="">Booklet</option>
+              <option value="yes">Sì</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+
           <!-- Rookie -->
           <div class="space-y-2">
             <select v-model="localFilters.rookie" class="col-start-1 row-start-1 w-full appearance-none rounded-md border border-gray-300 bg-white py-2 pr-8 pl-3 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm/6">
@@ -248,6 +257,36 @@
                   class="rounded border-gray-300 text-primary focus:ring-primary"
                 />
                 <span class="ml-2 text-sm text-gray-600">{{ option.label }}</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Multi Player -->
+          <div class="space-y-2">
+            <div class="flex flex-wrap gap-2">
+              <label class="flex items-center">
+                <input 
+                  v-model="localFilters.multiPlayerDual"
+                  type="checkbox" 
+                  class="rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <span class="ml-2 text-sm text-gray-600">Dual Player</span>
+              </label>
+              <label class="flex items-center">
+                <input 
+                  v-model="localFilters.multiPlayerTriple"
+                  type="checkbox" 
+                  class="rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <span class="ml-2 text-sm text-gray-600">Triple Player</span>
+              </label>
+              <label class="flex items-center">
+                <input 
+                  v-model="localFilters.multiPlayerQuad"
+                  type="checkbox" 
+                  class="rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <span class="ml-2 text-sm text-gray-600">Quad Player</span>
               </label>
             </div>
           </div>
@@ -885,9 +924,13 @@ const clearFilters = () => {
     relic: '',
     onCardAuto: '',
     jewel: '',
+    booklet: '',
     rookie: '',
     multiPlayer: [],
     multiAutograph: [],
+    multiPlayerDual: false,
+    multiPlayerTriple: false,
+    multiPlayerQuad: false,
     grading: '',
     gradingScoreMin: null,
     gradingScoreMax: null,

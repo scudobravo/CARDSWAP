@@ -26,7 +26,7 @@ class CardSet extends Model
     ];
 
     protected $casts = [
-        'year' => 'integer',
+        'year' => 'string',
         'total_cards' => 'integer',
         'is_official' => 'boolean',
         'is_active' => 'boolean',

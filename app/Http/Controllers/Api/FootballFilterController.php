@@ -152,7 +152,7 @@ class FootballFilterController extends Controller
             'q' => 'nullable|string|max:100',
             'team_id' => 'nullable|integer',
             'set_id' => 'nullable|integer',
-            'year' => 'nullable|integer',
+            'year' => 'nullable|string',
             'brand' => 'nullable|string'
         ]);
 
@@ -203,7 +203,7 @@ class FootballFilterController extends Controller
             'q' => 'nullable|string|max:100',
             'player_id' => 'nullable|integer',
             'set_id' => 'nullable|integer',
-            'year' => 'nullable|integer',
+            'year' => 'nullable|string',
             'brand' => 'nullable|string'
         ]);
 
@@ -254,7 +254,7 @@ class FootballFilterController extends Controller
             'q' => 'nullable|string|max:100',
             'player_id' => 'nullable|integer',
             'team_id' => 'nullable|integer',
-            'year' => 'nullable|integer',
+            'year' => 'nullable|string',
             'brand' => 'nullable|string'
         ]);
 
