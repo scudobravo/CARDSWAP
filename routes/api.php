@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\UserAddressController;
 use App\Http\Controllers\Api\OrderController;
@@ -86,16 +87,36 @@ Route::middleware('auth:sanctum')->group(function () {
 // Check if shipping zones exist for authenticated user
 Route::get('/shipping-zones/check', function (Request $request) {
     try {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json([
+                'has_zones' => false,
+                'zones_count' => 0,
+                'error' => 'User not authenticated'
+            ], 401);
+        }
+        
         $zonesCount = DB::table('shipping_zones')
-            ->where('user_id', $request->user()->id)
+            ->where('user_id', $user->id)
             ->where('is_active', true)
             ->count();
+            
+        \Illuminate\Support\Facades\Log::info('Shipping zones check', [
+            'user_id' => $user->id,
+            'zones_count' => $zonesCount,
+            'has_zones' => $zonesCount > 0
+        ]);
             
         return response()->json([
             'has_zones' => $zonesCount > 0,
             'zones_count' => $zonesCount
         ]);
     } catch (\Exception $e) {
+        \Illuminate\Support\Facades\Log::error('Shipping zones check error', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        
         return response()->json([
             'has_zones' => false,
             'zones_count' => 0,
