@@ -565,11 +565,15 @@ class ShippingZoneController extends Controller
                 'description' => 'nullable|string'
             ]);
 
-            \Log::info('Dati ricevuti per creazione zona:', $request->all());
+            Log::info('Dati ricevuti per creazione zona:', $request->all());
             
-            $zone = ShippingZone::create($request->all());
+            // Aggiungi l'user_id dell'utente autenticato
+            $zoneData = $request->all();
+            $zoneData['user_id'] = $request->user()->id;
             
-            \Log::info('Zona creata:', $zone->toArray());
+            $zone = ShippingZone::create($zoneData);
+            
+            Log::info('Zona creata:', $zone->toArray());
 
             return response()->json([
                 'success' => true,
@@ -578,7 +582,7 @@ class ShippingZoneController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Errore creazione zona spedizione: ' . $e->getMessage(), [
+            Log::error('Errore creazione zona spedizione: ' . $e->getMessage(), [
                 'request_data' => $request->all()
             ]);
 
@@ -597,6 +601,14 @@ class ShippingZoneController extends Controller
         try {
             $zone = ShippingZone::findOrFail($id);
             
+            // Verifica che l'utente possa aggiornare solo le proprie zone
+            if ($zone->user_id !== $request->user()->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Non autorizzato a modificare questa zona di spedizione'
+                ], 403);
+            }
+            
             $request->validate([
                 'name' => 'required|string|max:255',
                 'country_code' => 'required|string|max:2',
@@ -614,11 +626,11 @@ class ShippingZoneController extends Controller
                 'description' => 'nullable|string'
             ]);
 
-            \Log::info('Dati ricevuti per aggiornamento zona:', $request->all());
+            Log::info('Dati ricevuti per aggiornamento zona:', $request->all());
             
             $zone->update($request->all());
             
-            \Log::info('Zona aggiornata:', $zone->toArray());
+            Log::info('Zona aggiornata:', $zone->toArray());
 
             return response()->json([
                 'success' => true,
@@ -627,7 +639,7 @@ class ShippingZoneController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Errore aggiornamento zona spedizione: ' . $e->getMessage(), [
+            Log::error('Errore aggiornamento zona spedizione: ' . $e->getMessage(), [
                 'zone_id' => $id,
                 'request_data' => $request->all()
             ]);
@@ -642,12 +654,20 @@ class ShippingZoneController extends Controller
     /**
      * Elimina una zona di spedizione
      */
-    public function destroy($id): JsonResponse
+    public function destroy(Request $request, $id): JsonResponse
     {
         try {
             $zone = ShippingZone::findOrFail($id);
             
-            \Log::info('Eliminazione zona spedizione:', ['zone_id' => $id, 'zone_name' => $zone->name]);
+            // Verifica che l'utente possa eliminare solo le proprie zone
+            if ($zone->user_id !== $request->user()->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Non autorizzato a eliminare questa zona di spedizione'
+                ], 403);
+            }
+            
+            Log::info('Eliminazione zona spedizione:', ['zone_id' => $id, 'zone_name' => $zone->name]);
             
             $zone->delete();
 
@@ -657,7 +677,7 @@ class ShippingZoneController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Errore eliminazione zona spedizione: ' . $e->getMessage(), [
+            Log::error('Errore eliminazione zona spedizione: ' . $e->getMessage(), [
                 'zone_id' => $id
             ]);
 

@@ -1552,6 +1552,17 @@ watch(() => props.editingListing, (newListing) => {
   }
 }, { immediate: true })
 
+// Watch per controllo zone di spedizione quando il modal si apre
+watch(() => props.isOpen, async (isOpen) => {
+  if (isOpen) {
+    console.log('🔄 Modal aperto, controllo zone di spedizione...')
+    await checkShippingZones()
+    if (hasShippingZones.value) {
+      loadShippingZones()
+    }
+  }
+})
+
 // Inizializza modalità edit
 const initializeEditMode = (listing) => {
   try {

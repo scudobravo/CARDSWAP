@@ -96,14 +96,24 @@ Route::get('/shipping-zones/check', function (Request $request) {
             ], 401);
         }
         
-        $zonesCount = DB::table('shipping_zones')
+        // Controlla sia le zone personali dell'utente che le zone globali
+        $personalZonesCount = DB::table('shipping_zones')
             ->where('user_id', $user->id)
             ->where('is_active', true)
             ->count();
             
+        $globalZonesCount = DB::table('shipping_zones')
+            ->whereNull('user_id')
+            ->where('is_active', true)
+            ->count();
+            
+        $zonesCount = $personalZonesCount + $globalZonesCount;
+            
         \Illuminate\Support\Facades\Log::info('Shipping zones check', [
             'user_id' => $user->id,
-            'zones_count' => $zonesCount,
+            'personal_zones_count' => $personalZonesCount,
+            'global_zones_count' => $globalZonesCount,
+            'total_zones_count' => $zonesCount,
             'has_zones' => $zonesCount > 0
         ]);
             
