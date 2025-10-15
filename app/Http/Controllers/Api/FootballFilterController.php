@@ -189,9 +189,61 @@ class FootballFilterController extends Controller
             $playersQuery->where('name', 'LIKE', "%{$query}%");
         }
         
-        $players = $playersQuery->limit(50)->get(['id', 'name', 'slug', 'position', 'nationality']);
+        $players = $playersQuery->with(['team', 'cardModels' => function($query) {
+                $query->whereHas('category', function($catQuery) {
+                    $catQuery->where('slug', 'calcio');
+                })->select('id', 'player_id', 'card_number', 'card_number_in_set', 'name', 'year', 'rarity', 'card_set_id', 'team_id')
+                ->with(['cardSet:id,name,brand', 'team:id,name']);
+            }])
+            ->limit(50)
+            ->get(['id', 'name', 'slug', 'position', 'nationality', 'team_id']);
 
-        return response()->json(['players' => $players]);
+        // Trasforma i dati per includere informazioni delle carte e squadra
+        $transformedPlayers = $players->map(function($player) {
+            $cardNumbers = $player->cardModels->pluck('card_number')->filter()->unique()->values();
+            $cardNumbersInSet = $player->cardModels->pluck('card_number_in_set')->filter()->unique()->values();
+            
+            // Usa card_number_in_set se card_number è vuoto
+            $effectiveCardNumbers = $cardNumbers->count() > 0 ? $cardNumbers : $cardNumbersInSet;
+            
+            return [
+                'id' => $player->id,
+                'name' => $player->name,
+                'slug' => $player->slug,
+                'position' => $player->position,
+                'nationality' => $player->nationality,
+                'team' => $player->team ? [
+                    'id' => $player->team->id,
+                    'name' => $player->team->name,
+                    'slug' => $player->team->slug
+                ] : null,
+                'display_name' => $player->name,
+                'card_numbers' => $effectiveCardNumbers,
+                'card_numbers_in_set' => $cardNumbersInSet,
+                'has_cards' => $player->cardModels->count() > 0,
+                'cards' => $player->cardModels->map(function($card) {
+                    return [
+                        'id' => $card->id,
+                        'name' => $card->name,
+                        'year' => $card->year,
+                        'rarity' => $card->rarity,
+                        'card_number' => $card->card_number,
+                        'card_number_in_set' => $card->card_number_in_set,
+                        'card_set' => $card->cardSet ? [
+                            'id' => $card->cardSet->id,
+                            'name' => $card->cardSet->name,
+                            'brand' => $card->cardSet->brand
+                        ] : null,
+                        'team' => $card->team ? [
+                            'id' => $card->team->id,
+                            'name' => $card->team->name
+                        ] : null
+                    ];
+                })
+            ];
+        });
+
+        return response()->json(['players' => $transformedPlayers]);
     }
 
     /**
@@ -301,7 +353,7 @@ class FootballFilterController extends Controller
      */
     public function getPlayerById($id)
     {
-        $player = Player::find($id);
+        $player = Player::with(['team', 'cardModels.cardSet:id,name,brand', 'cardModels.team:id,name'])->find($id);
         
         if (!$player) {
             return response()->json([
@@ -309,8 +361,54 @@ class FootballFilterController extends Controller
             ], 404);
         }
 
+        // Trasforma i dati per includere informazioni delle carte e squadra
+        $cardNumbers = $player->cardModels->pluck('card_number')->filter()->unique()->values();
+        $cardNumbersInSet = $player->cardModels->pluck('card_number_in_set')->filter()->unique()->values();
+        
+        // Usa card_number_in_set se card_number è vuoto
+        $effectiveCardNumbers = $cardNumbers->count() > 0 ? $cardNumbers : $cardNumbersInSet;
+        
+        $transformedPlayer = [
+            'id' => $player->id,
+            'name' => $player->name,
+            'slug' => $player->slug,
+            'position' => $player->position,
+            'nationality' => $player->nationality,
+            'team' => $player->team ? [
+                'id' => $player->team->id,
+                'name' => $player->team->name,
+                'slug' => $player->team->slug
+            ] : null,
+            'display_name' => $player->name,
+            'card_numbers' => $effectiveCardNumbers,
+            'card_numbers_in_set' => $cardNumbersInSet,
+            'has_cards' => $player->cardModels->count() > 0,
+            'cards' => $player->cardModels->map(function($card) {
+                return [
+                    'id' => $card->id,
+                    'name' => $card->name,
+                    'year' => $card->year,
+                    'rarity' => $card->rarity,
+                    'card_number' => $card->card_number,
+                    'card_number_in_set' => $card->card_number_in_set,
+                    'card_set' => $card->cardSet ? [
+                        'id' => $card->cardSet->id,
+                        'name' => $card->cardSet->name,
+                        'brand' => $card->cardSet->brand
+                    ] : null,
+                    'team' => $card->team ? [
+                        'id' => $card->team->id,
+                        'name' => $card->team->name
+                    ] : null
+                ];
+            })
+        ];
+
         return response()->json([
-            'player' => $player
+            'success' => true,
+            'data' => [
+                'player' => $transformedPlayer
+            ]
         ]);
     }
 

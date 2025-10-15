@@ -16,13 +16,16 @@
           />
           <div v-if="filteredPlayers.length > 0 && showPlayerDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
             <div v-for="player in filteredPlayers" :key="player.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @mousedown="selectPlayer(player)">
-              <span class="font-normal block truncate">{{ player.name }}</span>
+              <div class="flex flex-col">
+                <span class="font-normal block truncate">{{ player.display_name || player.name }}</span>
+                <span v-if="player.team" class="text-xs text-gray-500">{{ player.team.name }}</span>
+              </div>
             </div>
           </div>
         </div>
         <div v-if="selectedPlayers.length > 0" class="flex flex-wrap gap-2 mt-2">
           <span v-for="player in selectedPlayers" :key="player.id" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary text-white">
-            {{ player.name }}
+            {{ player.display_name || player.name }}
             <button type="button" @click="removePlayer(player)" class="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-primary-dark">
               <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -761,6 +764,26 @@ const selectPlayer = (player) => {
     // Aggiorna anche i filtri con i giocatori selezionati
     localFilters.value.selectedPlayers = selectedPlayers.value.map(p => p.id)
     
+    // Popola automaticamente il campo Team
+    if (player.team) {
+      localFilters.value.team = player.team.id
+      console.log('✅ Campo Team popolato con:', player.team.name)
+    }
+    
+    // Popola il campo Numbered con il primo card_number disponibile
+    if (player.card_numbers && player.card_numbers.length > 0) {
+      localFilters.value.number = player.card_numbers[0]
+      console.log('✅ Campo Numbered popolato con:', player.card_numbers[0])
+    } else if (player.cards && player.cards.length > 0) {
+      // Fallback: usa card_number_in_set se card_numbers non è disponibile
+      const firstCard = player.cards[0]
+      const cardNumber = firstCard.card_number || firstCard.card_number_in_set
+      if (cardNumber) {
+        localFilters.value.number = cardNumber
+        console.log('✅ Campo Numbered popolato con (da cards):', cardNumber)
+      }
+    }
+    
     // Reset filtri dipendenti quando si seleziona un nuovo giocatore
     resetDependentFilters()
     
@@ -920,6 +943,7 @@ const clearFilters = () => {
     brand: '',
     numberedMin: null,
     numberedMax: null,
+    number: '',
     autograph: '',
     relic: '',
     onCardAuto: '',

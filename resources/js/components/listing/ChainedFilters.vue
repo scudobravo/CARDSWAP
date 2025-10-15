@@ -15,19 +15,83 @@
         />
         <div v-if="filteredPlayers.length > 0 && showPlayerDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
           <div v-for="player in filteredPlayers" :key="player.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectPlayer(player)">
-            <span class="font-normal block truncate">{{ player.name }}</span>
+            <div class="flex flex-col">
+              <span class="font-normal block truncate">{{ player.display_name || player.name }}</span>
+              <span v-if="player.team" class="text-xs text-gray-500">{{ player.team.name }}</span>
+            </div>
           </div>
         </div>
       </div>
       <div v-if="selectedPlayer" class="flex flex-wrap gap-2 mt-2">
         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary text-white">
-          {{ selectedPlayer.name }}
+          {{ selectedPlayer.display_name || selectedPlayer.name }}
           <button type="button" @click="removePlayer" class="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-primary-dark">
             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
             </svg>
           </button>
         </span>
+      </div>
+      
+      <!-- Carte del giocatore selezionato -->
+      <div v-if="selectedPlayer && selectedPlayer.cards && selectedPlayer.cards.length > 0" class="mt-4">
+        <div class="flex justify-between items-center mb-2">
+          <label class="block text-sm font-medium text-gray-700">
+            Seleziona Carta ({{ selectedPlayer.cards.length }} disponibili)
+          </label>
+          <select 
+            v-model="cardSetFilter" 
+            class="text-xs border border-gray-300 rounded px-2 py-1"
+            @change="filterCardsBySet"
+          >
+            <option value="">Tutti i set</option>
+            <option v-for="set in uniqueCardSets" :key="set.id" :value="set.id">
+              {{ set.name }} ({{ set.count }})
+            </option>
+          </select>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-80 overflow-y-auto">
+          <div 
+            v-for="card in filteredCards" 
+            :key="card.id"
+            @click="selectCard(card)"
+            :class="[
+              'p-4 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md',
+              selectedCard && selectedCard.id === card.id 
+                ? 'border-primary bg-primary/5 shadow-md ring-2 ring-primary/20' 
+                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+            ]"
+          >
+            <!-- Header con nome e numero -->
+            <div class="flex justify-between items-start mb-2">
+              <div class="text-sm font-medium text-gray-900 truncate flex-1 mr-2">{{ card.name }}</div>
+              <div v-if="card.card_number_in_set" class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                #{{ card.card_number_in_set }}
+              </div>
+            </div>
+            
+            <!-- Set e Anno -->
+            <div class="text-xs text-gray-600 mb-1">
+              <div class="font-medium">{{ card.card_set?.name || 'N/A' }}</div>
+              <div class="text-gray-500">{{ card.year || 'N/A' }}</div>
+            </div>
+            
+            <!-- Rarity e Brand -->
+            <div class="flex justify-between items-center text-xs">
+              <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded-full">
+                {{ card.rarity || 'N/A' }}
+              </span>
+              <span v-if="card.card_set?.brand" class="text-gray-500">
+                {{ card.card_set.brand }}
+              </span>
+            </div>
+            
+            <!-- Indicatore di selezione -->
+            <div v-if="selectedCard && selectedCard.id === card.id" class="mt-2 text-xs text-primary font-medium">
+              ✓ Selezionata
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -155,8 +219,8 @@
         <label class="block text-sm font-medium text-gray-700 mb-2">Number *</label>
         <input 
           v-model="localFilters.number"
-          type="number" 
-          placeholder="Inserisci numero carta"
+          type="text" 
+          placeholder="Inserisci numero carta (es. 30, RF-18, BA-ZI)"
           class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
           @input="onFiltersChanged"
         />
@@ -246,8 +310,12 @@ const localFilters = ref({
 })
 
 const selectedPlayer = ref(null)
+const selectedCard = ref(null)
 const selectedTeam = ref(null)
 const selectedCardSet = ref(null)
+const cardSetFilter = ref('')
+const filteredCards = ref([])
+const uniqueCardSets = ref([])
 const filteredPlayers = ref([])
 const filteredTeams = ref([])
 const filteredCardSets = ref([])
@@ -410,15 +478,109 @@ const onSetBlur = () => {
 
 const selectPlayer = (player) => {
   selectedPlayer.value = player
+  selectedCard.value = null // Reset carta selezionata
+  cardSetFilter.value = '' // Reset filtro set
   localFilters.value.player = player.id
   localFilters.value.playerSearch = ''
   filteredPlayers.value = []
   showPlayerDropdown.value = false
+  
+  // Popola automaticamente il campo Team
+  if (player.team) {
+    localFilters.value.team = player.team.id
+    selectedTeam.value = player.team
+    console.log('✅ Campo Team popolato con:', player.team.name)
+  }
+  
+  // Popola il campo Numbered con il primo card_number disponibile
+  if (player.card_numbers && player.card_numbers.length > 0) {
+    localFilters.value.number = player.card_numbers[0]
+    console.log('✅ Campo Numbered popolato con:', player.card_numbers[0])
+  } else if (player.cards && player.cards.length > 0) {
+    // Fallback: usa card_number_in_set se card_numbers non è disponibile
+    const firstCard = player.cards[0]
+    const cardNumber = firstCard.card_number || firstCard.card_number_in_set
+    if (cardNumber) {
+      localFilters.value.number = cardNumber
+      console.log('✅ Campo Numbered popolato con (da cards):', cardNumber)
+    }
+  }
+  
+  // Inizializza le carte filtrate e i set unici
+  initializeCardFiltering(player)
+  
+  onFiltersChanged()
+}
+
+const initializeCardFiltering = (player) => {
+  if (player.cards && player.cards.length > 0) {
+    filteredCards.value = player.cards
+    
+    // Crea lista dei set unici con conteggio
+    const setMap = new Map()
+    player.cards.forEach(card => {
+      if (card.card_set) {
+        const setId = card.card_set.id
+        if (setMap.has(setId)) {
+          setMap.get(setId).count++
+        } else {
+          setMap.set(setId, {
+            id: setId,
+            name: card.card_set.name,
+            count: 1
+          })
+        }
+      }
+    })
+    uniqueCardSets.value = Array.from(setMap.values())
+  }
+}
+
+const filterCardsBySet = () => {
+  if (!selectedPlayer.value || !selectedPlayer.value.cards) return
+  
+  if (cardSetFilter.value === '') {
+    filteredCards.value = selectedPlayer.value.cards
+  } else {
+    filteredCards.value = selectedPlayer.value.cards.filter(card => 
+      card.card_set && card.card_set.id == cardSetFilter.value
+    )
+  }
+}
+
+const selectCard = (card) => {
+  selectedCard.value = card
+  
+  // Aggiorna i filtri con i dati della carta selezionata
+  if (card.card_set) {
+    localFilters.value.set = card.card_set.id
+    selectedCardSet.value = card.card_set
+    console.log('✅ Campo Set aggiornato con:', card.card_set.name)
+  }
+  
+  if (card.year) {
+    localFilters.value.year = card.year
+    console.log('✅ Campo Year aggiornato con:', card.year)
+  }
+  
+  if (card.rarity) {
+    localFilters.value.rarity = card.rarity
+    console.log('✅ Campo Rarity aggiornato con:', card.rarity)
+  }
+  
+  // Aggiorna il campo Numbered con il numero della carta selezionata
+  const cardNumber = card.card_number || card.card_number_in_set
+  if (cardNumber) {
+    localFilters.value.number = cardNumber
+    console.log('✅ Campo Numbered aggiornato con:', cardNumber)
+  }
+  
   onFiltersChanged()
 }
 
 const removePlayer = () => {
   selectedPlayer.value = null
+  selectedCard.value = null
   localFilters.value.player = null
   onFiltersChanged()
 }
@@ -636,8 +798,20 @@ watch(() => props.initialFilters, async (newFilters) => {
 }, { deep: true })
 
 // Gestisce l'evento di popolamento filtri
-const handleFiltersPopulated = (event) => {
+const handleFiltersPopulated = async (event) => {
   const data = event.detail
+  
+  // Popola Player (importante per la sezione "Seleziona Carta")
+  if (data.player) {
+    selectedPlayer.value = data.player
+    localFilters.value.player = data.player.id
+    localFilters.value.playerSearch = data.player.display_name || data.player.name
+    
+    // Inizializza le carte del giocatore se disponibili
+    if (data.player.cards && data.player.cards.length > 0) {
+      initializeCardFiltering(data.player)
+    }
+  }
   
   // Popola Team
   if (data.team) {
@@ -663,9 +837,6 @@ const handleFiltersPopulated = (event) => {
   }
   if (data.number) {
     localFilters.value.number = data.number
-  }
-  if (data.player) {
-    localFilters.value.player = data.player.id
   }
   
   // Aggiorna i filtri

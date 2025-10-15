@@ -136,62 +136,6 @@
               @filters-changed="handleFiltersChanged"
             />
 
-            <!-- Carte Trovate per Single Card -->
-            <div v-if="filteredCardModels.length > 0" class="mt-6">
-              <h5 class="text-lg font-semibold text-gray-900 mb-4">Carte Trovate ({{ filteredCardModels.length }})</h5>
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div 
-                  v-for="card in filteredCardModels" 
-                  :key="card.id"
-                  class="border rounded-lg p-4 cursor-pointer transition-all duration-200 hover:border-primary hover:shadow-lg"
-                  :class="{ 'border-primary bg-primary/5': selectedCardModel?.id === card.id }"
-                  @click="selectCardModel(card)"
-                >
-                  <div class="flex items-start space-x-3">
-                    <div class="flex-1">
-                      <h6 class="font-semibold text-gray-900 text-sm">{{ card.name }}</h6>
-                      <p class="text-xs text-gray-600">{{ card.card_set?.name }} {{ card.year }}</p>
-                      <p class="text-xs text-gray-500">{{ card.rarity }}</p>
-                      <div v-if="card.player" class="text-xs text-gray-500">
-                        {{ card.player.name }} - {{ card.team?.name }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Nessuna Carta Trovata -->
-            <div v-else-if="hasSearched && filteredCardModels.length === 0" class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <div class="flex">
-                <div class="flex-shrink-0">
-                  <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                  </svg>
-                </div>
-                <div class="ml-3">
-                  <h3 class="text-sm font-medium text-yellow-800">Nessuna carta trovata</h3>
-                  <div class="mt-2 text-sm text-yellow-700">
-                    <p>Prova a modificare i filtri o seleziona una carta manualmente.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Carta Selezionata -->
-            <div v-if="selectedCardModel" class="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <h5 class="text-lg font-semibold text-gray-900 mb-2">✅ Carta Selezionata</h5>
-              <div class="flex items-start space-x-4">
-                <div class="flex-1">
-                  <h6 class="font-semibold text-gray-900">{{ selectedCardModel.name }}</h6>
-                  <p class="text-sm text-gray-600">{{ selectedCardModel.card_set?.name }} {{ selectedCardModel.year }}</p>
-                  <p class="text-sm text-gray-500">{{ selectedCardModel.rarity }}</p>
-                  <div v-if="selectedCardModel.player" class="text-sm text-gray-500">
-                    {{ selectedCardModel.player.name }} - {{ selectedCardModel.team?.name }}
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
           <!-- Step 1: Selezione Modelli Carta (Bulk) -->
@@ -776,6 +720,11 @@ const selectCardModel = (card) => {
       filters.value.brand = card.card_set.brand
     }
     
+    // Popola il campo Numbered con card_number dal database
+    if (card.card_number) {
+      filters.value.number = card.card_number
+    }
+    
     // NON popoliamo più automaticamente Team, Set e Player
     // L'utente deve selezionarli manualmente se necessario
     
@@ -784,7 +733,8 @@ const selectCardModel = (card) => {
       price: card.price,
       rarity: card.rarity,
       year: card.year,
-      brand: card.card_set?.brand
+      brand: card.card_set?.brand,
+      number: card.card_number
     })
   }
 }
@@ -1543,7 +1493,7 @@ watch(() => props.editingListing, (newListing) => {
               rarity: selectedCardModel.value.rarity,
               year: selectedCardModel.value.year,
               brand: selectedCardModel.value.brand,
-              number: selectedCardModel.value.number
+              number: selectedCardModel.value.card_number || selectedCardModel.value.number
             }
           }))
         }
@@ -1564,7 +1514,7 @@ watch(() => props.isOpen, async (isOpen) => {
 })
 
 // Inizializza modalità edit
-const initializeEditMode = (listing) => {
+const initializeEditMode = async (listing) => {
   try {
     console.log('🔄 Inizializzazione modalità edit con listing:', listing)
     
@@ -1606,7 +1556,7 @@ const initializeEditMode = (listing) => {
       brand: listing.card_model?.card_set?.brand || listing.card_model?.brand || '',
       rarity: listing.card_model?.rarity || '',
       year: listing.card_model?.year || '',
-      number: listing.card_model?.number || '',
+      number: listing.card_model?.card_number || listing.card_model?.number || '',
       player: listing.card_model?.player?.id || '',
       team: listing.card_model?.team?.id || '',
       set: listing.card_model?.card_set?.id || ''
@@ -1659,13 +1609,32 @@ const initializeEditMode = (listing) => {
     if (selectedCardModel.value) {
       const brandFromSet = selectedCardModel.value.card_set?.brand
       
+      // Carica le carte del giocatore se non sono già caricate
+      let playerWithCards = selectedCardModel.value.player
+      if (playerWithCards && (!playerWithCards.cards || playerWithCards.cards.length === 0)) {
+        try {
+          const response = await fetch(`/api/football/players/${playerWithCards.id}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          })
+          const data = await response.json()
+          if (data.success && data.data.player) {
+            playerWithCards = data.data.player
+            console.log('✅ Carte del giocatore caricate per edit:', playerWithCards.cards?.length || 0)
+          }
+        } catch (error) {
+          console.error('❌ Errore nel caricamento carte del giocatore:', error)
+        }
+      }
+      
       // Usa setTimeout per assicurarsi che il componente ChainedFilters sia montato e i listener attivi
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('filters-populated', { 
           detail: {
             team: selectedCardModel.value.team,
             card_set: selectedCardModel.value.card_set,
-            player: selectedCardModel.value.player,
+            player: playerWithCards, // Usa il giocatore con le carte caricate
             rarity: filters.value.rarity,
             year: filters.value.year,
             brand: brandFromSet,
