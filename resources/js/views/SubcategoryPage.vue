@@ -5,7 +5,7 @@
     
     <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <!-- Breadcrumbs -->
-      <nav class="pt-24 pb-6">
+      <nav class="pt-20 pb-4">
         <ol class="flex items-center space-x-2 text-sm font-gill-sans">
           <li><a href="/" class="text-primary hover:text-secondary">Home</a></li>
           <li class="text-gray-500">></li>
@@ -16,13 +16,15 @@
       </nav>
 
       <!-- Page Header -->
-      <div class="flex items-baseline justify-between border-b border-gray-200 pb-6">
-        <div class="flex items-center space-x-4">
-          <img :src="subcategoryIcon" :alt="subcategoryName" class="w-12 h-12" />
-          <h1 class="text-4xl font-futura-bold text-primary">{{ subcategoryName }} - {{ categoryName }}</h1>
+      <div class="flex items-center justify-between border-b border-gray-200 pb-6">
+        <!-- Mobile Layout: H1 con icona su una riga -->
+        <div class="flex items-center space-x-3 lg:space-x-4">
+          <img :src="subcategoryIcon" :alt="subcategoryName" class="w-8 h-8 lg:w-12 lg:h-12" />
+          <h1 class="text-2xl lg:text-4xl font-futura-bold text-primary">{{ subcategoryName }} - {{ categoryName }}</h1>
         </div>
 
-        <div class="flex items-center space-x-4">
+        <!-- Desktop Controls -->
+        <div class="hidden lg:flex items-center space-x-4">
           <!-- View Toggle -->
           <div class="flex rounded-md shadow-sm">
             <button 
@@ -65,82 +67,69 @@
               </MenuItems>
             </transition>
           </Menu>
+        </div>
 
-          <!-- Mobile Filters Button -->
-          <button type="button" class="-m-2 ml-4 p-2 text-gray-400 hover:text-gray-500 sm:ml-6 lg:hidden" @click="mobileFiltersOpen = true">
-            <span class="sr-only">Filtri</span>
-            <FunnelIcon class="size-5" aria-hidden="true" />
-          </button>
+        <!-- Mobile Sort Menu -->
+        <div class="lg:hidden">
+          <Menu as="div" class="relative inline-block text-left">
+            <MenuButton class="group inline-flex justify-center text-sm font-medium text-gray-700 hover:text-gray-900">
+              {{ currentSortOption.name }}
+              <ChevronDownIcon class="-mr-1 ml-1 size-5 shrink-0 text-gray-400 group-hover:text-gray-500" aria-hidden="true" />
+            </MenuButton>
+
+            <transition enter-active-class="transition ease-out duration-100" enter-from-class="transform opacity-0 scale-95" enter-to-class="transform scale-100" leave-active-class="transition ease-in duration-75" leave-from-class="transform scale-100" leave-to-class="transform opacity-0 scale-95">
+              <MenuItems class="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white shadow-2xl ring-1 ring-black/5 focus:outline-hidden">
+                <div class="py-1">
+                  <MenuItem v-for="option in sortOptions" :key="option.value" v-slot="{ active }">
+                    <button 
+                      @click="setSortOption(option)"
+                      :class="[option.value === currentSortOption.value ? 'font-medium text-gray-900' : 'text-gray-500', active ? 'bg-gray-100 outline-hidden' : '', 'block w-full text-left px-4 py-2 text-sm']"
+                    >
+                      {{ option.name }}
+                    </button>
+                  </MenuItem>
+                </div>
+              </MenuItems>
+            </transition>
+          </Menu>
         </div>
       </div>
 
-      <!-- Mobile filter dialog -->
-      <TransitionRoot as="template" :show="mobileFiltersOpen">
-        <Dialog class="relative z-40 lg:hidden" @close="mobileFiltersOpen = false">
-          <TransitionChild as="template" enter="transition-opacity ease-linear duration-300" enter-from="opacity-0" enter-to="" leave="transition-opacity ease-linear duration-300" leave-from="" leave-to="opacity-0">
-            <div class="fixed inset-0 bg-black/25" />
-          </TransitionChild>
-
-          <div class="fixed inset-0 z-40 flex">
-            <TransitionChild as="template" enter="transition ease-in-out duration-300 transform" enter-from="translate-x-full" enter-to="translate-x-0" leave="transition ease-in-out duration-300 transform" leave-from="translate-x-0" leave-to="translate-x-full">
-              <DialogPanel class="relative ml-auto flex size-full max-w-xs flex-col overflow-y-auto bg-white pt-4 pb-6 shadow-xl">
-                <div class="flex items-center justify-between px-4">
-                  <h2 class="text-lg font-medium text-gray-900">Filtri</h2>
-                  <button type="button" class="relative -mr-2 flex size-10 items-center justify-center rounded-md bg-white p-2 text-gray-400 hover:bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden" @click="mobileFiltersOpen = false">
-                    <span class="absolute -inset-0.5" />
-                    <span class="sr-only">Chiudi menu</span>
-                    <XMarkIcon class="size-6" aria-hidden="true" />
-                  </button>
-                </div>
-
-                <!-- Filters -->
-                <form class="mt-4 border-t border-gray-200">
-                  <h3 class="sr-only">Sotto categorie</h3>
-                  <ul role="list" class="px-2 py-3 font-medium text-gray-900">
-                    <li v-for="subcategory in subCategories" :key="subcategory.name">
-                      <a :href="subcategory.href" class="block px-2 py-3">{{ subcategory.name }}</a>
-                    </li>
-                  </ul>
-
-                  <Disclosure as="div" v-for="section in filters" :key="section.id" class="border-t border-gray-200 px-4 py-6" v-slot="{ open }">
-                    <h3 class="-mx-2 -my-3 flow-root">
-                      <DisclosureButton class="flex w-full items-center justify-between bg-white px-2 py-3 text-gray-400 hover:text-gray-500">
-                        <span class="font-medium text-gray-900">{{ section.name }}</span>
-                        <span class="ml-6 flex items-center">
-                          <PlusIcon v-if="!open" class="size-5" aria-hidden="true" />
-                          <MinusIcon v-else class="size-5" aria-hidden="true" />
-                        </span>
-                      </DisclosureButton>
-                    </h3>
-                    <DisclosurePanel class="pt-6">
-                      <div class="space-y-6">
-                        <div v-for="(option, optionIdx) in section.options" :key="option.value" class="flex gap-3">
-                          <div class="flex h-5 shrink-0 items-center">
-                            <div class="group grid size-4 grid-cols-1">
-                              <input :id="`filter-mobile-${section.id}-${optionIdx}`" :name="`${section.id}[]`" :value="option.value" type="checkbox" :checked="option.checked" class="col-start-1 row-start-1 appearance-none rounded-sm border border-gray-300 bg-white checked:border-indigo-600 checked:bg-indigo-600 indeterminate:border-indigo-600 indeterminate:bg-indigo-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:border-gray-300 disabled:bg-gray-100 disabled:checked:bg-gray-100 forced-colors:appearance-auto" />
-                              <svg class="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-disabled:stroke-gray-950/25" viewBox="0 0 14 14" fill="none">
-                                <path class="opacity-0 group-has-checked:opacity-100" d="M3 8L6 11L11 3.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                                <path class="opacity-0 group-has-indeterminate:opacity-100" d="M3 7H11" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                              </svg>
-                            </div>
-                          </div>
-                          <label :for="`filter-mobile-${section.id}-${optionIdx}`" class="min-w-0 flex-1 text-gray-500">{{ option.label }}</label>
-                        </div>
-                      </div>
-                    </DisclosurePanel>
-                  </Disclosure>
-                </form>
-              </DialogPanel>
-            </TransitionChild>
-          </div>
-        </Dialog>
-      </TransitionRoot>
 
       <section aria-labelledby="products-heading" class="pt-6 pb-24">
         <h2 id="products-heading" class="sr-only">Prodotti</h2>
 
+        <!-- Mobile Filters Section (Collapsible) -->
+        <div class="lg:hidden mb-6">
+          <Disclosure as="div" class="bg-white rounded-lg shadow-md" v-slot="{ open }">
+            <DisclosureButton class="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus-visible:ring focus-visible:ring-primary focus-visible:ring-opacity-75">
+              <span>Filtri</span>
+              <span class="ml-6 flex items-center">
+                <PlusIcon v-if="!open" class="size-5" aria-hidden="true" />
+                <MinusIcon v-else class="size-5" aria-hidden="true" />
+              </span>
+            </DisclosureButton>
+            <DisclosurePanel class="px-4 pb-4 pt-4 text-sm text-gray-500">
+              <AdvancedFilters
+                :filters="filters"
+                :category="category"
+                :subcategory="subcategory"
+                :grading-companies="gradingCompanies"
+                :condition-options="conditionOptions"
+                :numbered-presets="numberedPresets"
+                :multi-player-options="multiPlayerOptions"
+                :multi-autograph-options="multiAutographOptions"
+                @apply-filters="applyFilters"
+                @clear-filters="clearFilters"
+                @filter-changed="handleFilterChange"
+                class="space-y-4"
+              />
+            </DisclosurePanel>
+          </Disclosure>
+        </div>
+
         <div class="grid grid-cols-1 gap-x-8 gap-y-10 lg:grid-cols-4">
-          <!-- Filters -->
+          <!-- Filters (Desktop) -->
           <form class="hidden lg:block">
             <!-- Subcategories Navigation -->
             <h3 class="sr-only">Sotto categorie</h3>
@@ -174,8 +163,8 @@
               <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
 
-            <!-- Grid View -->
-            <div v-else-if="viewMode === 'grid'" class="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-8">
+            <!-- Desktop Grid View -->
+            <div v-if="viewMode === 'grid'" class="hidden lg:grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-8">
               <ProductCard 
                 v-for="product in displayedProducts" 
                 :key="product.id" 
@@ -186,8 +175,86 @@
               />
             </div>
 
-            <!-- List View -->
-            <div v-else class="space-y-4">
+            <!-- Mobile Horizontal Cards -->
+            <div class="lg:hidden space-y-3">
+              <div v-for="product in displayedProducts" :key="product.id" class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+                <div class="flex">
+                  <!-- Small Image Area -->
+                  <div class="w-20 min-h-full bg-gray-100 overflow-hidden flex-shrink-0 relative">
+                    <div class="w-full h-full flex items-center justify-center bg-gray-200">
+                      <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  <!-- Product Details -->
+                  <div class="flex-1 p-3 flex flex-col justify-between min-w-0">
+                    <div class="min-w-0">
+                      <router-link :to="getCardUrl(product)" class="text-base font-bold text-gray-900 hover:text-primary line-clamp-2">
+                        {{ product.name }}
+                      </router-link>
+                      
+                      <!-- Compact Badges Row -->
+                      <div class="flex flex-wrap gap-1 mt-2">
+                        <!-- Numbered -->
+                        <div v-if="product.card_number_in_set" class="bg-gray-100 px-2 py-1 rounded text-xs font-bold text-primary">
+                          #{{ product.card_number_in_set }}
+                        </div>
+                        <!-- Autograph -->
+                        <div v-if="product.is_autograph" class="bg-gray-100 px-2 py-1 rounded text-xs font-bold text-primary">
+                          AUTO
+                        </div>
+                        <!-- Relic -->
+                        <div v-if="product.is_relic" class="bg-gray-100 px-2 py-1 rounded text-xs font-bold text-primary">
+                          RELIC
+                        </div>
+                        <!-- Rookie -->
+                        <div v-if="product.is_rookie" class="bg-gray-100 px-2 py-1 rounded text-xs font-bold text-primary">
+                          RC
+                        </div>
+                        <!-- Condition -->
+                        <div class="bg-gray-100 px-2 py-1 rounded text-xs font-bold text-primary">
+                          {{ product.condition || 'NM' }}
+                        </div>
+                      </div>
+                      
+                      <!-- Compact Details -->
+                      <div class="mt-2 text-xs text-gray-600 space-y-1">
+                        <div class="flex justify-between">
+                          <span>Team:</span>
+                          <span class="font-medium truncate ml-2">{{ product.team || 'Team' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span>Set:</span>
+                          <span class="font-medium truncate ml-2">{{ product.set || 'Set' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                          <span>Year:</span>
+                          <span class="font-medium">{{ product.year || 'Year' }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Price and Add to Cart -->
+                    <div class="mt-3 flex items-center justify-between">
+                      <p class="text-lg font-bold text-gray-900">€{{ product.price }}</p>
+                      <button 
+                        @click="handleAddToCart(product)"
+                        class="w-8 h-8 bg-blue-600 rounded-md flex items-center justify-center hover:bg-blue-700 transition-colors"
+                      >
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 11-4 0v-6m4 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Desktop List View -->
+            <div v-if="viewMode === 'list'" class="hidden lg:block space-y-4">
               <div v-for="product in displayedProducts" :key="product.id" class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
                 <div class="flex">
                   <!-- Image Area -->
@@ -197,13 +264,6 @@
                         <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
                       </svg>
                     </div>
-                    <!-- Camera Icon -->
-                    <!-- <div class="absolute bottom-1 left-1 w-6 h-6 bg-blue-600 rounded flex items-center justify-center">
-                      <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div> -->
                   </div>
                   
                   <!-- Product Details -->
@@ -360,8 +420,6 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import {
-  Dialog,
-  DialogPanel,
   Disclosure,
   DisclosureButton,
   DisclosurePanel,
@@ -369,10 +427,8 @@ import {
   MenuButton,
   MenuItem,
   MenuItems,
-  TransitionChild,
-  TransitionRoot,
 } from '@headlessui/vue'
-import { ChevronDownIcon, FunnelIcon, MinusIcon, PlusIcon, Squares2X2Icon, XMarkIcon } from '@heroicons/vue/20/solid'
+import { ChevronDownIcon, MinusIcon, PlusIcon, Squares2X2Icon } from '@heroicons/vue/20/solid'
 import Header from '../components/Header.vue'
 import Footer from '../components/Footer.vue'
 import AdvancedFilters from '../components/AdvancedFilters.vue'
@@ -381,7 +437,6 @@ import ProductCard from '../components/ProductCard.vue'
 const route = useRoute()
 
 // Reactive data
-const mobileFiltersOpen = ref(false)
 const viewMode = ref('grid')
 const loading = ref(false)
 const loadingMore = ref(false)
