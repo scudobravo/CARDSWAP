@@ -18,21 +18,6 @@
         />
       </div>
 
-      <!-- Sezione sottocategorie -->
-      <div class="bg-white rounded-lg shadow-lg p-8">
-        <div class="text-center mb-8">
-          <h2 class="text-2xl font-futura-bold text-primary mb-4">Tipi di Prodotto</h2>
-          <p class="text-gray-600 font-gill-sans">Scegli il tipo di prodotto che stai cercando</p>
-        </div>
-        
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <SubcategoryCard 
-            v-for="subcategory in subcategories" 
-            :key="subcategory.id" 
-            :subcategory="subcategory" 
-          />
-        </div>
-      </div>
     </div>
     
     <!-- Footer -->
@@ -45,7 +30,6 @@ import { ref } from 'vue'
 import Header from '../components/Header.vue'
 import Footer from '../components/Footer.vue'
 import CategoryCard from '../components/CategoryCard.vue'
-import SubcategoryCard from '../components/SubcategoryCard.vue'
 
 // Categories data
 const categories = ref([
@@ -72,31 +56,4 @@ const categories = ref([
   }
 ])
 
-// Subcategories data
-const subcategories = ref([
-  {
-    id: 1,
-    name: "Singles",
-    description: "Carte singole",
-    icon: "/images/icons/sottocategoria singles.svg"
-  },
-  {
-    id: 2,
-    name: "Sealed Packs",
-    description: "Buste sigillate",
-    icon: "/images/icons/sottocategoria sealed packs.svg"
-  },
-  {
-    id: 3,
-    name: "Sealed Boxes",
-    description: "Scatole sigillate",
-    icon: "/images/icons/sottocategoria sealed boxes.svg"
-  },
-  {
-    id: 4,
-    name: "Lot",
-    description: "Lotti di carte",
-    icon: "/images/icons/sottocategoria lot.svg"
-  }
-])
 </script>
