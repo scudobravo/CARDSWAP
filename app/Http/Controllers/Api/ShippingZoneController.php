@@ -550,19 +550,34 @@ class ShippingZoneController extends Controller
         try {
             $request->validate([
                 'name' => 'required|string|max:255',
-                'country_code' => 'required|string|max:2',
+                'country_code' => 'required|string|size:2',
                 'zone_type' => 'required|string|in:worldwide,continent,country,region',
-                'is_worldwide' => 'boolean',
+                'is_worldwide' => 'nullable|boolean',
                 'included_countries' => 'nullable|array',
                 'excluded_countries' => 'nullable|array',
+                'included_regions' => 'nullable|array',
+                'excluded_regions' => 'nullable|array',
                 'shipping_cost' => 'nullable|numeric|min:0',
-                'use_shippo_pricing' => 'boolean',
-                'shippo_service_type' => 'nullable|string',
+                'base_cost' => 'nullable|numeric|min:0',
+                'cost_per_kg' => 'nullable|numeric|min:0',
+                'cost_per_euro' => 'nullable|numeric|min:0',
+                'free_shipping_threshold' => 'nullable|numeric|min:0',
+                'max_weight_kg' => 'nullable|numeric|min:0',
+                'max_value_euro' => 'nullable|numeric|min:0',
+                'requires_seller_approval' => 'nullable|boolean',
+                'allowed_seller_roles' => 'nullable|array',
+                'min_seller_rating' => 'nullable|integer|min:0',
+                'min_seller_sales' => 'nullable|integer|min:0',
+                'use_shippo_pricing' => 'nullable|boolean',
+                'shippo_carrier' => 'nullable|string|max:255',
+                'shippo_service_type' => 'nullable|string|max:255',
                 'shippo_markup' => 'nullable|numeric|min:0',
+                'shippo_require_insurance' => 'nullable|boolean',
                 'delivery_days_min' => 'nullable|integer|min:1',
                 'delivery_days_max' => 'nullable|integer|min:1',
-                'is_active' => 'boolean',
-                'description' => 'nullable|string'
+                'is_active' => 'nullable|boolean',
+                'description' => 'nullable|string',
+                'sort_order' => 'nullable|integer|min:0'
             ]);
 
             Log::info('Dati ricevuti per creazione zona:', $request->all());
@@ -611,19 +626,34 @@ class ShippingZoneController extends Controller
             
             $request->validate([
                 'name' => 'required|string|max:255',
-                'country_code' => 'required|string|max:2',
+                'country_code' => 'required|string|size:2',
                 'zone_type' => 'required|string|in:worldwide,continent,country,region',
-                'is_worldwide' => 'boolean',
+                'is_worldwide' => 'nullable|boolean',
                 'included_countries' => 'nullable|array',
                 'excluded_countries' => 'nullable|array',
+                'included_regions' => 'nullable|array',
+                'excluded_regions' => 'nullable|array',
                 'shipping_cost' => 'nullable|numeric|min:0',
-                'use_shippo_pricing' => 'boolean',
-                'shippo_service_type' => 'nullable|string',
+                'base_cost' => 'nullable|numeric|min:0',
+                'cost_per_kg' => 'nullable|numeric|min:0',
+                'cost_per_euro' => 'nullable|numeric|min:0',
+                'free_shipping_threshold' => 'nullable|numeric|min:0',
+                'max_weight_kg' => 'nullable|numeric|min:0',
+                'max_value_euro' => 'nullable|numeric|min:0',
+                'requires_seller_approval' => 'nullable|boolean',
+                'allowed_seller_roles' => 'nullable|array',
+                'min_seller_rating' => 'nullable|integer|min:0',
+                'min_seller_sales' => 'nullable|integer|min:0',
+                'use_shippo_pricing' => 'nullable|boolean',
+                'shippo_carrier' => 'nullable|string|max:255',
+                'shippo_service_type' => 'nullable|string|max:255',
                 'shippo_markup' => 'nullable|numeric|min:0',
+                'shippo_require_insurance' => 'nullable|boolean',
                 'delivery_days_min' => 'nullable|integer|min:1',
                 'delivery_days_max' => 'nullable|integer|min:1',
-                'is_active' => 'boolean',
-                'description' => 'nullable|string'
+                'is_active' => 'nullable|boolean',
+                'description' => 'nullable|string',
+                'sort_order' => 'nullable|integer|min:0'
             ]);
 
             Log::info('Dati ricevuti per aggiornamento zona:', $request->all());

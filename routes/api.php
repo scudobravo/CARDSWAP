@@ -51,13 +51,17 @@ Route::get('/grading-companies', function () {
 
 // Shipping Zones - API pubbliche per selezione zone
 Route::get('/shipping-zones', [ShippingZoneController::class, 'index']);
-Route::post('/shipping-zones', [ShippingZoneController::class, 'store']);
-Route::put('/shipping-zones/{id}', [ShippingZoneController::class, 'update']);
-Route::delete('/shipping-zones/{id}', [ShippingZoneController::class, 'destroy']);
 Route::post('/shipping-zones/calculate-price', [ShippingZoneController::class, 'calculatePrice']);
 Route::post('/shipping-zones/calculate-multiple-prices', [ShippingZoneController::class, 'calculateMultiplePrices']);
 Route::post('/shipping-zones/calculate-country-prices', [ShippingZoneController::class, 'calculateCountryPrices']);
 Route::post('/shipping-zones/check-country-support', [ShippingZoneController::class, 'checkCountrySupport']);
+
+// Shipping Zones - Gestione zone (richiede autenticazione)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/shipping-zones', [ShippingZoneController::class, 'store']);
+    Route::put('/shipping-zones/{id}', [ShippingZoneController::class, 'update']);
+    Route::delete('/shipping-zones/{id}', [ShippingZoneController::class, 'destroy']);
+});
 
 // Shipping Zones - Zone dell'utente autenticato (legacy)
 Route::middleware('auth:sanctum')->group(function () {
