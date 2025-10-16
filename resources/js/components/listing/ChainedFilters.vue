@@ -188,9 +188,6 @@
           <option value="">Seleziona Rarity</option>
           <option v-for="rarity in availableRarities" :key="rarity" :value="rarity">{{ rarity }}</option>
         </select>
-        <div class="text-xs text-gray-500 mt-1">
-          Debug: {{ availableRarities.length }} rarities disponibili
-        </div>
       </div>
 
       <!-- Year Selection -->
@@ -206,9 +203,6 @@
           <option value="">Seleziona Year</option>
           <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
         </select>
-        <div class="text-xs text-gray-500 mt-1">
-          Debug: {{ availableYears.length }} years disponibili
-        </div>
       </div>
     </div>
 

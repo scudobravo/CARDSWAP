@@ -704,8 +704,8 @@ const selectCardModel = (card) => {
     // Popola i dati base della carta
     listingData.value.card_model_id = card.id
     
-    // Se c'è un prezzo suggerito nella carta, usalo
-    if (card.price && card.price > 0) {
+    // Se c'è un prezzo suggerito nella carta, usalo solo se l'utente non ha già inserito un prezzo
+    if (card.price && card.price > 0 && (!filters.value.price || filters.value.price === '')) {
       filters.value.price = card.price
     }
     

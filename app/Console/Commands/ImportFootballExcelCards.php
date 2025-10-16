@@ -362,7 +362,8 @@ class ImportFootballExcelCards extends Command
         // Estrai i dati dalla riga seguendo la struttura Excel
         $cardNumber = trim($row['Numero'] ?? '');
         $playerName = trim($row['Player'] ?? '');
-        $isNumbered = !empty(trim($row['NUMBERED'] ?? ''));
+        $numberedValue = trim($row['NUMBERED /'] ?? ''); // Usa NUMBERED / per il valore
+        $isNumbered = !empty($numberedValue);
         $isRookie = !empty(trim($row['ROOKIE'] ?? ''));
         $teamName = trim($row['Team'] ?? '');
         $rarity = trim($row['Rarity'] ?? 'Base Common');
@@ -565,7 +566,8 @@ class ImportFootballExcelCards extends Command
     {
         $cardNumber = trim($row['Numero'] ?? '');
         $playerName = trim($row['Player'] ?? '');
-        $isNumbered = !empty(trim($row['NUMBERED'] ?? ''));
+        $numberedValue = trim($row['NUMBERED /'] ?? ''); // Usa NUMBERED / per il valore
+        $isNumbered = !empty($numberedValue);
         $isRookie = !empty(trim($row['ROOKIE'] ?? ''));
         $rarity = trim($row['Rarity'] ?? 'Base Common');
         $rarityVariation = trim($row['Rarity Variation'] ?? '');
@@ -586,8 +588,8 @@ class ImportFootballExcelCards extends Command
         if ($isRookie) {
             $cardName .= ' (RC)';
         }
-        if ($isNumbered) {
-            $cardName .= ' #' . $cardNumber;
+        if ($isNumbered && $numberedValue) {
+            $cardName .= ' #' . $numberedValue;
         }
 
         if (!$dryRun) {
@@ -658,6 +660,7 @@ class ImportFootballExcelCards extends Command
                     'year' => $year, // Ora è stringa per supportare "1967/68"
                     'rarity' => $this->normalizeRarity($rarity),
                     'rarity_variation' => $rarityVariation,
+                    'card_number' => $numberedValue, // Usa il valore da NUMBERED /
                     'card_number_in_set' => $cardNumber,
                     'is_rookie' => $isRookie,
                     'is_autograph' => $isAutograph,
