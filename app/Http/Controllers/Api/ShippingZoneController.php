@@ -582,6 +582,18 @@ class ShippingZoneController extends Controller
 
             Log::info('Dati ricevuti per creazione zona:', $request->all());
             
+            // Controlla se esiste già una zona con lo stesso nome per questo utente
+            $existingZone = ShippingZone::where('user_id', $request->user()->id)
+                ->where('name', $request->name)
+                ->first();
+                
+            if ($existingZone) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Esiste già una zona di spedizione con questo nome'
+                ], 422);
+            }
+            
             // Aggiungi l'user_id dell'utente autenticato
             $zoneData = $request->all();
             $zoneData['user_id'] = $request->user()->id;

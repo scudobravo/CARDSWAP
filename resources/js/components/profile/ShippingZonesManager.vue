@@ -248,8 +248,8 @@ const closeAdvancedModal = () => {
     // Prepara i dati per il salvataggio
     const saveData = {
       name: zoneData.name,
-      country_code: zoneData.option === 'worldwide' ? 'WW' : 'EU', // Campo richiesto (max 2 caratteri)
-      zone_type: zoneData.option === 'worldwide' ? 'worldwide' : 'country', // Mappa correttamente i tipi
+      country_code: zoneData.option === 'worldwide' ? 'WW' : (zoneData.countries && zoneData.countries.length > 0 ? zoneData.countries[0] : 'EU'),
+      zone_type: zoneData.option === 'worldwide' ? 'worldwide' : (zoneData.countries && zoneData.countries.length > 0 ? 'country' : 'continent'),
       is_worldwide: zoneData.option === 'worldwide',
       included_countries: zoneData.option === 'worldwide' ? null : zoneData.countries,
       excluded_countries: zoneData.option === 'worldwide' ? null : zoneData.excludedCountries,
@@ -267,6 +267,17 @@ const closeAdvancedModal = () => {
             console.log('🔍 saveData preparato:', saveData)
             console.log('🔍 saveData.included_countries:', saveData.included_countries)
             console.log('🔍 saveData.excluded_countries:', saveData.excluded_countries)
+
+    // Controlla se esiste già una zona con lo stesso nome per l'utente corrente
+    if (!editingAdvancedZone.value) {
+      const existingZone = advancedZones.value.find(zone => 
+        zone.name.toLowerCase() === saveData.name.toLowerCase()
+      )
+      if (existingZone) {
+        alert(`Esiste già una zona con il nome "${saveData.name}". Scegli un nome diverso.`)
+        return
+      }
+    }
 
     const url = editingAdvancedZone.value 
       ? `/api/shipping-zones/${editingAdvancedZone.value.id}`
