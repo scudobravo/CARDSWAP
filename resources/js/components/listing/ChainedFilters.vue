@@ -70,6 +70,11 @@
               </div>
             </div>
             
+            <!-- Numbered field -->
+            <div v-if="card.card_number" class="text-xs text-gray-600 mb-1">
+              <span class="font-medium text-gray-700">Numbered:</span> {{ card.card_number }}
+            </div>
+            
             <!-- Set e Anno -->
             <div class="text-xs text-gray-600 mb-1">
               <div class="font-medium">{{ card.card_set?.name || 'N/A' }}</div>
