@@ -233,7 +233,8 @@
           <!-- Set e Anno -->
           <div class="text-xs text-gray-600 mb-1">
             <div class="font-medium">{{ card.card_set?.name || 'N/A' }}</div>
-            <div class="text-gray-500">{{ card.year || 'N/A' }}</div>
+            <!-- Mostra l'anno solo se il set non contiene già l'anno nel nome -->
+            <div v-if="card.year && !card.card_set?.name?.includes(card.year)" class="text-gray-500">{{ card.year }}</div>
           </div>
           
           <!-- Rarity e Brand -->
