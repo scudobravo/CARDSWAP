@@ -17,7 +17,6 @@
           <div v-for="player in filteredPlayers" :key="player.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectPlayer(player)">
             <div class="flex flex-col">
               <span class="font-normal block truncate">{{ player.display_name || player.name }}</span>
-              <span v-if="player.team" class="text-xs text-gray-500">{{ player.team.name }}</span>
             </div>
           </div>
         </div>
@@ -33,71 +32,6 @@
         </span>
       </div>
       
-      <!-- Carte del giocatore selezionato -->
-      <div v-if="selectedPlayer && selectedPlayer.cards && selectedPlayer.cards.length > 0" class="mt-4">
-        <div class="flex justify-between items-center mb-2">
-          <label class="block text-sm font-medium text-gray-700">
-            Seleziona Carta ({{ selectedPlayer.cards.length }} disponibili)
-          </label>
-          <select 
-            v-model="cardSetFilter" 
-            class="text-xs border border-gray-300 rounded px-2 py-1"
-            @change="filterCardsBySet"
-          >
-            <option value="">Tutti i set</option>
-            <option v-for="set in uniqueCardSets" :key="set.id" :value="set.id">
-              {{ set.name }} ({{ set.count }})
-            </option>
-          </select>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-80 overflow-y-auto">
-          <div 
-            v-for="card in filteredCards" 
-            :key="card.id"
-            @click="selectCard(card)"
-            :class="[
-              'p-4 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md',
-              selectedCard && selectedCard.id === card.id 
-                ? 'border-primary bg-primary/5 shadow-md ring-2 ring-primary/20' 
-                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-            ]"
-          >
-            <!-- Header con nome e numero -->
-            <div class="flex justify-between items-start mb-2">
-              <div class="text-sm font-medium text-gray-900 truncate flex-1 mr-2">{{ card.name }}</div>
-              <div v-if="card.card_number_in_set" class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                #{{ card.card_number_in_set }}
-              </div>
-            </div>
-            
-            <!-- Numbered field -->
-            <div v-if="card.card_number" class="text-xs text-gray-600 mb-1">
-              <span class="font-medium text-gray-700">Numbered:</span> {{ card.card_number }}
-            </div>
-            
-            <!-- Set e Anno -->
-            <div class="text-xs text-gray-600 mb-1">
-              <div class="font-medium">{{ card.card_set?.name || 'N/A' }}</div>
-              <div class="text-gray-500">{{ card.year || 'N/A' }}</div>
-            </div>
-            
-            <!-- Rarity e Brand -->
-            <div class="flex justify-between items-center text-xs">
-              <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded-full">
-                {{ card.rarity || 'N/A' }}
-              </span>
-              <span v-if="card.card_set?.brand" class="text-gray-500">
-                {{ card.card_set.brand }}
-              </span>
-            </div>
-            
-            <!-- Indicatore di selezione -->
-            <div v-if="selectedCard && selectedCard.id === card.id" class="mt-2 text-xs text-primary font-medium">
-              ✓ Selezionata
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- Prima riga: Team e Set -->
@@ -255,6 +189,70 @@
         Cerca Carte
       </button>
     </div>
+
+    <!-- Carte del giocatore selezionato (solo per Single Card) -->
+    <div v-if="showPlayer && selectedPlayer && selectedPlayer.cards && selectedPlayer.cards.length > 0" class="mt-6">
+      <div class="mb-4">
+        <label class="block text-lg font-medium text-gray-700">
+          Seleziona Carta ({{ filteredCards.length }} disponibili)
+        </label>
+        <p class="text-sm text-gray-600 mt-1">
+          Usa i filtri Team e Set sopra per filtrare le carte disponibili
+        </p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-80 overflow-y-auto">
+        <div 
+          v-for="card in filteredCards" 
+          :key="card.id"
+          @click="selectCard(card)"
+          :class="[
+            'p-4 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md',
+            selectedCard && selectedCard.id === card.id 
+              ? 'border-primary bg-primary/5 shadow-md ring-2 ring-primary/20' 
+              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+          ]"
+        >
+          <!-- Header con nome e numero -->
+          <div class="flex justify-between items-start mb-2">
+            <div class="text-sm font-medium text-gray-900 truncate flex-1 mr-2">{{ card.name }}</div>
+            <div v-if="card.card_number_in_set" class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+              #{{ card.card_number_in_set }}
+            </div>
+          </div>
+          
+          <!-- Numbered field -->
+          <div v-if="card.card_number" class="text-xs text-gray-600 mb-1">
+            <span class="font-medium text-gray-700">Numbered:</span> {{ card.card_number }}
+          </div>
+          
+          <!-- Squadra -->
+          <div v-if="card.team" class="text-xs text-gray-600 mb-1">
+            <div class="font-medium text-blue-600">{{ card.team.name }}</div>
+          </div>
+          
+          <!-- Set e Anno -->
+          <div class="text-xs text-gray-600 mb-1">
+            <div class="font-medium">{{ card.card_set?.name || 'N/A' }}</div>
+            <div class="text-gray-500">{{ card.year || 'N/A' }}</div>
+          </div>
+          
+          <!-- Rarity e Brand -->
+          <div class="flex justify-between items-center text-xs">
+            <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded-full">
+              {{ card.rarity || 'N/A' }}
+            </span>
+            <span v-if="card.card_set?.brand" class="text-gray-500">
+              {{ card.card_set.brand }}
+            </span>
+          </div>
+          
+          <!-- Indicatore di selezione -->
+          <div v-if="selectedCard && selectedCard.id === card.id" class="mt-2 text-xs text-primary font-medium">
+            ✓ Selezionata
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -312,9 +310,9 @@ const selectedPlayer = ref(null)
 const selectedCard = ref(null)
 const selectedTeam = ref(null)
 const selectedCardSet = ref(null)
-const cardSetFilter = ref('')
 const filteredCards = ref([])
 const uniqueCardSets = ref([])
+const uniqueTeams = ref([])
 const filteredPlayers = ref([])
 const filteredTeams = ref([])
 const filteredCardSets = ref([])
@@ -392,29 +390,29 @@ const onPlayerBlur = () => {
 const searchTeams = async () => {
   const query = localFilters.value.teamSearch || ''
   
-  console.log('Ricerca team per:', query)
+  console.log('🔍 Ricerca team per:', query)
+  console.log('🔍 Player ID:', localFilters.value.player)
   
   try {
-    // Costruisci i parametri con i filtri correnti per interdipendenza
+    // Costruisci i parametri - SOLO player_id per evitare filtri che limitano i risultati
     const params = new URLSearchParams({ q: query })
     if (localFilters.value.player) params.append('player_id', localFilters.value.player)
-    if (localFilters.value.set) params.append('set_id', localFilters.value.set)
-    if (localFilters.value.year) params.append('year', localFilters.value.year)
-    if (localFilters.value.brand) params.append('brand', localFilters.value.brand)
+    // RIMOSSO: set, year, brand per evitare di limitare i risultati delle squadre
     
     const url = `/api/${props.category}/filters/teams/search?${params.toString()}`
-    console.log('URL team:', url)
+    console.log('🔍 URL team:', url)
     
     const response = await fetch(url)
-    console.log('Response status team:', response.status)
+    console.log('🔍 Response status team:', response.status)
     
     const data = await response.json()
-    console.log('Response data team:', data)
+    console.log('🔍 Response data team:', data)
     
     filteredTeams.value = data.teams || []
-    console.log('Filtered teams:', filteredTeams.value)
+    console.log('🔍 Filtered teams:', filteredTeams.value)
+    console.log('🔍 Numero squadre trovate:', filteredTeams.value.length)
   } catch (error) {
-    console.error('Errore nella ricerca squadre:', error)
+    console.error('❌ Errore nella ricerca squadre:', error)
     filteredTeams.value = []
   }
 }
@@ -478,18 +476,12 @@ const onSetBlur = () => {
 const selectPlayer = (player) => {
   selectedPlayer.value = player
   selectedCard.value = null // Reset carta selezionata
-  cardSetFilter.value = '' // Reset filtro set
   localFilters.value.player = player.id
   localFilters.value.playerSearch = ''
   filteredPlayers.value = []
   showPlayerDropdown.value = false
   
-  // Popola automaticamente il campo Team
-  if (player.team) {
-    localFilters.value.team = player.team.id
-    selectedTeam.value = player.team
-    console.log('✅ Campo Team popolato con:', player.team.name)
-  }
+  // NON popolare automaticamente il campo Team - l'utente può scegliere la squadra dal filtro dedicato
   
   // Popola il campo Numbered con il primo card_number disponibile
   if (player.card_numbers && player.card_numbers.length > 0) {
@@ -507,6 +499,9 @@ const selectPlayer = (player) => {
   
   // Inizializza le carte filtrate e i set unici
   initializeCardFiltering(player)
+  
+  // Carica automaticamente le squadre disponibili per questo giocatore
+  loadTeamsForPlayer()
   
   onFiltersChanged()
 }
@@ -532,19 +527,69 @@ const initializeCardFiltering = (player) => {
       }
     })
     uniqueCardSets.value = Array.from(setMap.values())
+    
+    // Crea lista delle squadre uniche con conteggio
+    const teamMap = new Map()
+    player.cards.forEach(card => {
+      if (card.team) {
+        const teamId = card.team.id
+        if (teamMap.has(teamId)) {
+          teamMap.get(teamId).count++
+        } else {
+          teamMap.set(teamId, {
+            id: teamId,
+            name: card.team.name,
+            count: 1
+          })
+        }
+      }
+    })
+    uniqueTeams.value = Array.from(teamMap.values())
   }
 }
 
 const filterCardsBySet = () => {
   if (!selectedPlayer.value || !selectedPlayer.value.cards) return
   
-  if (cardSetFilter.value === '') {
-    filteredCards.value = selectedPlayer.value.cards
-  } else {
-    filteredCards.value = selectedPlayer.value.cards.filter(card => 
-      card.card_set && card.card_set.id == cardSetFilter.value
+  let cards = selectedPlayer.value.cards
+  
+  // Applica filtro per squadra se selezionato (usa il filtro Team esistente)
+  if (localFilters.value.team) {
+    cards = cards.filter(card => 
+      card.team && card.team.id == localFilters.value.team
     )
   }
+  
+  // Applica filtro per set se selezionato (usa il filtro Set esistente)
+  if (localFilters.value.set) {
+    cards = cards.filter(card => 
+      card.card_set && card.card_set.id == localFilters.value.set
+    )
+  }
+  
+  filteredCards.value = cards
+}
+
+const filterCardsByTeam = () => {
+  if (!selectedPlayer.value || !selectedPlayer.value.cards) return
+  
+  let cards = selectedPlayer.value.cards
+  
+  // Applica filtro per squadra se selezionato (usa il filtro Team esistente)
+  if (localFilters.value.team) {
+    cards = cards.filter(card => 
+      card.team && card.team.id == localFilters.value.team
+    )
+  }
+  
+  // Applica filtro per set se selezionato (usa il filtro Set esistente)
+  if (localFilters.value.set) {
+    cards = cards.filter(card => 
+      card.card_set && card.card_set.id == localFilters.value.set
+    )
+  }
+  
+  filteredCards.value = cards
 }
 
 const selectCard = (card) => {
@@ -632,6 +677,30 @@ const searchCards = () => {
     price: localFilters.value.price
   }
   emit('search-cards', searchFilters)
+}
+
+const loadTeamsForPlayer = async () => {
+  if (!localFilters.value.player) return
+  
+  try {
+    console.log('🔍 Caricamento squadre per giocatore:', localFilters.value.player)
+    
+    const params = new URLSearchParams()
+    params.append('player_id', localFilters.value.player)
+    
+    const url = `/api/${props.category}/filters/teams/search?${params.toString()}`
+    console.log('🔍 URL squadre:', url)
+    
+    const response = await fetch(url)
+    const data = await response.json()
+    
+    console.log('🔍 Squadre caricate:', data.teams)
+    filteredTeams.value = data.teams || []
+    
+  } catch (error) {
+    console.error('❌ Errore nel caricamento squadre:', error)
+    filteredTeams.value = []
+  }
 }
 
 const loadChainedData = async () => {
@@ -795,6 +864,18 @@ watch(() => props.initialFilters, async (newFilters) => {
   await restoreSelectedEntities()
   loadChainedData()
 }, { deep: true })
+
+// Watch for team filter changes to update cards
+watch(() => localFilters.value.team, () => {
+  console.log('🔄 Team filter cambiato:', localFilters.value.team)
+  filterCardsByTeam()
+})
+
+// Watch for set filter changes to update cards
+watch(() => localFilters.value.set, () => {
+  console.log('🔄 Set filter cambiato:', localFilters.value.set)
+  filterCardsBySet()
+})
 
 // Gestisce l'evento di popolamento filtri
 const handleFiltersPopulated = async (event) => {

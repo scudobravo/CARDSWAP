@@ -197,6 +197,55 @@ class ShippoService
     }
 
     /**
+     * Ottieni corrieri disponibili per un paese specifico
+     */
+    public function getAvailableCarriers(string $destinationCountry): array
+    {
+        $carriers = config('services.shippo.carriers');
+        $availableCarriers = [];
+
+        // Aggiungi corrieri domestici se la destinazione è Italia
+        if ($destinationCountry === 'IT') {
+            $availableCarriers = array_merge($availableCarriers, $carriers['domestic']);
+        }
+
+        // Aggiungi corrieri internazionali
+        foreach ($carriers['international'] as $carrierCode => $carrierConfig) {
+            if ($carrierConfig['countries'] === ['*'] || in_array($destinationCountry, $carrierConfig['countries'])) {
+                $availableCarriers[$carrierCode] = $carrierConfig;
+            }
+        }
+
+        // Ordina per priorità
+        uasort($availableCarriers, function($a, $b) {
+            return ($a['priority'] ?? 999) <=> ($b['priority'] ?? 999);
+        });
+
+        return $availableCarriers;
+    }
+
+    /**
+     * Verifica se un corriere è disponibile per una destinazione
+     */
+    public function isCarrierAvailable(string $carrierCode, string $destinationCountry): bool
+    {
+        $carriers = config('services.shippo.carriers');
+        
+        // Controlla corrieri domestici
+        if (isset($carriers['domestic'][$carrierCode])) {
+            return in_array($destinationCountry, $carriers['domestic'][$carrierCode]['countries']);
+        }
+        
+        // Controlla corrieri internazionali
+        if (isset($carriers['international'][$carrierCode])) {
+            $carrierConfig = $carriers['international'][$carrierCode];
+            return $carrierConfig['countries'] === ['*'] || in_array($destinationCountry, $carrierConfig['countries']);
+        }
+        
+        return false;
+    }
+
+    /**
      * Calcola tariffe per un ordine multi-venditore
      */
     public function calculateRatesForOrder(array $sellers, array $shippingAddress): array
@@ -229,14 +278,15 @@ class ShippoService
                     'phone' => $shippingAddress['phone'] ?? '',
                 ], true);
 
-                // Crea pacco standard per carte
+                // Usa configurazione pacco dalla config
+                $parcelConfig = config('services.shippo.pricing.default_parcel');
                 $parcel = $this->createParcel([
-                    'length' => '22',
-                    'width' => '15',
-                    'height' => '3',
-                    'distance_unit' => 'cm',
-                    'weight' => '0.25',
-                    'mass_unit' => 'kg',
+                    'length' => (string) $parcelConfig['length'],
+                    'width' => (string) $parcelConfig['width'],
+                    'height' => (string) $parcelConfig['height'],
+                    'distance_unit' => $parcelConfig['distance_unit'],
+                    'weight' => (string) $parcelConfig['weight'],
+                    'mass_unit' => $parcelConfig['mass_unit'],
                 ]);
 
                 // Crea shipment e calcola tariffe
@@ -246,7 +296,7 @@ class ShippoService
                     'parcels' => [['object_id' => $parcel['object_id']]],
                 ], false);
 
-                // Applica markup +€1,60 e categorizza tariffe
+                // Applica markup e categorizza tariffe
                 $rates = $this->processRates($shipment['rates']);
 
                 $results[$sellerId] = [
@@ -280,11 +330,13 @@ class ShippoService
     private function processRates(array $rates): array
     {
         $processedRates = [];
-        $markup = 1.60; // €1,60 markup
+        $pricingConfig = config('services.shippo.pricing');
+        $markup = $pricingConfig['markup'] ?? 1.60; // €1,60 markup
+        $managementFee = $pricingConfig['management_fee'] ?? 0.90; // €0,90 spese gestione
 
         foreach ($rates as $rate) {
             $originalAmount = floatval($rate['amount']);
-            $amountWithMarkup = $originalAmount + $markup;
+            $amountWithMarkup = $originalAmount + $markup + $managementFee;
 
             // Categorizza per tipo di servizio
             $serviceType = $this->categorizeService($rate['servicelevel']['name']);
@@ -300,6 +352,12 @@ class ShippoService
                 'estimated_days' => $rate['estimated_days'] ?? null,
                 'tracking' => $rate['tracking'] ?? false,
                 'insurance' => $rate['insurance'] ?? false,
+                'breakdown' => [
+                    'shippo_rate' => $originalAmount,
+                    'markup' => $markup,
+                    'management_fee' => $managementFee,
+                    'total' => $amountWithMarkup
+                ]
             ];
         }
 

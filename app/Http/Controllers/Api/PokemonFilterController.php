@@ -137,7 +137,25 @@ class PokemonFilterController extends Controller
         
         $players = $playersQuery->limit(50)->get(['id', 'name', 'slug', 'position', 'nationality']);
 
-        return response()->json(['players' => $players]);
+        // Raggruppa i giocatori per nome per evitare duplicati
+        $groupedPlayers = $players->groupBy('name');
+        
+        // Trasforma i dati per includere informazioni delle carte e squadra
+        $transformedPlayers = $groupedPlayers->map(function($playerGroup, $playerName) {
+            // Prendi il primo giocatore del gruppo come rappresentante
+            $representativePlayer = $playerGroup->first();
+            
+            return [
+                'id' => $representativePlayer->id, // Usa l'ID del primo giocatore come rappresentante
+                'name' => $playerName,
+                'slug' => $representativePlayer->slug,
+                'position' => $representativePlayer->position,
+                'nationality' => $representativePlayer->nationality,
+                'display_name' => $playerName,
+            ];
+        })->values(); // Converte la Collection in array
+
+        return response()->json(['players' => $transformedPlayers]);
     }
 
     /**
@@ -164,7 +182,14 @@ class PokemonFilterController extends Controller
                 
                 // Applica filtri aggiuntivi per limitare i risultati
                 if ($request->filled('player_id')) {
-                    $q->where('player_id', $request->player_id);
+                    // Se è un singolo player_id, cerca tutte le carte di tutti i giocatori con lo stesso nome
+                    $player = Player::find($request->player_id);
+                    if ($player) {
+                        $playerIds = Player::where('name', $player->name)->pluck('id')->toArray();
+                        $q->whereIn('player_id', $playerIds);
+                    } else {
+                        $q->where('player_id', $request->player_id);
+                    }
                 }
                 if ($request->filled('set_id')) {
                     $q->where('card_set_id', $request->set_id);
@@ -214,7 +239,14 @@ class PokemonFilterController extends Controller
                 
                 // Applica filtri aggiuntivi per limitare i risultati
                 if ($request->filled('player_id')) {
-                    $q->where('player_id', $request->player_id);
+                    // Se è un singolo player_id, cerca tutte le carte di tutti i giocatori con lo stesso nome
+                    $player = Player::find($request->player_id);
+                    if ($player) {
+                        $playerIds = Player::where('name', $player->name)->pluck('id')->toArray();
+                        $q->whereIn('player_id', $playerIds);
+                    } else {
+                        $q->where('player_id', $request->player_id);
+                    }
                 }
                 if ($request->filled('team_id')) {
                     $q->where('team_id', $request->team_id);
@@ -417,7 +449,14 @@ class PokemonFilterController extends Controller
             if (is_array($filters['player_id'])) {
                 $query->whereIn('player_id', $filters['player_id']);
             } else {
-                $query->where('player_id', $filters['player_id']);
+                // Se è un singolo player_id, cerca tutti i giocatori con lo stesso nome
+                $player = Player::find($filters['player_id']);
+                if ($player) {
+                    $playerIds = Player::where('name', $player->name)->pluck('id')->toArray();
+                    $query->whereIn('player_id', $playerIds);
+                } else {
+                    $query->where('player_id', $filters['player_id']);
+                }
             }
         }
 
@@ -444,10 +483,22 @@ class PokemonFilterController extends Controller
 
         // Teams disponibili
         if (isset($filters['player_id']) && !empty($filters['player_id'])) {
-            $teams = Team::whereIn('id', function($query) use ($filters) {
+            // Se è un singolo player_id, cerca tutte le squadre delle carte di tutti i giocatori con lo stesso nome
+            if (is_array($filters['player_id'])) {
+                $playerIds = $filters['player_id'];
+            } else {
+                $player = Player::find($filters['player_id']);
+                if ($player) {
+                    $playerIds = Player::where('name', $player->name)->pluck('id')->toArray();
+                } else {
+                    $playerIds = [$filters['player_id']];
+                }
+            }
+            
+            $teams = Team::whereIn('id', function($query) use ($playerIds) {
                 $query->select('team_id')
                     ->from('card_models')
-                    ->whereIn('player_id', is_array($filters['player_id']) ? $filters['player_id'] : [$filters['player_id']])
+                    ->whereIn('player_id', $playerIds)
                     ->where('is_active', true);
             })->active()->ordered()->get(['id', 'name', 'slug']);
             $result['teams'] = $teams;
@@ -455,10 +506,22 @@ class PokemonFilterController extends Controller
 
         // Sets disponibili
         if (isset($filters['player_id']) && !empty($filters['player_id'])) {
-            $sets = CardSet::whereIn('id', function($query) use ($filters) {
+            // Se è un singolo player_id, cerca tutti i set delle carte di tutti i giocatori con lo stesso nome
+            if (is_array($filters['player_id'])) {
+                $playerIds = $filters['player_id'];
+            } else {
+                $player = Player::find($filters['player_id']);
+                if ($player) {
+                    $playerIds = Player::where('name', $player->name)->pluck('id')->toArray();
+                } else {
+                    $playerIds = [$filters['player_id']];
+                }
+            }
+            
+            $sets = CardSet::whereIn('id', function($query) use ($playerIds) {
                 $query->select('card_set_id')
                     ->from('card_models')
-                    ->whereIn('player_id', is_array($filters['player_id']) ? $filters['player_id'] : [$filters['player_id']])
+                    ->whereIn('player_id', $playerIds)
                     ->where('is_active', true);
             })->active()->ordered()->get(['id', 'name', 'slug', 'brand', 'year']);
             $result['sets'] = $sets;
@@ -466,7 +529,19 @@ class PokemonFilterController extends Controller
 
         // Years disponibili
         if (isset($filters['player_id']) && !empty($filters['player_id'])) {
-            $years = CardModel::whereIn('player_id', is_array($filters['player_id']) ? $filters['player_id'] : [$filters['player_id']])
+            // Se è un singolo player_id, cerca tutti gli anni delle carte di tutti i giocatori con lo stesso nome
+            if (is_array($filters['player_id'])) {
+                $playerIds = $filters['player_id'];
+            } else {
+                $player = Player::find($filters['player_id']);
+                if ($player) {
+                    $playerIds = Player::where('name', $player->name)->pluck('id')->toArray();
+                } else {
+                    $playerIds = [$filters['player_id']];
+                }
+            }
+            
+            $years = CardModel::whereIn('player_id', $playerIds)
                 ->where('is_active', true)
                 ->distinct()
                 ->pluck('year')
@@ -477,10 +552,22 @@ class PokemonFilterController extends Controller
 
         // Brands disponibili
         if (isset($filters['player_id']) && !empty($filters['player_id'])) {
-            $brands = CardSet::whereIn('id', function($query) use ($filters) {
+            // Se è un singolo player_id, cerca tutti i brand delle carte di tutti i giocatori con lo stesso nome
+            if (is_array($filters['player_id'])) {
+                $playerIds = $filters['player_id'];
+            } else {
+                $player = Player::find($filters['player_id']);
+                if ($player) {
+                    $playerIds = Player::where('name', $player->name)->pluck('id')->toArray();
+                } else {
+                    $playerIds = [$filters['player_id']];
+                }
+            }
+            
+            $brands = CardSet::whereIn('id', function($query) use ($playerIds) {
                 $query->select('card_set_id')
                     ->from('card_models')
-                    ->whereIn('player_id', is_array($filters['player_id']) ? $filters['player_id'] : [$filters['player_id']])
+                    ->whereIn('player_id', $playerIds)
                     ->where('is_active', true);
             })->where('is_active', true)
             ->distinct()
@@ -493,7 +580,19 @@ class PokemonFilterController extends Controller
 
         // Rarities disponibili
         if (isset($filters['player_id']) && !empty($filters['player_id'])) {
-            $rarities = CardModel::whereIn('player_id', is_array($filters['player_id']) ? $filters['player_id'] : [$filters['player_id']])
+            // Se è un singolo player_id, cerca tutte le rarità delle carte di tutti i giocatori con lo stesso nome
+            if (is_array($filters['player_id'])) {
+                $playerIds = $filters['player_id'];
+            } else {
+                $player = Player::find($filters['player_id']);
+                if ($player) {
+                    $playerIds = Player::where('name', $player->name)->pluck('id')->toArray();
+                } else {
+                    $playerIds = [$filters['player_id']];
+                }
+            }
+            
+            $rarities = CardModel::whereIn('player_id', $playerIds)
                 ->where('is_active', true)
                 ->distinct()
                 ->pluck('rarity')
@@ -523,7 +622,14 @@ class PokemonFilterController extends Controller
             if (is_array($filters['player_id'])) {
                 $query->whereIn('player_id', $filters['player_id']);
             } else {
-                $query->where('player_id', $filters['player_id']);
+                // Se è un singolo player_id, cerca tutti i giocatori con lo stesso nome
+                $player = Player::find($filters['player_id']);
+                if ($player) {
+                    $playerIds = Player::where('name', $player->name)->pluck('id')->toArray();
+                    $query->whereIn('player_id', $playerIds);
+                } else {
+                    $query->where('player_id', $filters['player_id']);
+                }
             }
         }
 
@@ -623,7 +729,14 @@ class PokemonFilterController extends Controller
                 if (is_array($filters['player_id'])) {
                     $query->whereIn('card_models.player_id', $filters['player_id']);
                 } else {
-                    $query->where('card_models.player_id', $filters['player_id']);
+                    // Se è un singolo player_id, cerca tutti i giocatori con lo stesso nome
+                    $player = Player::find($filters['player_id']);
+                    if ($player) {
+                        $playerIds = Player::where('name', $player->name)->pluck('id')->toArray();
+                        $query->whereIn('card_models.player_id', $playerIds);
+                    } else {
+                        $query->where('card_models.player_id', $filters['player_id']);
+                    }
                 }
             }
 

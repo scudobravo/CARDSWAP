@@ -56,6 +56,62 @@ return [
             'phone' => env('SHIPPO_SENDER_PHONE'),
             'email' => env('SHIPPO_SENDER_EMAIL'),
         ],
+        // Corrieri disponibili per spedizioni dall'Italia
+        'carriers' => [
+            'domestic' => [
+                'poste_italiane' => [
+                    'name' => 'Poste Italiane',
+                    'code' => 'poste_italiane',
+                    'domestic_only' => true,
+                    'countries' => ['IT']
+                ]
+            ],
+            'international' => [
+                'dhl_express' => [
+                    'name' => 'DHL Express',
+                    'code' => 'dhl_express',
+                    'domestic_only' => false,
+                    'countries' => ['*'], // Tutti i paesi
+                    'priority' => 1
+                ],
+                'ups' => [
+                    'name' => 'UPS',
+                    'code' => 'ups',
+                    'domestic_only' => false,
+                    'countries' => ['*'], // Tutti i paesi
+                    'priority' => 2
+                ],
+                'fedex' => [
+                    'name' => 'FedEx',
+                    'code' => 'fedex',
+                    'domestic_only' => false,
+                    'countries' => ['*'], // Tutti i paesi
+                    'priority' => 3
+                ],
+                'gls' => [
+                    'name' => 'GLS',
+                    'code' => 'gls',
+                    'domestic_only' => false,
+                    'countries' => ['IT', 'FR', 'DE', 'ES', 'NL', 'BE', 'AT', 'CH', 'SE', 'NO', 'DK', 'FI', 'PL', 'CZ', 'HU', 'PT', 'GR', 'RO', 'BG', 'HR', 'SI', 'SK', 'LT', 'LV', 'EE', 'IE', 'LU', 'MT', 'CY'], // Solo UE
+                    'priority' => 4
+                ]
+            ]
+        ],
+        // Configurazione per calcolo tariffe
+        'pricing' => [
+            'markup' => 1.60, // €1,60 markup fisso
+            'management_fee' => 0.90, // €0,90 spese gestione
+            'min_weight' => 0.1, // Peso minimo 100g
+            'max_weight' => 30.0, // Peso massimo 30kg
+            'default_parcel' => [
+                'length' => 22,
+                'width' => 15,
+                'height' => 3,
+                'distance_unit' => 'cm',
+                'weight' => 0.1,
+                'mass_unit' => 'kg'
+            ]
+        ]
     ],
 
 ];

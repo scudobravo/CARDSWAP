@@ -55,6 +55,7 @@ Route::post('/shipping-zones/calculate-price', [ShippingZoneController::class, '
 Route::post('/shipping-zones/calculate-multiple-prices', [ShippingZoneController::class, 'calculateMultiplePrices']);
 Route::post('/shipping-zones/calculate-country-prices', [ShippingZoneController::class, 'calculateCountryPrices']);
 Route::post('/shipping-zones/check-country-support', [ShippingZoneController::class, 'checkCountrySupport']);
+Route::get('/shipping-zones/available-carriers', [ShippingZoneController::class, 'getAvailableCarriers']);
 
 // Shipping Zones - Gestione zone (richiede autenticazione)
 Route::middleware('auth:sanctum')->group(function () {

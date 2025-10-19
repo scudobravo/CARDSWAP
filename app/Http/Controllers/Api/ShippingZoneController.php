@@ -327,6 +327,17 @@ class ShippingZoneController extends Controller
     private function calculateShippoPrice(ShippingZone $zone, string $destinationCountry, float $weight, float $orderValue): float
     {
         try {
+            // Verifica che ci siano corrieri disponibili per questa destinazione
+            $availableCarriers = $this->shippoService->getAvailableCarriers($destinationCountry);
+            
+            if (empty($availableCarriers)) {
+                Log::warning('Nessun corriere disponibile per destinazione', [
+                    'destination_country' => $destinationCountry,
+                    'zone_id' => $zone->id
+                ]);
+                return $zone->calculateShippingCost($orderValue, $weight);
+            }
+
             // Indirizzo mittente (CardSwap)
             $fromAddress = config('services.shippo.sender');
             
@@ -340,14 +351,15 @@ class ShippingZoneController extends Controller
                 'name' => 'Recipient'
             ];
 
-            // Pacco standard per carte
+            // Usa configurazione pacco dalla config
+            $parcelConfig = config('services.shippo.pricing.default_parcel');
             $parcel = [
-                'length' => '22',
-                'width' => '15',
-                'height' => '3',
-                'distance_unit' => 'cm',
-                'weight' => max(0.1, $weight), // Minimo 100g
-                'mass_unit' => 'kg',
+                'length' => (string) $parcelConfig['length'],
+                'width' => (string) $parcelConfig['width'],
+                'height' => (string) $parcelConfig['height'],
+                'distance_unit' => $parcelConfig['distance_unit'],
+                'weight' => (string) max($parcelConfig['min_weight'], $weight),
+                'mass_unit' => $parcelConfig['mass_unit'],
             ];
 
             // Crea shipment
@@ -374,7 +386,10 @@ class ShippingZoneController extends Controller
                     });
 
                     $originalAmount = floatval($cheapestRate['amount']);
-                    $amountWithMarkup = $originalAmount + $zone->shippo_markup;
+                    $pricingConfig = config('services.shippo.pricing');
+                    $markup = $pricingConfig['markup'] ?? 1.60;
+                    $managementFee = $pricingConfig['management_fee'] ?? 0.90;
+                    $amountWithMarkup = $originalAmount + $markup + $managementFee + $zone->shippo_markup;
 
                     return max(0, $amountWithMarkup);
                 }
@@ -726,6 +741,40 @@ class ShippingZoneController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Errore nell\'eliminazione della zona di spedizione'
+            ], 500);
+        }
+    }
+
+    /**
+     * Ottieni corrieri disponibili per un paese
+     */
+    public function getAvailableCarriers(Request $request): JsonResponse
+    {
+        $request->validate([
+            'country' => 'required|string|size:2'
+        ]);
+
+        try {
+            $countryCode = $request->input('country');
+            $carriers = $this->shippoService->getAvailableCarriers($countryCode);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'country' => $countryCode,
+                    'carriers' => $carriers
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Errore recupero corrieri disponibili', [
+                'country' => $request->input('country'),
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Errore nel recupero dei corrieri disponibili'
             ], 500);
         }
     }

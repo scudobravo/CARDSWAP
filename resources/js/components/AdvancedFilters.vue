@@ -18,7 +18,6 @@
             <div v-for="player in filteredPlayers" :key="player.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @mousedown="selectPlayer(player)">
               <div class="flex flex-col">
                 <span class="font-normal block truncate">{{ player.display_name || player.name }}</span>
-                <span v-if="player.team" class="text-xs text-gray-500">{{ player.team.name }}</span>
               </div>
             </div>
           </div>
@@ -764,11 +763,7 @@ const selectPlayer = (player) => {
     // Aggiorna anche i filtri con i giocatori selezionati
     localFilters.value.selectedPlayers = selectedPlayers.value.map(p => p.id)
     
-    // Popola automaticamente il campo Team
-    if (player.team) {
-      localFilters.value.team = player.team.id
-      console.log('✅ Campo Team popolato con:', player.team.name)
-    }
+    // NON popolare automaticamente il campo Team - l'utente può scegliere la squadra dal filtro dedicato
     
     // Popola il campo Numbered con il primo card_number disponibile
     if (player.card_numbers && player.card_numbers.length > 0) {
