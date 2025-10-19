@@ -57,43 +57,65 @@ return [
             'email' => env('SHIPPO_SENDER_EMAIL'),
         ],
         // Corrieri disponibili per spedizioni dall'Italia
+        // Basato sui corrieri effettivamente disponibili nel tuo account SHIPPO
         'carriers' => [
             'domestic' => [
-                'poste_italiane' => [
-                    'name' => 'Poste Italiane',
-                    'code' => 'poste_italiane',
+                // Per spedizioni domestiche IT → IT, usa prezzi fissi
+                'poste_italiane_fixed' => [
+                    'name' => 'Poste Italiane (Prezzo Fisso)',
+                    'code' => 'poste_italiane_fixed',
                     'domestic_only' => true,
-                    'countries' => ['IT']
+                    'countries' => ['IT'],
+                    'fixed_price' => 3.50, // Prezzo fisso per domestiche
+                    'priority' => 1
                 ]
             ],
             'international' => [
-                'dhl_express' => [
-                    'name' => 'DHL Express',
-                    'code' => 'dhl_express',
+                // Corrieri disponibili nel tuo account SHIPPO
+                'chronopost' => [
+                    'name' => 'Chronopost',
+                    'code' => 'chronopost',
                     'domestic_only' => false,
                     'countries' => ['*'], // Tutti i paesi
-                    'priority' => 1
+                    'priority' => 1,
+                    'available' => true,
+                    'account_id' => '0d42a59dfa95443cb18b0acef4557a47'
                 ],
-                'ups' => [
-                    'name' => 'UPS',
-                    'code' => 'ups',
+                'colissimo' => [
+                    'name' => 'Colissimo',
+                    'code' => 'colissimo',
                     'domestic_only' => false,
                     'countries' => ['*'], // Tutti i paesi
-                    'priority' => 2
+                    'priority' => 2,
+                    'available' => true,
+                    'account_id' => '2c68c6e7487040de80f11f3b3fa84abb'
                 ],
-                'fedex' => [
-                    'name' => 'FedEx',
-                    'code' => 'fedex',
+                'deutsche_post' => [
+                    'name' => 'Deutsche Post',
+                    'code' => 'deutsche_post',
                     'domestic_only' => false,
                     'countries' => ['*'], // Tutti i paesi
-                    'priority' => 3
+                    'priority' => 3,
+                    'available' => true,
+                    'account_id' => '084d73f39a564ba791a7974fb930cfe5'
                 ],
-                'gls' => [
-                    'name' => 'GLS',
-                    'code' => 'gls',
+                'correos' => [
+                    'name' => 'Correos',
+                    'code' => 'correos',
                     'domestic_only' => false,
-                    'countries' => ['IT', 'FR', 'DE', 'ES', 'NL', 'BE', 'AT', 'CH', 'SE', 'NO', 'DK', 'FI', 'PL', 'CZ', 'HU', 'PT', 'GR', 'RO', 'BG', 'HR', 'SI', 'SK', 'LT', 'LV', 'EE', 'IE', 'LU', 'MT', 'CY'], // Solo UE
-                    'priority' => 4
+                    'countries' => ['*'], // Tutti i paesi
+                    'priority' => 4,
+                    'available' => true,
+                    'account_id' => 'ef37c4123d7c47558179ec50e83a9dc4'
+                ],
+                'couriersplease' => [
+                    'name' => 'CouriersPlease',
+                    'code' => 'couriersplease',
+                    'domestic_only' => false,
+                    'countries' => ['*'], // Tutti i paesi
+                    'priority' => 5,
+                    'available' => true,
+                    'account_id' => '74292fffa8e14fc29dd29ac0a7d5b875'
                 ]
             ]
         ],

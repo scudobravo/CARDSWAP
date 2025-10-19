@@ -338,10 +338,22 @@ class ShippingZoneController extends Controller
                 return $zone->calculateShippingCost($orderValue, $weight);
             }
 
-            // Indirizzo mittente (CardSwap)
+            // Per spedizioni domestiche (IT → IT), usa prezzi fissi
+            if ($destinationCountry === 'IT') {
+                foreach ($availableCarriers as $carrier) {
+                    if (isset($carrier['fixed_price'])) {
+                        return $this->shippoService->calculateFixedPrice(
+                            $carrier['code'], 
+                            $destinationCountry, 
+                            $weight, 
+                            $orderValue
+                        );
+                    }
+                }
+            }
+
+            // Per spedizioni internazionali, usa SHIPPO API
             $fromAddress = config('services.shippo.sender');
-            
-            // Indirizzo destinatario (generico per calcolo)
             $toAddress = [
                 'country' => $destinationCountry,
                 'city' => 'City',
@@ -351,7 +363,6 @@ class ShippingZoneController extends Controller
                 'name' => 'Recipient'
             ];
 
-            // Usa configurazione pacco dalla config
             $parcelConfig = config('services.shippo.pricing.default_parcel');
             $parcel = [
                 'length' => (string) $parcelConfig['length'],

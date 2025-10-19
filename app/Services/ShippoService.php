@@ -225,6 +225,44 @@ class ShippoService
     }
 
     /**
+     * Calcola prezzo per corriere con prezzo fisso
+     */
+    public function calculateFixedPrice(string $carrierCode, string $destinationCountry, float $weight, float $orderValue): float
+    {
+        $carriers = config('services.shippo.carriers');
+        $pricingConfig = config('services.shippo.pricing');
+        
+        // Cerca il corriere nella configurazione
+        foreach ($carriers['domestic'] as $carrier) {
+            if ($carrier['code'] === $carrierCode && isset($carrier['fixed_price'])) {
+                $basePrice = $carrier['fixed_price'];
+                $markup = $pricingConfig['markup'] ?? 1.60;
+                $managementFee = $pricingConfig['management_fee'] ?? 0.90;
+                
+                return $basePrice + $markup + $managementFee;
+            }
+        }
+        
+        // Fallback al calcolo tradizionale
+        return $this->calculateTraditionalPrice($weight, $orderValue);
+    }
+
+    /**
+     * Calcola prezzo tradizionale (fallback)
+     */
+    private function calculateTraditionalPrice(float $weight, float $orderValue): float
+    {
+        $pricingConfig = config('services.shippo.pricing');
+        $basePrice = 5.00; // Prezzo base
+        $weightPrice = $weight * 0.50; // €0.50 per kg
+        $valuePrice = $orderValue * 0.02; // 2% del valore
+        $markup = $pricingConfig['markup'] ?? 1.60;
+        $managementFee = $pricingConfig['management_fee'] ?? 0.90;
+        
+        return $basePrice + $weightPrice + $valuePrice + $markup + $managementFee;
+    }
+
+    /**
      * Verifica se un corriere è disponibile per una destinazione
      */
     public function isCarrierAvailable(string $carrierCode, string $destinationCountry): bool
