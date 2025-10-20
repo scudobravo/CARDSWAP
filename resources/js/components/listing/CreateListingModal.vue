@@ -332,11 +332,22 @@
             <div class="max-w-md mx-auto">
               <div class="border rounded-lg p-6 bg-white shadow-lg">
                 <div class="flex items-start space-x-4">
-                  <img 
-                    :src="getFirstUploadedImage() || selectedCardModel?.image_url || '/images/placeholder-card.jpg'" 
-                    :alt="selectedCardModel?.name"
-                    class="w-20 h-28 object-cover rounded"
-                  />
+                  <div class="relative w-20 h-28 rounded overflow-hidden">
+                    <img 
+                      v-if="previewImageSrc"
+                      :src="previewImageSrc" 
+                      :alt="selectedCardModel?.name"
+                      class="w-20 h-28 object-cover rounded"
+                    />
+                    <div v-else class="absolute inset-0 flex items-center justify-center bg-gray-300">
+                      <div class="text-center text-gray-500">
+                        <svg class="w-16 h-16 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <p class="text-sm font-gill-sans">Immagine non disponibile</p>
+                      </div>
+                    </div>
+                  </div>
                   <div class="flex-1">
                     <h5 class="font-semibold text-gray-900">{{ selectedCardModel?.name }}</h5>
                     <p class="text-sm text-gray-600">{{ selectedCardModel?.set_name }} {{ selectedCardModel?.year }}</p>
@@ -506,6 +517,13 @@ const totalSteps = computed(() => {
   } else {
     return 4 // Step 0 (selezione modalità), step 1 (selezione carte), step 2 (dettagli + immagini), step 3 (zone spedizione)
   }
+})
+
+// Anteprima immagine per lo step finale: usa immagine caricata, altrimenti immagine del modello, altrimenti null
+const previewImageSrc = computed(() => {
+  const uploaded = getFirstUploadedImage()
+  if (uploaded) return uploaded
+  return selectedCardModel.value?.image_url || null
 })
 
 const canProceed = computed(() => {
@@ -1060,7 +1078,10 @@ const loadShippingZones = async () => {
     if (response.ok) {
       const data = await response.json()
       console.log('✅ Zone di spedizione caricate:', data)
-      shippingZones.value = data
+      // L'endpoint ritorna { success: true, data: [...] }
+      // In alcuni ambienti potremmo ricevere direttamente un array
+      const zones = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : [])
+      shippingZones.value = zones
     } else {
       console.error('❌ Errore nel caricamento zone di spedizione:', response.status)
     }
