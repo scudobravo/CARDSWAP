@@ -1080,8 +1080,19 @@ const loadShippingZones = async () => {
       console.log('✅ Zone di spedizione caricate:', data)
       // L'endpoint ritorna { success: true, data: [...] }
       // In alcuni ambienti potremmo ricevere direttamente un array
-      const zones = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : [])
-      shippingZones.value = zones
+      const rawZones = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : [])
+      // Normalizza per garantire sempre id, name e giorni
+      const normalized = rawZones.map((z) => {
+        const source = z || {}
+        const attrs = source.attributes || {}
+        const id = source.id ?? attrs.id ?? source.zone_id
+        const name = source.name || attrs.name || source.title || source.label || (source.country_code ? `Spedizione ${source.country_code}` : 'Zona')
+        const deliveryMin = source.delivery_days_min ?? attrs.delivery_days_min ?? source.min_days ?? ''
+        const deliveryMax = source.delivery_days_max ?? attrs.delivery_days_max ?? source.max_days ?? ''
+        const description = source.description || attrs.description || ''
+        return { id, name, delivery_days_min: deliveryMin, delivery_days_max: deliveryMax, description }
+      })
+      shippingZones.value = normalized
     } else {
       console.error('❌ Errore nel caricamento zone di spedizione:', response.status)
     }
