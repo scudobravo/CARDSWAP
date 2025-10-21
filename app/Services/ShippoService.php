@@ -225,7 +225,7 @@ class ShippoService
     }
 
     /**
-     * Calcola prezzo per corriere con prezzo fisso
+     * Calcola prezzo per corriere con prezzo fisso (deprecato - ora usa Shippo)
      */
     public function calculateFixedPrice(string $carrierCode, string $destinationCountry, float $weight, float $orderValue): float
     {
@@ -245,6 +245,52 @@ class ShippoService
         
         // Fallback al calcolo tradizionale
         return $this->calculateTraditionalPrice($weight, $orderValue);
+    }
+
+    /**
+     * Calcola tariffe usando Shippo per Poste Italiane e altri corrieri
+     */
+    public function calculateShippoRates(array $fromAddress, array $toAddress, array $parcel, array $carrierAccounts = []): array
+    {
+        try {
+            // Crea indirizzo mittente
+            $from = $this->createAddress($fromAddress, true);
+            
+            // Crea indirizzo destinatario
+            $to = $this->createAddress($toAddress, true);
+            
+            // Crea pacco
+            $parcelObj = $this->createParcel($parcel);
+            
+            // Prepara payload per shipment
+            $shipmentPayload = [
+                'address_from' => ['object_id' => $from['object_id']],
+                'address_to' => ['object_id' => $to['object_id']],
+                'parcels' => [['object_id' => $parcelObj['object_id']]],
+            ];
+            
+            // Aggiungi carrier accounts specifici se forniti
+            if (!empty($carrierAccounts)) {
+                $shipmentPayload['carrier_accounts'] = $carrierAccounts;
+            }
+            
+            // Crea shipment e calcola tariffe
+            $shipment = $this->createShipment($shipmentPayload, false);
+            
+            // Processa le tariffe con markup
+            return $this->processRates($shipment['rates'] ?? []);
+            
+        } catch (\Exception $e) {
+            Log::error('Errore calcolo tariffe Shippo', [
+                'from' => $fromAddress,
+                'to' => $toAddress,
+                'parcel' => $parcel,
+                'error' => $e->getMessage()
+            ]);
+            
+            // Rilancia l'eccezione invece di restituire errore generico
+            throw new \Exception('Servizio di calcolo tariffe temporaneamente non disponibile. Riprova più tardi.');
+        }
     }
 
     /**

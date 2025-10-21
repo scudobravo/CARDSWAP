@@ -60,14 +60,15 @@ return [
         // Basato sui corrieri effettivamente disponibili nel tuo account SHIPPO
         'carriers' => [
             'domestic' => [
-                // Per spedizioni domestiche IT → IT, usa prezzi fissi
-                'poste_italiane_fixed' => [
-                    'name' => 'Poste Italiane (Prezzo Fisso)',
-                    'code' => 'poste_italiane_fixed',
+                // Poste Italiane per spedizioni domestiche IT → IT
+                'poste_italiane' => [
+                    'name' => 'Poste Italiane',
+                    'code' => 'poste_italiane',
                     'domestic_only' => true,
                     'countries' => ['IT'],
-                    'fixed_price' => 3.50, // Prezzo fisso per domestiche
-                    'priority' => 1
+                    'priority' => 1,
+                    'available' => true,
+                    'account_id' => 'poste_italiane' // ID del corriere in Shippo
                 ]
             ],
             'international' => [

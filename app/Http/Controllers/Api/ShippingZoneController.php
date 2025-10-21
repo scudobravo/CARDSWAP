@@ -120,7 +120,7 @@ class ShippingZoneController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Errore nel calcolo del prezzo di spedizione'
+                'message' => $e->getMessage() ?: 'Servizio di calcolo tariffe temporaneamente non disponibile. Riprova più tardi.'
             ], 500);
         }
     }
@@ -176,7 +176,7 @@ class ShippingZoneController extends Controller
                         'zone_id' => $zone->id,
                         'price' => null,
                         'success' => false,
-                        'error' => 'Impossibile calcolare il prezzo'
+                        'error' => $e->getMessage() ?: 'Servizio di calcolo tariffe temporaneamente non disponibile. Riprova più tardi.'
                     ];
                 }
             }
@@ -194,7 +194,7 @@ class ShippingZoneController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Errore nel calcolo dei prezzi di spedizione'
+                'message' => $e->getMessage() ?: 'Servizio di calcolo tariffe temporaneamente non disponibile. Riprova più tardi.'
             ], 500);
         }
     }
@@ -236,8 +236,8 @@ class ShippingZoneController extends Controller
                             $price = $zone->calculateShippingCost($orderValue, $weight);
                         }
                     } else {
-                        // Usa prezzo di default se non trova zona specifica
-                        $price = $this->getDefaultPriceForCountry($countryCode);
+                        // Nessuna zona disponibile per questo paese
+                        throw new \Exception("Nessuna zona di spedizione disponibile per {$countryCode}. Riprova più tardi.");
                     }
 
                     $results[$countryCode] = [
@@ -258,7 +258,7 @@ class ShippingZoneController extends Controller
                         'country_name' => $this->getCountryName($countryCode),
                         'price' => null,
                         'success' => false,
-                        'error' => 'Impossibile calcolare il prezzo'
+                        'error' => $e->getMessage() ?: 'Servizio di calcolo tariffe temporaneamente non disponibile. Riprova più tardi.'
                     ];
                 }
             }
@@ -276,7 +276,7 @@ class ShippingZoneController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Errore nel calcolo dei prezzi per paesi'
+                'message' => $e->getMessage() ?: 'Servizio di calcolo tariffe temporaneamente non disponibile. Riprova più tardi.'
             ], 500);
         }
     }
@@ -335,24 +335,10 @@ class ShippingZoneController extends Controller
                     'destination_country' => $destinationCountry,
                     'zone_id' => $zone->id
                 ]);
-                return $zone->calculateShippingCost($orderValue, $weight);
+                throw new \Exception('Nessun corriere disponibile per questa destinazione. Riprova più tardi.');
             }
 
-            // Per spedizioni domestiche (IT → IT), usa prezzi fissi
-            if ($destinationCountry === 'IT') {
-                foreach ($availableCarriers as $carrier) {
-                    if (isset($carrier['fixed_price'])) {
-                        return $this->shippoService->calculateFixedPrice(
-                            $carrier['code'], 
-                            $destinationCountry, 
-                            $weight, 
-                            $orderValue
-                        );
-                    }
-                }
-            }
-
-            // Per spedizioni internazionali, usa SHIPPO API
+            // Prepara indirizzi per SHIPPO (incluso Poste Italiane)
             $fromAddress = config('services.shippo.sender');
             $toAddress = [
                 'country' => $destinationCountry,
@@ -373,20 +359,14 @@ class ShippingZoneController extends Controller
                 'mass_unit' => $parcelConfig['mass_unit'],
             ];
 
-            // Crea shipment
-            $shipment = $this->shippoService->createShipment([
-                'address_from' => $fromAddress,
-                'address_to' => $toAddress,
-                'parcels' => [$parcel],
-            ], false);
+            // Usa il nuovo metodo che include Poste Italiane
+            $rates = $this->shippoService->calculateShippoRates($fromAddress, $toAddress, $parcel);
 
-            if (isset($shipment['rates']) && !empty($shipment['rates'])) {
+            if (!empty($rates)) {
                 // Filtra per tipo di servizio se specificato
-                $rates = $shipment['rates'];
                 if ($zone->shippo_service_type) {
                     $rates = array_filter($rates, function($rate) use ($zone) {
-                        $serviceType = $this->categorizeShippoService($rate['servicelevel']['name']);
-                        return $serviceType === $zone->shippo_service_type;
+                        return isset($rate['service_type']) && $rate['service_type'] === $zone->shippo_service_type;
                     });
                 }
 
@@ -396,18 +376,15 @@ class ShippingZoneController extends Controller
                         return $a['amount'] <=> $b['amount'];
                     });
 
-                    $originalAmount = floatval($cheapestRate['amount']);
-                    $pricingConfig = config('services.shippo.pricing');
-                    $markup = $pricingConfig['markup'] ?? 1.60;
-                    $managementFee = $pricingConfig['management_fee'] ?? 0.90;
-                    $amountWithMarkup = $originalAmount + $markup + $managementFee + $zone->shippo_markup;
+                    // La tariffa è già processata con markup dal ShippoService
+                    $amountWithMarkup = floatval($cheapestRate['amount']) + $zone->shippo_markup;
 
                     return max(0, $amountWithMarkup);
                 }
             }
 
-            // Fallback al calcolo tradizionale se SHIPPO non restituisce tariffe
-            return $zone->calculateShippingCost($orderValue, $weight);
+            // Se SHIPPO non restituisce tariffe, lancia eccezione
+            throw new \Exception('Nessuna tariffa disponibile per questa destinazione. Riprova più tardi.');
 
         } catch (\Exception $e) {
             Log::error('Errore calcolo SHIPPO', [
@@ -416,8 +393,8 @@ class ShippingZoneController extends Controller
                 'error' => $e->getMessage()
             ]);
 
-            // Fallback al calcolo tradizionale
-            return $zone->calculateShippingCost($orderValue, $weight);
+            // Rilancia l'eccezione per mostrare errore al cliente
+            throw $e;
         }
     }
 

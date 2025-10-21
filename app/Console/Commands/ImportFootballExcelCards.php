@@ -658,7 +658,7 @@ class ImportFootballExcelCards extends Command
                     'name' => $cardName,
                     'set_name' => $cardSet->name,
                     'year' => $year, // Ora è stringa per supportare "1967/68"
-                    'rarity' => $this->normalizeRarity($rarity),
+                    'rarity' => $this->preserveRarity($rarity),
                     'rarity_variation' => $rarityVariation,
                     'card_number' => $numberedValue, // Usa il valore da NUMBERED /
                     'card_number_in_set' => $cardNumber,
@@ -678,25 +678,263 @@ class ImportFootballExcelCards extends Command
     }
 
     /**
-     * Normalizza la rarità
+     * Preserva la rarità originale dal CSV
+     */
+    private function preserveRarity($rarity)
+    {
+        // Pulisci la rarità ma mantieni il valore originale
+        $cleanRarity = trim($rarity);
+        
+        // Se è vuota o contiene solo "-", usa un default
+        if (empty($cleanRarity) || $cleanRarity === '-') {
+            return 'Base card';
+        }
+        
+        // Mantieni la rarità originale dal CSV esattamente come è
+        return $cleanRarity;
+    }
+
+    /**
+     * Normalizza la rarità (DEPRECATED - ora usiamo preserveRarity)
      */
     private function normalizeRarity($rarity)
     {
         $rarityMap = [
+            // Base cards - Common
+            'Base card' => 'common',
+            'Base' => 'common',
+            'Base Set' => 'common',
+            'Base set' => 'common',
+            'Base Set - Terrace' => 'common',
+            'Base Set - Field Level' => 'common',
+            'Base Set - Mezzanine' => 'common',
+            'Base Terrace' => 'common',
+            'Base Mezzanine' => 'common',
+            'Base Field Level' => 'common',
+            'Base Prizm' => 'common',
+            'Terrace' => 'common',
+            'Mezzanine' => 'common',
+            'Field Level' => 'common',
             'Base Common' => 'common',
+            'Base Portrait' => 'common',
+            'Base Optic' => 'common',
+            'Optic Base' => 'common',
+            'Base Donruss Premier League' => 'common',
             'Base Uncommon' => 'uncommon',
-            'Base Rare' => 'rare',
+            
+            // Autographs - Rare
+            'Autograph' => 'rare',
+            'Autographs' => 'rare',
+            'Base Autograph' => 'rare',
+            'Base Autographs' => 'rare',
+            'Chrome Autograph' => 'rare',
+            'Autograph Mosaic' => 'rare',
+            'Signatures' => 'rare',
+            'Select Signatures' => 'rare',
+            'Pitchside Signatures' => 'rare',
+            'Score Signatures' => 'rare',
+            'Dual Autographs' => 'rare',
+            'Dual Signatures' => 'rare',
+            'Triple Autographs' => 'rare',
+            'Trio Signatures' => 'rare',
+            'Quad Signatures' => 'rare',
+            'Signature Moments' => 'rare',
+            'Marquee Signatures' => 'rare',
+            'Modern Marks' => 'rare',
+            'Heralded Signatures' => 'rare',
+            'Shadowbox Signatures' => 'rare',
+            'Signature Moments Prizms' => 'rare',
+            'Dual Signatures Prizms' => 'rare',
+            'Quad Signatures Prizms' => 'rare',
+            'Trio Signatures Prizms' => 'rare',
+            'Signatures Prizms' => 'rare',
+            'Immaculate Autographs' => 'rare',
+            'All-Time Greats Autographs' => 'rare',
+            'Historic Signatures' => 'rare',
+            'International Ink' => 'rare',
+            'Ink' => 'rare',
+            'Celebration Signatures' => 'rare',
+            'Signature Series' => 'rare',
+            'The Beautiful Game Autograph' => 'rare',
+            'Beautiful Game Dual Autographs' => 'rare',
+            'Illustrious Ink' => 'rare',
+            
+            // Relics - Rare
+            'Relics' => 'rare',
+            'Select Swatches' => 'rare',
+            'Jumbo Swatches' => 'rare',
+            'Select Memorabilia' => 'rare',
+            'Camp Nou Seat Relic' => 'rare',
+            'Camp Nou Jersey Relic' => 'rare',
+            'The Greatest Maradona Boot Relics' => 'rare',
+            'Argentine Tango Relics' => 'rare',
+            'Display Decadence Relics' => 'rare',
+            'Dreamworthy Double Act Dual Patch' => 'rare',
+            'The Kings Colors Relics' => 'rare',
+            
+            // Special/Insert cards - Rare
             'Insert' => 'rare',
             'Parallel' => 'rare',
-            'Autograph' => 'rare',
-            'Relic' => 'rare',
-            'Patch' => 'rare',
             'Serial Numbered' => 'rare',
+            'Patch' => 'rare',
+            'Stained Glass' => 'rare',
+            'Visionary' => 'rare',
+            'Artistic Impressions' => 'rare',
+            'Artistry' => 'rare',
+            'Ageless Alchemy' => 'rare',
+            'Legends' => 'rare',
+            'D10S' => 'rare',
+            'The Man' => 'rare',
+            'White Noise' => 'rare',
+            'White Night' => 'rare',
+            'Rainbow Flick' => 'rare',
+            'Metamorphosis' => 'rare',
+            'Color Wheel' => 'rare',
+            'Camino' => 'rare',
+            'Black Color Blast' => 'rare',
+            'Manga' => 'rare',
+            'National Pride' => 'rare',
+            'National Landmarks' => 'rare',
+            'Moments' => 'rare',
+            'Immaculate Moments' => 'rare',
+            'Marks of Greatness' => 'rare',
+            'Historical Significance' => 'rare',
+            'Intergalactic' => 'rare',
+            'Spanning Time' => 'rare',
+            'Milestones' => 'rare',
+            'Forever Moments' => 'rare',
+            'Dreamworthy Duo' => 'rare',
+            'Bookends' => 'rare',
+            'Bona Fide Baller' => 'rare',
+            'Argentine Tango' => 'rare',
+            'Argentina Legends' => 'rare',
+            'Phenomenon' => 'rare',
+            'Scorers Club' => 'rare',
+            'Breakthrough' => 'rare',
+            'Unstoppable' => 'rare',
+            'Select Future' => 'rare',
+            'Equalizers' => 'rare',
+            'Will to Win' => 'rare',
+            'Base Parallels' => 'rare',
+            
+            // New rarities from Elenco2.csv
+            'Greats' => 'rare',
+            'Snapshots' => 'rare',
+            'Heroes' => 'rare',
+            'Full Bleed' => 'rare',
+            'Heritage' => 'rare',
+            'Timeless' => 'rare',
+            'Majestic' => 'rare',
+            'Legends Series' => 'rare',
+            'Legendary Talents' => 'rare',
+            'Fileteado' => 'rare',
+            'Elite' => 'rare',
+            'Rated Rookies' => 'rare',
+            'Landscape' => 'rare',
+            'Star Quality' => 'rare',
+            'Current Stars' => 'rare',
+            'Prestige' => 'rare',
+            'Maestro' => 'rare',
+            'Superstars' => 'rare',
+            'Illusions Serie A' => 'rare',
+            'Illusions Premier League' => 'rare',
+            'Certified Serie A' => 'rare',
+            'Contenders Historic Rookie Ticket La Liga' => 'rare',
+            'Then & Now' => 'rare',
+            'Golden Hour' => 'rare',
+            
+            // Super Rare - Mythic
             'Super Rare' => 'mythic',
             'Ultra Rare' => 'mythic',
+            'Base 125 Legacy' => 'mythic',
+            'Supernova' => 'mythic',
+            'Ultimate Stage Chrome' => 'mythic',
+            'Sapphire Selections' => 'mythic',
+            'Super Six Booklet' => 'mythic',
+            'Super Six Autographs Booklet' => 'mythic',
+            'UEFA Players of the Year Autographed Book Superfractors' => 'mythic',
+            'Superior Swatch Signatures Gold' => 'mythic',
+            'Chrome Quad Autographs Pundits' => 'mythic',
+            'Ultimate Showdown' => 'mythic',
+            'Rule the World' => 'mythic',
+            'Global Domination Triple Autographs' => 'mythic',
+            'Masterminds Autographs' => 'mythic',
+            'Chrome Quad Autographs' => 'mythic',
+            'The Moments' => 'mythic',
+            'Pristine Borders Autograph Relic' => 'mythic',
+            'Albärt' => 'mythic',
         ];
 
-        return $rarityMap[$rarity] ?? 'common';
+        // If not in direct mapping, use pattern matching
+        if (!isset($rarityMap[$rarity])) {
+            $lowerRarity = strtolower($rarity);
+            
+            // Mythic patterns (check first)
+            if (strpos($lowerRarity, 'supernova') !== false ||
+                strpos($lowerRarity, 'ultimate') !== false ||
+                strpos($lowerRarity, 'sapphire') !== false ||
+                strpos($lowerRarity, 'superfractor') !== false ||
+                strpos($lowerRarity, 'quad autograph') !== false ||
+                strpos($lowerRarity, 'booklet') !== false ||
+                strpos($lowerRarity, 'super six') !== false ||
+                strpos($lowerRarity, 'global domination') !== false ||
+                strpos($lowerRarity, 'masterminds') !== false ||
+                strpos($lowerRarity, 'rule the world') !== false ||
+                strpos($lowerRarity, 'ultimate showdown') !== false) {
+                return 'mythic';
+            }
+            
+            // Autograph patterns
+            if (strpos($lowerRarity, 'autograph') !== false || 
+                strpos($lowerRarity, 'signature') !== false ||
+                strpos($lowerRarity, 'ink') !== false) {
+                return 'rare';
+            }
+            
+            // Relic patterns
+            if (strpos($lowerRarity, 'relic') !== false || 
+                strpos($lowerRarity, 'swatch') !== false ||
+                strpos($lowerRarity, 'memorabilia') !== false ||
+                strpos($lowerRarity, 'patch') !== false) {
+                return 'rare';
+            }
+            
+            // Base patterns (but check for exceptions)
+            if (strpos($lowerRarity, 'base') !== false) {
+                // Special cases where "Base" is actually rare
+                if (strpos($lowerRarity, 'base rare') !== false || 
+                    strpos($lowerRarity, 'base autograph') !== false) {
+                    return 'rare';
+                }
+                return 'common';
+            }
+            
+            // Insert/Parallel patterns
+            if (strpos($lowerRarity, 'insert') !== false || 
+                strpos($lowerRarity, 'parallel') !== false ||
+                strpos($lowerRarity, 'numbered') !== false) {
+                return 'rare';
+            }
+            
+            // Special/Insert patterns
+            if (strpos($lowerRarity, 'prizm') !== false ||
+                strpos($lowerRarity, 'chrome') !== false ||
+                strpos($lowerRarity, 'mosaic') !== false ||
+                strpos($lowerRarity, 'select') !== false ||
+                strpos($lowerRarity, 'optic') !== false ||
+                strpos($lowerRarity, 'donruss') !== false ||
+                strpos($lowerRarity, 'prestige') !== false ||
+                strpos($lowerRarity, 'elite') !== false ||
+                strpos($lowerRarity, 'certified') !== false ||
+                strpos($lowerRarity, 'illusions') !== false) {
+                return 'rare';
+            }
+            
+            // Default to common for unknown patterns
+            return 'common';
+        }
+
+        return $rarityMap[$rarity];
     }
 
     /**
