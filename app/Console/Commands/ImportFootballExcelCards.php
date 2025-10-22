@@ -439,21 +439,22 @@ class ImportFootballExcelCards extends Command
      */
     private function getOrCreateTeam($teamName, $league, $dryRun = false)
     {
-        if (isset($this->cache['teams'][$teamName])) {
-            return $this->cache['teams'][$teamName];
+        $sanitizedTeamName = $this->sanitizeText($teamName);
+        if (isset($this->cache['teams'][$sanitizedTeamName])) {
+            return $this->cache['teams'][$sanitizedTeamName];
         }
 
-        $team = Team::where('name', $teamName)->first();
+        $team = Team::where('name', $sanitizedTeamName)->first();
         
         if (!$team) {
             if (!$dryRun) {
                 // Crea uno slug unico che include la lega per evitare conflitti
-                $uniqueSlug = Str::slug($teamName . ' ' . $league->name);
+                $uniqueSlug = Str::slug($sanitizedTeamName . ' ' . $league->name);
                 
                 $team = Team::firstOrCreate(
                     ['slug' => $uniqueSlug],
                     [
-                        'name' => $teamName,
+                        'name' => $sanitizedTeamName,
                         'league_id' => $league->id,
                         'is_active' => true,
                     ]
@@ -461,14 +462,14 @@ class ImportFootballExcelCards extends Command
             } else {
                 $team = (object) [
                     'id' => 1,
-                    'name' => $teamName,
-                    'slug' => Str::slug($teamName),
+                    'name' => $sanitizedTeamName,
+                    'slug' => Str::slug($sanitizedTeamName),
                     'league_id' => $league->id,
                 ];
             }
         }
 
-        $this->cache['teams'][$teamName] = $team;
+        $this->cache['teams'][$sanitizedTeamName] = $team;
         return $team;
     }
 
@@ -477,24 +478,25 @@ class ImportFootballExcelCards extends Command
      */
     private function getOrCreatePlayer($playerName, $team, $dryRun = false)
     {
-        $cacheKey = $playerName . '_' . $team->id;
+        $sanitizedName = $this->sanitizeText($playerName);
+        $cacheKey = $sanitizedName . '_' . $team->id;
         
         if (isset($this->cache['players'][$cacheKey])) {
             return $this->cache['players'][$cacheKey];
         }
 
-        $player = Player::where('name', $playerName)
+        $player = Player::where('name', $sanitizedName)
                        ->where('team_id', $team->id)
                        ->first();
         
         if (!$player) {
             if (!$dryRun) {
                 // Crea uno slug unico combinando nome e team
-                $uniqueSlug = Str::slug($playerName . ' ' . $team->name);
+                $uniqueSlug = Str::slug($sanitizedName . ' ' . $team->name);
                 $player = Player::firstOrCreate(
                     ['slug' => $uniqueSlug],
                     [
-                        'name' => $playerName,
+                        'name' => $sanitizedName,
                         'team_id' => $team->id,
                         'is_active' => true,
                     ]
@@ -502,8 +504,8 @@ class ImportFootballExcelCards extends Command
             } else {
                 $player = (object) [
                     'id' => 1,
-                    'name' => $playerName,
-                    'slug' => Str::slug($playerName . ' ' . $team->name),
+                    'name' => $sanitizedName,
+                    'slug' => Str::slug($sanitizedName . ' ' . $team->name),
                     'team_id' => $team->id,
                 ];
             }
@@ -518,14 +520,16 @@ class ImportFootballExcelCards extends Command
      */
     private function getOrCreateCardSet($brand, $setName, $year, $category, $dryRun = false)
     {
-        $cacheKey = $brand . '_' . $setName . '_' . $year;
+        $sanitizedName = $this->sanitizeText($setName);
+        $cacheKey = $brand . '_' . $sanitizedName . '_' . $year;
         
         if (isset($this->cache['card_sets'][$cacheKey])) {
             return $this->cache['card_sets'][$cacheKey];
         }
 
+        $sanitizedName = $this->sanitizeText($setName);
         $cardSet = CardSet::where('brand', $brand)
-                         ->where('name', $setName)
+                         ->where('name', $sanitizedName)
                          ->where('year', $year)
                          ->first();
         
@@ -533,21 +537,21 @@ class ImportFootballExcelCards extends Command
             if (!$dryRun) {
                 $cardSet = CardSet::firstOrCreate(
                     [
-                        'name' => $setName,
+                        'name' => $sanitizedName,
                         'brand' => $brand,
                         'year' => $year,
                     ],
                     [
                         'category_id' => $category->id,
-                        'slug' => Str::slug($brand . ' ' . $setName . ' ' . $year),
+                        'slug' => Str::slug($brand . ' ' . $sanitizedName . ' ' . $year),
                         'is_active' => true,
                     ]
                 );
             } else {
                 $cardSet = (object) [
                     'id' => 1,
-                    'name' => $setName,
-                    'slug' => Str::slug($brand . ' ' . $setName . ' ' . $year),
+                    'name' => $sanitizedName,
+                    'slug' => Str::slug($brand . ' ' . $sanitizedName . ' ' . $year),
                     'brand' => $brand,
                     'year' => $year,
                     'category_id' => $category->id,
@@ -564,14 +568,14 @@ class ImportFootballExcelCards extends Command
      */
     private function createCardModel($row, $category, $cardSet, $player, $team, $league, $dryRun = false, $rowNumber = null)
     {
-        $cardNumber = trim($row['Numero'] ?? '');
-        $playerName = trim($row['Player'] ?? '');
-        $numberedValue = trim($row['NUMBERED /'] ?? ''); // Usa NUMBERED / per il valore
+        $cardNumber = $this->sanitizeText($row['Numero'] ?? '');
+        $playerName = $this->sanitizeText($row['Player'] ?? '');
+        $numberedValue = $this->sanitizeText($row['NUMBERED /'] ?? ''); // Usa NUMBERED / per il valore
         $isNumbered = !empty($numberedValue);
-        $isRookie = !empty(trim($row['ROOKIE'] ?? ''));
-        $rarity = trim($row['Rarity'] ?? 'Base Common');
-        $rarityVariation = trim($row['Rarity Variation'] ?? '');
-        $year = trim($row['YEAR'] ?? '');
+        $isRookie = !empty($this->sanitizeText($row['ROOKIE'] ?? ''));
+        $rarity = $this->preserveRarity($this->sanitizeText($row['Rarity'] ?? 'Base Common'));
+        $rarityVariation = $this->sanitizeText($row['Rarity Variation'] ?? '');
+        $year = $this->sanitizeText($row['YEAR'] ?? '');
         
         // Campi boolean per le nuove caratteristiche
         $isAutograph = !empty(trim($row['AUTOGRAPH'] ?? ''));
@@ -655,13 +659,13 @@ class ImportFootballExcelCards extends Command
                     'player_id' => $player->id,
                     'team_id' => $team->id,
                     'league_id' => $league->id,
-                    'name' => $cardName,
-                    'set_name' => $cardSet->name,
-                    'year' => $year, // Ora è stringa per supportare "1967/68"
+                    'name' => $this->sanitizeText($cardName),
+                    'set_name' => $this->sanitizeText($cardSet->name),
+                    'year' => $this->sanitizeText($year), // Ora è stringa per supportare "1967/68"
                     'rarity' => $this->preserveRarity($rarity),
-                    'rarity_variation' => $rarityVariation,
-                    'card_number' => $numberedValue, // Usa il valore da NUMBERED /
-                    'card_number_in_set' => $cardNumber,
+                    'rarity_variation' => $this->sanitizeText($rarityVariation),
+                    'card_number' => $this->sanitizeText($numberedValue), // Usa il valore da NUMBERED /
+                    'card_number_in_set' => $this->sanitizeText($cardNumber),
                     'is_rookie' => $isRookie,
                     'is_autograph' => $isAutograph,
                     'is_relic' => $isRelic,
@@ -692,6 +696,28 @@ class ImportFootballExcelCards extends Command
         
         // Mantieni la rarità originale dal CSV esattamente come è
         return $cleanRarity;
+    }
+
+    /**
+     * Sanitizza il testo per il database
+     */
+    private function sanitizeText($text)
+    {
+        if (empty($text)) {
+            return $text;
+        }
+        
+        // Converti encoding problematici
+        $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+        
+        // Sostituisci caratteri problematici
+        $text = str_replace('°', '°', $text); // Gradi
+        $text = str_replace('', '', $text); // Caratteri non validi
+        
+        // Pulisci e trim
+        $text = trim($text);
+        
+        return $text;
     }
 
     /**
