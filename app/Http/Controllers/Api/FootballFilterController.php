@@ -195,6 +195,7 @@ class FootballFilterController extends Controller
                 })->select('id', 'player_id', 'card_number', 'card_number_in_set', 'name', 'year', 'rarity', 'card_set_id', 'team_id')
                 ->with(['cardSet:id,name,brand', 'team:id,name']);
             }])
+            ->limit(100) // Limite ragionevole per evitare errori di memoria
             ->get(['id', 'name', 'slug', 'position', 'nationality', 'team_id']);
 
         // Raggruppa i giocatori per nome per evitare duplicati

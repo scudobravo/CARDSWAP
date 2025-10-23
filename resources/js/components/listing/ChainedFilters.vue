@@ -717,6 +717,13 @@ watch(() => localFilters.value.brand, (newBrand, oldBrand) => {
     // RESET AUTOMATICO dei filtri dipendenti per logica "a imbuto"
     localFilters.value.rarity = ''
     localFilters.value.year = ''
+    
+    // Salva il brand selezionato per evitare che venga sovrascritto
+    const selectedBrand = newBrand
+    console.log('✅ Brand selezionato dall\'utente:', selectedBrand)
+    
+    // Carica i dati chained ma mantieni il brand selezionato
+    loadChainedDataWithBrand(selectedBrand)
   }
 })
 
@@ -822,11 +829,50 @@ const loadChainedData = async () => {
     // Extract brands from sets if available
     if (data.sets && data.sets.length > 0) {
       const brands = [...new Set(data.sets.map(set => set.brand))].filter(Boolean)
-      availableBrands.value = brands
-      console.log('✅ Brands aggiornati da filtri a catena:', brands)
+      // NON sovrascrivere i brand se l'utente ha già selezionato un brand
+      if (!localFilters.value.brand) {
+        availableBrands.value = brands
+        console.log('✅ Brands aggiornati da filtri a catena:', brands)
+      } else {
+        console.log('✅ Brand già selezionato, mantengo la selezione:', localFilters.value.brand)
+      }
     } else {
       console.log('⚠️ Nessun set nei filtri a catena, mantengo brands iniziali')
     }
+  } catch (error) {
+    console.error('Errore nel caricamento dati filtri a catena:', error)
+  }
+}
+
+const loadChainedDataWithBrand = async (selectedBrand) => {
+  try {
+    const params = new URLSearchParams()
+    if (localFilters.value.player) params.append('player_id', localFilters.value.player)
+    if (localFilters.value.team) params.append('team_id', localFilters.value.team)
+    if (localFilters.value.set) params.append('set_id', localFilters.value.set)
+    if (selectedBrand) params.append('brand', selectedBrand)
+    if (localFilters.value.rarity) params.append('rarity', localFilters.value.rarity)
+    if (localFilters.value.year) params.append('year', localFilters.value.year)
+
+    const response = await fetch(`/api/${props.category}/filters/chained?${params.toString()}`)
+    const data = await response.json()
+    
+    console.log('Dati filtri a catena con brand:', data)
+    
+    // Update available options based on current selections
+    if (data.rarities && data.rarities.length > 0) {
+      availableRarities.value = data.rarities
+      console.log('✅ Rarities aggiornate da filtri a catena:', data.rarities)
+    }
+    
+    if (data.years && data.years.length > 0) {
+      availableYears.value = data.years
+      console.log('✅ Years aggiornati da filtri a catena:', data.years)
+    }
+    
+    // NON toccare i brand - mantieni quello selezionato dall'utente
+    console.log('✅ Brand mantenuto dall\'utente:', selectedBrand)
+    
   } catch (error) {
     console.error('Errore nel caricamento dati filtri a catena:', error)
   }
@@ -945,7 +991,20 @@ onUnmounted(() => {
 // Watch for external filter changes
 watch(() => props.initialFilters, async (newFilters) => {
   console.log('🔄 initialFilters cambiati:', newFilters)
+  
+  // Salva il brand selezionato dall'utente prima di aggiornare i filtri
+  const userSelectedBrand = localFilters.value.brand
+  console.log('🔄 Brand selezionato dall\'utente da preservare:', userSelectedBrand)
+  
+  // Aggiorna i filtri ma preserva il brand selezionato dall'utente
   localFilters.value = { ...localFilters.value, ...newFilters }
+  
+  // Se l'utente aveva selezionato un brand, ripristinalo
+  if (userSelectedBrand && userSelectedBrand !== '') {
+    localFilters.value.brand = userSelectedBrand
+    console.log('✅ Brand dell\'utente ripristinato:', userSelectedBrand)
+  }
+  
   await restoreSelectedEntities()
   loadChainedData()
 }, { deep: true })
