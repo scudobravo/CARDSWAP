@@ -195,7 +195,6 @@ class FootballFilterController extends Controller
                 })->select('id', 'player_id', 'card_number', 'card_number_in_set', 'name', 'year', 'rarity', 'card_set_id', 'team_id')
                 ->with(['cardSet:id,name,brand', 'team:id,name']);
             }])
-            ->limit(50)
             ->get(['id', 'name', 'slug', 'position', 'nationality', 'team_id']);
 
         // Raggruppa i giocatori per nome per evitare duplicati
@@ -219,6 +218,32 @@ class FootballFilterController extends Controller
                 if ($player->team) {
                     $allTeams->push($player->team);
                 }
+            }
+            
+            // Per giocatori famosi come Messi, cerca tutte le squadre dalle carte
+            // indipendentemente dal filtro team corrente
+            // Prima cerca TUTTI i giocatori con lo stesso nome nel database
+            $allPlayerIdsWithSameName = Player::where('name', $playerName)
+                ->pluck('id')
+                ->toArray();
+            
+            // Query completamente separata che ignora il filtro team corrente
+            // per trovare tutte le squadre di questo giocatore
+            $allTeamsFromCards = \App\Models\CardModel::whereIn('player_id', $allPlayerIdsWithSameName)
+                ->whereHas('category', function($catQuery) {
+                    $catQuery->where('slug', 'calcio');
+                })
+                ->with('team:id,name,slug')
+                ->get()
+                ->pluck('team')
+                ->filter()
+                ->unique('id');
+            
+            // Se abbiamo trovato squadre dalle carte, sostituisci completamente
+            // le squadre del team corrente con quelle trovate dalle carte
+            if ($allTeamsFromCards->count() > 0) {
+                $allTeams = $allTeamsFromCards;
+                \Log::info('✅ Trovate ' . $allTeamsFromCards->count() . ' squadre per ' . $playerName);
             }
             
             // Rimuovi duplicati
@@ -262,7 +287,7 @@ class FootballFilterController extends Controller
                             'name' => $card->team->name
                         ] : null
                     ];
-                }),
+                })->toArray(),
                 'all_teams' => $uniqueTeams->map(function($team) {
                     return [
                         'id' => $team->id,
@@ -300,14 +325,8 @@ class FootballFilterController extends Controller
                 
                 // Applica filtri aggiuntivi per limitare i risultati
                 if ($request->filled('player_id')) {
-                    // Se è un singolo player_id, cerca tutte le carte di tutti i giocatori con lo stesso nome
-                    $player = Player::find($request->player_id);
-                    if ($player) {
-                        $playerIds = Player::where('name', $player->name)->pluck('id')->toArray();
-                        $q->whereIn('player_id', $playerIds);
-                    } else {
-                        $q->where('player_id', $request->player_id);
-                    }
+                    // Usa solo il player_id specifico selezionato per la logica "a imbuto"
+                    $q->where('player_id', $request->player_id);
                 }
                 if ($request->filled('set_id')) {
                     $q->where('card_set_id', $request->set_id);
@@ -329,7 +348,7 @@ class FootballFilterController extends Controller
             $teamsQuery->where('name', 'LIKE', "%{$query}%");
         }
         
-        $teams = $teamsQuery->limit(50)->get(['id', 'name', 'slug', 'city', 'league_id']);
+        $teams = $teamsQuery->get(['id', 'name', 'slug', 'city', 'league_id']);
 
         return response()->json(['teams' => $teams]);
     }
@@ -357,14 +376,8 @@ class FootballFilterController extends Controller
                 
                 // Applica filtri aggiuntivi per limitare i risultati
                 if ($request->filled('player_id')) {
-                    // Se è un singolo player_id, cerca tutte le carte di tutti i giocatori con lo stesso nome
-                    $player = Player::find($request->player_id);
-                    if ($player) {
-                        $playerIds = Player::where('name', $player->name)->pluck('id')->toArray();
-                        $q->whereIn('player_id', $playerIds);
-                    } else {
-                        $q->where('player_id', $request->player_id);
-                    }
+                    // Usa solo il player_id specifico selezionato per la logica "a imbuto"
+                    $q->where('player_id', $request->player_id);
                 }
                 if ($request->filled('team_id')) {
                     $q->where('team_id', $request->team_id);
@@ -386,7 +399,7 @@ class FootballFilterController extends Controller
             $cardSetsQuery->where('name', 'LIKE', "%{$query}%");
         }
         
-        $cardSets = $cardSetsQuery->limit(50)->get(['id', 'name', 'slug', 'brand', 'year', 'season']);
+        $cardSets = $cardSetsQuery->get(['id', 'name', 'slug', 'brand', 'year', 'season']);
 
         return response()->json(['card_sets' => $cardSets]);
     }
@@ -572,50 +585,83 @@ class FootballFilterController extends Controller
             });
         }
 
-        // 1. TEAMS - Dipende da Player selezionato
+        // 1. TEAMS - Dipende da Player selezionato O Brand selezionato
         if (isset($filters['player_id']) && !empty($filters['player_id'])) {
-            // Se è un singolo player_id, cerca tutte le squadre delle carte di tutti i giocatori con lo stesso nome
-            $player = Player::find($filters['player_id']);
-            if ($player) {
-                $playerIds = Player::where('name', $player->name)->pluck('id')->toArray();
-                $response['teams'] = Team::whereIn('id', function($query) use ($playerIds) {
-                    $query->select('team_id')
-                        ->from('card_models')
-                        ->whereIn('player_id', $playerIds)
-                        ->where('is_active', true);
-                })->active()->ordered()->get(['id', 'name', 'slug', 'city']);
-            } else {
-                $response['teams'] = Team::whereHas('players', function($query) use ($filters) {
-                    $query->where('id', $filters['player_id']);
-                })
-                ->active()
-                ->ordered()
-                ->get(['id', 'name', 'slug', 'city']);
-            }
+            // Usa solo il player_id specifico selezionato per la logica "a imbuto"
+            $response['teams'] = Team::whereHas('cardModels', function($query) use ($filters) {
+                $query->where('player_id', $filters['player_id'])
+                      ->whereHas('category', function($catQuery) {
+                          $catQuery->where('slug', 'calcio');
+                      });
+            })
+            ->active()
+            ->ordered()
+            ->get(['id', 'name', 'slug', 'city']);
+        } elseif (isset($filters['brand']) && !empty($filters['brand'])) {
+            // Se è selezionato solo il brand, mostra tutte le squadre per quel brand
+            $response['teams'] = Team::whereHas('cardModels', function($query) use ($filters) {
+                $query->whereHas('category', function($catQuery) {
+                        $catQuery->where('slug', 'calcio');
+                    })
+                    ->whereHas('cardSet', function($setQuery) use ($filters) {
+                        $setQuery->where('brand', $filters['brand']);
+                    });
+            })
+            ->active()
+            ->ordered()
+            ->get(['id', 'name', 'slug', 'city']);
         }
 
-        // 2. SETS - Dipende da Player e/o Team
+        // 2. SETS - Dipende da Player, Team e/o Brand
         $setsQuery = CardSet::query();
-        if (isset($filters['player_id']) || isset($filters['team_id'])) {
+        if (isset($filters['player_id']) || isset($filters['team_id']) || isset($filters['brand'])) {
             $setsQuery->whereHas('cardModels', function($query) use ($filters) {
+                $query->whereHas('category', function($catQuery) {
+                    $catQuery->where('slug', 'calcio');
+                });
+                
                 if (isset($filters['player_id']) && !empty($filters['player_id'])) {
-                    // Se è un singolo player_id, cerca tutti i giocatori con lo stesso nome
-                    $player = Player::find($filters['player_id']);
-                    if ($player) {
-                        $playerIds = Player::where('name', $player->name)->pluck('id')->toArray();
-                        $query->whereIn('player_id', $playerIds);
-                    } else {
-                        $query->where('player_id', $filters['player_id']);
-                    }
+                    // Usa solo il player_id specifico selezionato per la logica "a imbuto"
+                    $query->where('player_id', $filters['player_id']);
                 }
                 if (isset($filters['team_id']) && !empty($filters['team_id'])) {
                     $query->where('team_id', $filters['team_id']);
                 }
             });
+            
+            // Filtra per brand se specificato
+            if (isset($filters['brand']) && !empty($filters['brand'])) {
+                $setsQuery->where('brand', $filters['brand']);
+            }
         }
         $response['card_sets'] = $setsQuery->active()->ordered()->get(['id', 'name', 'slug', 'brand', 'year']);
 
-        // 3. YEARS - Dipende da Player, Team, Set
+        // 3. PLAYERS - Dipende da Team, Set e/o Brand (se non è già selezionato un player)
+        if (!isset($filters['player_id']) || empty($filters['player_id'])) {
+            $playersQuery = Player::query();
+            if (isset($filters['team_id']) || isset($filters['set_id']) || isset($filters['brand'])) {
+                $playersQuery->whereHas('cardModels', function($query) use ($filters) {
+                    $query->whereHas('category', function($catQuery) {
+                        $catQuery->where('slug', 'calcio');
+                    });
+                    
+                    if (isset($filters['team_id']) && !empty($filters['team_id'])) {
+                        $query->where('team_id', $filters['team_id']);
+                    }
+                    if (isset($filters['set_id']) && !empty($filters['set_id'])) {
+                        $query->where('card_set_id', $filters['set_id']);
+                    }
+                    if (isset($filters['brand']) && !empty($filters['brand'])) {
+                        $query->whereHas('cardSet', function($setQuery) use ($filters) {
+                            $setQuery->where('brand', $filters['brand']);
+                        });
+                    }
+                });
+            }
+            $response['players'] = $playersQuery->active()->ordered()->get(['id', 'name', 'slug', 'position', 'nationality', 'team_id']);
+        }
+
+        // 4. YEARS - Dipende da Player, Team, Set, Brand
         $yearsQuery = $cardModelsQuery->clone();
         $response['years'] = $yearsQuery->select('year')
             ->whereNotNull('year')
@@ -624,19 +670,18 @@ class FootballFilterController extends Controller
             ->pluck('year')
             ->toArray();
 
-        // 4. BRANDS - Dipende da Player, Team, Set, Year
+        // 5. BRANDS - Dipende da Player, Team, Set, Year
         $brandsQuery = $cardModelsQuery->clone();
-        $response['brands'] = $brandsQuery->whereHas('cardSet')
-            ->with('cardSet:id,brand')
-            ->get()
-            ->pluck('cardSet.brand')
+        $response['brands'] = $brandsQuery->join('card_sets', 'card_models.card_set_id', '=', 'card_sets.id')
+            ->select('card_sets.brand')
+            ->distinct()
+            ->pluck('card_sets.brand')
             ->filter()
-            ->unique()
             ->sort()
             ->values()
             ->toArray();
 
-        // 5. RARITIES - Dipende da tutti i filtri precedenti
+        // 6. RARITIES - Dipende da tutti i filtri precedenti
         $raritiesQuery = $cardModelsQuery->clone();
         $response['rarities'] = $raritiesQuery->select('rarity')
             ->whereNotNull('rarity')
@@ -645,7 +690,7 @@ class FootballFilterController extends Controller
             ->pluck('rarity')
             ->toArray();
 
-        // 6. NUMBERED RANGE - Dipende da tutti i filtri precedenti
+        // 7. NUMBERED RANGE - Dipende da tutti i filtri precedenti
         $numberedQuery = $cardModelsQuery->clone();
         $numberedValues = $numberedQuery->select('card_number_in_set')
             ->whereNotNull('card_number_in_set')

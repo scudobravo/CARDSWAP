@@ -482,7 +482,39 @@ const selectPlayer = (player) => {
   filteredPlayers.value = []
   showPlayerDropdown.value = false
   
-  // NON popolare automaticamente il campo Team - l'utente può scegliere la squadra dal filtro dedicato
+  // NON resettare il team se il giocatore ha giocato in più squadre
+  // Solo resettare i filtri che dipendono dal giocatore specifico
+  selectedCardSet.value = null
+  localFilters.value.set = null
+  localFilters.value.brand = ''
+  localFilters.value.rarity = ''
+  localFilters.value.year = ''
+  
+  // Se il giocatore ha giocato in più squadre, NON resettare il team corrente
+  if (player.all_teams && player.all_teams.length > 1) {
+    // Il giocatore ha giocato in più squadre
+    console.log('✅ Giocatore ha giocato in più squadre:', player.all_teams.map(t => t.name))
+    
+    // Se il team corrente è tra le squadre del giocatore, mantienilo
+    if (localFilters.value.team) {
+      const currentTeamIsValid = player.all_teams.some(t => t.id === localFilters.value.team)
+      if (currentTeamIsValid) {
+        console.log('✅ Team corrente è valido per questo giocatore, lo manteniamo')
+        // Mantieni il team corrente
+      } else {
+        // Il team corrente non è valido per questo giocatore, resettalo
+        console.log('⚠️ Team corrente non è valido per questo giocatore, lo resettiamo')
+        selectedTeam.value = null
+        localFilters.value.team = null
+      }
+    }
+  } else if (player.all_teams && player.all_teams.length === 1) {
+    // Il giocatore ha giocato in una sola squadra, impostala automaticamente
+    const singleTeam = player.all_teams[0]
+    selectedTeam.value = singleTeam
+    localFilters.value.team = singleTeam.id
+    console.log('✅ Giocatore ha una sola squadra, impostata automaticamente:', singleTeam.name)
+  }
   
   // Popola il campo Numbered con il primo card_number disponibile
   if (player.card_numbers && player.card_numbers.length > 0) {
@@ -636,6 +668,14 @@ const selectTeam = (team) => {
   localFilters.value.teamSearch = ''
   filteredTeams.value = []
   showTeamDropdown.value = false
+  
+  // RESET AUTOMATICO dei filtri dipendenti per logica "a imbuto"
+  selectedCardSet.value = null
+  localFilters.value.set = null
+  localFilters.value.brand = ''
+  localFilters.value.rarity = ''
+  localFilters.value.year = ''
+  
   onFiltersChanged()
 }
 
@@ -651,6 +691,12 @@ const selectCardSet = (set) => {
   localFilters.value.setSearch = ''
   filteredCardSets.value = []
   showSetDropdown.value = false
+  
+  // RESET AUTOMATICO dei filtri dipendenti per logica "a imbuto"
+  localFilters.value.brand = ''
+  localFilters.value.rarity = ''
+  localFilters.value.year = ''
+  
   onFiltersChanged()
 }
 
@@ -664,6 +710,23 @@ const onFiltersChanged = () => {
   emit('filters-changed', localFilters.value)
   loadChainedData()
 }
+
+// Watch per reset automatico dei filtri dipendenti quando cambia il brand
+watch(() => localFilters.value.brand, (newBrand, oldBrand) => {
+  if (newBrand !== oldBrand && newBrand !== '') {
+    // RESET AUTOMATICO dei filtri dipendenti per logica "a imbuto"
+    localFilters.value.rarity = ''
+    localFilters.value.year = ''
+  }
+})
+
+// Watch per reset automatico dei filtri dipendenti quando cambia la rarity
+watch(() => localFilters.value.rarity, (newRarity, oldRarity) => {
+  if (newRarity !== oldRarity && newRarity !== '') {
+    // RESET AUTOMATICO dei filtri dipendenti per logica "a imbuto"
+    localFilters.value.year = ''
+  }
+})
 
 const searchCards = () => {
   // Convert to the format expected by the API
@@ -697,6 +760,27 @@ const loadTeamsForPlayer = async () => {
     
     console.log('🔍 Squadre caricate:', data.teams)
     filteredTeams.value = data.teams || []
+    
+  } catch (error) {
+    console.error('❌ Errore nel caricamento squadre:', error)
+    filteredTeams.value = []
+  }
+}
+
+const loadAllTeamsForPlayer = async (player) => {
+  if (!player || !player.all_teams) return
+  
+  try {
+    console.log('🔍 Caricamento tutte le squadre per giocatore:', player.name)
+    
+    // Usa le squadre già disponibili nel player object
+    filteredTeams.value = player.all_teams.map(team => ({
+      id: team.id,
+      name: team.name,
+      slug: team.slug
+    }))
+    
+    console.log('🔍 Squadre caricate da player object:', filteredTeams.value)
     
   } catch (error) {
     console.error('❌ Errore nel caricamento squadre:', error)
