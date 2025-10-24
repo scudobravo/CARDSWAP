@@ -295,7 +295,7 @@ class FootballFilterController extends Controller
                         'name' => $team->name,
                         'slug' => $team->slug
                     ];
-                })
+                })->values()->toArray() // Converti in array per compatibilità con il frontend
             ];
         })->values(); // Converte la Collection in array
 
@@ -326,8 +326,18 @@ class FootballFilterController extends Controller
                 
                 // Applica filtri aggiuntivi per limitare i risultati
                 if ($request->filled('player_id')) {
-                    // Usa solo il player_id specifico selezionato per la logica "a imbuto"
-                    $q->where('player_id', $request->player_id);
+                    // Se è un singolo player_id, cerca tutte le squadre delle carte di tutti i giocatori con lo stesso nome
+                    if (is_array($request->player_id)) {
+                        $playerIds = $request->player_id;
+                    } else {
+                        $player = Player::find($request->player_id);
+                        if ($player) {
+                            $playerIds = Player::where('name', $player->name)->pluck('id')->toArray();
+                        } else {
+                            $playerIds = [$request->player_id];
+                        }
+                    }
+                    $q->whereIn('player_id', $playerIds);
                 }
                 if ($request->filled('set_id')) {
                     $q->where('card_set_id', $request->set_id);

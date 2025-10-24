@@ -534,7 +534,12 @@ const selectPlayer = (player) => {
   initializeCardFiltering(player)
   
   // Carica automaticamente le squadre disponibili per questo giocatore
-  loadTeamsForPlayer()
+  // Usa loadAllTeamsForPlayer se il giocatore ha all_teams, altrimenti fallback su loadTeamsForPlayer
+  if (player.all_teams && player.all_teams.length > 0) {
+    loadAllTeamsForPlayer(player)
+  } else {
+    loadTeamsForPlayer()
+  }
   
   onFiltersChanged()
 }
