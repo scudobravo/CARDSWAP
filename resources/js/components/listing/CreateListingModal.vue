@@ -738,9 +738,9 @@ const selectCardModel = (card) => {
       filters.value.brand = card.card_set.brand
     }
     
-    // Popola il campo Numbered con card_number dal database
-    if (card.card_number) {
-      filters.value.number = card.card_number
+    // Popola il campo Numbered con card_number_in_set dal database
+    if (card.card_number_in_set) {
+      filters.value.number = card.card_number_in_set
     }
     
     // NON popoliamo più automaticamente Team, Set e Player
@@ -1525,7 +1525,7 @@ watch(() => props.editingListing, (newListing) => {
               rarity: selectedCardModel.value.rarity,
               year: selectedCardModel.value.year,
               brand: selectedCardModel.value.brand,
-              number: selectedCardModel.value.card_number || selectedCardModel.value.number
+              number: selectedCardModel.value.card_number_in_set || selectedCardModel.value.number
             }
           }))
         }
@@ -1588,7 +1588,7 @@ const initializeEditMode = async (listing) => {
       brand: listing.card_model?.card_set?.brand || listing.card_model?.brand || '',
       rarity: listing.card_model?.rarity || '',
       year: listing.card_model?.year || '',
-      number: listing.card_model?.card_number || listing.card_model?.number || '',
+      number: listing.card_model?.card_number_in_set || listing.card_model?.number || '',
       player: listing.card_model?.player?.id || '',
       team: listing.card_model?.team?.id || '',
       set: listing.card_model?.card_set?.id || ''

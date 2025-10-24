@@ -252,8 +252,8 @@ class FootballFilterController extends Controller
             $uniqueCardNumbersInSet = $allCardNumbersInSet->unique()->values();
             $uniqueTeams = $allTeams->unique('id')->values();
             
-            // Usa card_number_in_set se card_number è vuoto
-            $effectiveCardNumbers = $uniqueCardNumbers->count() > 0 ? $uniqueCardNumbers : $uniqueCardNumbersInSet;
+            // Usa sempre card_number_in_set (colonna C) invece di card_number (colonna A)
+            $effectiveCardNumbers = $uniqueCardNumbersInSet;
             
             return [
                 'id' => $representativePlayer->id, // Usa l'ID del primo giocatore come rappresentante

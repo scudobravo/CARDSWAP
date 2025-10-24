@@ -221,8 +221,8 @@
           </div>
           
           <!-- Numbered field -->
-          <div v-if="card.card_number" class="text-xs text-gray-600 mb-1">
-            <span class="font-medium text-gray-700">Numbered:</span> {{ card.card_number }}
+          <div v-if="card.card_number_in_set" class="text-xs text-gray-600 mb-1">
+            <span class="font-medium text-gray-700">Numbered:</span> {{ card.card_number_in_set }}
           </div>
           
           <!-- Squadra -->
@@ -516,14 +516,14 @@ const selectPlayer = (player) => {
     console.log('✅ Giocatore ha una sola squadra, impostata automaticamente:', singleTeam.name)
   }
   
-  // Popola il campo Numbered con il primo card_number disponibile
+  // Popola il campo Numbered con il primo card_number_in_set disponibile
   if (player.card_numbers && player.card_numbers.length > 0) {
     localFilters.value.number = player.card_numbers[0]
     console.log('✅ Campo Numbered popolato con:', player.card_numbers[0])
   } else if (player.cards && player.cards.length > 0) {
     // Fallback: usa card_number_in_set se card_numbers non è disponibile
     const firstCard = player.cards[0]
-    const cardNumber = firstCard.card_number || firstCard.card_number_in_set
+    const cardNumber = firstCard.card_number_in_set
     if (cardNumber) {
       localFilters.value.number = cardNumber
       console.log('✅ Campo Numbered popolato con (da cards):', cardNumber)
@@ -646,7 +646,7 @@ const selectCard = (card) => {
   }
   
   // Aggiorna il campo Numbered con il numero della carta selezionata
-  const cardNumber = card.card_number || card.card_number_in_set
+  const cardNumber = card.card_number_in_set
   if (cardNumber) {
     localFilters.value.number = cardNumber
     console.log('✅ Campo Numbered aggiornato con:', cardNumber)
@@ -829,12 +829,14 @@ const loadChainedData = async () => {
     // Extract brands from sets if available
     if (data.sets && data.sets.length > 0) {
       const brands = [...new Set(data.sets.map(set => set.brand))].filter(Boolean)
-      // NON sovrascrivere i brand se l'utente ha già selezionato un brand
-      if (!localFilters.value.brand) {
-        availableBrands.value = brands
-        console.log('✅ Brands aggiornati da filtri a catena:', brands)
-      } else {
-        console.log('✅ Brand già selezionato, mantengo la selezione:', localFilters.value.brand)
+      // Aggiorna sempre i brand disponibili per mostrare solo quelli con dati
+      availableBrands.value = brands
+      console.log('✅ Brands aggiornati da filtri a catena:', brands)
+      
+      // Se il brand selezionato non è più disponibile, resettalo
+      if (localFilters.value.brand && !brands.includes(localFilters.value.brand)) {
+        console.log('⚠️ Brand selezionato non più disponibile, lo resetto:', localFilters.value.brand)
+        localFilters.value.brand = ''
       }
     } else {
       console.log('⚠️ Nessun set nei filtri a catena, mantengo brands iniziali')
@@ -863,14 +865,26 @@ const loadChainedDataWithBrand = async (selectedBrand) => {
     if (data.rarities && data.rarities.length > 0) {
       availableRarities.value = data.rarities
       console.log('✅ Rarities aggiornate da filtri a catena:', data.rarities)
+    } else {
+      console.log('⚠️ Nessuna rarity per il brand selezionato:', selectedBrand)
     }
     
     if (data.years && data.years.length > 0) {
       availableYears.value = data.years
       console.log('✅ Years aggiornati da filtri a catena:', data.years)
+    } else {
+      console.log('⚠️ Nessun year per il brand selezionato:', selectedBrand)
     }
     
-    // NON toccare i brand - mantieni quello selezionato dall'utente
+    // Aggiorna i brand disponibili dai set
+    if (data.sets && data.sets.length > 0) {
+      const brands = [...new Set(data.sets.map(set => set.brand))].filter(Boolean)
+      availableBrands.value = brands
+      console.log('✅ Brands aggiornati da filtri a catena:', brands)
+    } else {
+      console.log('⚠️ Nessun set per il brand selezionato:', selectedBrand)
+    }
+    
     console.log('✅ Brand mantenuto dall\'utente:', selectedBrand)
     
   } catch (error) {

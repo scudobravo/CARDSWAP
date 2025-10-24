@@ -765,19 +765,19 @@ const selectPlayer = (player) => {
     
     // NON popolare automaticamente il campo Team - l'utente può scegliere la squadra dal filtro dedicato
     
-    // Popola il campo Numbered con il primo card_number disponibile
-    if (player.card_numbers && player.card_numbers.length > 0) {
-      localFilters.value.number = player.card_numbers[0]
-      console.log('✅ Campo Numbered popolato con:', player.card_numbers[0])
-    } else if (player.cards && player.cards.length > 0) {
-      // Fallback: usa card_number_in_set se card_numbers non è disponibile
-      const firstCard = player.cards[0]
-      const cardNumber = firstCard.card_number || firstCard.card_number_in_set
-      if (cardNumber) {
-        localFilters.value.number = cardNumber
-        console.log('✅ Campo Numbered popolato con (da cards):', cardNumber)
-      }
+  // Popola il campo Numbered con il primo card_number_in_set disponibile
+  if (player.card_numbers && player.card_numbers.length > 0) {
+    localFilters.value.number = player.card_numbers[0]
+    console.log('✅ Campo Numbered popolato con:', player.card_numbers[0])
+  } else if (player.cards && player.cards.length > 0) {
+    // Fallback: usa card_number_in_set se card_numbers non è disponibile
+    const firstCard = player.cards[0]
+    const cardNumber = firstCard.card_number_in_set
+    if (cardNumber) {
+      localFilters.value.number = cardNumber
+      console.log('✅ Campo Numbered popolato con (da cards):', cardNumber)
     }
+  }
     
     // Reset filtri dipendenti quando si seleziona un nuovo giocatore
     resetDependentFilters()
