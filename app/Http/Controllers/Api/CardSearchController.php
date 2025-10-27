@@ -60,6 +60,20 @@ class CardSearchController extends Controller
             $query->where('rarity', $request->rarity);
         }
 
+        // Filtro Numerazione (boolean): true = numerate (card_number valorizzato), false = non numerate
+        if ($request->has('numbered')) {
+            $numbered = filter_var($request->get('numbered'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($numbered === true) {
+                $query->whereNotNull('card_number')
+                      ->where('card_number', '!=', '');
+            } elseif ($numbered === false) {
+                $query->where(function($q) {
+                    $q->whereNull('card_number')
+                      ->orWhere('card_number', '');
+                });
+            }
+        }
+
         // Filtri per tipo di carta
         if ($request->filled('is_rookie') && $request->boolean('is_rookie')) {
             $query->rookie();

@@ -651,8 +651,8 @@ const searchSingleCard = async (filters) => {
           brand: filters.brand,
           rarity: filters.rarity,
           year: filters.year,
-          number: filters.number,
-          price: filters.price
+          number: filters.number
+          // ✅ RIMOSSO: price non è un filtro di ricerca, è un input dell'utente
         }
         
         console.log('🔍 Filtri convertiti per API:', searchFilters)
@@ -722,31 +722,17 @@ const selectCardModel = (card) => {
     // Popola i dati base della carta
     listingData.value.card_model_id = card.id
     
-    // Se c'è un prezzo suggerito nella carta, usalo solo se l'utente non ha già inserito un prezzo
-    if (card.price && card.price > 0 && (!filters.value.price || filters.value.price === '')) {
-      filters.value.price = card.price
-    }
+    // ✅ NON popoliamo più automaticamente il prezzo
+    // L'utente deve inserirlo manualmente
     
-    // Popola solo i dati non-filtro (rarity, year, brand sono informativi)
-    if (card.rarity) {
-      filters.value.rarity = card.rarity
-    }
-    if (card.year) {
-      filters.value.year = card.year
-    }
-    if (card.card_set && card.card_set.brand) {
-      filters.value.brand = card.card_set.brand
-    }
+    // ✅ NON popoliamo più automaticamente i campi del form
+    // L'utente deve selezionarli manualmente per evitare filtri troppo specifici
+    console.log('✅ Campi del form NON popolati automaticamente - l\'utente deve selezionarli manualmente')
     
-    // Popola il campo Numbered con card_number_in_set dal database
-    if (card.card_number_in_set) {
-      filters.value.number = card.card_number_in_set
-    }
+    // ✅ NON popoliamo più automaticamente i campi del form
+    // L'utente deve selezionarli manualmente per evitare filtri troppo specifici
     
-    // NON popoliamo più automaticamente Team, Set e Player
-    // L'utente deve selezionarli manualmente se necessario
-    
-    console.log('✅ Dati form popolati automaticamente:', {
+    console.log('✅ Carta selezionata per riferimento:', {
       card_model_id: card.id,
       price: card.price,
       rarity: card.rarity,
@@ -754,6 +740,7 @@ const selectCardModel = (card) => {
       brand: card.card_set?.brand,
       number: card.card_number
     })
+    console.log('✅ Campi del form NON popolati automaticamente - l\'utente deve selezionarli manualmente')
   }
 }
 

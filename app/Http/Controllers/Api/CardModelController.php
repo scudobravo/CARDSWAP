@@ -57,12 +57,18 @@ class CardModelController extends Controller
             });
         }
         
-        // Filtro per numero numerato
-        if (!empty($filters['numberedMin'])) {
-            $query->where('card_number', '>=', $filters['numberedMin']);
-        }
-        if (!empty($filters['numberedMax'])) {
-            $query->where('card_number', '<=', $filters['numberedMax']);
+        // Filtro Numerazione (boolean): true = numerate (card_number valorizzato), false = non numerate
+        if (array_key_exists('numbered', $filters)) {
+            $numbered = filter_var($filters['numbered'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($numbered === true) {
+                $query->whereNotNull('card_number')
+                    ->where('card_number', '!=', '');
+            } elseif ($numbered === false) {
+                $query->where(function($q) {
+                    $q->whereNull('card_number')
+                      ->orWhere('card_number', '');
+                });
+            }
         }
         
         // Filtro per autografo
