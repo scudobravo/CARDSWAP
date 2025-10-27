@@ -25,10 +25,10 @@
 
     <!-- Informational Badges -->
     <div class="px-4 pb-3 flex flex-wrap gap-3 justify-center">
-      <!-- Numbered - Mostra solo se card_number_in_set è presente -->
-      <div v-if="product.card_number_in_set" class="relative group">
+      <!-- Numbered - Mostra solo se presente (card_number preferito) -->
+      <div v-if="product.card_number || product.card_number_in_set" class="relative group">
         <div class="bg-gray-100 p-3 rounded-lg flex items-center justify-center min-w-[48px] min-h-[48px]">
-          <span class="text-primary font-futura-bold text-lg">{{ product.card_number_in_set }}</span>
+          <span class="text-primary font-futura-bold text-lg">{{ product.card_number || product.card_number_in_set }}</span>
         </div>
         <!-- Tooltip -->
         <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-primary text-white text-sm font-futura-bold rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
