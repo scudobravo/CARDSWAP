@@ -738,20 +738,9 @@ const selectPlayer = (player) => {
     selectedTeam.value = null
     localFilters.value.team = null
   }
-  
-  // Popola il campo Numbered con il primo card_number_in_set disponibile
-  if (player.card_numbers && player.card_numbers.length > 0) {
-    localFilters.value.number = player.card_numbers[0]
-    console.log('✅ Campo Numbered popolato con:', player.card_numbers[0])
-  } else if (player.cards && player.cards.length > 0) {
-    // Fallback: usa card_number_in_set se card_numbers non è disponibile
-    const firstCard = player.cards[0]
-    const cardNumber = firstCard.card_number_in_set
-    if (cardNumber) {
-      localFilters.value.number = cardNumber
-      console.log('✅ Campo Numbered popolato con (da cards):', cardNumber)
-    }
-  }
+
+  // Non autopopolare il campo Numbered alla selezione del player; reset per evitare residui
+  localFilters.value.number = ''
   
   // Inizializza le carte filtrate e i set unici
   initializeCardFiltering(player)
@@ -866,11 +855,19 @@ const selectCard = (card) => {
     localFilters.value.set = card.card_set.id
     selectedCardSet.value = card.card_set
     console.log('✅ Campo Set aggiornato con:', card.card_set.name)
+    // Popola anche Brand se disponibile
+    if (card.card_set.brand) {
+      localFilters.value.brand = card.card_set.brand
+      console.log('✅ Campo Brand aggiornato con:', card.card_set.brand)
+    }
   }
   
   if (card.year) {
     localFilters.value.year = card.year
     console.log('✅ Campo Year aggiornato con:', card.year)
+  } else if (card.card_set && card.card_set.year) {
+    localFilters.value.year = card.card_set.year
+    console.log('✅ Campo Year aggiornato dal set con:', card.card_set.year)
   }
   
   if (card.rarity) {

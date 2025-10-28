@@ -21,20 +21,37 @@ class FootballFilterController extends Controller
      */
     public function getFilterOptions()
     {
-        // Rarities dinamiche dal DB: usa COALESCE(rarity_variation, rarity) per includere tutte le varianti
+        // Rarities dinamiche dal DB: SOLO rarità base (senza variation)
         $dynamicRarities = CardModel::whereHas('category', function($q) {
                 $q->where('slug', 'calcio');
             })
             ->where('is_active', true)
-            ->select(DB::raw("COALESCE(NULLIF(rarity_variation, ''), rarity) as rarity_value"))
-            ->where(function($q) {
-                $q->whereNotNull('rarity_variation')
-                  ->where('rarity_variation', '!=', '')
-                  ->orWhereNotNull('rarity');
-            })
+            ->whereNotNull('rarity')
+            ->where('rarity', '!=', '')
             ->distinct()
-            ->orderBy('rarity_value')
-            ->pluck('rarity_value')
+            ->orderBy('rarity')
+            ->pluck('rarity')
+            ->toArray();
+
+        // Years dinamici dal DB ordinati per anno (prima parte) desc
+        $rawYears = CardModel::whereHas('category', function($q) {
+                $q->where('slug', 'calcio');
+            })
+            ->where('is_active', true)
+            ->whereNotNull('year')
+            ->distinct()
+            ->pluck('year')
+            ->toArray();
+
+        $sortedYears = collect($rawYears)
+            ->map(fn($y) => (string)$y)
+            ->sortByDesc(function($y) {
+                if (preg_match('/^(\d{4})/', $y, $m)) {
+                    return (int)$m[1];
+                }
+                return (int)preg_replace('/\D/', '', $y) ?: 0;
+            })
+            ->values()
             ->toArray();
 
         $filters = [
@@ -47,7 +64,7 @@ class FootballFilterController extends Controller
             'positions' => ['Attaccante', 'Centrocampista', 'Difensore', 'Portiere'],
             'rarities' => $dynamicRarities,
             'conditions' => ['mint', 'near_mint', 'excellent', 'good', 'light_played', 'played', 'poor', 'fair', 'very_good'],
-            'years' => array_reverse(range(1990, date('Y') + 1)),
+            'years' => $sortedYears,
         ];
 
         return response()->json($filters);
