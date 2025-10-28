@@ -297,7 +297,7 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['filters-changed', 'search-cards'])
+const emit = defineEmits(['filters-changed', 'search-cards', 'card-picked'])
 
 // State
 const localFilters = ref({
@@ -877,6 +877,9 @@ const selectCard = (card) => {
     console.log('✅ Campo Numbered aggiornato con:', cardNumber)
   }
   
+  // Notifica al parent la carta selezionata
+  emit('card-picked', card)
+
   onFiltersChanged()
 }
 

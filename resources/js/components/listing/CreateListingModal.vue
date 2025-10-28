@@ -134,6 +134,7 @@
               :show-search-button="false"
               :initial-filters="filters"
               @filters-changed="handleFiltersChanged"
+              @card-picked="selectCardModel"
             />
 
           </div>
@@ -616,8 +617,8 @@ const resetForm = () => {
 const handleFiltersChanged = async (newFilters) => {
   filters.value = newFilters
   
-  // Per single card, cerca automaticamente la carta basata sui filtri
-  if (selectedMode.value === 'single') {
+  // Cerca automaticamente solo durante lo step di selezione (step 1)
+  if (selectedMode.value === 'single' && currentStep.value === 1) {
     await searchSingleCard(newFilters)
   }
 }
@@ -687,8 +688,7 @@ const searchSingleCard = async (filters) => {
           console.log('✅ Carta unica trovata, selezionata automaticamente:', cards[0])
           selectCardModel(cards[0]) // Usa la funzione per popolare i dati
         } else if (cards.length > 1) {
-          console.log('⚠️ Multiple carte trovate, seleziono la prima:', cards[0])
-          selectCardModel(cards[0]) // Usa la funzione per popolare i dati
+          console.log('⚠️ Multiple carte trovate, non seleziono automaticamente')
         } else {
           console.log('❌ Nessuna carta trovata per i filtri specificati')
           selectedCardModel.value = null
