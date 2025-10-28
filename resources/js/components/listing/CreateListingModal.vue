@@ -527,40 +527,34 @@ const previewImageSrc = computed(() => {
 })
 
 const canProceed = computed(() => {
-  // Temporaneamente sbloccato per test
-  return true
-  
-  // Logica originale commentata per test
-  /*
   switch (currentStep.value) {
     case 0:
       return selectedMode.value !== null
     case 1:
       if (selectedMode.value === 'single') {
+        // Deve essere selezionata una carta
         return selectedCardModel.value !== null
       } else {
-        return selectedCardModels.value.length > 0
+        // In bulk consenti di passare se ci sono risultati o già selezioni
+        return filteredCardModels.value.length > 0 || selectedCardModels.value.length > 0
       }
     case 2:
       if (selectedMode.value === 'single') {
-        return listingData.value.price && listingData.value.condition
+        return !!(listingData.value && (filters.value.price || listingData.value.price))
       } else {
         return bulkListings.value.length > 0 && bulkListings.value.every(listing => 
           listing.cardModel && listing.price && listing.condition
         )
       }
     case 3:
-      return true // Optional step
-    case 4:
-      return true // Optional step
-    case 5:
+      // Step zone di spedizione
       return selectedShippingZones.value.length > 0
-    case 6:
-      return true // Final step
+    case 4:
+      // Anteprima: richiedi comunque la carta selezionata
+      return selectedCardModel.value !== null
     default:
-      return false
+      return true
   }
-  */
 })
 
 // Methods
