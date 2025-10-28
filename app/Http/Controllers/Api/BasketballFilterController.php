@@ -20,20 +20,16 @@ class BasketballFilterController extends Controller
      */
     public function getFilterOptions()
     {
-        // Rarities dinamiche dal DB: usa COALESCE(rarity_variation, rarity) per includere tutte le varianti
+        // Rarities dinamiche dal DB: SOLO rarità base (senza variation)
         $dynamicRarities = CardModel::whereHas('category', function($q) {
                 $q->where('slug', 'basketball');
             })
             ->where('is_active', true)
-            ->select(DB::raw("COALESCE(NULLIF(rarity_variation, ''), rarity) as rarity_value"))
-            ->where(function($q) {
-                $q->whereNotNull('rarity_variation')
-                  ->where('rarity_variation', '!=', '')
-                  ->orWhereNotNull('rarity');
-            })
+            ->whereNotNull('rarity')
+            ->where('rarity', '!=', '')
             ->distinct()
-            ->orderBy('rarity_value')
-            ->pluck('rarity_value')
+            ->orderBy('rarity')
+            ->pluck('rarity')
             ->toArray();
 
         $filters = [
