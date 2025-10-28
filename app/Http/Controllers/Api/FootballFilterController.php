@@ -12,6 +12,7 @@ use App\Models\GradingScore;
 use App\Models\CardModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class FootballFilterController extends Controller
 {
@@ -20,6 +21,22 @@ class FootballFilterController extends Controller
      */
     public function getFilterOptions()
     {
+        // Rarities dinamiche dal DB: usa COALESCE(rarity_variation, rarity) per includere tutte le varianti
+        $dynamicRarities = CardModel::whereHas('category', function($q) {
+                $q->where('slug', 'calcio');
+            })
+            ->where('is_active', true)
+            ->select(DB::raw("COALESCE(NULLIF(rarity_variation, ''), rarity) as rarity_value"))
+            ->where(function($q) {
+                $q->whereNotNull('rarity_variation')
+                  ->where('rarity_variation', '!=', '')
+                  ->orWhereNotNull('rarity');
+            })
+            ->distinct()
+            ->orderBy('rarity_value')
+            ->pluck('rarity_value')
+            ->toArray();
+
         $filters = [
             'leagues' => League::active()->ordered()->get(['id', 'name', 'slug', 'country']),
             'teams' => Team::active()->ordered()->get(['id', 'name', 'slug', 'city', 'league_id']),
@@ -28,9 +45,9 @@ class FootballFilterController extends Controller
             'grading_companies' => GradingCompany::active()->ordered()->get(['id', 'name', 'slug']),
             'grading_scores' => GradingScore::active()->ordered()->get(['id', 'score', 'description', 'short_code', 'is_special', 'grading_company_id']),
             'positions' => ['Attaccante', 'Centrocampista', 'Difensore', 'Portiere'],
-            'rarities' => ['common', 'uncommon', 'rare', 'mythic', 'special'],
+            'rarities' => $dynamicRarities,
             'conditions' => ['mint', 'near_mint', 'excellent', 'good', 'light_played', 'played', 'poor', 'fair', 'very_good'],
-            'years' => range(1990, date('Y') + 1),
+            'years' => array_reverse(range(1990, date('Y') + 1)),
         ];
 
         return response()->json($filters);
@@ -192,7 +209,7 @@ class FootballFilterController extends Controller
         $players = $playersQuery->with(['team', 'cardModels' => function($query) {
                 $query->whereHas('category', function($catQuery) {
                     $catQuery->where('slug', 'calcio');
-                })->select('id', 'player_id', 'card_number', 'card_number_in_set', 'name', 'year', 'rarity', 'card_set_id', 'team_id')
+                })->select('id', 'player_id', 'card_number', 'card_number_in_set', 'name', 'year', 'rarity', 'rarity_variation', 'card_set_id', 'team_id')
                 ->with(['cardSet:id,name,brand', 'team:id,name']);
             }])
             ->limit(100) // Limite ragionevole per evitare errori di memoria
@@ -244,7 +261,7 @@ class FootballFilterController extends Controller
             // le squadre del team corrente con quelle trovate dalle carte
             if ($allTeamsFromCards->count() > 0) {
                 $allTeams = $allTeamsFromCards;
-                \Log::info('✅ Trovate ' . $allTeamsFromCards->count() . ' squadre per ' . $playerName);
+                Log::info('✅ Trovate ' . $allTeamsFromCards->count() . ' squadre per ' . $playerName);
             }
             
             // Rimuovi duplicati
@@ -276,6 +293,7 @@ class FootballFilterController extends Controller
                         'name' => $card->name,
                         'year' => $card->year,
                         'rarity' => $card->rarity,
+                        'rarity_variation' => $card->rarity_variation,
                         'card_number' => $card->card_number,
                         'card_number_in_set' => $card->card_number_in_set,
                         'card_set' => $card->cardSet ? [
@@ -694,11 +712,16 @@ class FootballFilterController extends Controller
 
         // 6. RARITIES - Dipende da tutti i filtri precedenti
         $raritiesQuery = $cardModelsQuery->clone();
-        $response['rarities'] = $raritiesQuery->select('rarity')
-            ->whereNotNull('rarity')
+        $response['rarities'] = $raritiesQuery
+            ->select(DB::raw("COALESCE(NULLIF(rarity_variation, ''), rarity) as rarity_value"))
+            ->where(function($q) {
+                $q->whereNotNull('rarity_variation')
+                  ->where('rarity_variation', '!=', '')
+                  ->orWhereNotNull('rarity');
+            })
             ->distinct()
-            ->orderBy('rarity')
-            ->pluck('rarity')
+            ->orderBy('rarity_value')
+            ->pluck('rarity_value')
             ->toArray();
 
         // 7. NUMBERED RANGE - Dipende da tutti i filtri precedenti

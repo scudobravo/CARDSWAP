@@ -55,9 +55,15 @@ class CardSearchController extends Controller
             $query->where('year', $request->year);
         }
 
-        // Filtri per rarità
+        // Filtri per rarità: accetta sia categoria generale che variazione specifica
         if ($request->filled('rarity')) {
-            $query->where('rarity', $request->rarity);
+            $rarity = $request->get('rarity');
+            $baseRarities = ['common', 'uncommon', 'rare', 'mythic', 'special'];
+            if (in_array(strtolower($rarity), $baseRarities, true)) {
+                $query->where('rarity', $rarity);
+            } else {
+                $query->where('rarity_variation', $rarity);
+            }
         }
 
         // Filtro Numerazione (boolean): true = numerate (card_number valorizzato), false = non numerate

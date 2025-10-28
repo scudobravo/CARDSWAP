@@ -20,6 +20,22 @@ class BasketballFilterController extends Controller
      */
     public function getFilterOptions()
     {
+        // Rarities dinamiche dal DB: usa COALESCE(rarity_variation, rarity) per includere tutte le varianti
+        $dynamicRarities = CardModel::whereHas('category', function($q) {
+                $q->where('slug', 'basketball');
+            })
+            ->where('is_active', true)
+            ->select(DB::raw("COALESCE(NULLIF(rarity_variation, ''), rarity) as rarity_value"))
+            ->where(function($q) {
+                $q->whereNotNull('rarity_variation')
+                  ->where('rarity_variation', '!=', '')
+                  ->orWhereNotNull('rarity');
+            })
+            ->distinct()
+            ->orderBy('rarity_value')
+            ->pluck('rarity_value')
+            ->toArray();
+
         $filters = [
             'leagues' => League::active()->ordered()->get(['id', 'name', 'slug', 'country']),
             'teams' => Team::active()->ordered()->get(['id', 'name', 'slug', 'city', 'league_id']),
@@ -28,9 +44,9 @@ class BasketballFilterController extends Controller
             'grading_companies' => GradingCompany::active()->ordered()->get(['id', 'name', 'slug']),
             'grading_scores' => GradingScore::active()->ordered()->get(['id', 'score', 'description', 'short_code', 'is_special', 'grading_company_id']),
             'positions' => ['Point Guard', 'Shooting Guard', 'Small Forward', 'Power Forward', 'Center'],
-            'rarities' => ['common', 'uncommon', 'rare', 'mythic', 'special'],
+            'rarities' => $dynamicRarities,
             'conditions' => ['mint', 'near_mint', 'excellent', 'good', 'light_played', 'played', 'poor', 'fair', 'very_good'],
-            'years' => range(1990, date('Y') + 1),
+            'years' => array_reverse(range(1990, date('Y') + 1)),
         ];
 
         return response()->json($filters);

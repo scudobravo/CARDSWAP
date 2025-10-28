@@ -195,6 +195,10 @@
 
     <!-- Carte del giocatore selezionato (solo per Single Card) -->
     <div v-if="showPlayer && selectedPlayer && selectedPlayer.cards && selectedPlayer.cards.length > 0" class="mt-6">
+      <!-- Info empty state ABOVE header -->
+      <div v-if="filteredCards.length === 0" class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-800">
+        Nessuna carta disponibile con questi criteri
+      </div>
       <div class="mb-4">
         <label class="block text-lg font-medium text-gray-700">
           Seleziona Carta ({{ filteredCards.length }} disponibili)
@@ -203,7 +207,8 @@
           Usa i filtri Team e Set sopra per filtrare le carte disponibili
         </p>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-80 overflow-y-auto">
+      <!-- Cards grid -->
+      <div v-if="filteredCards.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-80 overflow-y-auto">
         <div 
           v-for="card in filteredCards" 
           :key="card.id"
@@ -813,48 +818,44 @@ const initializeCardFiltering = (player) => {
   }
 }
 
-const filterCardsBySet = () => {
+// Ricalcola le carte filtrate in base a tutti i filtri slegati attivi
+const recomputeFilteredCards = () => {
   if (!selectedPlayer.value || !selectedPlayer.value.cards) return
   
   let cards = selectedPlayer.value.cards
   
-  // Applica filtro per squadra se selezionato (usa il filtro Team esistente)
   if (localFilters.value.team) {
-    cards = cards.filter(card => 
-      card.team && card.team.id == localFilters.value.team
-    )
+    cards = cards.filter(card => card.team && card.team.id == localFilters.value.team)
   }
-  
-  // Applica filtro per set se selezionato (usa il filtro Set esistente)
   if (localFilters.value.set) {
-    cards = cards.filter(card => 
-      card.card_set && card.card_set.id == localFilters.value.set
-    )
+    cards = cards.filter(card => card.card_set && card.card_set.id == localFilters.value.set)
+  }
+  if (localFilters.value.brand) {
+    cards = cards.filter(card => card.card_set && card.card_set.brand === localFilters.value.brand)
+  }
+  if (localFilters.value.year) {
+    cards = cards.filter(card => String(card.year) === String(localFilters.value.year))
+  }
+  if (localFilters.value.rarity) {
+    cards = cards.filter(card => {
+      const rarityValue = card.rarity_variation && card.rarity_variation !== '' ? card.rarity_variation : card.rarity
+      return rarityValue === localFilters.value.rarity
+    })
   }
   
   filteredCards.value = cards
 }
 
-const filterCardsByTeam = () => {
+// Legacy helper (manteniamo per compatibilità, ora delega al calcolo generale)
+const filterCardsBySet = () => {
   if (!selectedPlayer.value || !selectedPlayer.value.cards) return
   
-  let cards = selectedPlayer.value.cards
-  
-  // Applica filtro per squadra se selezionato (usa il filtro Team esistente)
-  if (localFilters.value.team) {
-    cards = cards.filter(card => 
-      card.team && card.team.id == localFilters.value.team
-    )
-  }
-  
-  // Applica filtro per set se selezionato (usa il filtro Set esistente)
-  if (localFilters.value.set) {
-    cards = cards.filter(card => 
-      card.card_set && card.card_set.id == localFilters.value.set
-    )
-  }
-  
-  filteredCards.value = cards
+  recomputeFilteredCards()
+}
+
+const filterCardsByTeam = () => {
+  if (!selectedPlayer.value || !selectedPlayer.value.cards) return
+  recomputeFilteredCards()
 }
 
 const selectCard = (card) => {
@@ -1412,7 +1413,8 @@ const loadInitialData = async () => {
     }
     
     if (data.years) {
-      availableYears.value = data.years
+      // Ordina in ordine decrescente lato frontend per sicurezza
+      availableYears.value = [...data.years].sort((a, b) => String(b).localeCompare(String(a), undefined, { numeric: true }))
       console.log('✅ Years assegnati:', availableYears.value)
     } else {
       console.log('❌ Nessun year trovato nei dati')
@@ -1538,6 +1540,17 @@ watch(() => localFilters.value.set, () => {
   console.log('🔄 Set filter cambiato:', localFilters.value.set)
   filterCardsBySet()
   // Filtri slegati: non aggiornare opzioni a cascata
+})
+
+// Aggiorna lista carte quando cambiano brand/year/rarity
+watch(() => localFilters.value.brand, () => {
+  recomputeFilteredCards()
+})
+watch(() => localFilters.value.year, () => {
+  recomputeFilteredCards()
+})
+watch(() => localFilters.value.rarity, () => {
+  recomputeFilteredCards()
 })
 
 // Gestisce l'evento di popolamento filtri
