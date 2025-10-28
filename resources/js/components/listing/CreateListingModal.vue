@@ -1552,8 +1552,22 @@ const initializeEditMode = async (listing) => {
       is_negotiable: listing.is_negotiable
     }
     
-    // Imposta la carta selezionata
+    // Imposta la carta selezionata con fallback a fetch dettagli
     selectedCardModel.value = listing.card_model
+    if (!selectedCardModel.value || !selectedCardModel.value.player || !selectedCardModel.value.card_set) {
+      try {
+        const cmId = listing.card_model_id || listing.card_model?.id
+        if (cmId) {
+          const resp = await fetch(`/api/card-models/${cmId}`)
+          if (resp.ok) {
+            const cmData = await resp.json()
+            selectedCardModel.value = cmData.data || cmData
+          }
+        }
+      } catch (e) {
+        console.error('❌ Errore caricamento dettagli card model:', e)
+      }
+    }
     
     // Imposta la categoria basata sulla carta
     if (listing.card_model?.category?.name) {
@@ -1572,13 +1586,13 @@ const initializeEditMode = async (listing) => {
       ...filters.value,
       price: listing.price,
       condition: listing.condition,
-      brand: listing.card_model?.card_set?.brand || listing.card_model?.brand || '',
-      rarity: listing.card_model?.rarity || '',
-      year: listing.card_model?.year || '',
-      number: listing.card_model?.card_number || listing.card_model?.card_number_in_set || listing.card_model?.number || '',
-      player: listing.card_model?.player?.id || '',
-      team: listing.card_model?.team?.id || '',
-      set: listing.card_model?.card_set?.id || ''
+      brand: selectedCardModel.value?.card_set?.brand || selectedCardModel.value?.brand || '',
+      rarity: selectedCardModel.value?.rarity || '',
+      year: selectedCardModel.value?.year || selectedCardModel.value?.card_set?.year || '',
+      number: selectedCardModel.value?.card_number || selectedCardModel.value?.card_number_in_set || '',
+      player: selectedCardModel.value?.player?.id || '',
+      team: selectedCardModel.value?.team?.id || '',
+      set: selectedCardModel.value?.card_set?.id || ''
     }
     
     
@@ -1660,6 +1674,8 @@ const initializeEditMode = async (listing) => {
             number: filters.value.number
           }
         }))
+        // Comunica esplicitamente la carta selezionata
+        window.dispatchEvent(new CustomEvent('card-selected', { detail: { card: selectedCardModel.value } }))
       }, 100)
     }
   } catch (error) {
