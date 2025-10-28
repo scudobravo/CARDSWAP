@@ -114,7 +114,8 @@
           </div>
 
           <!-- Step 1: Selezione Modello Carta (Singola) -->
-          <div v-if="currentStep === 1 && selectedMode === 'single'" class="space-y-6">
+          <!-- Mantieni lo stato del componente quando si cambia step: usa v-show per nascondere/mostrare senza smontare -->
+          <div v-if="selectedMode === 'single'" v-show="currentStep === 1" class="space-y-6">
             <!-- Selezione Categoria -->
             <div class="mb-6">
               <label class="block text-sm font-medium text-gray-700 mb-2">Categoria Carta</label>
@@ -533,8 +534,8 @@ const canProceed = computed(() => {
       return selectedMode.value !== null
     case 1:
       if (selectedMode.value === 'single') {
-        // Deve essere selezionata una carta
-        return selectedCardModel.value !== null
+        // Deve essere selezionata una carta (accetta anche l'ID già memorizzato)
+        return !!(selectedCardModel.value?.id || listingData.value.card_model_id)
       } else {
         // In bulk consenti di passare se ci sono risultati o già selezioni
         return filteredCardModels.value.length > 0 || selectedCardModels.value.length > 0
@@ -619,6 +620,10 @@ const handleFiltersChanged = async (newFilters) => {
   
   // Cerca automaticamente solo durante lo step di selezione (step 1)
   if (selectedMode.value === 'single' && currentStep.value === 1) {
+    // Se l'utente ha già scelto una carta, non ricerchiamo per non perdere la selezione
+    if (selectedCardModel.value?.id || listingData.value.card_model_id) {
+      return
+    }
     await searchSingleCard(newFilters)
   }
 }
@@ -1109,9 +1114,10 @@ const createSingleListing = async () => {
 const createNewSingleListing = async () => {
   const formData = new FormData()
   
-  // Add card_model_id (required)
-  if (selectedCardModel.value?.id) {
-    formData.append('card_model_id', selectedCardModel.value.id)
+  // Add card_model_id (required) – usa selezione corrente o ID salvato
+  const cmId = selectedCardModel.value?.id || listingData.value.card_model_id
+  if (cmId) {
+    formData.append('card_model_id', cmId)
   } else {
     console.error('card_model_id is required but not found')
     alert('Errore: Carta non selezionata')
