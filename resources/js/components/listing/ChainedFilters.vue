@@ -580,12 +580,9 @@ const searchCardSets = async () => {
   console.log('🔍 Ricerca set per:', query)
   
   try {
-    // Costruisci i parametri includendo i filtri attivi per restringere i set
+    // Filtri slegati: i set non devono essere limitati da team/brand/year
     const params = new URLSearchParams({ q: query })
     if (localFilters.value.player) params.append('player_id', localFilters.value.player)
-    if (localFilters.value.team) params.append('team_id', localFilters.value.team)
-    if (localFilters.value.brand) params.append('brand', localFilters.value.brand)
-    if (localFilters.value.year) params.append('year', localFilters.value.year)
     
     const url = `/api/${props.category}/filters/card-sets/search?${params.toString()}`
     console.log('🔍 URL set:', url)
@@ -619,12 +616,9 @@ const loadAllCardSets = async () => {
   console.log('🔍 Caricamento tutti i set disponibili')
   
   try {
-    // Costruisci i parametri includendo i filtri attivi per restringere i set
+    // Filtri slegati: i set non devono essere limitati da team/brand/year
     const params = new URLSearchParams()
     if (localFilters.value.player) params.append('player_id', localFilters.value.player)
-    if (localFilters.value.team) params.append('team_id', localFilters.value.team)
-    if (localFilters.value.brand) params.append('brand', localFilters.value.brand)
-    if (localFilters.value.year) params.append('year', localFilters.value.year)
     
     const url = `/api/${props.category}/filters/card-sets/search?${params.toString()}`
     console.log('🔍 URL set (all):', url)
