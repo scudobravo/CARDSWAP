@@ -422,8 +422,15 @@ class FootballFilterController extends Controller
                 
                 // Applica filtri aggiuntivi per limitare i risultati
                 if ($request->filled('player_id')) {
-                    // Usa solo il player_id specifico selezionato per la logica "a imbuto"
-                    $q->where('player_id', $request->player_id);
+                    // In produzione esistono più record Player con lo stesso nome (squadre diverse).
+                    // Per coerenza con ricerca Team, includiamo TUTTI gli ID dei giocatori con lo stesso nome.
+                    $player = Player::find($request->player_id);
+                    if ($player) {
+                        $playerIds = Player::where('name', $player->name)->pluck('id')->toArray();
+                        $q->whereIn('player_id', $playerIds);
+                    } else {
+                        $q->where('player_id', $request->player_id);
+                    }
                 }
                 if ($request->filled('team_id')) {
                     $q->where('team_id', $request->team_id);
