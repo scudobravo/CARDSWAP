@@ -817,7 +817,12 @@ const recomputeFilteredCards = () => {
     cards = cards.filter(card => card.card_set && card.card_set.brand === localFilters.value.brand)
   }
   if (localFilters.value.year) {
-    cards = cards.filter(card => String(card.year) === String(localFilters.value.year))
+    cards = cards.filter(card => {
+      const cy = card?.year != null ? String(card.year) : null
+      const sy = card?.card_set?.year != null ? String(card.card_set.year) : null
+      const fy = String(localFilters.value.year)
+      return cy === fy || sy === fy
+    })
   }
   if (localFilters.value.rarity) {
     cards = cards.filter(card => {
@@ -825,7 +830,11 @@ const recomputeFilteredCards = () => {
       return rarityValue === localFilters.value.rarity
     })
   }
-  
+  // Assicurati che la carta selezionata resti visibile anche se i filtri correnti la escluderebbero
+  if (selectedCard.value && !cards.some(c => c.id === selectedCard.value.id)) {
+    cards = [selectedCard.value, ...cards]
+  }
+
   filteredCards.value = cards
 }
 
@@ -843,6 +852,8 @@ const filterCardsByTeam = () => {
 
 const selectCard = (card) => {
   selectedCard.value = card
+  // Mostra subito la carta selezionata nella lista
+  filteredCards.value = [card]
   
   // Aggiorna i filtri con i dati della carta selezionata
   if (card.card_set) {
