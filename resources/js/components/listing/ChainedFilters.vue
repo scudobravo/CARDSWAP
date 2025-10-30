@@ -1593,6 +1593,7 @@ const restoreSelectedEntities = async () => {
         }
         
         // Se abbiamo playerSearch ma non selectedPlayer, crea un oggetto temporaneo per mostrare il tag
+        // Nota: playerSearch viene usato solo per creare l'oggetto temporaneo, poi viene svuotato
         if (localFilters.value.playerSearch && localFilters.value.player) {
           console.log('🔄 Creando oggetto player temporaneo per mostrare il tag')
           selectedPlayer.value = {
@@ -1600,6 +1601,8 @@ const restoreSelectedEntities = async () => {
             name: localFilters.value.playerSearch,
             display_name: localFilters.value.playerSearch
           }
+          // Svuota il campo di ricerca dopo aver creato l'oggetto temporaneo
+          localFilters.value.playerSearch = ''
         }
       }
       
