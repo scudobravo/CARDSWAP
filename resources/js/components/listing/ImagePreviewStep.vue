@@ -23,8 +23,8 @@
           <div class="aspect-[3/4] bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center relative overflow-hidden">
             <!-- Show first uploaded image if available -->
             <img 
-              v-if="getFirstUploadedImage()" 
-              :src="getFirstUploadedImage()" 
+              v-if="getFirstUploadedImage" 
+              :src="getFirstUploadedImage" 
               :alt="'Card preview'"
               class="w-full h-full object-cover rounded-lg"
             />
@@ -375,12 +375,22 @@ const additionalDetails = ref({
 
 // Flag per evitare loop infiniti
 const isInitializing = ref(false)
+const hasInitialized = ref(false) // Flag per tracciare se l'inizializzazione è già stata fatta
 
 // Watch per cardData per popolare i campi esistenti in modalità edit
 watch(() => props.cardData, (newCardData) => {
   // Evita loop infiniti
   if (isInitializing.value) {
     return
+  }
+  
+  // Se abbiamo già inizializzato E ci sono nuove immagini caricate (non existing), NON fare nulla
+  if (hasInitialized.value) {
+    const hasNewImages = cardImages.value.some(img => img && !img.isExisting)
+    if (hasNewImages) {
+      // Ci sono nuove immagini caricate manualmente, non interferire MAI
+      return
+    }
   }
   
   // Popola solo se sono immagini esistenti (non nuove immagini caricate)
@@ -420,6 +430,7 @@ watch(() => props.cardData, (newCardData) => {
         }
       })
       
+      hasInitialized.value = true
       isInitializing.value = false
     }
   }
@@ -441,7 +452,7 @@ watch(() => props.cardData, (newCardData) => {
       notes: newCardData.notes || ''
     }
   }
-}, { immediate: true, deep: false }) // Cambiato deep: false per evitare loop
+}, { immediate: true, deep: false, flush: 'post' }) // Aggiunto flush: 'post' per eseguire dopo il rendering
 
 
 // Methods
@@ -485,6 +496,9 @@ const handleCardImageUpload = (event, index) => {
       return
     }
 
+    // Imposta flag per evitare che il watch interferisca
+    isInitializing.value = true
+
     // Create image object
     const imageData = {
       file,
@@ -495,8 +509,16 @@ const handleCardImageUpload = (event, index) => {
     // Update the specific image slot
     cardImages.value[index] = imageData
     
+    // Reset flag dopo un breve delay per permettere al watch di completare
+    setTimeout(() => {
+      isInitializing.value = false
+    }, 100)
+    
     // Emit the updated images array
     emit('image-uploaded', cardImages.value)
+    
+    // Reset input per permettere di caricare lo stesso file di nuovo
+    event.target.value = ''
   }
 }
 
@@ -544,12 +566,12 @@ const handleBulkImageUpload = (event) => {
   emit('bulk-images-uploaded', bulkImages.value)
 }
 
-// Get first uploaded image for main display
-const getFirstUploadedImage = () => {
+// Get first uploaded image for main display - convertito in computed per evitare chiamate continue
+const getFirstUploadedImage = computed(() => {
   // Cerca la prima immagine caricata nell'array cardImages
   const firstImage = cardImages.value.find(img => img && img.preview)
   return firstImage ? firstImage.preview : null
-}
+})
 
 // Drag & Drop methods
 const handleDragOver = (event) => {
