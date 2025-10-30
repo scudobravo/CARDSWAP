@@ -1591,24 +1591,37 @@ const restoreSelectedEntities = async () => {
           console.log('✅ Player già popolato tramite evento')
           return
         }
+        
+        // Se abbiamo playerSearch ma non selectedPlayer, crea un oggetto temporaneo per mostrare il tag
+        if (localFilters.value.playerSearch && localFilters.value.player) {
+          console.log('🔄 Creando oggetto player temporaneo per mostrare il tag')
+          selectedPlayer.value = {
+            id: localFilters.value.player,
+            name: localFilters.value.playerSearch,
+            display_name: localFilters.value.playerSearch
+          }
+        }
       }
       
-      const response = await fetch(`/api/${props.category}/filters/players/${localFilters.value.player}`, {
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      if (response.ok) {
-        const data = await response.json()
-        if (data.player) {
-          selectedPlayer.value = data.player
-          console.log('✅ Player ripristinato:', selectedPlayer.value)
+      // Se abbiamo ancora solo l'ID ma non l'oggetto completo, carica dall'API
+      if (!selectedPlayer.value || !selectedPlayer.value.id) {
+        const response = await fetch(`/api/${props.category}/filters/players/${localFilters.value.player}`, {
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        })
+        if (response.ok) {
+          const data = await response.json()
+          if (data.player) {
+            selectedPlayer.value = data.player
+            console.log('✅ Player ripristinato dall\'API:', selectedPlayer.value)
+          } else {
+            console.warn('⚠️ Player non trovato nella risposta')
+          }
         } else {
-          console.warn('⚠️ Player non trovato nella risposta')
+          console.warn('⚠️ Errore HTTP nel ripristino player:', response.status)
         }
-      } else {
-        console.warn('⚠️ Errore HTTP nel ripristino player:', response.status)
       }
     } catch (error) {
       console.error('❌ Errore nel ripristino player:', error)
@@ -1728,12 +1741,23 @@ watch(() => localFilters.value.set, () => {
 watch(() => localFilters.value.brand, () => {
   recomputeFilteredCards()
 })
-watch(() => localFilters.value.year, () => {
-  recomputeFilteredCards()
-})
-watch(() => localFilters.value.rarity, () => {
-  recomputeFilteredCards()
-})
+// Watch per popolare selectedPlayer quando playerSearch cambia ma selectedPlayer è vuoto
+watch(() => localFilters.value.playerSearch, async (newSearch) => {
+  // Se abbiamo playerSearch ma non selectedPlayer e abbiamo un player ID, ripristina il player
+  if (newSearch && newSearch !== '' && !selectedPlayer.value && localFilters.value.player) {
+    console.log('🔄 playerSearch cambiato ma selectedPlayer vuoto, ripristino player...')
+    await restoreSelectedEntities()
+  }
+}, { immediate: false })
+
+// Watch per popolare selectedPlayer quando player ID cambia
+watch(() => localFilters.value.player, async (newPlayerId) => {
+  // Se abbiamo un player ID ma non selectedPlayer, ripristina il player
+  if (newPlayerId && newPlayerId !== '' && !selectedPlayer.value) {
+    console.log('🔄 Player ID cambiato ma selectedPlayer vuoto, ripristino player...')
+    await restoreSelectedEntities()
+  }
+}, { immediate: false })
 
 // Gestisce l'evento di popolamento filtri
 const handleFiltersPopulated = async (event) => {
