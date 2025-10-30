@@ -1654,6 +1654,16 @@ onMounted(async () => {
   
   // Ascolta l'evento per aggiornare i filtri quando viene selezionata una carta in modalità edit
   window.addEventListener('card-selected', handleCardSelected)
+  
+  // Se ci sono filtri iniziali con playerSearch ma selectedPlayer non è ancora popolato,
+  // aspetta un po' per permettere agli eventi di essere emessi
+  if (localFilters.value.playerSearch && !selectedPlayer.value) {
+    setTimeout(async () => {
+      if (!selectedPlayer.value && localFilters.value.player) {
+        await restoreSelectedEntities()
+      }
+    }, 500)
+  }
 })
 
 onUnmounted(() => {
@@ -1676,6 +1686,12 @@ watch(() => props.initialFilters, async (newFilters) => {
   if (userSelectedBrand && userSelectedBrand !== '') {
     localFilters.value.brand = userSelectedBrand
     console.log('✅ Brand dell\'utente ripristinato:', userSelectedBrand)
+  }
+  
+  // Se abbiamo playerSearch ma non selectedPlayer, imposta selectedPlayer basandosi sui dati disponibili
+  if (localFilters.value.playerSearch && !selectedPlayer.value && localFilters.value.player) {
+    console.log('🔄 Trovato playerSearch ma selectedPlayer non popolato, ripristino...')
+    await restoreSelectedEntities()
   }
   
   // Sincronizza rarity con selectedRarity e raritySearch
@@ -1722,6 +1738,7 @@ watch(() => localFilters.value.rarity, () => {
 // Gestisce l'evento di popolamento filtri
 const handleFiltersPopulated = async (event) => {
   const data = event.detail
+  console.log('🎯 handleFiltersPopulated ricevuto con dati:', data)
   
   // Popola Player (importante per la sezione "Seleziona Carta")
   if (data.player) {
@@ -1729,11 +1746,14 @@ const handleFiltersPopulated = async (event) => {
     localFilters.value.player = data.player.id
     localFilters.value.playerSearch = data.player.display_name || data.player.name || ''
     console.log('✅ Player popolato tramite filters-populated:', selectedPlayer.value)
+    console.log('✅ playerSearch impostato a:', localFilters.value.playerSearch)
     
     // Inizializza le carte del giocatore se disponibili
     if (data.player.cards && data.player.cards.length > 0) {
       initializeCardFiltering(data.player)
     }
+  } else {
+    console.warn('⚠️ Nessun player nei dati di filters-populated')
   }
   
   // Popola Team

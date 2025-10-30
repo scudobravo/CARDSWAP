@@ -1813,23 +1813,39 @@ const initializeEditMode = async (listing) => {
       let playerWithCards = selectedCardModel.value.player
       if (playerWithCards && (!playerWithCards.cards || playerWithCards.cards.length === 0)) {
         try {
-          const response = await fetch(`/api/football/players/${playerWithCards.id}`, {
+          const response = await fetch(`/api/${selectedCategory.value}/filters/players/${playerWithCards.id}`, {
             headers: {
+              'Accept': 'application/json',
               'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
           })
-          const data = await response.json()
-          if (data.success && data.data.player) {
-            playerWithCards = data.data.player
-            console.log('✅ Carte del giocatore caricate per edit:', playerWithCards.cards?.length || 0)
+          
+          if (response.ok) {
+            const contentType = response.headers.get('content-type')
+            if (contentType && contentType.includes('application/json')) {
+              const data = await response.json()
+              if (data.success && data.data?.player) {
+                playerWithCards = data.data.player
+                console.log('✅ Carte del giocatore caricate per edit:', playerWithCards.cards?.length || 0)
+              } else if (data.player) {
+                playerWithCards = data.player
+                console.log('✅ Carte del giocatore caricate per edit (formato alternativo):', playerWithCards.cards?.length || 0)
+              }
+            } else {
+              console.warn('⚠️ La risposta non è JSON, probabilmente non esiste l\'endpoint specifico')
+            }
+          } else {
+            console.warn('⚠️ Errore HTTP nel caricamento carte del giocatore:', response.status)
           }
         } catch (error) {
-          console.error('❌ Errore nel caricamento carte del giocatore:', error)
+          console.warn('⚠️ Errore nel caricamento carte del giocatore (non critico):', error.message)
+          // Non bloccare il flusso se non si riesce a caricare le carte
         }
       }
       
       // Usa setTimeout per assicurarsi che il componente ChainedFilters sia montato e i listener attivi
       setTimeout(() => {
+        console.log('🎯 Dispatching filters-populated con player:', playerWithCards?.name || playerWithCards?.id)
         window.dispatchEvent(new CustomEvent('filters-populated', { 
           detail: {
             team: selectedCardModel.value.team,
@@ -1843,7 +1859,7 @@ const initializeEditMode = async (listing) => {
         }))
         // Comunica esplicitamente la carta selezionata
         window.dispatchEvent(new CustomEvent('card-selected', { detail: { card: selectedCardModel.value } }))
-      }, 100)
+      }, 300) // Aumentato timeout per assicurarsi che il componente sia montato
     }
   } catch (error) {
     console.error('❌ Errore nell\'inizializzazione modalità edit:', error)
