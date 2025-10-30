@@ -820,7 +820,7 @@ const selectPlayer = (player) => {
   selectedPlayer.value = player
   selectedCard.value = null // Reset carta selezionata
   localFilters.value.player = player.id
-  localFilters.value.playerSearch = player.display_name || player.name // Mostra il nome del giocatore selezionato
+  localFilters.value.playerSearch = '' // Lascia il campo vuoto, il tag mostrerà il nome
   filteredPlayers.value = []
   showPlayerDropdown.value = false
   
@@ -1768,9 +1768,8 @@ const handleFiltersPopulated = async (event) => {
   if (data.player) {
     selectedPlayer.value = data.player
     localFilters.value.player = data.player.id
-    localFilters.value.playerSearch = data.player.display_name || data.player.name || ''
+    localFilters.value.playerSearch = '' // Lascia il campo vuoto, il tag mostrerà il nome
     console.log('✅ Player popolato tramite filters-populated:', selectedPlayer.value)
-    console.log('✅ playerSearch impostato a:', localFilters.value.playerSearch)
     
     // Inizializza le carte del giocatore se disponibili
     if (data.player.cards && data.player.cards.length > 0) {
