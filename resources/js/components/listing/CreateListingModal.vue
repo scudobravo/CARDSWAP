@@ -397,11 +397,11 @@
           </button>
           <button 
             v-else-if="selectedMode === 'single'"
-            @click="createListing"
-            :disabled="!canProceed"
+            @click="isEdit ? updateSingleListing() : createListing()"
+            :disabled="!canProceed || isSubmitting"
             class="px-6 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {{ isEdit ? 'Aggiorna' : 'Crea' }}
+            {{ isSubmitting ? 'Salvataggio in corso...' : (isEdit ? 'Aggiorna' : 'Crea') }}
           </button>
         </div>
       </div>
@@ -1496,7 +1496,7 @@ const getSingleCardData = computed(() => {
   }
   
   // In modalità edit, aggiungi i dati dell'inserzione esistente
-  // IMPORTANTE: passa solo le immagini esistenti (con flag isExisting), non quelle nuove
+  // IMPORTANTE: passa tutte le immagini (esistenti + nuove) per mantenere la persistenza tra gli step
   if (props.isEdit && props.editingListing) {
     return {
       ...baseData,
@@ -1521,8 +1521,8 @@ const getSingleCardData = computed(() => {
       rookie: listingData.value.is_first_edition ? 'yes' : 'no',
       jewel: listingData.value.is_foil ? 'yes' : 'no',
       multiAutograph: '',
-      // Passa solo le immagini esistenti per evitare loop infiniti
-      existingImages: cardImages.value.filter(img => img && img.isExisting)
+      // Passa TUTTE le immagini (esistenti + nuove) per mantenere la persistenza
+      existingImages: cardImages.value.filter(img => img !== null)
     }
   }
   
@@ -1532,8 +1532,16 @@ const getSingleCardData = computed(() => {
 const handleImageUploaded = (imagesArray) => {
   console.log('📸 handleImageUploaded chiamata con:', imagesArray)
   
+  // Assicurati che l'array abbia sempre 4 elementi per mantenere la struttura
+  const fullArray = Array(4).fill(null)
+  imagesArray.forEach((img, index) => {
+    if (index < 4 && img) {
+      fullArray[index] = img
+    }
+  })
+  
   // Aggiorna cardImages con l'array completo delle immagini (mantenendo la struttura di 4 elementi)
-  cardImages.value = [...imagesArray]
+  cardImages.value = [...fullArray]
   console.log('📸 cardImages.value aggiornato:', cardImages.value)
   
   // Aggiorna anche cardImage per compatibilità (prima immagine valida)
@@ -1871,6 +1879,7 @@ const initializeEditMode = async (listing) => {
 // Aggiorna inserzione esistente
 const updateSingleListing = async () => {
   try {
+    isSubmitting.value = true
     console.log('💾 Aggiornamento inserzione:', props.editingListing.id)
     
     // Usa FormData per supportare le immagini
@@ -1888,12 +1897,24 @@ const updateSingleListing = async () => {
     formData.append('is_first_edition', listingData.value.is_first_edition ? 'true' : 'false')
     formData.append('is_negotiable', listingData.value.is_negotiable ? 'true' : 'false')
     
-    // Aggiungi solo le nuove immagini (quelle con file e non esistenti)
+    // Aggiungi solo le nuove immagini (quelle con file e non esistenti) - comprimi se necessario
     const newImages = cardImages.value.filter(image => image && image.file && !image.isExisting)
     
-    newImages.forEach((image, index) => {
-      formData.append('images[]', image.file)
-    })
+    for (const image of newImages) {
+      try {
+        // Se l'immagine è > 2MB, comprimila prima dell'upload
+        if (image.file.size > 2 * 1024 * 1024) {
+          const compressedFile = await compressImageForUpload(image.file)
+          formData.append('images[]', compressedFile)
+        } else {
+          formData.append('images[]', image.file)
+        }
+      } catch (error) {
+        console.error('Errore compressione immagine:', error)
+        // Usa il file originale se la compressione fallisce
+        formData.append('images[]', image.file)
+      }
+    }
     
     // Aggiungi le zone di spedizione
     selectedShippingZones.value.forEach(zoneId => {
@@ -1923,7 +1944,30 @@ const updateSingleListing = async () => {
     }
   } catch (error) {
     console.error('❌ Errore nell\'aggiornamento inserzione:', error)
-    alert(`Errore nell'aggiornamento: ${error.message}`)
+    
+    // Gestione errori dettagliata
+    let errorMessage = 'Errore nell\'aggiornamento dell\'inserzione.'
+    
+    if (error.response) {
+      // Errore HTTP con risposta
+      const errorData = error.response.data || {}
+      if (errorData.errors) {
+        const errorDetails = Object.entries(errorData.errors)
+          .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+          .join('\n')
+        errorMessage = `Errore nell'aggiornamento:\n\n${errorDetails}`
+      } else if (errorData.message) {
+        errorMessage = `Errore nell'aggiornamento:\n\n${errorData.message}`
+      } else {
+        errorMessage = `Errore HTTP ${error.response.status}: ${error.response.statusText}`
+      }
+    } else if (error.message) {
+      errorMessage = `Errore nell'aggiornamento:\n\n${error.message}`
+    }
+    
+    alert(errorMessage)
+  } finally {
+    isSubmitting.value = false
   }
 }
 </script>
