@@ -167,10 +167,23 @@ class CardListingController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             
+            // Log errore dettagliato
+            \Log::error('Errore nella creazione inserzione', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => [
+                    'card_model_id' => $request->get('card_model_id'),
+                    'has_images' => $request->hasFile('images'),
+                    'images_count' => $request->hasFile('images') ? count($request->file('images')) : 0,
+                ]
+            ]);
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Errore durante la creazione dell\'inserzione',
-                'error' => $e->getMessage()
+                'message' => 'Errore durante la creazione dell\'inserzione: ' . $e->getMessage(),
+                'error' => config('app.debug') ? $e->getMessage() : 'Errore interno del server',
+                'trace' => config('app.debug') ? $e->getTraceAsString() : null
             ], 500);
         }
     }

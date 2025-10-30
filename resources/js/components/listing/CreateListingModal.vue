@@ -1097,7 +1097,30 @@ const createListing = async () => {
     }
   } catch (error) {
     console.error('Errore nella creazione inserzioni:', error)
-    alert('Errore nella creazione inserzioni. Riprova.')
+    
+    // Gestione errori dettagliata
+    let errorMessage = 'Errore nella creazione inserzioni.'
+    
+    if (error.response) {
+      // Errore HTTP con risposta
+      const errorData = error.response.data || {}
+      if (errorData.errors) {
+        const errorDetails = Object.entries(errorData.errors)
+          .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+          .join('\n')
+        errorMessage = `Errore nella creazione inserzioni:\n\n${errorDetails}`
+      } else if (errorData.message) {
+        errorMessage = `Errore nella creazione inserzioni:\n\n${errorData.message}`
+      } else {
+        errorMessage = `Errore HTTP ${error.response.status}: ${error.response.statusText}`
+      }
+    } else if (error.message) {
+      errorMessage = `Errore nella creazione inserzioni:\n\n${error.message}`
+    } else if (typeof error === 'string') {
+      errorMessage = `Errore nella creazione inserzioni:\n\n${error}`
+    }
+    
+    alert(errorMessage)
   } finally {
     isSubmitting.value = false
   }
@@ -1208,8 +1231,10 @@ const createNewSingleListing = async () => {
     emit('created', data.data)
     closeModal()
   } else {
-    const errorData = await response.json()
+    const errorData = await response.json().catch(() => ({ message: 'Errore nella lettura della risposta' }))
     console.error('Error creating listing:', errorData)
+    console.error('Response status:', response.status)
+    console.error('Response statusText:', response.statusText)
     
     // Gestione specifica per errore KYC
     if (errorData.requires_kyc) {
@@ -1219,12 +1244,22 @@ const createNewSingleListing = async () => {
       return
     }
     
-    // Altri errori
+    // Altri errori con dettagli
+    let errorMessage = `Errore nella creazione inserzione (HTTP ${response.status}):\n\n`
+    
     if (errorData.errors) {
-      alert(`Errore nella creazione: ${JSON.stringify(errorData.errors)}`)
+      const errorDetails = Object.entries(errorData.errors)
+        .map(([field, messages]) => `• ${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+        .join('\n')
+      errorMessage += errorDetails
+    } else if (errorData.message) {
+      errorMessage += errorData.message
     } else {
-      alert(`Errore nella creazione: ${errorData.message || 'Errore sconosciuto'}`)
+      errorMessage += errorData.error || 'Errore sconosciuto'
     }
+    
+    alert(errorMessage)
+    throw new Error(errorMessage)
   }
 }
 
