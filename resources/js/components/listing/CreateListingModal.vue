@@ -1087,6 +1087,111 @@ const loadShippingZones = async () => {
   }
 }
 
+// Funzione per comprimere immagini prima dell'upload (per evitare errore 413)
+const compressImageForUpload = (file, maxWidth = 1920, maxHeight = 2560, quality = 0.85, maxSizeMB = 2) => {
+  return new Promise((resolve, reject) => {
+    // Se il file è già piccolo (< 2MB), non comprimere
+    if (file.size < maxSizeMB * 1024 * 1024) {
+      resolve(file)
+      return
+    }
+
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = (e) => {
+      const img = new Image()
+      img.src = e.target.result
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+
+        // Calcola le nuove dimensioni mantenendo le proporzioni
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width)
+            width = maxWidth
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height)
+            height = maxHeight
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, width, height)
+
+        // Converti in blob con compressione progressiva
+        let currentQuality = quality
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              // Se è ancora troppo grande, riduci ulteriormente la qualità
+              if (blob.size > maxSizeMB * 1024 * 1024 && currentQuality > 0.5) {
+                currentQuality -= 0.1
+                canvas.toBlob(
+                  (newBlob) => {
+                    if (newBlob && newBlob.size <= maxSizeMB * 1024 * 1024) {
+                      const compressedFile = new File([newBlob], file.name, {
+                        type: 'image/jpeg', // Converti sempre in JPEG per migliore compressione
+                        lastModified: Date.now()
+                      })
+                      resolve(compressedFile)
+                    } else {
+                      // Se ancora troppo grande, ridimensiona ulteriormente
+                      const scaleFactor = Math.sqrt((maxSizeMB * 1024 * 1024) / blob.size)
+                      const newWidth = Math.round(width * scaleFactor)
+                      const newHeight = Math.round(height * scaleFactor)
+                      
+                      canvas.width = newWidth
+                      canvas.height = newHeight
+                      ctx.drawImage(img, 0, 0, newWidth, newHeight)
+                      
+                      canvas.toBlob(
+                        (finalBlob) => {
+                          if (finalBlob) {
+                            const compressedFile = new File([finalBlob], file.name, {
+                              type: 'image/jpeg',
+                              lastModified: Date.now()
+                            })
+                            resolve(compressedFile)
+                          } else {
+                            reject(new Error('Errore nella compressione finale'))
+                          }
+                        },
+                        'image/jpeg',
+                        0.7
+                      )
+                    }
+                  },
+                  'image/jpeg',
+                  currentQuality
+                )
+              } else {
+                const compressedFile = new File([blob], file.name, {
+                  type: 'image/jpeg',
+                  lastModified: Date.now()
+                })
+                resolve(compressedFile)
+              }
+            } else {
+              reject(new Error('Errore nella compressione dell\'immagine'))
+            }
+          },
+          'image/jpeg',
+          currentQuality
+        )
+      }
+      img.onerror = () => reject(new Error('Errore nel caricamento dell\'immagine'))
+    }
+    reader.onerror = () => reject(new Error('Errore nella lettura del file'))
+  })
+}
+
 const createListing = async () => {
   try {
     isSubmitting.value = true
@@ -1191,12 +1296,25 @@ const createNewSingleListing = async () => {
     formData.append('grading_score', additionalDetails.value.gradingScore)
   }
   
-  // Add 4 images
-  cardImages.value.forEach((image, index) => {
+  // Add 4 images - comprimi prima dell'upload se troppo grandi
+  for (let index = 0; index < cardImages.value.length; index++) {
+    const image = cardImages.value[index]
     if (image && image.file) {
-      formData.append('images[]', image.file)
+      try {
+        // Se l'immagine è > 2MB, comprimila prima dell'upload
+        if (image.file.size > 2 * 1024 * 1024) {
+          const compressedFile = await compressImageForUpload(image.file)
+          formData.append('images[]', compressedFile)
+        } else {
+          formData.append('images[]', image.file)
+        }
+      } catch (error) {
+        console.error(`Errore compressione immagine ${index + 1}:`, error)
+        // Usa il file originale se la compressione fallisce
+        formData.append('images[]', image.file)
+      }
     }
-  })
+  }
   
   // Add shipping zones (required)
   if (selectedShippingZones.value.length === 0) {
@@ -1300,10 +1418,23 @@ const createBulkListings = async () => {
     formData.append('is_first_edition', listing.is_first_edition ? 'true' : 'false')
     formData.append('is_negotiable', listing.is_negotiable ? 'true' : 'false')
     
-    // Immagini bulk - una immagine per carta
+    // Immagini bulk - una immagine per carta (comprimi se necessario)
     if (bulkImages.value && bulkImages.value[i] && bulkImages.value[i].file) {
       console.log(`🖼️ Aggiungendo immagine per carta ${i + 1}:`, bulkImages.value[i])
-      formData.append('images[]', bulkImages.value[i].file)
+      try {
+        const imageFile = bulkImages.value[i].file
+        // Se l'immagine è > 2MB, comprimila prima dell'upload
+        if (imageFile.size > 2 * 1024 * 1024) {
+          const compressedFile = await compressImageForUpload(imageFile)
+          formData.append('images[]', compressedFile)
+        } else {
+          formData.append('images[]', imageFile)
+        }
+      } catch (error) {
+        console.error(`Errore compressione immagine bulk ${i + 1}:`, error)
+        // Usa il file originale se la compressione fallisce
+        formData.append('images[]', bulkImages.value[i].file)
+      }
     } else {
       console.log(`⚠️ Nessuna immagine per carta ${i + 1}`)
     }
