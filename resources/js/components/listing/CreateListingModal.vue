@@ -1757,6 +1757,7 @@ const initializeEditMode = async (listing) => {
       year: selectedCardModel.value?.year || selectedCardModel.value?.card_set?.year || '',
       number: selectedCardModel.value?.card_number || selectedCardModel.value?.card_number_in_set || '',
       player: selectedCardModel.value?.player?.id || '',
+      playerSearch: selectedCardModel.value?.player?.display_name || selectedCardModel.value?.player?.name || '',
       team: selectedCardModel.value?.team?.id || '',
       set: selectedCardModel.value?.card_set?.id || ''
     }

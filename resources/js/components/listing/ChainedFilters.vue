@@ -1582,11 +1582,33 @@ const restoreSelectedEntities = async () => {
   // Ripristina player se abbiamo un ID ma non l'oggetto
   if (localFilters.value.player && !selectedPlayer.value) {
     try {
-      const response = await fetch(`/api/${props.category}/filters/players/${localFilters.value.player}`)
+      // Controlla se abbiamo già un playerSearch (nome) ma non l'oggetto completo
+      if (localFilters.value.playerSearch && !selectedPlayer.value) {
+        // Il player potrebbe essere già stato popolato tramite l'evento filters-populated
+        // Aspetta un po' prima di fare la chiamata API
+        await new Promise(resolve => setTimeout(resolve, 200))
+        if (selectedPlayer.value) {
+          console.log('✅ Player già popolato tramite evento')
+          return
+        }
+      }
+      
+      const response = await fetch(`/api/${props.category}/filters/players/${localFilters.value.player}`, {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
       if (response.ok) {
         const data = await response.json()
-        selectedPlayer.value = data.player
-        console.log('✅ Player ripristinato:', selectedPlayer.value)
+        if (data.player) {
+          selectedPlayer.value = data.player
+          console.log('✅ Player ripristinato:', selectedPlayer.value)
+        } else {
+          console.warn('⚠️ Player non trovato nella risposta')
+        }
+      } else {
+        console.warn('⚠️ Errore HTTP nel ripristino player:', response.status)
       }
     } catch (error) {
       console.error('❌ Errore nel ripristino player:', error)
@@ -1705,7 +1727,8 @@ const handleFiltersPopulated = async (event) => {
   if (data.player) {
     selectedPlayer.value = data.player
     localFilters.value.player = data.player.id
-    localFilters.value.playerSearch = data.player.display_name || data.player.name
+    localFilters.value.playerSearch = data.player.display_name || data.player.name || ''
+    console.log('✅ Player popolato tramite filters-populated:', selectedPlayer.value)
     
     // Inizializza le carte del giocatore se disponibili
     if (data.player.cards && data.player.cards.length > 0) {
