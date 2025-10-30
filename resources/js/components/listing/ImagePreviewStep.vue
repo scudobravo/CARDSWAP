@@ -373,42 +373,59 @@ const additionalDetails = ref({
   notes: ''
 })
 
+// Flag per evitare loop infiniti
+const isInitializing = ref(false)
+
 // Watch per cardData per popolare i campi esistenti in modalità edit
 watch(() => props.cardData, (newCardData) => {
-  
-  if (newCardData && newCardData.existingImages) {
-    // Popola cardImages con le immagini esistenti
-    newCardData.existingImages.forEach((image, index) => {
-      if (index < 4 && image) {
-        // Se l'immagine è già un oggetto con preview, usalo direttamente
-        if (image && typeof image === 'object' && image.preview) {
-          // Assicurati che l'URL abbia il prefisso /storage/
-          const imageWithCorrectUrl = {
-            ...image,
-            preview: image.preview.startsWith('/storage/') ? image.preview : `/storage/${image.preview}`
-          }
-          cardImages.value[index] = imageWithCorrectUrl
-        } else if (typeof image === 'string') {
-          // Se è una stringa (URL), crea un oggetto immagine
-          cardImages.value[index] = {
-            file: null, // Non abbiamo il file originale
-            preview: image,
-            isExisting: true // Flag per identificare le immagini esistenti
-          }
-        } else if (image instanceof File) {
-          // Se è un File, crea l'oggetto immagine
-          cardImages.value[index] = {
-            file: image,
-            preview: URL.createObjectURL(image),
-            isExisting: false
-          }
-        }
-      }
-    })
+  // Evita loop infiniti
+  if (isInitializing.value) {
+    return
   }
   
-  // Popola additionalDetails con i dati esistenti
-  if (newCardData) {
+  // Popola solo se sono immagini esistenti (non nuove immagini caricate)
+  if (newCardData && newCardData.existingImages && newCardData.existingImages.length > 0) {
+    // Controlla se le immagini esistenti sono già state caricate
+    const hasExistingImages = cardImages.value.some(img => img && img.isExisting)
+    
+    if (!hasExistingImages) {
+      isInitializing.value = true
+      
+      // Popola cardImages con le immagini esistenti
+      newCardData.existingImages.forEach((image, index) => {
+        if (index < 4 && image) {
+          // Se l'immagine è già un oggetto con preview, usalo direttamente
+          if (image && typeof image === 'object' && image.preview) {
+            // Assicurati che l'URL abbia il prefisso /storage/
+            const imageWithCorrectUrl = {
+              ...image,
+              preview: image.preview.startsWith('/storage/') ? image.preview : `/storage/${image.preview}`
+            }
+            cardImages.value[index] = imageWithCorrectUrl
+          } else if (typeof image === 'string') {
+            // Se è una stringa (URL), crea un oggetto immagine
+            cardImages.value[index] = {
+              file: null, // Non abbiamo il file originale
+              preview: image.startsWith('/storage/') ? image : `/storage/${image}`,
+              isExisting: true // Flag per identificare le immagini esistenti
+            }
+          } else if (image instanceof File) {
+            // Se è un File, crea l'oggetto immagine
+            cardImages.value[index] = {
+              file: image,
+              preview: URL.createObjectURL(image),
+              isExisting: false
+            }
+          }
+        }
+      })
+      
+      isInitializing.value = false
+    }
+  }
+  
+  // Popola additionalDetails con i dati esistenti solo se non sono già impostati
+  if (newCardData && (!additionalDetails.value.condition || !additionalDetails.value.gradingCompany)) {
     additionalDetails.value = {
       condition: newCardData.condition || '',
       gradingCompany: newCardData.gradingCompany || '',
@@ -424,7 +441,7 @@ watch(() => props.cardData, (newCardData) => {
       notes: newCardData.notes || ''
     }
   }
-}, { immediate: true, deep: true })
+}, { immediate: true, deep: false }) // Cambiato deep: false per evitare loop
 
 
 // Methods

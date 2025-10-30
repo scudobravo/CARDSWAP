@@ -193,7 +193,7 @@
           <div v-if="currentStep === 2 && selectedMode === 'single'" class="space-y-6">
             <ImagePreviewStep
               :is-bulk-mode="false"
-              :card-data="getSingleCardData()"
+              :card-data="getSingleCardData"
               :grading-companies="gradingCompanies"
               @image-uploaded="handleImageUploaded"
               @additional-details-changed="handleAdditionalDetailsChanged"
@@ -1482,7 +1482,8 @@ const createBulkListings = async () => {
 }
 
 // Image and preview methods
-const getSingleCardData = () => {
+// Usa un computed per evitare che venga chiamato continuamente
+const getSingleCardData = computed(() => {
   const baseData = {
     player: selectedCardModel.value?.player,
     team: selectedCardModel.value?.team,
@@ -1495,6 +1496,7 @@ const getSingleCardData = () => {
   }
   
   // In modalità edit, aggiungi i dati dell'inserzione esistente
+  // IMPORTANTE: passa solo le immagini esistenti (con flag isExisting), non quelle nuove
   if (props.isEdit && props.editingListing) {
     return {
       ...baseData,
@@ -1519,13 +1521,13 @@ const getSingleCardData = () => {
       rookie: listingData.value.is_first_edition ? 'yes' : 'no',
       jewel: listingData.value.is_foil ? 'yes' : 'no',
       multiAutograph: '',
-      // Immagini esistenti
-      existingImages: cardImages.value.filter(img => img !== null)
+      // Passa solo le immagini esistenti per evitare loop infiniti
+      existingImages: cardImages.value.filter(img => img && img.isExisting)
     }
   }
   
   return baseData
-}
+})
 
 const handleImageUploaded = (imagesArray) => {
   console.log('📸 handleImageUploaded chiamata con:', imagesArray)
