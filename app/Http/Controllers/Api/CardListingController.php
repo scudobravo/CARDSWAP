@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CardListing;
 use App\Models\CardModel;
 use App\Models\User;
+use App\Helpers\ImageHelper;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
@@ -82,7 +83,7 @@ class CardListingController extends Controller
             'is_first_edition' => 'boolean',
             'description' => 'nullable|string|max:1000',
             'images' => 'nullable|array',
-            'images.*' => 'nullable|file|image|max:2048',
+            'images.*' => 'nullable|file|image|max:10240', // 10MB max iniziale - verrà compressa lato server
             'shipping_zones' => 'required|array|min:1',
             'shipping_zones.*' => 'exists:shipping_zones,id',
             'status' => 'in:draft,active,paused,inactive',
@@ -104,13 +105,21 @@ class CardListingController extends Controller
             $listingData['seller_id'] = Auth::id();
             $listingData['status'] = $request->get('status', 'draft');
 
-            // Gestione immagini
+            // Gestione immagini con compressione automatica
             if ($request->hasFile('images')) {
                 $images = [];
                 foreach ($request->file('images') as $image) {
                     if ($image && $image->isValid()) {
-                        $path = $image->store('listings', 'public');
-                        $images[] = $path;
+                        try {
+                            // Comprimi e salva l'immagine (sotto i 2MB)
+                            $path = ImageHelper::compressAndStore($image, 'listings');
+                            $images[] = $path;
+                        } catch (\Exception $e) {
+                            // In caso di errore nella compressione, salva l'immagine originale
+                            \Log::warning('Errore compressione immagine: ' . $e->getMessage());
+                            $path = $image->store('listings', 'public');
+                            $images[] = $path;
+                        }
                     }
                 }
                 $listingData['images'] = $images;
@@ -327,8 +336,16 @@ class CardListingController extends Controller
                 $newImages = [];
                 foreach ($request->file('images') as $image) {
                     if ($image && $image->isValid()) {
-                        $path = $image->store('listings', 'public');
-                        $newImages[] = $path;
+                        try {
+                            // Comprimi e salva l'immagine (sotto i 2MB)
+                            $path = ImageHelper::compressAndStore($image, 'listings');
+                            $newImages[] = $path;
+                        } catch (\Exception $e) {
+                            // In caso di errore nella compressione, salva l'immagine originale
+                            \Log::warning('Errore compressione immagine: ' . $e->getMessage());
+                            $path = $image->store('listings', 'public');
+                            $newImages[] = $path;
+                        }
                     }
                 }
                 

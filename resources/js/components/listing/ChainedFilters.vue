@@ -8,7 +8,7 @@
           v-model="localFilters.playerSearch"
           type="text" 
           placeholder="Cerca giocatore..."
-          class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
+          class="block w-full h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
           @input="searchPlayers"
           @focus="onPlayerFocus"
           @blur="onPlayerBlur"
@@ -45,7 +45,7 @@
             v-model="localFilters.teamSearch"
             type="text" 
             placeholder="Cerca team..."
-            class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
+            class="block w-full h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
             @input="searchTeams"
             @focus="onTeamFocus"
             @blur="onTeamBlur"
@@ -76,7 +76,7 @@
             v-model="localFilters.setSearch"
             type="text" 
             placeholder="Cerca set..."
-            class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
+            class="block w-full h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
             @input="searchCardSets"
             @focus="onSetFocus"
             @blur="onSetBlur"
@@ -108,7 +108,7 @@
         <select 
           v-model="localFilters.brand"
           @change="onFiltersChanged"
-          class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm/6"
+          class="block w-full h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm/6"
         >
           <option value="">Seleziona Brand</option>
           <option v-for="brand in availableBrands" :key="brand" :value="brand">{{ brand }}</option>
@@ -118,16 +118,34 @@
       <!-- Rarity Selection -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">
-          Rarity ({{ availableRarities.length }} opzioni)
+          Rarity
         </label>
-        <select 
-          v-model="localFilters.rarity"
-          @change="onFiltersChanged"
-          class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm/6"
-        >
-          <option value="">Seleziona Rarity</option>
-          <option v-for="rarity in availableRarities" :key="rarity" :value="rarity">{{ rarity }}</option>
-        </select>
+        <div class="relative">
+          <input 
+            v-model="localFilters.raritySearch"
+            type="text" 
+            placeholder="Cerca rarity..."
+            class="block w-full h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
+            @input="searchRarities"
+            @focus="onRarityFocus"
+            @blur="onRarityBlur"
+          />
+          <div v-if="filteredRarities.length > 0 && showRarityDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+            <div v-for="rarity in filteredRarities" :key="rarity" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectRarity(rarity)">
+              <span class="font-normal block truncate">{{ rarity }}</span>
+            </div>
+          </div>
+        </div>
+        <div v-if="selectedRarity" class="flex flex-wrap gap-2 mt-2">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary text-white">
+            {{ selectedRarity }}
+            <button type="button" @click="removeRarity" class="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-primary-dark">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </button>
+          </span>
+        </div>
       </div>
 
       <!-- Year Selection -->
@@ -138,7 +156,7 @@
         <select 
           v-model="localFilters.year"
           @change="onFiltersChanged"
-          class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm/6"
+          class="block w-full h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm/6"
         >
           <option value="">Seleziona Year</option>
           <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
@@ -157,7 +175,7 @@
           v-model="localFilters.number"
           type="text" 
           placeholder="Inserisci numero carta (es. 30, RF-18, BA-ZI)"
-          class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
+          class="block w-full h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
           @input="onFiltersChanged"
         />
       </div>
@@ -175,7 +193,7 @@
             step="0.01"
             min="0"
             placeholder="0.00"
-            class="block w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none"
+            class="block w-full h-10 pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none"
             @input="onFiltersChanged"
           />
         </div>
@@ -309,6 +327,7 @@ const localFilters = ref({
   setSearch: '',
   brand: '',
   rarity: '',
+  raritySearch: '',
   year: '',
   number: '',
   price: '',
@@ -319,12 +338,14 @@ const selectedPlayer = ref(null)
 const selectedCard = ref(null)
 const selectedTeam = ref(null)
 const selectedCardSet = ref(null)
+const selectedRarity = ref(null)
 const filteredCards = ref([])
 const uniqueCardSets = ref([])
 const uniqueTeams = ref([])
 const filteredPlayers = ref([])
 const filteredTeams = ref([])
 const filteredCardSets = ref([])
+const filteredRarities = ref([])
 
 // Available options (populated by chained filters)
 const availableBrands = ref([])
@@ -335,6 +356,7 @@ const availableYears = ref([])
 const showPlayerDropdown = ref(false)
 const showTeamDropdown = ref(false)
 const showSetDropdown = ref(false)
+const showRarityDropdown = ref(false)
 
 // Computed
 const canSearch = computed(() => {
@@ -399,6 +421,112 @@ const makeApiCall = async (url, requestId) => {
     // Remove request from active set
     activeRequests.delete(requestId)
   }
+}
+
+const searchRarities = async () => {
+  // Clear previous timeout
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+  
+  // Increment search ID to cancel previous requests
+  const searchId = ++currentSearchId
+  
+  // Set new timeout for debounced search
+  searchTimeout = setTimeout(async () => {
+    const query = localFilters.value.raritySearch || ''
+    
+    // Skip search if query is too short
+    if (query.length < 2) {
+      filteredRarities.value = []
+      return
+    }
+    
+    console.log('Ricerca rarità per:', query)
+    console.log('Categoria:', props.category)
+    console.log('Search ID:', searchId)
+    
+    try {
+      // Costruisci i parametri con i filtri correnti per interdipendenza
+      const params = new URLSearchParams({ q: query })
+      if (localFilters.value.player) params.append('player_id', localFilters.value.player)
+      if (localFilters.value.team) params.append('team_id', localFilters.value.team)
+      if (localFilters.value.set) params.append('set_id', localFilters.value.set)
+      if (localFilters.value.year) params.append('year', localFilters.value.year)
+      if (localFilters.value.brand) params.append('brand', localFilters.value.brand)
+      
+      const url = `/api/${props.category}/filters/rarities/search?${params.toString()}`
+      console.log('URL:', url)
+      
+      const requestId = `rarities-${searchId}`
+      const response = await makeApiCall(url, requestId)
+      
+      // Check if this is still the current search and response is valid
+      if (searchId !== currentSearchId || !response) {
+        console.log('Search cancelled or no response')
+        return
+      }
+      
+      console.log('Response status:', response.status)
+      
+      const data = await response.json()
+      console.log('Response data:', data)
+      
+      // Only update if this is still the current search
+      if (searchId === currentSearchId) {
+        filteredRarities.value = data.rarities || []
+        console.log('Filtered rarities:', filteredRarities.value)
+      }
+    } catch (error) {
+      console.error('Errore nella ricerca rarità:', error)
+      // Only update if this is still the current search
+      if (searchId === currentSearchId) {
+        filteredRarities.value = []
+      }
+    }
+  }, 500) // Debounce di 500ms
+}
+
+const onRarityFocus = async () => {
+  showRarityDropdown.value = true
+  
+  // Se c'è già una rarity selezionata, mostra i suoi dati
+  if (selectedRarity.value) {
+    console.log('✅ Rarity già selezionata, mostro i suoi dati:', selectedRarity.value)
+    // Non fare nulla, la rarity è già selezionata
+    return
+  }
+  
+  // Se c'è una query, esegui la ricerca
+  if (localFilters.value.raritySearch && localFilters.value.raritySearch.length >= 2) {
+    await searchRarities()
+  }
+}
+
+const onRarityBlur = () => {
+  // Ritarda la chiusura per permettere il click su un elemento
+  setTimeout(() => {
+    showRarityDropdown.value = false
+  }, 200)
+}
+
+const selectRarity = (rarity) => {
+  selectedRarity.value = rarity
+  localFilters.value.rarity = rarity
+  localFilters.value.raritySearch = rarity
+  filteredRarities.value = []
+  showRarityDropdown.value = false
+  
+  console.log('✅ Rarity selezionata:', rarity)
+  
+  onFiltersChanged()
+}
+
+const removeRarity = () => {
+  selectedRarity.value = null
+  localFilters.value.rarity = ''
+  localFilters.value.raritySearch = ''
+  onFiltersChanged()
 }
 
 const searchPlayers = async () => {
@@ -826,8 +954,8 @@ const recomputeFilteredCards = () => {
   }
   if (localFilters.value.rarity) {
     cards = cards.filter(card => {
-      const rarityValue = card.rarity_variation && card.rarity_variation !== '' ? card.rarity_variation : card.rarity
-      return rarityValue === localFilters.value.rarity
+      // Usa SOLO rarity, NON rarity_variation
+      return card.rarity === localFilters.value.rarity
     })
   }
   // Assicurati che la carta selezionata resti visibile anche se i filtri correnti la escluderebbero
@@ -877,6 +1005,8 @@ const selectCard = (card) => {
   
   if (card.rarity) {
     localFilters.value.rarity = card.rarity
+    selectedRarity.value = card.rarity
+    localFilters.value.raritySearch = card.rarity
     console.log('✅ Campo Rarity aggiornato con:', card.rarity)
   }
   
@@ -1526,6 +1656,15 @@ watch(() => props.initialFilters, async (newFilters) => {
     console.log('✅ Brand dell\'utente ripristinato:', userSelectedBrand)
   }
   
+  // Sincronizza rarity con selectedRarity e raritySearch
+  if (localFilters.value.rarity) {
+    selectedRarity.value = localFilters.value.rarity
+    localFilters.value.raritySearch = localFilters.value.rarity
+  } else {
+    selectedRarity.value = null
+    localFilters.value.raritySearch = ''
+  }
+  
   await restoreSelectedEntities()
   // Non caricare sempre i filtri a catena per evitare errori 500
   // loadChainedData()
@@ -1589,6 +1728,8 @@ const handleFiltersPopulated = async (event) => {
   // Popola altri filtri
   if (data.rarity) {
     localFilters.value.rarity = data.rarity
+    selectedRarity.value = data.rarity
+    localFilters.value.raritySearch = data.rarity
   }
   if (data.year) {
     localFilters.value.year = data.year
@@ -1630,6 +1771,8 @@ const handleCardSelected = (event) => {
     // Popola altri campi se disponibili
     if (card.rarity) {
       localFilters.value.rarity = card.rarity
+      selectedRarity.value = card.rarity
+      localFilters.value.raritySearch = card.rarity
     }
     if (card.year) {
       localFilters.value.year = card.year

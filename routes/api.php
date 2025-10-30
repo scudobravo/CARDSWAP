@@ -259,6 +259,7 @@ Route::prefix('football/filters')->group(function () {
     Route::get('/years/available', [FootballFilterController::class, 'getAvailableYears']);
     Route::get('/brands/available', [FootballFilterController::class, 'getAvailableBrands']);
     Route::get('/rarities/available', [FootballFilterController::class, 'getAvailableRarities']);
+    Route::get('/rarities/search', [FootballFilterController::class, 'searchRarities']);
     Route::get('/grading-scores/by-company', [FootballFilterController::class, 'getGradingScoresByCompany']);
             Route::get('/chained', [FootballFilterController::class, 'getChainedFilters']);
             Route::get('/advanced', [FootballFilterController::class, 'getAdvancedFilters']);
@@ -282,6 +283,7 @@ Route::prefix('basketball/filters')->group(function () {
     Route::get('/years/available', [BasketballFilterController::class, 'getAvailableYears']);
     Route::get('/brands/available', [BasketballFilterController::class, 'getAvailableBrands']);
     Route::get('/rarities/available', [BasketballFilterController::class, 'getAvailableRarities']);
+    Route::get('/rarities/search', [BasketballFilterController::class, 'searchRarities']);
     Route::get('/grading-scores/by-company', [BasketballFilterController::class, 'getGradingScoresByCompany']);
     Route::get('/chained', [BasketballFilterController::class, 'getChainedFilters']);
     Route::get('/advanced', [BasketballFilterController::class, 'getAdvancedFilters']);
@@ -305,6 +307,7 @@ Route::prefix('pokemon/filters')->group(function () {
     Route::get('/years/available', [PokemonFilterController::class, 'getAvailableYears']);
     Route::get('/brands/available', [PokemonFilterController::class, 'getAvailableBrands']);
     Route::get('/rarities/available', [PokemonFilterController::class, 'getAvailableRarities']);
+    Route::get('/rarities/search', [PokemonFilterController::class, 'searchRarities']);
     Route::get('/grading-scores/by-company', [PokemonFilterController::class, 'getGradingScoresByCompany']);
     Route::get('/chained', [PokemonFilterController::class, 'getChainedFilters']);
     Route::get('/advanced', [PokemonFilterController::class, 'getAdvancedFilters']);

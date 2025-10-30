@@ -428,6 +428,88 @@ class BasketballFilterController extends Controller
     }
 
     /**
+     * Search rarities with autocomplete (minimum 2 characters)
+     */
+    public function searchRarities(Request $request)
+    {
+        $request->validate([
+            'q' => 'nullable|string|max:100',
+            'player_id' => 'nullable|integer',
+            'team_id' => 'nullable|integer',
+            'set_id' => 'nullable|integer',
+            'year' => 'nullable|string',
+            'brand' => 'nullable|string'
+        ]);
+
+        $query = $request->get('q', '');
+        
+        // Query base per le rarità: SOLO dalla colonna rarity, NON includere rarity_variation
+        $raritiesQuery = CardModel::whereHas('category', function($catQuery) {
+                $catQuery->where('slug', 'basketball');
+            })
+            ->where('is_active', true)
+            ->whereNotNull('rarity')
+            ->where('rarity', '!=', '');
+        
+        // Applica filtri aggiuntivi per limitare i risultati
+        if ($request->filled('player_id')) {
+            $player = Player::find($request->player_id);
+            if ($player) {
+                $playerIds = Player::where('name', $player->name)->pluck('id')->toArray();
+                $raritiesQuery->whereIn('player_id', $playerIds);
+            } else {
+                $raritiesQuery->where('player_id', $request->player_id);
+            }
+        }
+        
+        if ($request->filled('team_id')) {
+            $raritiesQuery->where('team_id', $request->team_id);
+        }
+        
+        if ($request->filled('set_id')) {
+            $raritiesQuery->where('card_set_id', $request->set_id);
+        }
+        
+        if ($request->filled('year')) {
+            $raritiesQuery->where('year', $request->year);
+        }
+        
+        if ($request->filled('brand')) {
+            $raritiesQuery->whereHas('cardSet', function($setQuery) use ($request) {
+                $setQuery->where('brand', $request->brand);
+            });
+        }
+        
+        // Se c'è una query di ricerca, filtra i risultati SOLO sulla colonna rarity
+        // NON includere rarity_variation nella ricerca
+        if (!empty($query) && strlen($query) >= 2) {
+            $raritiesQuery->where('rarity', 'LIKE', "%{$query}%");
+        }
+        
+        // Estrai le rarità uniche: SOLO dalla colonna rarity, NON da rarity_variation
+        $rarities = $raritiesQuery
+            ->select('rarity')
+            ->whereNotNull('rarity')
+            ->where('rarity', '!=', '')
+            ->distinct()
+            ->orderBy('rarity')
+            ->limit(100) // Limite ragionevole
+            ->pluck('rarity')
+            ->toArray();
+        
+        // Applica il filtro di ricerca anche sui risultati finali per sicurezza
+        if (!empty($query) && strlen($query) >= 2) {
+            $rarities = array_filter($rarities, function($rarity) use ($query) {
+                return stripos($rarity, $query) !== false;
+            });
+            // Riordina dopo il filtro
+            sort($rarities);
+        }
+        
+        return response()->json(['rarities' => array_values($rarities)]);
+    }
+
+    /**
      * Get grading scores filtered by company
      */
     public function getGradingScoresByCompany(Request $request)

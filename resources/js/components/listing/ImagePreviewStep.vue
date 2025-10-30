@@ -431,7 +431,7 @@ watch(() => props.cardData, (newCardData) => {
 const handleImageUpload = (event) => {
   const file = event.target.files[0]
   if (file) {
-    // Validate file size (10MB max)
+    // Validate file size (10MB max - il backend comprimerà automaticamente)
     if (file.size > 10 * 1024 * 1024) {
       alert('Il file è troppo grande. Dimensione massima: 10MB')
       return
@@ -456,7 +456,7 @@ const handleImageUpload = (event) => {
 const handleCardImageUpload = (event, index) => {
   const file = event.target.files[0]
   if (file) {
-    // Validate file size (10MB max)
+    // Validate file size (10MB max - il backend comprimerà automaticamente)
     if (file.size > 10 * 1024 * 1024) {
       alert('Il file è troppo grande. Dimensione massima: 10MB')
       return
