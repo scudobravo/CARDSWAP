@@ -426,18 +426,34 @@ class CardListingController extends Controller
             ], 403);
         }
 
+        // Verifica se l'inserzione può essere cancellata
+        if (!$cardListing->canBeDeleted()) {
+            $reason = '';
+            if ($cardListing->isSold()) {
+                $reason = 'Non è possibile cancellare un\'inserzione venduta. Le inserzioni vendute rimangono in archivio per riferimento storico.';
+            } elseif ($cardListing->hasOrders()) {
+                $reason = 'Non è possibile cancellare un\'inserzione che ha ordini associati. Le inserzioni con ordini rimangono in archivio per riferimento storico.';
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => $reason
+            ], 422);
+        }
+
         try {
-            $cardListing->update(['status' => 'inactive']);
+            // Cancella con soft delete
+            $cardListing->delete();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Inserzione disattivata con successo'
+                'message' => 'Inserzione eliminata con successo'
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Errore durante la disattivazione dell\'inserzione',
+                'message' => 'Errore durante l\'eliminazione dell\'inserzione',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -829,16 +845,46 @@ class CardListingController extends Controller
                 ], 403);
             }
 
-            // Disattiva le inserzioni invece di eliminarle
-            CardListing::whereIn('id', $listingIds)
-                ->where('seller_id', $sellerId)
-                ->update(['status' => 'inactive']);
+            // Verifica quali inserzioni possono essere cancellate
+            $deletableIds = [];
+            $nonDeletableIds = [];
 
-            return response()->json([
+            foreach ($listings as $listing) {
+                if ($listing->canBeDeleted()) {
+                    $deletableIds[] = $listing->id;
+                } else {
+                    $nonDeletableIds[] = [
+                        'id' => $listing->id,
+                        'reason' => $listing->isSold() ? 'venduta' : 'ha ordini associati'
+                    ];
+                }
+            }
+
+            // Cancella solo le inserzioni che possono essere cancellate
+            $deletedCount = 0;
+            if (!empty($deletableIds)) {
+                CardListing::whereIn('id', $deletableIds)
+                    ->where('seller_id', $sellerId)
+                    ->delete();
+                $deletedCount = count($deletableIds);
+            }
+
+            // Prepara la risposta
+            $response = [
                 'success' => true,
-                'message' => 'Inserzioni disattivate con successo',
-                'deleted_count' => count($listingIds)
-            ]);
+                'message' => $deletedCount > 0 
+                    ? "{$deletedCount} inserzione/i eliminate con successo" 
+                    : 'Nessuna inserzione eliminata',
+                'deleted_count' => $deletedCount,
+            ];
+
+            // Aggiungi informazioni sulle inserzioni non eliminabili
+            if (!empty($nonDeletableIds)) {
+                $response['non_deletable'] = $nonDeletableIds;
+                $response['message'] .= '. ' . count($nonDeletableIds) . ' inserzione/i non possono essere eliminate perché vendute o hanno ordini associati.';
+            }
+
+            return response()->json($response);
 
         } catch (\Exception $e) {
             return response()->json([

@@ -6,10 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CardListing extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
     protected $fillable = [
         'card_model_id',
         'seller_id',
@@ -72,6 +74,14 @@ class CardListing extends Model
     public function availability()
     {
         return $this->hasOne(Availability::class);
+    }
+
+    /**
+     * Relazione con gli articoli degli ordini
+     */
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
     }
 
     /**
@@ -342,6 +352,44 @@ class CardListing extends Model
     public function markAsSold()
     {
         $this->update(['status' => 'sold']);
+    }
+
+    /**
+     * Verifica se l'inserzione è venduta
+     */
+    public function isSold(): bool
+    {
+        return $this->status === 'sold';
+    }
+
+    /**
+     * Verifica se l'inserzione ha ordini associati
+     */
+    public function hasOrders(): bool
+    {
+        return $this->orderItems()->exists();
+    }
+
+    /**
+     * Verifica se l'inserzione può essere cancellata
+     * 
+     * Un'inserzione non può essere cancellata se:
+     * - È stata venduta (status = 'sold')
+     * - Ha ordini associati (anche se non completamente venduta)
+     */
+    public function canBeDeleted(): bool
+    {
+        // Non può essere cancellata se è venduta
+        if ($this->isSold()) {
+            return false;
+        }
+
+        // Non può essere cancellata se ha ordini associati
+        if ($this->hasOrders()) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
