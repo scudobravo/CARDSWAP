@@ -100,9 +100,10 @@
             </div>
             
             <!-- Thumbnail Images -->
-            <div v-if="product.images && product.images.length > 0" class="grid grid-cols-2 gap-4">
+            <!-- Grid view quando ci sono 2 o meno immagini -->
+            <div v-if="product.images && product.images.length > 0 && product.images.length <= 2" class="grid grid-cols-2 gap-4">
               <div 
-                v-for="(image, index) in product.images.slice(0, 4)" 
+                v-for="(image, index) in product.images" 
                 :key="index"
                 @click="selectImage(index)"
                 :class="[
@@ -116,6 +117,55 @@
                   class="w-full h-full object-cover"
                   @error="handleImageError"
                 />
+              </div>
+            </div>
+            
+            <!-- Carousel view quando ci sono più di 2 immagini -->
+            <div v-else-if="product.images && product.images.length > 2" class="relative group">
+              <!-- Left arrow -->
+              <button 
+                @click="scrollThumbnailsLeft"
+                :disabled="!canScrollThumbnailsLeft"
+                class="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-primary hover:bg-primary/90 text-white p-2 rounded-full shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+
+              <!-- Right arrow -->
+              <button 
+                @click="scrollThumbnailsRight"
+                :disabled="!canScrollThumbnailsRight"
+                class="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-primary hover:bg-primary/90 text-white p-2 rounded-full shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              <!-- Thumbnails container -->
+              <div 
+                ref="thumbnailsContainer"
+                class="flex space-x-4 overflow-x-auto scrollbar-hide px-1"
+                @scroll="handleThumbnailsScroll"
+              >
+                <div 
+                  v-for="(image, index) in product.images" 
+                  :key="index"
+                  @click="selectImage(index)"
+                  :class="[
+                    'flex-shrink-0 aspect-[3/4] w-20 bg-gray-200 rounded-lg overflow-hidden cursor-pointer transition-all duration-200',
+                    selectedImageIndex === index ? 'ring-2 ring-primary ring-offset-2' : 'hover:opacity-80'
+                  ]"
+                >
+                  <img 
+                    :src="getImageUrl(image)" 
+                    :alt="`${product.name} - Immagine ${index + 1}`"
+                    class="w-full h-full object-cover"
+                    @error="handleImageError"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -370,7 +420,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCartStore } from '../stores/cart.js'
 import { useWishlistStore } from '../stores/wishlist.js'
@@ -462,6 +512,11 @@ const relatedProductsError = ref(null)
 // Image selection
 const selectedImageIndex = ref(0)
 
+// Thumbnail carousel refs and state
+const thumbnailsContainer = ref(null)
+const canScrollThumbnailsLeft = ref(false)
+const canScrollThumbnailsRight = ref(true)
+
 // Computed per l'immagine principale da mostrare
 const mainImageUrl = computed(() => {
   if (!product.value) return null
@@ -495,6 +550,33 @@ const getImageUrl = (image) => {
 
 const selectImage = (index) => {
   selectedImageIndex.value = index
+}
+
+// Thumbnail carousel methods
+const scrollThumbnailsLeft = () => {
+  if (thumbnailsContainer.value) {
+    thumbnailsContainer.value.scrollBy({ left: -120, behavior: 'smooth' })
+  }
+}
+
+const scrollThumbnailsRight = () => {
+  if (thumbnailsContainer.value) {
+    thumbnailsContainer.value.scrollBy({ left: 120, behavior: 'smooth' })
+  }
+}
+
+const handleThumbnailsScroll = () => {
+  if (thumbnailsContainer.value) {
+    const container = thumbnailsContainer.value
+    canScrollThumbnailsLeft.value = container.scrollLeft > 0
+    canScrollThumbnailsRight.value = container.scrollLeft < (container.scrollWidth - container.clientWidth - 10)
+  }
+}
+
+const updateThumbnailsScrollButtons = () => {
+  if (thumbnailsContainer.value) {
+    handleThumbnailsScroll()
+  }
 }
 
 const addToCart = async () => {
@@ -621,6 +703,11 @@ const loadProductDetails = async () => {
         // Reset selected image index quando cambia il prodotto
         selectedImageIndex.value = 0
         
+        // Aggiorna i pulsanti di scroll delle thumbnail dopo che le immagini sono caricate
+        nextTick(() => {
+          updateThumbnailsScrollButtons()
+        })
+        
         // Crea l'oggetto listing per il carrello
         listing.value = {
           id: listing.id,
@@ -681,6 +768,11 @@ const loadProductDetails = async () => {
       
       // Reset selected image index quando cambia il prodotto
       selectedImageIndex.value = 0
+      
+      // Aggiorna i pulsanti di scroll delle thumbnail dopo che le immagini sono caricate
+      nextTick(() => {
+        updateThumbnailsScrollButtons()
+      })
       
       // Se ci sono immagini ma non c'è image_url, usa la prima immagine come principale
       if (product.value.images && product.value.images.length > 0 && !product.value.image_url) {
@@ -900,6 +992,11 @@ onMounted(async () => {
   // Inizializza il wishlist store
   await wishlistStore.initialize()
   loadProductDetails()
+  
+  // Aggiorna i pulsanti di scroll delle thumbnail dopo il mount
+  nextTick(() => {
+    updateThumbnailsScrollButtons()
+  })
 })
 
 // Watch per ricaricare i dati quando cambia la route (navigazione tra carte diverse)
@@ -920,4 +1017,22 @@ watch(() => route.name, (newName, oldName) => {
     loadProductDetails()
   }
 })
+
+// Watch per aggiornare i pulsanti di scroll quando cambiano le immagini
+watch(() => product.value?.images, () => {
+  nextTick(() => {
+    updateThumbnailsScrollButtons()
+  })
+}, { deep: true })
 </script>
+
+<style scoped>
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+</style>
