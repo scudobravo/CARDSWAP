@@ -1020,14 +1020,26 @@ class FootballFilterController extends Controller
 
             // Filtro per range numerato
             if (isset($filters['numbered_min']) && !empty($filters['numbered_min'])) {
-                $query->whereHas('cardModel', function($q) use ($filters) {
-                    $q->whereRaw("CAST(SUBSTRING_INDEX(card_models.card_number_in_set, '/', 1) AS UNSIGNED) >= ?", [$filters['numbered_min']]);
+                $numberedMin = (int)$filters['numbered_min'];
+                $query->whereHas('cardModel', function($q) use ($numberedMin) {
+                    $q->whereNotNull('card_number_in_set')
+                      ->where('card_number_in_set', '!=', '')
+                      ->whereRaw(
+                          "CAST(SUBSTRING_INDEX(card_models.card_number_in_set, '/', 1) AS UNSIGNED) >= ?",
+                          [$numberedMin]
+                      );
                 });
             }
 
             if (isset($filters['numbered_max']) && !empty($filters['numbered_max'])) {
-                $query->whereHas('cardModel', function($q) use ($filters) {
-                    $q->whereRaw("CAST(SUBSTRING_INDEX(card_models.card_number_in_set, '/', 1) AS UNSIGNED) <= ?", [$filters['numbered_max']]);
+                $numberedMax = (int)$filters['numbered_max'];
+                $query->whereHas('cardModel', function($q) use ($numberedMax) {
+                    $q->whereNotNull('card_number_in_set')
+                      ->where('card_number_in_set', '!=', '')
+                      ->whereRaw(
+                          "CAST(SUBSTRING_INDEX(card_models.card_number_in_set, '/', 1) AS UNSIGNED) <= ?",
+                          [$numberedMax]
+                      );
                 });
             }
 
