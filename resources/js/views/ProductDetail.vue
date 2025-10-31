@@ -318,7 +318,7 @@
         <div class="lg:col-span-2">
           <BarChart 
             :product-id="product.listing_id || product.id"
-            :current-price="parseFloat(product.price?.replace('€', '').replace(',', '') || 0)"
+            :current-price="parseFloat(String(product.price || 0).replace(/€/g, '').replace(/,/g, '')) || 0"
             :listing-id="product.listing_id"
           />
         </div>
@@ -786,7 +786,7 @@ const loadProductDetails = async () => {
           id: response.data.listing_id,
           card_model_id: product.value.id,
           seller_id: response.data.seller.id,
-          price: parseFloat(product.value.price?.replace('€', '').replace(',', '') || '95'),
+          price: parseFloat(String(product.value.price || 0).replace(/€/g, '').replace(/,/g, '')) || 95,
           quantity: product.value.quantity || 1,
           condition: product.value.condition || 'LIGHT PLAYED',
           description: product.value.description || 'Carta in ottime condizioni',
@@ -811,7 +811,7 @@ const loadProductDetails = async () => {
           id: `listing_${product.value.id}`,
           card_model_id: product.value.id,
           seller_id: 1,
-          price: parseFloat(product.value.price?.replace('€', '').replace(',', '') || '95'),
+          price: parseFloat(String(product.value.price || 0).replace(/€/g, '').replace(/,/g, '')) || 95,
           quantity: product.value.quantity || 1,
           condition: product.value.condition || 'LIGHT PLAYED',
           description: product.value.description || 'Carta in ottime condizioni',
@@ -970,7 +970,7 @@ const handleImageError = (event) => {
 
 const formatPrice = (price) => {
   if (!price && price !== 0) return '€0.00'
-  // Se il prezzo è già una stringa con €, rimuovilo
+  // Se il prezzo è già una stringa con € o virgole, rimuovili
   const priceStr = String(price).replace(/€/g, '').replace(/,/g, '').trim()
   const priceNum = parseFloat(priceStr) || 0
   return '€' + priceNum.toFixed(2)
