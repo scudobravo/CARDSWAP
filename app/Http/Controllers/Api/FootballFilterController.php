@@ -1168,7 +1168,7 @@ class FootballFilterController extends Controller
             'has_more_pages' => $listings->hasMorePages()
         ]);
         } catch (\Exception $e) {
-            \Log::error('Errore in getFilteredProducts', [
+            Log::error('Errore in getFilteredProducts', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'filters' => $filters
