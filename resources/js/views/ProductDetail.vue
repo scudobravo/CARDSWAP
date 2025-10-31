@@ -85,8 +85,8 @@
               </button>
               
               <img 
-                v-if="product.image_url || (product.images && product.images.length > 0)" 
-                :src="product.image_url || (product.images && product.images.length > 0 ? (product.images[0].startsWith('/storage/') ? product.images[0] : '/storage/' + product.images[0]) : null)" 
+                v-if="mainImageUrl" 
+                :src="mainImageUrl" 
                 :alt="product.name || 'Carta'"
                 class="w-full h-full object-cover rounded-lg"
                 @error="handleImageError"
@@ -102,13 +102,17 @@
             <!-- Thumbnail Images -->
             <div v-if="product.images && product.images.length > 0" class="grid grid-cols-2 gap-4">
               <div 
-                v-for="(image, index) in product.images.slice(0, 2)" 
+                v-for="(image, index) in product.images.slice(0, 4)" 
                 :key="index"
-                class="aspect-[3/4] bg-gray-200 rounded-lg overflow-hidden"
+                @click="selectImage(index)"
+                :class="[
+                  'aspect-[3/4] bg-gray-200 rounded-lg overflow-hidden cursor-pointer transition-all duration-200',
+                  selectedImageIndex === index ? 'ring-2 ring-primary ring-offset-2' : 'hover:opacity-80'
+                ]"
               >
                 <img 
-                  :src="image.startsWith('/storage/') ? image : '/storage/' + image" 
-                  :alt="`${product.name} - Immagine ${index + 2}`"
+                  :src="getImageUrl(image)" 
+                  :alt="`${product.name} - Immagine ${index + 1}`"
                   class="w-full h-full object-cover"
                   @error="handleImageError"
                 />
@@ -455,7 +459,44 @@ const relatedProducts = ref([])
 const relatedProductsLoading = ref(false)
 const relatedProductsError = ref(null)
 
+// Image selection
+const selectedImageIndex = ref(0)
+
+// Computed per l'immagine principale da mostrare
+const mainImageUrl = computed(() => {
+  if (!product.value) return null
+  
+  // Se ci sono immagini nella CardListing, usa quella selezionata
+  if (product.value.images && Array.isArray(product.value.images) && product.value.images.length > 0) {
+    const selectedImage = product.value.images[selectedImageIndex.value]
+    if (selectedImage) {
+      return getImageUrl(selectedImage)
+    }
+    // Se l'indice selezionato non esiste, usa la prima immagine
+    return getImageUrl(product.value.images[0])
+  }
+  
+  // Fallback a image_url se disponibile
+  if (product.value.image_url) {
+    return product.value.image_url
+  }
+  
+  return null
+})
+
 // Methods
+const getImageUrl = (image) => {
+  if (!image) return null
+  if (image.startsWith('/storage/') || image.startsWith('http')) {
+    return image
+  }
+  return '/storage/' + image
+}
+
+const selectImage = (index) => {
+  selectedImageIndex.value = index
+}
+
 const addToCart = async () => {
   if (!listing.value) {
     addToCartMessage.value = 'Dati del prodotto non disponibili'
@@ -577,6 +618,9 @@ const loadProductDetails = async () => {
           updated_at: listing.updated_at
         }
         
+        // Reset selected image index quando cambia il prodotto
+        selectedImageIndex.value = 0
+        
         // Crea l'oggetto listing per il carrello
         listing.value = {
           id: listing.id,
@@ -630,6 +674,14 @@ const loadProductDetails = async () => {
       product.value = {
         ...product.value,
         ...response.data
+      }
+      
+      // Reset selected image index quando cambia il prodotto
+      selectedImageIndex.value = 0
+      
+      // Se ci sono immagini ma non c'è image_url, usa la prima immagine come principale
+      if (product.value.images && product.value.images.length > 0 && !product.value.image_url) {
+        product.value.image_url = getImageUrl(product.value.images[0])
       }
       
       // Usa i dati del listing dall'API se disponibili, altrimenti crea un mock
