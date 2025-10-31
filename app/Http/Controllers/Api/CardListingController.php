@@ -104,6 +104,13 @@ class CardListingController extends Controller
             $listingData = $request->all();
             $listingData['seller_id'] = Auth::id();
             $listingData['status'] = $request->get('status', 'draft');
+            
+            // Assicurati che quantity sia un intero
+            if (isset($listingData['quantity'])) {
+                $listingData['quantity'] = (int) $listingData['quantity'];
+            } else {
+                $listingData['quantity'] = 1; // Default a 1 se non specificato
+            }
 
             // Gestione immagini con compressione automatica
             if ($request->hasFile('images')) {
