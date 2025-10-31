@@ -913,6 +913,9 @@ class FootballFilterController extends Controller
         $query = CardModel::with(['player', 'team', 'cardSet', 'gradingCompany', 'cardListings' => function($q) {
                 $q->where('status', 'active');
             }])
+            ->whereHas('category', function($q) {
+                $q->where('slug', 'calcio');
+            })
             ->whereHas('cardListings', function($q) {
                 $q->where('status', 'active');
             })
