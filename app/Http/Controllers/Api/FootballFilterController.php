@@ -690,11 +690,19 @@ class FootballFilterController extends Controller
      */
     public function getChainedFilters(Request $request)
     {
-        $filters = $request->all();
-        $response = [];
+        try {
+            $filters = $request->all();
+            $response = [];
 
-        // Base query per card_models
-        $cardModelsQuery = \App\Models\CardModel::query();
+            // Base query per card_models che hanno CardListing attive
+            $cardModelsQuery = \App\Models\CardModel::query()
+                ->where('is_active', true)
+                ->whereHas('category', function($catQuery) {
+                    $catQuery->where('slug', 'calcio');
+                })
+                ->whereHas('cardListings', function($listingQuery) {
+                    $listingQuery->where('status', 'active');
+                });
 
         // Filtri a catena: Player → Team → Set → Year → Brand → Rarity
         if (isset($filters['player_id']) && !empty($filters['player_id'])) {
@@ -886,6 +894,27 @@ class FootballFilterController extends Controller
         }
 
         return response()->json($response);
+        } catch (\Exception $e) {
+            Log::error('Errore in getChainedFilters', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'filters' => $filters ?? []
+            ]);
+            
+            return response()->json([
+                'years' => [],
+                'brands' => [],
+                'rarities' => [],
+                'teams' => [],
+                'card_sets' => [],
+                'players' => [],
+                'grading_companies' => [],
+                'conditions' => [],
+                'numbered_range' => null,
+                'grading_available' => false,
+                'condition_available' => false
+            ]);
+        }
     }
 
     /**
