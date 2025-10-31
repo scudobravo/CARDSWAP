@@ -513,7 +513,7 @@ class CardListingController extends Controller
             'set_name' => $cardModel->cardSet->name ?? 'Set Name',
             'year' => $cardModel->year ?? date('Y'),
             'rarity' => $cardModel->rarity ?? 'Rare',
-            'price' => number_format($cardListing->price, 2),
+            'price' => floatval($cardListing->price), // Restituisce il prezzo come numero, non formattato
             'condition' => $cardListing->condition ?? 'excellent',
             'quantity' => $cardListing->quantity ?? 1,
             'description' => $cardListing->description ?? $cardModel->description ?? '',

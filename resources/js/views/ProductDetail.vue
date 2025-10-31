@@ -681,7 +681,7 @@ const loadProductDetails = async () => {
           set_name: cardModel?.card_set?.name || cardModel?.cardSet?.name || 'Set Name',
           year: cardModel?.year || new Date().getFullYear(),
           rarity: cardModel?.rarity || 'Rare',
-          price: parseFloat(listing.price).toFixed(2), // Solo numero, senza €
+          price: parseFloat(listing.price) || 0, // Il prezzo viene già come numero dal backend
           rating: '4.5',
           image_url: imageUrl,
           images: images,
