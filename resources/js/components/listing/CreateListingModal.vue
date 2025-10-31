@@ -1961,23 +1961,53 @@ const updateSingleListing = async () => {
     formData.append('is_first_edition', listingData.value.is_first_edition ? 'true' : 'false')
     formData.append('is_negotiable', listingData.value.is_negotiable ? 'true' : 'false')
     
-    // Aggiungi solo le nuove immagini (quelle con file e non esistenti) - comprimi se necessario
+    // Aggiungi solo le nuove immagini (quelle con file e non esistenti) - comprimi SEMPRE se > 500KB
     const newImages = cardImages.value.filter(image => image && image.file && !image.isExisting)
     
+    let totalSize = 0
     for (const image of newImages) {
       try {
-        // Se l'immagine è > 2MB, comprimila prima dell'upload
-        if (image.file.size > 2 * 1024 * 1024) {
+        const fileSizeMB = image.file.size / 1024 / 1024
+        console.log(`🖼️ Immagine nuova per update: ${fileSizeMB.toFixed(2)}MB`)
+        
+        // Comprimi sempre se > 500KB o se la dimensione totale supererebbe 3MB
+        const shouldCompress = image.file.size > 500 * 1024 || totalSize + image.file.size > 3 * 1024 * 1024
+        
+        if (shouldCompress) {
+          console.log(`📦 Compressione immagine per update...`)
           const compressedFile = await compressImageForUpload(image.file)
+          const compressedSizeMB = compressedFile.size / 1024 / 1024
+          console.log(`✅ Immagine compressa: ${compressedSizeMB.toFixed(2)}MB`)
           formData.append('images[]', compressedFile)
+          totalSize += compressedFile.size
+          
+          // Verifica che dopo compressione non sia ancora troppo grande
+          if (compressedFile.size > 1.5 * 1024 * 1024) {
+            throw new Error(`Immagine ancora troppo grande dopo compressione: ${compressedSizeMB.toFixed(2)}MB`)
+          }
         } else {
           formData.append('images[]', image.file)
+          totalSize += image.file.size
         }
       } catch (error) {
-        console.error('Errore compressione immagine:', error)
-        // Usa il file originale se la compressione fallisce
-        formData.append('images[]', image.file)
+        console.error('❌ Errore compressione immagine:', error)
+        // Se la compressione fallisce, NON inviare se è troppo grande
+        if (image.file.size < 2 * 1024 * 1024) {
+          formData.append('images[]', image.file)
+          totalSize += image.file.size
+        } else {
+          alert(`❌ L'immagine è troppo grande (${(image.file.size / 1024 / 1024).toFixed(2)}MB) e non può essere compressa. Per favore, usa un'immagine più piccola.`)
+          throw error
+        }
       }
+    }
+    
+    console.log(`📦 Dimensione totale immagini per update: ${(totalSize / 1024 / 1024).toFixed(2)}MB`)
+    
+    // Verifica dimensione totale
+    if (totalSize > 4 * 1024 * 1024) {
+      alert(`⚠️ Attenzione: La dimensione totale delle immagini (${(totalSize / 1024 / 1024).toFixed(2)}MB) è troppo grande.`)
+      throw new Error('Dimensione totale immagini troppo grande')
     }
     
     // Aggiungi le zone di spedizione
