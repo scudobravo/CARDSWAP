@@ -893,8 +893,26 @@ class FootballFilterController extends Controller
      */
     public function getAdvancedFilters(Request $request)
     {
-        // Redirect to chained filters for consistency
-        return $this->getChainedFilters($request);
+        try {
+            // Redirect to chained filters for consistency
+            return $this->getChainedFilters($request);
+        } catch (\Exception $e) {
+            Log::error('Errore in getAdvancedFilters', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'years' => [],
+                'brands' => [],
+                'rarities' => [],
+                'teams' => [],
+                'card_sets' => [],
+                'players' => [],
+                'grading_companies' => [],
+                'conditions' => []
+            ]);
+        }
     }
 
     /**
