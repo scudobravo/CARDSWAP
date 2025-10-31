@@ -166,10 +166,27 @@
                 </span>
                 <button 
                   @click="editListing(listing)"
-                  class="text-primary hover:text-primary-dark text-sm font-medium"
+                  class="p-2 text-gray-600 hover:text-primary transition-colors"
+                  title="Modifica"
                 >
-                  Modifica
+                  <PencilIcon class="w-5 h-5" />
                 </button>
+                <button 
+                  v-if="canDeleteListing(listing)"
+                  @click="deleteListing(listing)"
+                  class="p-2 text-gray-600 hover:text-red-600 transition-colors"
+                  title="Cancella"
+                  :disabled="deletingListing === listing.id"
+                >
+                  <TrashIcon class="w-5 h-5" />
+                </button>
+                <span 
+                  v-else
+                  class="p-2 text-gray-400 cursor-not-allowed"
+                  :title="getDeleteDisabledReason(listing)"
+                >
+                  <TrashIcon class="w-5 h-5" />
+                </span>
               </div>
             </div>
           </div>
@@ -244,7 +261,7 @@
 import { ref, onMounted } from 'vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import CreateListingModal from '../../components/listing/CreateListingModal.vue'
-import { PlusIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
+import { PlusIcon, ExclamationTriangleIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
 
 // State
 const showCreateModal = ref(false)
@@ -254,6 +271,7 @@ const stats = ref({})
 const recentListings = ref([])
 const kycStatus = ref(null)
 const kycCompleted = ref(false)
+const deletingListing = ref(null)
 
 // Methods
 const checkKycStatus = async () => {
@@ -316,6 +334,74 @@ const handleListingUpdated = (listing) => {
   loadRecentListings()
 }
 
+const deleteListing = async (listing) => {
+  // Verifica preventiva (non dovrebbe mai arrivare qui se il pulsante è nascosto)
+  if (!canDeleteListing(listing)) {
+    alert(getDeleteDisabledReason(listing))
+    return
+  }
+  
+  if (!confirm(`Sei sicuro di voler eliminare l'inserzione "${listing.card_model?.name || 'questa inserzione'}"?`)) {
+    return
+  }
+  
+  deletingListing.value = listing.id
+  
+  try {
+    console.log('🗑️ Eliminazione inserzione:', listing.id)
+    
+    const response = await fetch(`/api/listings/${listing.id}`, {
+      method: 'DELETE',
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    console.log('✅ Risposta eliminazione:', data)
+    
+    if (data.success) {
+      // Rimuovi l'inserzione dalla lista locale
+      recentListings.value = recentListings.value.filter(l => l.id !== listing.id)
+      // Refresh stats
+      loadStats()
+      console.log('📊 Inserzione rimossa dalla lista')
+    } else {
+      throw new Error(data.message || 'Errore nell\'eliminazione dell\'inserzione')
+    }
+  } catch (err) {
+    console.error('❌ Errore nell\'eliminazione inserzione:', err)
+    alert(`Errore nell'eliminazione: ${err.message}`)
+  } finally {
+    deletingListing.value = null
+  }
+}
+
+// Verifica se un'inserzione può essere cancellata
+const canDeleteListing = (listing) => {
+  // Non può essere cancellata se è venduta
+  if (listing.status === 'sold') {
+    return false
+  }
+  // Nota: Non possiamo verificare qui se ha ordini associati senza una chiamata API
+  // ma il backend lo verificherà comunque
+  return true
+}
+
+// Ottiene il motivo per cui un'inserzione non può essere cancellata
+const getDeleteDisabledReason = (listing) => {
+  if (listing.status === 'sold') {
+    return 'Non è possibile cancellare un\'inserzione venduta. Le inserzioni vendute rimangono in archivio per riferimento storico.'
+  }
+  return 'Questa inserzione non può essere cancellata perché ha ordini associati.'
+}
+
 const loadStats = async () => {
   try {
     const response = await fetch('/api/listings/my/stats', {
@@ -365,11 +451,14 @@ const loadRecentListings = async () => {
     console.log('📋 Inserzioni recenti caricate:', data)
     
     if (data.success) {
-      // Filtra solo le inserzioni attive (come in SalesCards.vue)
-      recentListings.value = data.data.filter(listing => listing.status === 'active')
-      console.log('📊 Numero inserzioni attive:', recentListings.value.length)
+      // Mostra inserzioni attive e vendute (le vendute per vedere lo storico)
+      recentListings.value = data.data.filter(listing => 
+        listing.status === 'active' || listing.status === 'sold'
+      )
+      console.log('📊 Numero inserzioni attive e vendute:', recentListings.value.length)
       console.log('📸 Dettagli inserzioni con immagini:', recentListings.value.map(l => ({
         id: l.id,
+        status: l.status,
         images: l.images,
         hasImages: l.images && l.images.length > 0,
         card_model: l.card_model,
