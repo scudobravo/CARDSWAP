@@ -233,8 +233,9 @@
             </select>
           </div>
 
-          <!-- Multi Player -->
+          <!-- Multi Player/Autograph -->
           <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Multi Player/Autograph</label>
             <div class="flex flex-wrap gap-2">
               <label v-for="option in multiPlayerOptions" :key="option.value" class="flex items-center">
                 <input 
@@ -244,51 +245,6 @@
                   class="rounded border-gray-300 text-primary focus:ring-primary"
                 />
                 <span class="ml-2 text-sm text-gray-600">{{ option.label }}</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Multi Autograph -->
-          <div class="space-y-2">
-            <div class="flex flex-wrap gap-2">
-              <label v-for="option in multiAutographOptions" :key="option.value" class="flex items-center">
-                <input 
-                  v-model="localFilters.multiAutograph"
-                  type="checkbox" 
-                  :value="option.value"
-                  class="rounded border-gray-300 text-primary focus:ring-primary"
-                />
-                <span class="ml-2 text-sm text-gray-600">{{ option.label }}</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Multi Player -->
-          <div class="space-y-2">
-            <div class="flex flex-wrap gap-2">
-              <label class="flex items-center">
-                <input 
-                  v-model="localFilters.multiPlayerDual"
-                  type="checkbox" 
-                  class="rounded border-gray-300 text-primary focus:ring-primary"
-                />
-                <span class="ml-2 text-sm text-gray-600">Dual Player</span>
-              </label>
-              <label class="flex items-center">
-                <input 
-                  v-model="localFilters.multiPlayerTriple"
-                  type="checkbox" 
-                  class="rounded border-gray-300 text-primary focus:ring-primary"
-                />
-                <span class="ml-2 text-sm text-gray-600">Triple Player</span>
-              </label>
-              <label class="flex items-center">
-                <input 
-                  v-model="localFilters.multiPlayerQuad"
-                  type="checkbox" 
-                  class="rounded border-gray-300 text-primary focus:ring-primary"
-                />
-                <span class="ml-2 text-sm text-gray-600">Quad Player</span>
               </label>
             </div>
           </div>
@@ -506,6 +462,13 @@ watch(() => localFilters.value.rarity, (newRarity, oldRarity) => {
     }, 100)
   }
 })
+
+// Sincronizza multiAutograph con multiPlayer
+watch(() => localFilters.value.multiPlayer, (newValue) => {
+  if (Array.isArray(newValue)) {
+    localFilters.value.multiAutograph = [...newValue]
+  }
+}, { deep: true })
 
 // Functions
 const searchPlayers = async () => {
@@ -947,9 +910,6 @@ const clearFilters = () => {
     rookie: '',
     multiPlayer: [],
     multiAutograph: [],
-    multiPlayerDual: false,
-    multiPlayerTriple: false,
-    multiPlayerQuad: false,
     grading: '',
     gradingScoreMin: null,
     gradingScoreMax: null,

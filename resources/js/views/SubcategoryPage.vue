@@ -556,12 +556,8 @@ const multiPlayerOptions = [
   { label: 'Quad', value: 'quad' }
 ]
 
-const multiAutographOptions = [
-  { label: 'Booklet', value: 'booklet' },
-  { label: 'Dual', value: 'dual' },
-  { label: 'Triple', value: 'triple' },
-  { label: 'Quad', value: 'quad' }
-]
+// Multi autograph usa le stesse opzioni di multi player
+const multiAutographOptions = multiPlayerOptions
 
 // Grading companies
 const gradingCompanies = ref([
