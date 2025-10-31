@@ -604,7 +604,21 @@ const getApiEndpoint = (category) => {
 }
 
 const getCardUrl = (product) => {
-  // Genera lo slug dal nome della carta
+  // Usa il listing_id se disponibile per creare URL SEO-friendly e univoco
+  // Formato: /categoria/:listingId/nome-carta
+  if (product.listing_id) {
+    // Genera lo slug dal nome del giocatore/carta
+    const slug = (product.name || 'carta')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '') // Rimuove caratteri speciali
+      .replace(/\s+/g, '-') // Sostituisce spazi con trattini
+      .replace(/-+/g, '-') // Rimuove trattini multipli
+      .replace(/^-+|-+$/g, '') // Rimuove trattini all'inizio e alla fine
+    
+    return `/${category.value}/${product.listing_id}/${slug}`
+  }
+  
+  // Fallback: genera lo slug dal nome della carta (comportamento legacy)
   const slug = product.name
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '') // Rimuove caratteri speciali

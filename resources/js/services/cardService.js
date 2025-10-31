@@ -38,6 +38,23 @@ class CardService {
   }
 
   /**
+   * Get single listing details by ID
+   */
+  async getListingDetails(listingId) {
+    try {
+      const response = await this.axios.get(`/listings/${listingId}`)
+      return response.data
+    } catch (error) {
+      console.error('Error fetching listing details:', error)
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Errore nel recupero dei dettagli dell\'inserzione',
+        data: null
+      }
+    }
+  }
+
+  /**
    * Get single card details by ID
    */
   async getCardDetails(cardId) {

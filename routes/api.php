@@ -334,6 +334,7 @@ Route::prefix('listings')->group(function () {
     Route::get('/', [CardListingController::class, 'index']);
     Route::get('/search', [CardListingController::class, 'search']);
     Route::get('/{cardListing}', [CardListingController::class, 'show']);
+    Route::get('/{cardListing}/price-history', [CardListingController::class, 'getPriceHistory']);
 });
 
 // Rotte per i modelli di carte (pubbliche per ricerca)

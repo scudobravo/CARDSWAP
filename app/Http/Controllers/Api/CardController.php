@@ -292,11 +292,12 @@ class CardController extends Controller
 
     /**
      * Get single card details by ID
+     * Restituisce i dati dalla CardListing più recente per questa carta
      */
     public function getCardDetails($id): JsonResponse
     {
         try {
-            $card = CardModel::with(['category'])
+            $card = CardModel::with(['category', 'player', 'team', 'cardSet'])
                 ->where('id', $id)
                 ->first();
 
@@ -307,30 +308,88 @@ class CardController extends Controller
                 ], 404);
             }
 
-            // Transform card data
-            $transformedCard = [
-                'id' => $card->id,
-                'name' => $card->player_name ?: $card->name ?: 'Player',
-                'team' => $this->getTeamName($card),
-                'set_name' => $card->set_name ?: 'Set Name',
-                'year' => $card->year ?: date('Y'),
-                'rarity' => $card->rarity ?: 'Rare',
-                'price' => $this->getEstimatedPrice($card),
-                'rating' => $this->getEstimatedRating($card),
-                'image_url' => $card->image_url,
-                'category' => $this->getCategoryType($card),
-                'description' => $card->description,
-                'condition' => $card->condition ?: 'LIGHT PLAYED',
-                'card_number_in_set' => $card->card_number_in_set,
-                'is_autograph' => $card->is_autograph ?? false,
-                'is_relic' => $card->is_relic ?? false,
-                'is_rookie' => $card->is_rookie ?? false,
-                'is_star' => $card->is_star ?? false,
-                'is_legend' => $card->is_legend ?? false,
-                'card_number' => $card->card_number,
-                'created_at' => $card->created_at,
-                'updated_at' => $card->updated_at
-            ];
+            // Cerca la CardListing più recente attiva per questa carta
+            $listing = CardListing::where('card_model_id', $id)
+                ->where('status', 'active')
+                ->with(['seller'])
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            // Se c'è una CardListing, usa i suoi dati reali
+            if ($listing) {
+                // Priorità alle immagini reali dalle CardListing
+                $imageUrl = null;
+                $images = [];
+                if ($listing->images && is_array($listing->images) && count($listing->images) > 0) {
+                    $images = $listing->images;
+                    $firstImage = $listing->images[0];
+                    if (!str_starts_with($firstImage, '/storage/') && !str_starts_with($firstImage, 'http')) {
+                        $imageUrl = '/storage/' . $firstImage;
+                    } else {
+                        $imageUrl = $firstImage;
+                    }
+                } elseif ($card->image_url) {
+                    $imageUrl = $card->image_url;
+                }
+
+                $transformedCard = [
+                    'id' => $card->id,
+                    'listing_id' => $listing->id,
+                    'name' => $card->player->name ?? $card->player_name ?? $card->name ?? 'Player',
+                    'team' => $card->team->name ?? $this->getTeamName($card),
+                    'set_name' => $card->cardSet->name ?? $card->set_name ?? 'Set Name',
+                    'year' => $card->year ?: date('Y'),
+                    'rarity' => $card->rarity ?: 'Rare',
+                    'price' => number_format($listing->price, 2),
+                    'rating' => $this->getEstimatedRating($card),
+                    'image_url' => $imageUrl,
+                    'images' => $images,
+                    'category' => $this->getCategoryType($card->category->name ?? ''),
+                    'description' => $listing->description ?? $card->description,
+                    'condition' => $listing->condition ?? 'LIGHT PLAYED',
+                    'card_number_in_set' => $card->card_number_in_set,
+                    'is_autograph' => $card->is_autograph ?? false,
+                    'is_relic' => $card->is_relic ?? false,
+                    'is_rookie' => $card->is_rookie ?? false,
+                    'is_star' => $card->is_star ?? false,
+                    'is_legend' => $card->is_legend ?? false,
+                    'card_number' => $card->card_number,
+                    'quantity' => $listing->quantity ?? 1,
+                    'seller' => [
+                        'id' => $listing->seller->id ?? null,
+                        'name' => $listing->seller->name ?? 'Venditore',
+                        'email' => $listing->seller->email ?? null
+                    ],
+                    'created_at' => $card->created_at,
+                    'updated_at' => $card->updated_at
+                ];
+            } else {
+                // Fallback ai dati del CardModel se non c'è una CardListing
+                $transformedCard = [
+                    'id' => $card->id,
+                    'name' => $card->player->name ?? $card->player_name ?? $card->name ?? 'Player',
+                    'team' => $card->team->name ?? $this->getTeamName($card),
+                    'set_name' => $card->cardSet->name ?? $card->set_name ?? 'Set Name',
+                    'year' => $card->year ?: date('Y'),
+                    'rarity' => $card->rarity ?: 'Rare',
+                    'price' => $this->getEstimatedPrice($card),
+                    'rating' => $this->getEstimatedRating($card),
+                    'image_url' => $card->image_url,
+                    'images' => [],
+                    'category' => $this->getCategoryType($card->category->name ?? ''),
+                    'description' => $card->description,
+                    'condition' => $card->condition ?: 'LIGHT PLAYED',
+                    'card_number_in_set' => $card->card_number_in_set,
+                    'is_autograph' => $card->is_autograph ?? false,
+                    'is_relic' => $card->is_relic ?? false,
+                    'is_rookie' => $card->is_rookie ?? false,
+                    'is_star' => $card->is_star ?? false,
+                    'is_legend' => $card->is_legend ?? false,
+                    'card_number' => $card->card_number,
+                    'created_at' => $card->created_at,
+                    'updated_at' => $card->updated_at
+                ];
+            }
 
             return response()->json([
                 'success' => true,
@@ -394,30 +453,88 @@ class CardController extends Controller
                 ], 404);
             }
 
-            // Transform card data (stesso formato del metodo precedente)
-            $transformedCard = [
-                'id' => $card->id,
-                'name' => $card->player_name ?: $card->name ?: 'Player',
-                'team' => $this->getTeamName($card),
-                'set_name' => $card->set_name ?: 'Set Name',
-                'year' => $card->year ?: date('Y'),
-                'rarity' => $card->rarity ?: 'Rare',
-                'price' => $this->getEstimatedPrice($card),
-                'rating' => $this->getEstimatedRating($card),
-                'image_url' => $card->image_url,
-                'category' => $this->getCategoryType($card),
-                'description' => $card->description,
-                'condition' => $card->condition ?: 'LIGHT PLAYED',
-                'card_number_in_set' => $card->card_number_in_set,
-                'is_autograph' => $card->is_autograph ?? false,
-                'is_relic' => $card->is_relic ?? false,
-                'is_rookie' => $card->is_rookie ?? false,
-                'is_star' => $card->is_star ?? false,
-                'is_legend' => $card->is_legend ?? false,
-                'card_number' => $card->card_number,
-                'created_at' => $card->created_at,
-                'updated_at' => $card->updated_at
-            ];
+            // Cerca la CardListing più recente attiva per questa carta
+            $listing = CardListing::where('card_model_id', $card->id)
+                ->where('status', 'active')
+                ->with(['seller'])
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            // Se c'è una CardListing, usa i suoi dati reali
+            if ($listing) {
+                // Priorità alle immagini reali dalle CardListing
+                $imageUrl = null;
+                $images = [];
+                if ($listing->images && is_array($listing->images) && count($listing->images) > 0) {
+                    $images = $listing->images;
+                    $firstImage = $listing->images[0];
+                    if (!str_starts_with($firstImage, '/storage/') && !str_starts_with($firstImage, 'http')) {
+                        $imageUrl = '/storage/' . $firstImage;
+                    } else {
+                        $imageUrl = $firstImage;
+                    }
+                } elseif ($card->image_url) {
+                    $imageUrl = $card->image_url;
+                }
+
+                $transformedCard = [
+                    'id' => $card->id,
+                    'listing_id' => $listing->id,
+                    'name' => $card->player->name ?? $card->player_name ?? $card->name ?? 'Player',
+                    'team' => $card->team->name ?? $this->getTeamName($card),
+                    'set_name' => $card->cardSet->name ?? $card->set_name ?? 'Set Name',
+                    'year' => $card->year ?: date('Y'),
+                    'rarity' => $card->rarity ?: 'Rare',
+                    'price' => number_format($listing->price, 2),
+                    'rating' => $this->getEstimatedRating($card),
+                    'image_url' => $imageUrl,
+                    'images' => $images,
+                    'category' => $this->getCategoryType($card->category->name ?? ''),
+                    'description' => $listing->description ?? $card->description,
+                    'condition' => $listing->condition ?? 'LIGHT PLAYED',
+                    'card_number_in_set' => $card->card_number_in_set,
+                    'is_autograph' => $card->is_autograph ?? false,
+                    'is_relic' => $card->is_relic ?? false,
+                    'is_rookie' => $card->is_rookie ?? false,
+                    'is_star' => $card->is_star ?? false,
+                    'is_legend' => $card->is_legend ?? false,
+                    'card_number' => $card->card_number,
+                    'quantity' => $listing->quantity ?? 1,
+                    'seller' => [
+                        'id' => $listing->seller->id ?? null,
+                        'name' => $listing->seller->name ?? 'Venditore',
+                        'email' => $listing->seller->email ?? null
+                    ],
+                    'created_at' => $card->created_at,
+                    'updated_at' => $card->updated_at
+                ];
+            } else {
+                // Fallback ai dati del CardModel se non c'è una CardListing
+                $transformedCard = [
+                    'id' => $card->id,
+                    'name' => $card->player->name ?? $card->player_name ?? $card->name ?? 'Player',
+                    'team' => $card->team->name ?? $this->getTeamName($card),
+                    'set_name' => $card->cardSet->name ?? $card->set_name ?? 'Set Name',
+                    'year' => $card->year ?: date('Y'),
+                    'rarity' => $card->rarity ?: 'Rare',
+                    'price' => $this->getEstimatedPrice($card),
+                    'rating' => $this->getEstimatedRating($card),
+                    'image_url' => $card->image_url,
+                    'images' => [],
+                    'category' => $this->getCategoryType($card->category->name ?? ''),
+                    'description' => $card->description,
+                    'condition' => $card->condition ?: 'LIGHT PLAYED',
+                    'card_number_in_set' => $card->card_number_in_set,
+                    'is_autograph' => $card->is_autograph ?? false,
+                    'is_relic' => $card->is_relic ?? false,
+                    'is_rookie' => $card->is_rookie ?? false,
+                    'is_star' => $card->is_star ?? false,
+                    'is_legend' => $card->is_legend ?? false,
+                    'card_number' => $card->card_number,
+                    'created_at' => $card->created_at,
+                    'updated_at' => $card->updated_at
+                ];
+            }
 
             return response()->json([
                 'success' => true,

@@ -1183,6 +1183,22 @@ class FootballFilterController extends Controller
                 return null;
             }
             
+            // Priorità alle immagini reali dalle CardListing (caricate dai giocatori)
+            $imageUrl = null;
+            if ($listing->images && is_array($listing->images) && count($listing->images) > 0) {
+                // Prendi la prima immagine dalla CardListing
+                $firstImage = $listing->images[0];
+                // Se l'immagine non ha già il prefisso /storage/, aggiungilo
+                if (!str_starts_with($firstImage, '/storage/') && !str_starts_with($firstImage, 'http')) {
+                    $imageUrl = '/storage/' . $firstImage;
+                } else {
+                    $imageUrl = $firstImage;
+                }
+            } elseif ($cardModel->image_url) {
+                // Fallback all'immagine del CardModel solo se non ci sono immagini nella CardListing
+                $imageUrl = $cardModel->image_url;
+            }
+            
             return [
                 'id' => $cardModel->id, // ID del CardModel per compatibilità con il frontend
                 'listing_id' => $listing->id, // ID della CardListing
@@ -1195,12 +1211,14 @@ class FootballFilterController extends Controller
                 'price' => number_format($listing->price ?? 0, 2),
                 'quantity' => $listing->quantity ?? 1,
                 'card_number_in_set' => $cardModel->card_number_in_set,
+                'card_number' => $cardModel->card_number,
                 'is_rookie' => $cardModel->is_rookie ?? false,
                 'is_autograph' => $cardModel->is_autograph ?? false,
                 'is_relic' => $cardModel->is_relic ?? false,
                 'is_star' => $cardModel->is_star ?? false,
                 'is_legend' => $cardModel->is_legend ?? false,
-                'imageUrl' => $cardModel->image_url ?? ($listing->images && count($listing->images) > 0 ? '/storage/' . $listing->images[0] : null),
+                'imageUrl' => $imageUrl,
+                'images' => $listing->images ?? [], // Array completo delle immagini dalla CardListing
                 'playerId' => $cardModel->player_id,
                 'teamId' => $cardModel->team_id,
                 'setId' => $cardModel->card_set_id,

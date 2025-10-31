@@ -9,7 +9,20 @@
     
     <!-- Chart Container -->
     <div class="h-96">
+      <div v-if="loading" class="h-full flex items-center justify-center">
+        <div class="text-center">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-2"></div>
+          <p class="text-sm text-gray-600">Caricamento dati...</p>
+        </div>
+      </div>
+      <div v-else-if="chartData.length === 0" class="h-full flex items-center justify-center">
+        <div class="text-center">
+          <p class="text-gray-600 font-gill-sans">Nessun dato storico disponibile</p>
+          <p class="text-xs text-gray-500 mt-2">Il prezzo corrente è €{{ currentPrice }}</p>
+        </div>
+      </div>
       <svg 
+        v-else
         class="w-full h-full" 
         viewBox="0 0 700 300" 
         preserveAspectRatio="xMidYMid meet"
@@ -61,18 +74,22 @@
     
     <!-- Chart Info -->
     <div class="mt-4 text-center">
-      <p class="text-sm text-gray-600 font-gill-sans">
-        Ultimi {{ chartData.length }} giorni
+      <p v-if="chartData.length > 0" class="text-sm text-gray-600 font-gill-sans">
+        Ultimi {{ chartData.length }} punti dati
       </p>
-      <p class="text-xs text-gray-500 mt-1">
+      <p v-if="chartData.length > 0" class="text-xs text-gray-500 mt-1">
         Min: €{{ Math.min(...chartData).toFixed(0) }} | Max: €{{ Math.max(...chartData).toFixed(0) }}
+      </p>
+      <p v-else class="text-xs text-gray-500">
+        Prezzo corrente: €{{ parseFloat(currentPrice).toFixed(2) }}
       </p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import axios from 'axios'
 
 // Props
 const props = defineProps({
@@ -83,21 +100,29 @@ const props = defineProps({
   currentPrice: {
     type: [String, Number],
     default: 95
+  },
+  listingId: {
+    type: [String, Number],
+    default: null
   }
 })
 
 // Reactive data
 const chartData = ref([])
 const labels = ref([])
-const priceChange = ref(-20)
+const priceChange = ref(0)
+const loading = ref(true)
+const error = ref(null)
 
 // Computed
 const maxValue = computed(() => {
-  return Math.max(...chartData.value) || 100
+  if (chartData.value.length === 0) return parseFloat(props.currentPrice) || 100
+  return Math.max(...chartData.value) || parseFloat(props.currentPrice) || 100
 })
 
 const minValue = computed(() => {
-  return Math.min(...chartData.value) || 50
+  if (chartData.value.length === 0) return parseFloat(props.currentPrice) || 50
+  return Math.min(...chartData.value) || parseFloat(props.currentPrice) || 50
 })
 
 const yLabels = computed(() => {
@@ -134,49 +159,83 @@ const getBarY = (value) => {
 }
 
 // Methods
-const generateFakeData = () => {
-  const days = 14
-  const basePrice = parseFloat(props.currentPrice) || 95
-  const data = []
-  const labelData = []
-  
-  // Generate last 14 days with more realistic variation
-  for (let i = days - 1; i >= 0; i--) {
-    const date = new Date()
-    date.setDate(date.getDate() - i)
-    labelData.push(date.toLocaleDateString('it-IT', { 
-      weekday: 'short', 
-      day: '2-digit' 
-    }))
-    
-    // Generate more realistic price fluctuation with trend
-    const trend = Math.sin(i * 0.5) * 0.1 // Add some trend
-    const variation = (Math.random() - 0.5) * 0.3 + trend
-    const price = basePrice * (1 + variation)
-    data.push(Math.round(price * 100) / 100)
+const loadPriceHistory = async () => {
+  if (!props.listingId) {
+    // Se non c'è listingId, mostra solo il prezzo corrente
+    chartData.value = [parseFloat(props.currentPrice) || 95]
+    labels.value = ['Prezzo corrente']
+    priceChange.value = 0
+    loading.value = false
+    return
   }
-  
-  chartData.value = data
-  labels.value = labelData
-  
-  // Calculate price change
-  const firstPrice = data[0]
-  const lastPrice = data[data.length - 1]
-  const change = ((lastPrice - firstPrice) / firstPrice) * 100
-  priceChange.value = Math.round(change)
-  
-  console.log('Bar chart data generated:', { 
-    data, 
-    labels: labelData, 
-    change,
-    maxValue: Math.max(...data),
-    minValue: Math.min(...data),
-    barWidth: barWidth.value
-  })
+
+  loading.value = true
+  error.value = null
+
+  try {
+    const response = await axios.get(`/api/listings/${props.listingId}/price-history`)
+    
+    if (response.data.success && response.data.data && response.data.data.length > 0) {
+      const history = response.data.data
+      
+      // Ordina per data (più vecchia prima)
+      history.sort((a, b) => new Date(a.date) - new Date(b.date))
+      
+      // Estrai dati e label
+      chartData.value = history.map(item => parseFloat(item.price))
+      labels.value = history.map(item => {
+        const date = new Date(item.date)
+        return date.toLocaleDateString('it-IT', { 
+          weekday: 'short', 
+          day: '2-digit',
+          month: 'short'
+        })
+      })
+      
+      // Calcola variazione prezzo se ci sono almeno 2 punti
+      if (chartData.value.length >= 2) {
+        const firstPrice = chartData.value[0]
+        const lastPrice = chartData.value[chartData.value.length - 1]
+        const change = ((lastPrice - firstPrice) / firstPrice) * 100
+        priceChange.value = Math.round(change * 10) / 10 // Arrotonda a 1 decimale
+      } else {
+        priceChange.value = 0
+      }
+      
+      console.log('Price history loaded:', { 
+        data: chartData.value, 
+        labels: labels.value, 
+        change: priceChange.value,
+        hasHistory: response.data.has_history
+      })
+    } else {
+      // Nessun dato storico, mostra solo prezzo corrente
+      chartData.value = [parseFloat(props.currentPrice) || 95]
+      labels.value = ['Prezzo corrente']
+      priceChange.value = 0
+    }
+  } catch (err) {
+    console.error('Error loading price history:', err)
+    error.value = err.response?.data?.error || 'Errore nel caricamento dati'
+    
+    // Fallback: mostra solo prezzo corrente
+    chartData.value = [parseFloat(props.currentPrice) || 95]
+    labels.value = ['Prezzo corrente']
+    priceChange.value = 0
+  } finally {
+    loading.value = false
+  }
 }
+
+// Watch per ricaricare quando cambia il listingId
+watch(() => props.listingId, () => {
+  if (props.listingId) {
+    loadPriceHistory()
+  }
+})
 
 // Lifecycle
 onMounted(() => {
-  generateFakeData()
+  loadPriceHistory()
 })
 </script>

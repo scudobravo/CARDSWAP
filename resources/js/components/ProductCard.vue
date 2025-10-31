@@ -2,8 +2,16 @@
   <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
     <!-- Image Area -->
     <div class="relative aspect-square w-full bg-gray-100 overflow-hidden">
+      <!-- Real Image -->
+      <img 
+        v-if="product.imageUrl" 
+        :src="product.imageUrl" 
+        :alt="product.name || 'Carta'"
+        class="w-full h-full object-cover"
+        @error="handleImageError"
+      />
       <!-- Placeholder Image -->
-      <div class="w-full h-full flex items-center justify-center bg-gray-200">
+      <div v-else class="w-full h-full flex items-center justify-center bg-gray-200">
         <svg class="w-16 h-16 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
         </svg>
@@ -187,6 +195,12 @@ const emit = defineEmits(['add-to-cart'])
 const loading = ref(false)
 
 // Methods
+const handleImageError = (event) => {
+  // Se l'immagine non viene caricata, mostra il placeholder
+  event.target.style.display = 'none'
+  event.target.parentElement.querySelector('.bg-gray-200').style.display = 'flex'
+}
+
 const addToCart = async () => {
   loading.value = true
   

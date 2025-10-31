@@ -123,6 +123,9 @@ const routes = [
     // Search Routes
     { path: '/search', component: SearchResults, name: 'search' },
     
+    // Listing detail route with category, listing ID and slug (SEO-friendly and unique)
+    { path: '/:category/:listingId/:slug', component: ProductDetail, name: 'listing.detail' },
+    
     // Generic route for card details (must be last to avoid conflicts)
     { path: '/:category/:cardSlug', component: ProductDetail, name: 'card.detail' },
 ];

@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Builder;
 
 class CardListingController extends Controller
@@ -267,6 +268,62 @@ class CardListingController extends Controller
     }
 
     /**
+     * Get price history for a specific listing
+     */
+    public function getPriceHistory(CardListing $cardListing): JsonResponse
+    {
+        try {
+            // Per ora restituiamo un array vuoto se non ci sono dati storici
+            // In futuro, si potrebbero tracciare i cambiamenti di prezzo nella tabella card_listings
+            // o creare una tabella dedicata price_history
+            
+            // Opzione 1: Se si traccia nella tabella card_listings (vedi update_at quando cambia price)
+            // Per ora restituiamo solo il prezzo corrente
+            $priceHistory = [];
+            
+            // Aggiungi il prezzo corrente come ultimo punto
+            $priceHistory[] = [
+                'date' => $cardListing->updated_at->format('Y-m-d'),
+                'price' => floatval($cardListing->price),
+                'timestamp' => $cardListing->updated_at->timestamp
+            ];
+            
+            // Se la carta è stata creata in un momento diverso dall'ultimo update, aggiungi anche quella data
+            if ($cardListing->created_at->format('Y-m-d') !== $cardListing->updated_at->format('Y-m-d')) {
+                array_unshift($priceHistory, [
+                    'date' => $cardListing->created_at->format('Y-m-d'),
+                    'price' => floatval($cardListing->price),
+                    'timestamp' => $cardListing->created_at->timestamp
+                ]);
+            }
+            
+            // Per ora restituiamo solo questi dati, in futuro si potrebbero aggiungere più punti storici
+            // quando si implementa il tracking dei cambiamenti di prezzo
+            
+            return response()->json([
+                'success' => true,
+                'data' => $priceHistory,
+                'current_price' => floatval($cardListing->price),
+                'has_history' => count($priceHistory) > 1,
+                'message' => count($priceHistory) === 1 ? 'Nessun dato storico disponibile. Questo è il prezzo corrente.' : 'Dati storici limitati'
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error fetching price history', [
+                'listing_id' => $cardListing->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Errore nel recupero della cronologia dei prezzi: ' . $e->getMessage(),
+                'data' => []
+            ], 500);
+        }
+    }
+
+    /**
      * Display the specified card listing
      */
     public function show(CardListing $cardListing): JsonResponse
@@ -277,13 +334,80 @@ class CardListingController extends Controller
             'cardModel.player',
             'cardModel.team',
             'cardModel.league',
+            'cardModel.gradingCompany',
             'seller',
             'shippingZones'
         ]);
 
+        // Verifica che la CardListing sia attiva (o mostra comunque se è il proprietario)
+        if ($cardListing->status !== 'active' && $cardListing->seller_id !== auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Inserzione non disponibile'
+            ], 404);
+        }
+
+        // Formatta le immagini per il frontend
+        $images = [];
+        if ($cardListing->images && is_array($cardListing->images)) {
+            $images = array_map(function($image) {
+                if (!str_starts_with($image, '/storage/') && !str_starts_with($image, 'http')) {
+                    return '/storage/' . $image;
+                }
+                return $image;
+            }, $cardListing->images);
+        }
+
+        // Formatta i dati per il frontend
+        $cardModel = $cardListing->cardModel;
+        
+        // Genera lo slug dal nome del giocatore per URL SEO-friendly
+        $playerName = $cardModel->player->name ?? $cardModel->player_name ?? $cardModel->name ?? 'player';
+        $slug = \Illuminate\Support\Str::slug($playerName);
+        
+        $transformedData = [
+            'id' => $cardListing->id,
+            'listing_id' => $cardListing->id,
+            'card_model_id' => $cardModel->id ?? null,
+            'name' => $playerName,
+            'slug' => $slug,
+            'team' => $cardModel->team->name ?? 'Unknown Team',
+            'set_name' => $cardModel->cardSet->name ?? 'Set Name',
+            'year' => $cardModel->year ?? date('Y'),
+            'rarity' => $cardModel->rarity ?? 'Rare',
+            'price' => number_format($cardListing->price, 2),
+            'condition' => $cardListing->condition ?? 'excellent',
+            'quantity' => $cardListing->quantity ?? 1,
+            'description' => $cardListing->description ?? $cardModel->description ?? '',
+            'images' => $images,
+            'image_url' => count($images) > 0 ? $images[0] : ($cardModel->image_url ?? null),
+            'is_autograph' => $cardModel->is_autograph ?? false,
+            'is_relic' => $cardModel->is_relic ?? false,
+            'is_rookie' => $cardModel->is_rookie ?? false,
+            'is_star' => $cardModel->is_star ?? false,
+            'is_legend' => $cardModel->is_legend ?? false,
+            'card_number' => $cardModel->card_number,
+            'card_number_in_set' => $cardModel->card_number_in_set,
+            'category' => $cardModel->category ? match($cardModel->category->slug) {
+                'calcio' => 'football',
+                'basketball' => 'basketball',
+                'pokemon' => 'pokemon',
+                default => 'football'
+            } : 'football',
+            'seller' => $cardListing->seller ? [
+                'id' => $cardListing->seller->id,
+                'name' => $cardListing->seller->name,
+                'email' => $cardListing->seller->email,
+            ] : null,
+            'card_model' => $cardModel,
+            'status' => $cardListing->status,
+            'created_at' => $cardListing->created_at,
+            'updated_at' => $cardListing->updated_at
+        ];
+
         return response()->json([
             'success' => true,
-            'data' => $cardListing
+            'data' => $transformedData
         ]);
     }
 

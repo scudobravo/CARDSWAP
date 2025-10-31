@@ -84,7 +84,13 @@
                 </svg>
               </button>
               
-              <div v-if="product.image_url" class="w-full h-full bg-cover bg-center rounded-lg" :style="{ backgroundImage: `url(${product.image_url})` }"></div>
+              <img 
+                v-if="product.image_url || (product.images && product.images.length > 0)" 
+                :src="product.image_url || (product.images && product.images.length > 0 ? (product.images[0].startsWith('/storage/') ? product.images[0] : '/storage/' + product.images[0]) : null)" 
+                :alt="product.name || 'Carta'"
+                class="w-full h-full object-cover rounded-lg"
+                @error="handleImageError"
+              />
               <div v-else class="text-center text-gray-500">
                 <svg class="w-24 h-24 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -94,16 +100,18 @@
             </div>
             
             <!-- Thumbnail Images -->
-            <div class="grid grid-cols-2 gap-4">
-              <div class="aspect-[3/4] bg-gray-200 rounded-lg flex items-center justify-center">
-                <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <div class="aspect-[3/4] bg-gray-200 rounded-lg flex items-center justify-center">
-                <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+            <div v-if="product.images && product.images.length > 0" class="grid grid-cols-2 gap-4">
+              <div 
+                v-for="(image, index) in product.images.slice(0, 2)" 
+                :key="index"
+                class="aspect-[3/4] bg-gray-200 rounded-lg overflow-hidden"
+              >
+                <img 
+                  :src="image.startsWith('/storage/') ? image : '/storage/' + image" 
+                  :alt="`${product.name} - Immagine ${index + 2}`"
+                  class="w-full h-full object-cover"
+                  @error="handleImageError"
+                />
               </div>
             </div>
           </div>
@@ -255,8 +263,9 @@
         <!-- Price Trend (Right) -->
         <div class="lg:col-span-2">
           <BarChart 
-            :product-id="product.id"
-            :current-price="product.price"
+            :product-id="product.listing_id || product.id"
+            :current-price="parseFloat(product.price?.replace('€', '').replace(',', '') || 0)"
+            :listing-id="product.listing_id"
           />
         </div>
       </div>
@@ -273,12 +282,12 @@
                 <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
               </svg>
               <a href="#" class="text-primary hover:text-secondary transition-colors font-futura-bold">
-                Nome Venditore
+                {{ sellerName || 'Nome Venditore' }}
               </a>
             </div>
             
             <div class="bg-primary text-white px-3 py-1 rounded-lg text-sm font-futura-bold">
-              8 Numero di vendite
+              {{ listing?.seller?.sales_count || 8 }} Numero di vendite
             </div>
             
             <div class="flex items-center space-x-1">
@@ -373,14 +382,22 @@ const route = useRoute()
 const cartStore = useCartStore()
 const wishlistStore = useWishlistStore()
 
-// Determina se stiamo usando ID o slug
+// Determina se stiamo usando ID, slug o listing route
 const isSlugRoute = computed(() => {
   return route.name === 'card.detail'
+})
+
+const isListingRoute = computed(() => {
+  return route.name === 'listing.detail'
 })
 
 const productId = computed(() => {
   if (isSlugRoute.value) {
     // Per le route slug, dobbiamo cercare l'ID basandoci sullo slug
+    return null // Sarà risolto tramite API
+  }
+  if (isListingRoute.value) {
+    // Per le route listing, l'ID è il listingId dalla route
     return null // Sarà risolto tramite API
   }
   return route.params.id
@@ -505,7 +522,100 @@ const loadProductDetails = async () => {
   try {
     let response
     
-    if (isSlugRoute.value) {
+    if (isListingRoute.value) {
+      // Per route listing (/category/:listingId/:slug), recupera i dati dalla CardListing specifica
+      const listingId = route.params.listingId
+      response = await cardService.getListingDetails(listingId)
+      
+      if (response.success && response.data) {
+        const listing = response.data
+        
+        // Trasforma i dati della CardListing nel formato atteso dal componente
+        const cardModel = listing.card_model || listing.cardModel
+        const seller = listing.seller
+        
+        // Formatta le immagini
+        let imageUrl = null
+        let images = []
+        if (listing.images && Array.isArray(listing.images) && listing.images.length > 0) {
+          images = listing.images
+          const firstImage = listing.images[0]
+          if (!firstImage.startsWith('/storage/') && !firstImage.startsWith('http')) {
+            imageUrl = '/storage/' + firstImage
+          } else {
+            imageUrl = firstImage
+          }
+        } else if (cardModel?.image_url) {
+          imageUrl = cardModel.image_url
+        }
+        
+        product.value = {
+          id: cardModel?.id,
+          listing_id: listing.id,
+          name: cardModel?.player?.name || cardModel?.player_name || cardModel?.name || 'Player',
+          slug: listing.slug || product.value.name?.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-'),
+          team: cardModel?.team?.name || 'Unknown Team',
+          set_name: cardModel?.card_set?.name || cardModel?.cardSet?.name || 'Set Name',
+          year: cardModel?.year || new Date().getFullYear(),
+          rarity: cardModel?.rarity || 'Rare',
+          price: '€' + parseFloat(listing.price).toFixed(2),
+          rating: '4.5',
+          image_url: imageUrl,
+          images: images,
+          category: cardModel?.category?.slug === 'calcio' ? 'football' : (cardModel?.category?.slug === 'basketball' ? 'basketball' : 'pokemon'),
+          description: listing.description || cardModel?.description,
+          condition: listing.condition || 'LIGHT PLAYED',
+          card_number_in_set: cardModel?.card_number_in_set,
+          is_autograph: cardModel?.is_autograph ?? false,
+          is_relic: cardModel?.is_relic ?? false,
+          is_rookie: cardModel?.is_rookie ?? false,
+          is_star: cardModel?.is_star ?? false,
+          is_legend: cardModel?.is_legend ?? false,
+          card_number: cardModel?.card_number,
+          quantity: listing.quantity || 1,
+          created_at: listing.created_at,
+          updated_at: listing.updated_at
+        }
+        
+        // Crea l'oggetto listing per il carrello
+        listing.value = {
+          id: listing.id,
+          card_model_id: cardModel?.id,
+          seller_id: seller?.id,
+          price: parseFloat(listing.price),
+          quantity: listing.quantity || 1,
+          condition: listing.condition || 'LIGHT PLAYED',
+          description: listing.description || 'Carta in ottime condizioni',
+          images: images,
+          available: listing.status === 'active',
+          seller: seller ? {
+            id: seller.id,
+            name: seller.name,
+            email: seller.email
+          } : null,
+          card_model: {
+            id: cardModel?.id,
+            name: cardModel?.player?.name || cardModel?.name,
+            category: product.value.category
+          },
+          shipping_zones: listing.shipping_zones || listing.shippingZones || []
+        }
+        
+        // Update vendor info for chat
+        if (seller) {
+          vendorId.value = seller.id
+          vendorName.value = seller.name
+          sellerName.value = seller.name
+        }
+        
+        // Load related products
+        if (cardModel?.id) {
+          await loadRelatedProducts(cardModel.id)
+        }
+        
+        return
+      }
+    } else if (isSlugRoute.value) {
       // Per route slug, usiamo categoria e slug
       const category = route.params.category
       const cardSlug = route.params.cardSlug
@@ -522,35 +632,62 @@ const loadProductDetails = async () => {
         ...response.data
       }
       
-      // Create mock listing data for cart functionality
-      // TODO: In futuro, questo dovrebbe essere ottenuto da un'API reale
-      listing.value = {
-        id: `listing_${product.value.id}`,
-        card_model_id: product.value.id,
-        seller_id: 1, // Mock seller ID
-        price: parseFloat(product.value.price?.replace('€', '') || '95'),
-        quantity: 1,
-        condition: product.value.condition || 'LIGHT PLAYED',
-        description: product.value.description || 'Carta in ottime condizioni',
-        images: product.value.image_url ? [product.value.image_url] : [],
-        available: true,
-        seller: {
-          id: 1,
-          name: 'Venditore Mock',
-          email: 'vendor@example.com'
-        },
-        card_model: {
-          id: product.value.id,
-          name: product.value.name,
-          category: product.value.category
-        },
-        shipping_zones: []
+      // Usa i dati del listing dall'API se disponibili, altrimenti crea un mock
+      if (response.data.listing_id && response.data.seller) {
+        // Dati reali dalla CardListing
+        listing.value = {
+          id: response.data.listing_id,
+          card_model_id: product.value.id,
+          seller_id: response.data.seller.id,
+          price: parseFloat(product.value.price?.replace('€', '').replace(',', '') || '95'),
+          quantity: product.value.quantity || 1,
+          condition: product.value.condition || 'LIGHT PLAYED',
+          description: product.value.description || 'Carta in ottime condizioni',
+          images: product.value.images || (product.value.image_url ? [product.value.image_url] : []),
+          available: true,
+          seller: response.data.seller,
+          card_model: {
+            id: product.value.id,
+            name: product.value.name,
+            category: product.value.category
+          },
+          shipping_zones: []
+        }
+        
+        // Update vendor info for chat
+        vendorId.value = listing.value.seller_id
+        vendorName.value = listing.value.seller.name
+        sellerName.value = listing.value.seller.name
+      } else {
+        // Fallback a mock data se non ci sono dati reali
+        listing.value = {
+          id: `listing_${product.value.id}`,
+          card_model_id: product.value.id,
+          seller_id: 1,
+          price: parseFloat(product.value.price?.replace('€', '').replace(',', '') || '95'),
+          quantity: product.value.quantity || 1,
+          condition: product.value.condition || 'LIGHT PLAYED',
+          description: product.value.description || 'Carta in ottime condizioni',
+          images: product.value.images || (product.value.image_url ? [product.value.image_url] : []),
+          available: true,
+          seller: {
+            id: 1,
+            name: 'Venditore Mock',
+            email: 'vendor@example.com'
+          },
+          card_model: {
+            id: product.value.id,
+            name: product.value.name,
+            category: product.value.category
+          },
+          shipping_zones: []
+        }
+        
+        // Update vendor info for chat
+        vendorId.value = listing.value.seller_id
+        vendorName.value = listing.value.seller.name
+        sellerName.value = listing.value.seller.name
       }
-      
-      // Update vendor info for chat
-      vendorId.value = listing.value.seller_id
-      vendorName.value = listing.value.seller.name
-      sellerName.value = listing.value.seller.name
       
       // Load related products after main product is loaded
       if (isSlugRoute.value) {
@@ -574,16 +711,16 @@ const loadProductDetails = async () => {
   // Se non abbiamo dati del listing, crea un mock per il testing
   if (!listing.value && product.value.id) {
     listing.value = {
-      id: `listing_${product.value.id}`,
+      id: product.value.listing_id || `listing_${product.value.id}`,
       card_model_id: product.value.id,
-      seller_id: 1,
-      price: parseFloat(product.value.price?.replace('€', '') || '95'),
-      quantity: 1,
+      seller_id: product.value.seller?.id || 1,
+      price: parseFloat(product.value.price?.replace('€', '').replace(',', '') || '95'),
+      quantity: product.value.quantity || 1,
       condition: product.value.condition || 'LIGHT PLAYED',
       description: product.value.description || 'Carta in ottime condizioni',
-      images: product.value.image_url ? [product.value.image_url] : [],
+      images: product.value.images || (product.value.image_url ? [product.value.image_url] : []),
       available: true,
-      seller: {
+      seller: product.value.seller || {
         id: 1,
         name: 'Venditore Mock',
         email: 'vendor@example.com'
@@ -663,6 +800,15 @@ const getCategorySlug = () => {
   return categoryMap[product.value.category] || 'football'
 }
 
+const handleImageError = (event) => {
+  // Se l'immagine non viene caricata, mostra il placeholder
+  const placeholder = event.target.parentElement.querySelector('.text-center')
+  if (placeholder) {
+    placeholder.style.display = 'block'
+    event.target.style.display = 'none'
+  }
+}
+
 const getCategoryName = () => {
   if (isSlugRoute.value) {
     const categoryMap = {
@@ -683,10 +829,20 @@ onMounted(async () => {
 
 // Watch per ricaricare i dati quando cambia la route (navigazione tra carte diverse)
 watch(() => route.params, (newParams, oldParams) => {
-  // Ricarica solo se cambia l'ID o lo slug della carta
-  if (newParams.id !== oldParams?.id || newParams.cardSlug !== oldParams?.cardSlug) {
+  // Ricarica solo se cambia l'ID, lo slug della carta o il listingId
+  if (newParams.id !== oldParams?.id || 
+      newParams.cardSlug !== oldParams?.cardSlug || 
+      newParams.listingId !== oldParams?.listingId) {
     console.log('Route params changed, reloading product details...')
     loadProductDetails()
   }
 }, { deep: true })
+
+// Watch per cambiamenti nella route stessa (nome della route)
+watch(() => route.name, (newName, oldName) => {
+  if (newName !== oldName && (newName === 'listing.detail' || newName === 'card.detail' || newName === 'product.detail')) {
+    console.log('Route name changed, reloading product details...')
+    loadProductDetails()
+  }
+})
 </script>
