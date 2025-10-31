@@ -902,7 +902,8 @@ class FootballFilterController extends Controller
      */
     public function getFilteredProducts(Request $request)
     {
-        $filters = $request->all();
+        try {
+            $filters = $request->all();
         
         // Determina se la sottocategoria è sealed (packs o boxes)
         $isSealed = isset($filters['subcategory']) && 
@@ -1166,5 +1167,22 @@ class FootballFilterController extends Controller
             'total' => $listings->total(),
             'has_more_pages' => $listings->hasMorePages()
         ]);
+        } catch (\Exception $e) {
+            \Log::error('Errore in getFilteredProducts', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'filters' => $filters
+            ]);
+            
+            return response()->json([
+                'data' => [],
+                'current_page' => 1,
+                'last_page' => 1,
+                'per_page' => 20,
+                'total' => 0,
+                'has_more_pages' => false,
+                'error' => config('app.debug') ? $e->getMessage() : 'Errore nel caricamento prodotti'
+            ], 500);
+        }
     }
 }
