@@ -1130,6 +1130,12 @@ class FootballFilterController extends Controller
         // Trasforma i dati per il frontend usando le CardListing
         $transformedProducts = $listings->map(function($listing) {
             $cardModel = $listing->cardModel;
+            
+            // Se cardModel è null, salta questa listing
+            if (!$cardModel) {
+                return null;
+            }
+            
             return [
                 'id' => $cardModel->id, // ID del CardModel per compatibilità con il frontend
                 'listing_id' => $listing->id, // ID della CardListing
