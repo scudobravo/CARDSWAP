@@ -1089,13 +1089,17 @@ const loadShippingZones = async () => {
 
 // Funzione per comprimere immagini prima dell'upload (per evitare errore 413)
 // Migliorata per mobile con compressione più aggressiva
-const compressImageForUpload = (file, maxWidth = 1920, maxHeight = 2560, quality = 0.75, maxSizeMB = 1.5) => {
+// IMPORTANTE: Su mobile, comprimi SEMPRE se > 500KB per sicurezza
+const compressImageForUpload = (file, maxWidth = 1920, maxHeight = 2560, quality = 0.70, maxSizeMB = 1.0) => {
   return new Promise((resolve, reject) => {
-    console.log(`📦 Compressione immagine: ${file.name}, dimensione originale: ${(file.size / 1024 / 1024).toFixed(2)}MB`)
+    const fileSizeMB = file.size / 1024 / 1024
+    console.log(`📦 Compressione immagine: ${file.name}, dimensione originale: ${fileSizeMB.toFixed(2)}MB`)
     
-    // Se il file è già piccolo (< 1.5MB), non comprimere
-    if (file.size < maxSizeMB * 1024 * 1024) {
-      console.log('✅ File già piccolo, non comprimere')
+    // Su mobile, comprimi sempre se > 500KB per sicurezza (limite più conservativo)
+    const shouldCompress = file.size > 500 * 1024 // 500KB invece di 1.5MB
+    
+    if (!shouldCompress) {
+      console.log('✅ File già piccolo (< 500KB), non comprimere')
       resolve(file)
       return
     }
@@ -1109,9 +1113,9 @@ const compressImageForUpload = (file, maxWidth = 1920, maxHeight = 2560, quality
         const canvas = document.createElement('canvas')
         let width = img.width
         let height = img.height
-        const originalSize = width * height
 
         // Calcola le nuove dimensioni mantenendo le proporzioni
+        // Riduci sempre le dimensioni se l'immagine è grande
         if (width > height) {
           if (width > maxWidth) {
             height = Math.round((height * maxWidth) / width)
@@ -1140,7 +1144,7 @@ const compressImageForUpload = (file, maxWidth = 1920, maxHeight = 2560, quality
               (blob) => {
                 if (blob) {
                   const sizeMB = blob.size / 1024 / 1024
-                  console.log(`📦 Compressione tentativo: qualità ${targetQuality}, dimensione: ${sizeMB.toFixed(2)}MB`)
+                  console.log(`📦 Compressione tentativo: qualità ${targetQuality.toFixed(2)}, dimensione: ${sizeMB.toFixed(2)}MB`)
                   res({ blob, size: blob.size, quality: targetQuality })
                 } else {
                   rej(new Error('Errore nella creazione blob'))
@@ -1152,18 +1156,18 @@ const compressImageForUpload = (file, maxWidth = 1920, maxHeight = 2560, quality
           })
         }
 
-        // Compressione progressiva più aggressiva
+        // Compressione progressiva più aggressiva con limite più basso
         const compressProgressively = async (startQuality) => {
           let currentQuality = startQuality
-          const minQuality = 0.5
-          const maxSizeBytes = maxSizeMB * 1024 * 1024
+          const minQuality = 0.4 // Ridotto da 0.5 per compressione più aggressiva
+          const maxSizeBytes = maxSizeMB * 1024 * 1024 // 1MB invece di 1.5MB
 
           while (currentQuality >= minQuality) {
             try {
               const result = await compressWithQuality(currentQuality)
               
               if (result.size <= maxSizeBytes) {
-                console.log(`✅ Compressione riuscita: qualità ${result.quality}, dimensione: ${(result.size / 1024 / 1024).toFixed(2)}MB`)
+                console.log(`✅ Compressione riuscita: qualità ${result.quality.toFixed(2)}, dimensione: ${(result.size / 1024 / 1024).toFixed(2)}MB`)
                 const compressedFile = new File([result.blob], file.name, {
                   type: 'image/jpeg',
                   lastModified: Date.now()
@@ -1173,20 +1177,20 @@ const compressImageForUpload = (file, maxWidth = 1920, maxHeight = 2560, quality
               } else {
                 // Se ancora troppo grande, riduci qualità o ridimensiona
                 if (currentQuality > minQuality) {
-                  currentQuality -= 0.1
+                  currentQuality -= 0.05 // Riduzione più piccola per tentativi più frequenti
                 } else {
                   // Ridimensiona ulteriormente se la qualità minima non basta
-                  const scaleFactor = Math.sqrt(maxSizeBytes / result.size)
+                  const scaleFactor = Math.sqrt(maxSizeBytes / result.size) * 0.9 // Riduci ulteriormente del 10%
                   const newWidth = Math.round(width * scaleFactor)
                   const newHeight = Math.round(height * scaleFactor)
                   
-                  console.log(`📦 Ridimensionamento ulteriore: ${newWidth}x${newHeight}`)
+                  console.log(`📦 Ridimensionamento ulteriore: ${newWidth}x${newHeight} (fattore: ${scaleFactor.toFixed(2)})`)
                   
                   canvas.width = newWidth
                   canvas.height = newHeight
                   ctx.drawImage(img, 0, 0, newWidth, newHeight)
                   
-                  const finalResult = await compressWithQuality(0.6)
+                  const finalResult = await compressWithQuality(0.5)
                   const compressedFile = new File([finalResult.blob], file.name, {
                     type: 'image/jpeg',
                     lastModified: Date.now()
@@ -1198,7 +1202,7 @@ const compressImageForUpload = (file, maxWidth = 1920, maxHeight = 2560, quality
               }
             } catch (error) {
               console.error('Errore durante compressione progressiva:', error)
-              currentQuality -= 0.1
+              currentQuality -= 0.05
             }
           }
           
@@ -1325,7 +1329,7 @@ const createNewSingleListing = async () => {
     formData.append('grading_score', additionalDetails.value.gradingScore)
   }
   
-  // Add 4 images - comprimi SEMPRE se > 1MB per evitare 413 su mobile
+  // Add 4 images - comprimi SEMPRE se > 500KB per evitare 413 su mobile
   let totalSize = 0
   for (let index = 0; index < cardImages.value.length; index++) {
     const image = cardImages.value[index]
@@ -1334,34 +1338,47 @@ const createNewSingleListing = async () => {
         const fileSizeMB = image.file.size / 1024 / 1024
         console.log(`🖼️ Immagine ${index + 1}: ${fileSizeMB.toFixed(2)}MB`)
         
-        // Comprimi sempre se > 1MB o se la dimensione totale supererebbe 4MB
-        if (image.file.size > 1 * 1024 * 1024 || totalSize + image.file.size > 4 * 1024 * 1024) {
+        // Comprimi sempre se > 500KB o se la dimensione totale supererebbe 3MB (più conservativo)
+        const shouldCompress = image.file.size > 500 * 1024 || totalSize + image.file.size > 3 * 1024 * 1024
+        
+        if (shouldCompress) {
           console.log(`📦 Compressione immagine ${index + 1}...`)
           const compressedFile = await compressImageForUpload(image.file)
           const compressedSizeMB = compressedFile.size / 1024 / 1024
           console.log(`✅ Immagine ${index + 1} compressa: ${compressedSizeMB.toFixed(2)}MB`)
           formData.append('images[]', compressedFile)
           totalSize += compressedFile.size
+          
+          // Se dopo la compressione è ancora troppo grande, mostra errore
+          if (compressedFile.size > 1.5 * 1024 * 1024) {
+            alert(`⚠️ Attenzione: L'immagine ${index + 1} è ancora troppo grande dopo la compressione (${compressedSizeMB.toFixed(2)}MB). Prova con un'immagine più piccola o di qualità inferiore.`)
+            throw new Error(`Immagine ${index + 1} troppo grande dopo compressione`)
+          }
         } else {
           formData.append('images[]', image.file)
           totalSize += image.file.size
         }
       } catch (error) {
         console.error(`❌ Errore compressione immagine ${index + 1}:`, error)
-        // Se la compressione fallisce, prova comunque con il file originale
-        // ma solo se non è troppo grande
-        if (image.file.size < 5 * 1024 * 1024) {
+        // Se la compressione fallisce, NON inviare il file originale se è troppo grande
+        if (image.file.size < 2 * 1024 * 1024) {
           formData.append('images[]', image.file)
           totalSize += image.file.size
         } else {
-          alert(`L'immagine ${index + 1} è troppo grande e non può essere compressa. Dimensione: ${(image.file.size / 1024 / 1024).toFixed(2)}MB`)
-          throw new Error(`Immagine ${index + 1} troppo grande`)
+          alert(`❌ L'immagine ${index + 1} è troppo grande (${(image.file.size / 1024 / 1024).toFixed(2)}MB) e non può essere compressa. Per favore, usa un'immagine più piccola.`)
+          throw new Error(`Immagine ${index + 1} troppo grande: ${(image.file.size / 1024 / 1024).toFixed(2)}MB`)
         }
       }
     }
   }
   
   console.log(`📦 Dimensione totale immagini: ${(totalSize / 1024 / 1024).toFixed(2)}MB`)
+  
+  // Verifica che la dimensione totale non superi 4MB
+  if (totalSize > 4 * 1024 * 1024) {
+    alert(`⚠️ Attenzione: La dimensione totale delle immagini (${(totalSize / 1024 / 1024).toFixed(2)}MB) è troppo grande. Per favore, carica meno immagini o immagini più piccole.`)
+    throw new Error('Dimensione totale immagini troppo grande')
+  }
   
   // Add shipping zones (required)
   if (selectedShippingZones.value.length === 0) {
