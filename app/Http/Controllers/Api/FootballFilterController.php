@@ -1157,8 +1157,8 @@ class FootballFilterController extends Controller
                 'gradingScore' => $cardModel->grading_score,
                 'gradingCompany' => $cardModel->gradingCompany->name ?? null
             ];
-        });
-
+        })->filter(); // Rimuove valori null
+        
         return response()->json([
             'data' => $transformedProducts,
             'current_page' => $listings->currentPage(),
