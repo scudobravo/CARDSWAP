@@ -131,6 +131,27 @@ class CardService {
   }
 
   /**
+   * Get related listings for a specific card listing
+   */
+  async getRelatedListings(listingId, limit = 8) {
+    try {
+      const response = await this.axios.get(`/listings/${listingId}/related`, {
+        params: {
+          limit
+        }
+      })
+      return response.data
+    } catch (error) {
+      console.error('Error fetching related listings:', error)
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Errore nel recupero delle inserzioni correlate',
+        data: []
+      }
+    }
+  }
+
+  /**
    * Get all available categories
    */
   async getCategories() {

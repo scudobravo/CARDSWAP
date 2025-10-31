@@ -268,6 +268,144 @@ class CardListingController extends Controller
     }
 
     /**
+     * Get related listings for a specific card listing
+     * Returns other active listings of the same card model (player)
+     */
+    public function getRelatedListings(CardListing $cardListing): JsonResponse
+    {
+        try {
+            $limit = request()->get('limit', 8);
+            
+            // Cerca altre CardListing attive dello stesso CardModel (stesso giocatore)
+            // escludendo quella corrente
+            $relatedListings = CardListing::with([
+                'cardModel.category',
+                'cardModel.player',
+                'cardModel.team',
+                'cardModel.cardSet',
+                'seller'
+            ])
+                ->where('card_model_id', $cardListing->card_model_id)
+                ->where('id', '!=', $cardListing->id) // Esclude la listing corrente
+                ->where('status', 'active') // Solo listing attive
+                ->orderBy('created_at', 'desc')
+                ->limit($limit)
+                ->get();
+            
+            // Se non ci sono abbastanza listing dello stesso giocatore, cerca altre listing nella stessa categoria
+            if ($relatedListings->count() < $limit) {
+                $remainingLimit = $limit - $relatedListings->count();
+                $cardModel = $cardListing->cardModel;
+                
+                if ($cardModel && $cardModel->category_id) {
+                    $fallbackListings = CardListing::with([
+                        'cardModel.category',
+                        'cardModel.player',
+                        'cardModel.team',
+                        'cardModel.cardSet',
+                        'seller'
+                    ])
+                        ->whereHas('cardModel', function($q) use ($cardModel) {
+                            $q->where('category_id', $cardModel->category_id)
+                              ->where('player_id', '!=', $cardModel->player_id); // Altri giocatori nella stessa categoria
+                        })
+                        ->where('id', '!=', $cardListing->id)
+                        ->where('status', 'active')
+                        ->whereNotIn('id', $relatedListings->pluck('id'))
+                        ->orderBy('created_at', 'desc')
+                        ->limit($remainingLimit)
+                        ->get();
+                    
+                    $relatedListings = $relatedListings->merge($fallbackListings);
+                }
+            }
+            
+            // Trasforma i dati per il frontend
+            $transformedListings = $relatedListings->map(function($listing) {
+                $cardModel = $listing->cardModel;
+                
+                // Formatta le immagini
+                $imageUrl = null;
+                if ($listing->images && is_array($listing->images) && count($listing->images) > 0) {
+                    $firstImage = $listing->images[0];
+                    if (!str_starts_with($firstImage, '/storage/') && !str_starts_with($firstImage, 'http')) {
+                        $imageUrl = '/storage/' . $firstImage;
+                    } else {
+                        $imageUrl = $firstImage;
+                    }
+                } elseif ($cardModel && $cardModel->image_url) {
+                    $imageUrl = $cardModel->image_url;
+                }
+                
+                // Genera lo slug dal nome del giocatore
+                $playerName = $cardModel->player->name ?? $cardModel->player_name ?? $cardModel->name ?? 'carta';
+                $slug = \Illuminate\Support\Str::slug($playerName);
+                
+                return [
+                    'id' => $cardModel->id ?? null,
+                    'listing_id' => $listing->id,
+                    'name' => $cardModel->player->name ?? $cardModel->player_name ?? $cardModel->name ?? 'Player',
+                    'team' => $cardModel->team->name ?? 'Unknown Team',
+                    'type' => $this->getCategoryType($cardModel->category->name ?? ''),
+                    'price' => '€' . number_format($listing->price, 2, '.', ''),
+                    'rating' => '4.5',
+                    'image_url' => $imageUrl,
+                    'images' => $listing->images ?? [],
+                    'set_name' => $cardModel->cardSet->name ?? $cardModel->set_name ?? 'Set Name',
+                    'year' => $cardModel->year ?? null,
+                    'rarity' => $cardModel->rarity ?? null,
+                    'slug' => $slug,
+                    'category_slug' => $cardModel->category->slug === 'calcio' ? 'football' : 
+                                     ($cardModel->category->slug === 'basketball' ? 'basketball' : 'pokemon'),
+                    'condition' => $listing->condition,
+                    'quantity' => $listing->quantity,
+                ];
+            });
+            
+            return response()->json([
+                'success' => true,
+                'data' => $transformedListings,
+                'count' => $transformedListings->count(),
+                'criteria' => [
+                    'same_player' => true,
+                    'same_card_model' => true,
+                    'category_fallback' => $relatedListings->count() < $limit
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error fetching related listings', [
+                'listing_id' => $cardListing->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Errore nel recupero delle inserzioni correlate: ' . $e->getMessage(),
+                'data' => []
+            ], 500);
+        }
+    }
+    
+    /**
+     * Get category type for frontend
+     */
+    private function getCategoryType($categoryName): string
+    {
+        $typeMap = [
+            'Calcio' => 'Calcio',
+            'calcio' => 'Calcio',
+            'Basketball' => 'Basketball',
+            'basketball' => 'Basketball',
+            'Pokemon' => 'Pokemon',
+            'pokemon' => 'Pokemon'
+        ];
+        
+        return $typeMap[$categoryName] ?? 'Calcio';
+    }
+
+    /**
      * Get price history for a specific listing
      */
     public function getPriceHistory(CardListing $cardListing): JsonResponse

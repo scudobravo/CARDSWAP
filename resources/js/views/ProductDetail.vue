@@ -237,7 +237,7 @@
             
             <!-- Price -->
             <div class="text-2xl font-futura-bold text-primary">
-              {{ product.price || '95' }}
+              {{ formatPrice(product.price) }}
             </div>
             
             <!-- Add to Cart Button -->
@@ -599,7 +599,7 @@ const loadProductDetails = async () => {
           set_name: cardModel?.card_set?.name || cardModel?.cardSet?.name || 'Set Name',
           year: cardModel?.year || new Date().getFullYear(),
           rarity: cardModel?.rarity || 'Rare',
-          price: '€' + parseFloat(listing.price).toFixed(2),
+          price: parseFloat(listing.price).toFixed(2), // Solo numero, senza €
           rating: '4.5',
           image_url: imageUrl,
           images: images,
@@ -653,7 +653,10 @@ const loadProductDetails = async () => {
         }
         
         // Load related products
-        if (cardModel?.id) {
+        // Per listing route, usa l'endpoint delle listing correlate invece di CardModel
+        if (isListingRoute.value && listing.id) {
+          await loadRelatedProducts(null) // Passiamo null perché useremo la route
+        } else if (cardModel?.id) {
           await loadRelatedProducts(cardModel.id)
         }
         
@@ -807,7 +810,18 @@ const loadRelatedProducts = async (cardId) => {
   try {
     let response
     
-    if (isSlugRoute.value) {
+    // Se siamo su una route listing, usa l'endpoint per listing correlate
+    if (isListingRoute.value) {
+      const listingId = route.params.listingId
+      if (listingId) {
+        console.log('Loading related listings for listing route:', listingId)
+        response = await cardService.getRelatedListings(listingId, 8)
+      } else {
+        console.log('No listingId available for related listings')
+        relatedProductsLoading.value = false
+        return
+      }
+    } else if (isSlugRoute.value) {
       // Per route slug, usiamo categoria e slug
       const category = route.params.category
       const cardSlug = route.params.cardSlug
@@ -817,6 +831,7 @@ const loadRelatedProducts = async (cardId) => {
       // Per route ID tradizionale
       if (!cardId || cardId === null || cardId === 'temp') {
         console.log('Skipping related products load - invalid cardId:', cardId)
+        relatedProductsLoading.value = false
         return
       }
       console.log('Loading related products for ID route:', cardId)
@@ -859,6 +874,14 @@ const handleImageError = (event) => {
     placeholder.style.display = 'block'
     event.target.style.display = 'none'
   }
+}
+
+const formatPrice = (price) => {
+  if (!price && price !== 0) return '€0.00'
+  // Se il prezzo è già una stringa con €, rimuovilo
+  const priceStr = String(price).replace(/€/g, '').replace(/,/g, '').trim()
+  const priceNum = parseFloat(priceStr) || 0
+  return '€' + priceNum.toFixed(2)
 }
 
 const getCategoryName = () => {

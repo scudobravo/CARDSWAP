@@ -144,7 +144,7 @@
     <!-- Price and Add to Cart -->
     <div class="px-4 pb-4 flex items-center justify-between">
       <div class="text-lg font-bold text-gray-900">
-        €{{ product.price || 'Price' }}
+        €{{ formatPrice(product.price) }}
       </div>
       <button 
         @click="addToCart"
@@ -195,6 +195,14 @@ const emit = defineEmits(['add-to-cart'])
 const loading = ref(false)
 
 // Methods
+const formatPrice = (price) => {
+  if (!price && price !== 0) return '0.00'
+  // Se il prezzo è già una stringa con €, rimuovilo
+  const priceStr = String(price).replace(/€/g, '').replace(/,/g, '').trim()
+  const priceNum = parseFloat(priceStr) || 0
+  return priceNum.toFixed(2)
+}
+
 const handleImageError = (event) => {
   // Se l'immagine non viene caricata, mostra il placeholder
   event.target.style.display = 'none'

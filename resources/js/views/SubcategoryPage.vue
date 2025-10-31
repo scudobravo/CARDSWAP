@@ -181,7 +181,14 @@
                 <div class="flex">
                   <!-- Small Image Area -->
                   <div class="w-20 min-h-full bg-gray-100 overflow-hidden flex-shrink-0 relative">
-                    <div class="w-full h-full flex items-center justify-center bg-gray-200">
+                    <img 
+                      v-if="product.imageUrl" 
+                      :src="product.imageUrl" 
+                      :alt="product.name || 'Carta'"
+                      class="w-full h-full object-cover"
+                      @error="handleImageError"
+                    />
+                    <div v-else class="w-full h-full flex items-center justify-center bg-gray-200">
                       <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
                       </svg>
@@ -238,7 +245,7 @@
                     
                     <!-- Price and Add to Cart -->
                     <div class="mt-3 flex items-center justify-between">
-                      <p class="text-lg font-bold text-gray-900">€{{ product.price }}</p>
+                      <p class="text-lg font-bold text-gray-900">€{{ formatPrice(product.price) }}</p>
                       <button 
                         @click="handleAddToCart(product)"
                         class="w-8 h-8 bg-blue-600 rounded-md flex items-center justify-center hover:bg-blue-700 transition-colors"
@@ -259,7 +266,14 @@
                 <div class="flex">
                   <!-- Image Area -->
                   <div class="w-48 h-screen max-h-64 bg-gray-100 overflow-hidden flex-shrink-0 relative">
-                    <div class="w-full h-full flex items-center justify-center bg-gray-200">
+                    <img 
+                      v-if="product.imageUrl" 
+                      :src="product.imageUrl" 
+                      :alt="product.name || 'Carta'"
+                      class="w-full h-full object-cover"
+                      @error="handleImageError"
+                    />
+                    <div v-else class="w-full h-full flex items-center justify-center bg-gray-200">
                       <svg class="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
                       </svg>
@@ -387,7 +401,7 @@
                     
                     <!-- Price and Add to Cart -->
                     <div class="mt-4 flex items-center justify-between">
-                      <p class="text-lg font-bold text-gray-900">€{{ product.price }}</p>
+                      <p class="text-lg font-bold text-gray-900">€{{ formatPrice(product.price) }}</p>
                       <button 
                         @click="handleAddToCart(product)"
                         class="w-10 h-10 bg-blue-600 rounded-md flex items-center justify-center hover:bg-blue-700 transition-colors"
@@ -869,6 +883,23 @@ const handleAddToCart = (product) => {
   // Qui implementerai la logica per aggiungere al carrello
   // Per ora mostriamo un feedback
   alert(`${product.name} aggiunto al carrello!`)
+}
+
+const handleImageError = (event) => {
+  // Nascondi l'immagine e mostra il placeholder
+  event.target.style.display = 'none'
+  const placeholder = event.target.nextElementSibling
+  if (placeholder && placeholder.classList.contains('bg-gray-200')) {
+    placeholder.style.display = 'flex'
+  }
+}
+
+const formatPrice = (price) => {
+  if (!price && price !== 0) return '0.00'
+  // Se il prezzo è già una stringa con €, rimuovilo
+  const priceStr = String(price).replace(/€/g, '').replace(/,/g, '').trim()
+  const priceNum = parseFloat(priceStr) || 0
+  return priceNum.toFixed(2)
 }
 
 // Intersection Observer setup
