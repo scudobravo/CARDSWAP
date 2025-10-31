@@ -1088,10 +1088,14 @@ const loadShippingZones = async () => {
 }
 
 // Funzione per comprimere immagini prima dell'upload (per evitare errore 413)
-const compressImageForUpload = (file, maxWidth = 1920, maxHeight = 2560, quality = 0.85, maxSizeMB = 2) => {
+// Migliorata per mobile con compressione più aggressiva
+const compressImageForUpload = (file, maxWidth = 1920, maxHeight = 2560, quality = 0.75, maxSizeMB = 1.5) => {
   return new Promise((resolve, reject) => {
-    // Se il file è già piccolo (< 2MB), non comprimere
+    console.log(`📦 Compressione immagine: ${file.name}, dimensione originale: ${(file.size / 1024 / 1024).toFixed(2)}MB`)
+    
+    // Se il file è già piccolo (< 1.5MB), non comprimere
     if (file.size < maxSizeMB * 1024 * 1024) {
+      console.log('✅ File già piccolo, non comprimere')
       resolve(file)
       return
     }
@@ -1105,6 +1109,7 @@ const compressImageForUpload = (file, maxWidth = 1920, maxHeight = 2560, quality
         const canvas = document.createElement('canvas')
         let width = img.width
         let height = img.height
+        const originalSize = width * height
 
         // Calcola le nuove dimensioni mantenendo le proporzioni
         if (width > height) {
@@ -1123,72 +1128,96 @@ const compressImageForUpload = (file, maxWidth = 1920, maxHeight = 2560, quality
         canvas.height = height
 
         const ctx = canvas.getContext('2d')
+        // Migliora la qualità del rendering su mobile
+        ctx.imageSmoothingEnabled = true
+        ctx.imageSmoothingQuality = 'high'
         ctx.drawImage(img, 0, 0, width, height)
 
-        // Converti in blob con compressione progressiva
-        let currentQuality = quality
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              // Se è ancora troppo grande, riduci ulteriormente la qualità
-              if (blob.size > maxSizeMB * 1024 * 1024 && currentQuality > 0.5) {
-                currentQuality -= 0.1
-                canvas.toBlob(
-                  (newBlob) => {
-                    if (newBlob && newBlob.size <= maxSizeMB * 1024 * 1024) {
-                      const compressedFile = new File([newBlob], file.name, {
-                        type: 'image/jpeg', // Converti sempre in JPEG per migliore compressione
-                        lastModified: Date.now()
-                      })
-                      resolve(compressedFile)
-                    } else {
-                      // Se ancora troppo grande, ridimensiona ulteriormente
-                      const scaleFactor = Math.sqrt((maxSizeMB * 1024 * 1024) / blob.size)
-                      const newWidth = Math.round(width * scaleFactor)
-                      const newHeight = Math.round(height * scaleFactor)
-                      
-                      canvas.width = newWidth
-                      canvas.height = newHeight
-                      ctx.drawImage(img, 0, 0, newWidth, newHeight)
-                      
-                      canvas.toBlob(
-                        (finalBlob) => {
-                          if (finalBlob) {
-                            const compressedFile = new File([finalBlob], file.name, {
-                              type: 'image/jpeg',
-                              lastModified: Date.now()
-                            })
-                            resolve(compressedFile)
-                          } else {
-                            reject(new Error('Errore nella compressione finale'))
-                          }
-                        },
-                        'image/jpeg',
-                        0.7
-                      )
-                    }
-                  },
-                  'image/jpeg',
-                  currentQuality
-                )
-              } else {
-                const compressedFile = new File([blob], file.name, {
+        // Funzione helper per comprimere con qualità specifica
+        const compressWithQuality = (targetQuality) => {
+          return new Promise((res, rej) => {
+            canvas.toBlob(
+              (blob) => {
+                if (blob) {
+                  const sizeMB = blob.size / 1024 / 1024
+                  console.log(`📦 Compressione tentativo: qualità ${targetQuality}, dimensione: ${sizeMB.toFixed(2)}MB`)
+                  res({ blob, size: blob.size, quality: targetQuality })
+                } else {
+                  rej(new Error('Errore nella creazione blob'))
+                }
+              },
+              'image/jpeg',
+              targetQuality
+            )
+          })
+        }
+
+        // Compressione progressiva più aggressiva
+        const compressProgressively = async (startQuality) => {
+          let currentQuality = startQuality
+          const minQuality = 0.5
+          const maxSizeBytes = maxSizeMB * 1024 * 1024
+
+          while (currentQuality >= minQuality) {
+            try {
+              const result = await compressWithQuality(currentQuality)
+              
+              if (result.size <= maxSizeBytes) {
+                console.log(`✅ Compressione riuscita: qualità ${result.quality}, dimensione: ${(result.size / 1024 / 1024).toFixed(2)}MB`)
+                const compressedFile = new File([result.blob], file.name, {
                   type: 'image/jpeg',
                   lastModified: Date.now()
                 })
                 resolve(compressedFile)
+                return
+              } else {
+                // Se ancora troppo grande, riduci qualità o ridimensiona
+                if (currentQuality > minQuality) {
+                  currentQuality -= 0.1
+                } else {
+                  // Ridimensiona ulteriormente se la qualità minima non basta
+                  const scaleFactor = Math.sqrt(maxSizeBytes / result.size)
+                  const newWidth = Math.round(width * scaleFactor)
+                  const newHeight = Math.round(height * scaleFactor)
+                  
+                  console.log(`📦 Ridimensionamento ulteriore: ${newWidth}x${newHeight}`)
+                  
+                  canvas.width = newWidth
+                  canvas.height = newHeight
+                  ctx.drawImage(img, 0, 0, newWidth, newHeight)
+                  
+                  const finalResult = await compressWithQuality(0.6)
+                  const compressedFile = new File([finalResult.blob], file.name, {
+                    type: 'image/jpeg',
+                    lastModified: Date.now()
+                  })
+                  console.log(`✅ Compressione finale riuscita: dimensione: ${(finalResult.size / 1024 / 1024).toFixed(2)}MB`)
+                  resolve(compressedFile)
+                  return
+                }
               }
-            } else {
-              reject(new Error('Errore nella compressione dell\'immagine'))
+            } catch (error) {
+              console.error('Errore durante compressione progressiva:', error)
+              currentQuality -= 0.1
             }
-          },
-          'image/jpeg',
-          currentQuality
-        )
+          }
+          
+          // Se arriviamo qui, la compressione non è riuscita
+          reject(new Error('Impossibile comprimere l\'immagine sotto il limite'))
+        }
+
+        // Inizia la compressione progressiva
+        compressProgressively(quality).catch(reject)
       }
-      img.onerror = () => reject(new Error('Errore nel caricamento dell\'immagine'))
+      img.onerror = () => {
+        console.error('❌ Errore nel caricamento dell\'immagine')
+        reject(new Error('Errore nel caricamento dell\'immagine'))
+      }
     }
-    reader.onerror = () => reject(new Error('Errore nella lettura del file'))
+    reader.onerror = () => {
+      console.error('❌ Errore nella lettura del file')
+      reject(new Error('Errore nella lettura del file'))
+    }
   })
 }
 
@@ -1296,25 +1325,43 @@ const createNewSingleListing = async () => {
     formData.append('grading_score', additionalDetails.value.gradingScore)
   }
   
-  // Add 4 images - comprimi prima dell'upload se troppo grandi
+  // Add 4 images - comprimi SEMPRE se > 1MB per evitare 413 su mobile
+  let totalSize = 0
   for (let index = 0; index < cardImages.value.length; index++) {
     const image = cardImages.value[index]
     if (image && image.file) {
       try {
-        // Se l'immagine è > 2MB, comprimila prima dell'upload
-        if (image.file.size > 2 * 1024 * 1024) {
+        const fileSizeMB = image.file.size / 1024 / 1024
+        console.log(`🖼️ Immagine ${index + 1}: ${fileSizeMB.toFixed(2)}MB`)
+        
+        // Comprimi sempre se > 1MB o se la dimensione totale supererebbe 4MB
+        if (image.file.size > 1 * 1024 * 1024 || totalSize + image.file.size > 4 * 1024 * 1024) {
+          console.log(`📦 Compressione immagine ${index + 1}...`)
           const compressedFile = await compressImageForUpload(image.file)
+          const compressedSizeMB = compressedFile.size / 1024 / 1024
+          console.log(`✅ Immagine ${index + 1} compressa: ${compressedSizeMB.toFixed(2)}MB`)
           formData.append('images[]', compressedFile)
+          totalSize += compressedFile.size
         } else {
           formData.append('images[]', image.file)
+          totalSize += image.file.size
         }
       } catch (error) {
-        console.error(`Errore compressione immagine ${index + 1}:`, error)
-        // Usa il file originale se la compressione fallisce
-        formData.append('images[]', image.file)
+        console.error(`❌ Errore compressione immagine ${index + 1}:`, error)
+        // Se la compressione fallisce, prova comunque con il file originale
+        // ma solo se non è troppo grande
+        if (image.file.size < 5 * 1024 * 1024) {
+          formData.append('images[]', image.file)
+          totalSize += image.file.size
+        } else {
+          alert(`L'immagine ${index + 1} è troppo grande e non può essere compressa. Dimensione: ${(image.file.size / 1024 / 1024).toFixed(2)}MB`)
+          throw new Error(`Immagine ${index + 1} troppo grande`)
+        }
       }
     }
   }
+  
+  console.log(`📦 Dimensione totale immagini: ${(totalSize / 1024 / 1024).toFixed(2)}MB`)
   
   // Add shipping zones (required)
   if (selectedShippingZones.value.length === 0) {
