@@ -908,26 +908,23 @@ class FootballFilterController extends Controller
         $isSealed = isset($filters['subcategory']) && 
                     in_array($filters['subcategory'], ['sealed-packs', 'sealed-boxes']);
         
-        // Base query per card_models con join per ordinamento
-        // IMPORTANTE: Filtra solo CardModel che hanno almeno una CardListing attiva
-        $query = CardModel::with(['player', 'team', 'cardSet', 'gradingCompany', 'cardListings' => function($q) {
-                $q->where('status', 'active');
-            }])
-            ->whereHas('category', function($q) {
-                $q->where('slug', 'calcio');
-            })
-            ->whereHas('cardListings', function($q) {
-                $q->where('status', 'active');
-            })
-            ->leftJoin('players', 'card_models.player_id', '=', 'players.id')
-            ->leftJoin('teams', 'card_models.team_id', '=', 'teams.id')
-            ->leftJoin('card_listings', function($join) {
-                $join->on('card_models.id', '=', 'card_listings.card_model_id')
-                     ->where('card_listings.status', '=', 'active');
-            })
-            ->select('card_models.*', 'card_listings.price as listing_price', 'card_listings.condition as listing_condition')
-            ->where('card_models.is_active', true)
-            ->distinct(); // Evita duplicati quando ci sono più listings per lo stesso CardModel
+        // IMPORTANTE: Partiamo da CardListing attive (non CardModel)
+        // Così mostriamo solo le carte effettivamente in vendita dai venditori
+        $query = \App\Models\CardListing::with([
+                'cardModel.category',
+                'cardModel.player',
+                'cardModel.team',
+                'cardModel.cardSet',
+                'cardModel.gradingCompany',
+                'seller'
+            ])
+            ->where('status', 'active')
+            ->whereHas('cardModel', function($q) {
+                $q->where('is_active', true)
+                  ->whereHas('category', function($catQ) {
+                      $catQ->where('slug', 'calcio');
+                  });
+            });
 
         // Per sealed packs/boxes, applica solo Set, Year e Brand
         // Per altri, applica tutti i filtri disponibili
@@ -945,9 +942,9 @@ class FootballFilterController extends Controller
                 // Per ogni player_id, cerca tutti i giocatori con lo stesso nome
                 $allPlayerIds = [];
                 foreach ($playerIds as $playerId) {
-                    $player = Player::find($playerId);
+                    $player = \App\Models\Player::find($playerId);
                     if ($player) {
-                        $sameNamePlayers = Player::where('name', $player->name)->pluck('id')->toArray();
+                        $sameNamePlayers = \App\Models\Player::where('name', $player->name)->pluck('id')->toArray();
                         $allPlayerIds = array_merge($allPlayerIds, $sameNamePlayers);
                     } else {
                         $allPlayerIds[] = $playerId;
@@ -955,143 +952,148 @@ class FootballFilterController extends Controller
                 }
                 
                 if (!empty($allPlayerIds)) {
-                    $query->whereIn('card_models.player_id', array_unique($allPlayerIds));
+                    $query->whereHas('cardModel', function($q) use ($allPlayerIds) {
+                        $q->whereIn('player_id', array_unique($allPlayerIds));
+                    });
                 }
             }
 
             if (isset($filters['team_id']) && !empty($filters['team_id'])) {
-                $query->where('card_models.team_id', $filters['team_id']);
+                $query->whereHas('cardModel', function($q) use ($filters) {
+                    $q->where('team_id', $filters['team_id']);
+                });
             }
 
             if (isset($filters['rarity']) && !empty($filters['rarity'])) {
-                $query->where('card_models.rarity', $filters['rarity']);
+                $query->whereHas('cardModel', function($q) use ($filters) {
+                    $q->where('rarity', $filters['rarity']);
+                });
             }
 
             // Filtro per range numerato
             if (isset($filters['numbered_min']) && !empty($filters['numbered_min'])) {
-                $query->whereRaw("CAST(SUBSTRING_INDEX(card_models.card_number_in_set, '/', 1) AS UNSIGNED) >= ?", [$filters['numbered_min']]);
+                $query->whereHas('cardModel', function($q) use ($filters) {
+                    $q->whereRaw("CAST(SUBSTRING_INDEX(card_models.card_number_in_set, '/', 1) AS UNSIGNED) >= ?", [$filters['numbered_min']]);
+                });
             }
 
             if (isset($filters['numbered_max']) && !empty($filters['numbered_max'])) {
-                $query->whereRaw("CAST(SUBSTRING_INDEX(card_models.card_number_in_set, '/', 1) AS UNSIGNED) <= ?", [$filters['numbered_max']]);
+                $query->whereHas('cardModel', function($q) use ($filters) {
+                    $q->whereRaw("CAST(SUBSTRING_INDEX(card_models.card_number_in_set, '/', 1) AS UNSIGNED) <= ?", [$filters['numbered_max']]);
+                });
             }
 
-            // Filtri extra - per ora commentati perché i campi non esistono nella tabella
-            // Filtri per autograph
+            // Filtri extra
             if (isset($filters['autograph']) && $filters['autograph'] !== '') {
-                if ($filters['autograph'] === 'yes') {
-                    $query->where('card_models.is_autograph', true);
-                } elseif ($filters['autograph'] === 'no') {
-                    $query->where('card_models.is_autograph', false);
-                }
+                $query->whereHas('cardModel', function($q) use ($filters) {
+                    if ($filters['autograph'] === 'yes') {
+                        $q->where('is_autograph', true);
+                    } elseif ($filters['autograph'] === 'no') {
+                        $q->where('is_autograph', false);
+                    }
+                });
             }
 
-            // Filtri per relic
             if (isset($filters['relic']) && $filters['relic'] !== '') {
-                if ($filters['relic'] === 'yes') {
-                    $query->where('card_models.is_relic', true);
-                } elseif ($filters['relic'] === 'no') {
-                    $query->where('card_models.is_relic', false);
-                }
+                $query->whereHas('cardModel', function($q) use ($filters) {
+                    if ($filters['relic'] === 'yes') {
+                        $q->where('is_relic', true);
+                    } elseif ($filters['relic'] === 'no') {
+                        $q->where('is_relic', false);
+                    }
+                });
             }
 
             if (isset($filters['rookie']) && $filters['rookie'] !== '') {
-                if ($filters['rookie'] === 'yes') {
-                    $query->where('card_models.is_rookie', true);
-                } elseif ($filters['rookie'] === 'no') {
-                    $query->where('card_models.is_rookie', false);
-                }
+                $query->whereHas('cardModel', function($q) use ($filters) {
+                    if ($filters['rookie'] === 'yes') {
+                        $q->where('is_rookie', true);
+                    } elseif ($filters['rookie'] === 'no') {
+                        $q->where('is_rookie', false);
+                    }
+                });
             }
 
             // Filtri grading
             if (isset($filters['grading']) && $filters['grading'] !== '') {
-                if ($filters['grading'] === 'yes') {
-                    $query->whereNotNull('card_models.grading_company_id');
-                } elseif ($filters['grading'] === 'no') {
-                    $query->whereNull('card_models.grading_company_id');
-                }
+                $query->whereHas('cardModel', function($q) use ($filters) {
+                    if ($filters['grading'] === 'yes') {
+                        $q->whereNotNull('grading_company_id');
+                    } elseif ($filters['grading'] === 'no') {
+                        $q->whereNull('grading_company_id');
+                    }
+                });
             }
 
             if (isset($filters['grading_score_min']) && !empty($filters['grading_score_min'])) {
-                $query->where('card_models.grading_score', '>=', $filters['grading_score_min']);
+                $query->whereHas('cardModel', function($q) use ($filters) {
+                    $q->where('grading_score', '>=', $filters['grading_score_min']);
+                });
             }
 
             if (isset($filters['grading_score_max']) && !empty($filters['grading_score_max'])) {
-                $query->where('card_models.grading_score', '<=', $filters['grading_score_max']);
+                $query->whereHas('cardModel', function($q) use ($filters) {
+                    $q->where('grading_score', '<=', $filters['grading_score_max']);
+                });
             }
         }
         
         // Filtri comuni a tutte le sottocategorie: Set, Year, Brand
         if (isset($filters['set_id']) && !empty($filters['set_id'])) {
-            $query->where('card_models.card_set_id', $filters['set_id']);
+            $query->whereHas('cardModel', function($q) use ($filters) {
+                $q->where('card_set_id', $filters['set_id']);
+            });
         }
 
         if (isset($filters['year']) && !empty($filters['year'])) {
-            $query->where('card_models.year', $filters['year']);
+            $query->whereHas('cardModel', function($q) use ($filters) {
+                $q->where('year', $filters['year']);
+            });
         }
 
         if (isset($filters['brand']) && !empty($filters['brand'])) {
-            $query->whereHas('cardSet', function($q) use ($filters) {
+            $query->whereHas('cardModel.cardSet', function($q) use ($filters) {
                 $q->where('brand', $filters['brand']);
             });
         }
 
         // Filtro per sottocategoria (singles, sealed-packs, sealed-boxes, lot)
-        // NOTA: Questo filtro è basato su card_listings. Se non ci sono listings, il filtro viene ignorato
         if (isset($filters['subcategory']) && !empty($filters['subcategory'])) {
             $subcategory = $filters['subcategory'];
             
-            // Verifica se esistono card_listings nel database
-            $hasListings = \App\Models\CardModel::whereHas('cardListings')->exists();
-            
-            // Applica il filtro solo se ci sono listings
-            if ($hasListings) {
-                switch ($subcategory) {
-                    case 'singles':
-                        // Carte singole: quantity = 1, non sealed
-                        $query->whereHas('cardListings', function($q) {
-                            $q->where('quantity', 1)
-                              ->where('is_limited', false);
-                        });
-                        break;
-                        
-                    case 'sealed-packs':
-                        // Buste sigillate: quantity > 1, sealed
-                        $query->whereHas('cardListings', function($q) {
-                            $q->where('quantity', '>', 1)
-                              ->where('quantity', '<=', 20) // Range ragionevole per buste
-                              ->where('is_limited', true);
-                        });
-                        break;
-                        
-                    case 'sealed-boxes':
-                        // Scatole sigillate: quantity molto alta, sealed
-                        $query->whereHas('cardListings', function($q) {
-                            $q->where('quantity', '>', 20) // Molte carte = scatola
-                              ->where('is_limited', true);
-                        });
-                        break;
-                        
-                    case 'lot':
-                        // Lotti: quantity > 1, non sealed
-                        $query->whereHas('cardListings', function($q) {
-                            $q->where('quantity', '>', 1)
-                              ->where('is_limited', false);
-                        });
-                        break;
-                }
+            switch ($subcategory) {
+                case 'singles':
+                    // Carte singole: quantity = 1
+                    $query->where('quantity', 1);
+                    break;
+                    
+                case 'sealed-packs':
+                    // Buste sigillate: quantity > 1, sealed
+                    $query->where('quantity', '>', 1)
+                          ->where('quantity', '<=', 20); // Range ragionevole per buste
+                    break;
+                    
+                case 'sealed-boxes':
+                    // Scatole sigillate: quantity molto alta
+                    $query->where('quantity', '>', 20); // Molte carte = scatola
+                    break;
+                    
+                case 'lot':
+                    // Lotti: quantity > 1
+                    $query->where('quantity', '>', 1);
+                    break;
             }
-            // Se non ci sono listings, il filtro subcategory viene ignorato
-            // e vengono restituiti tutti i card_models che matchano gli altri filtri
         }
 
         if (isset($filters['grading_companies']) && is_array($filters['grading_companies']) && !empty($filters['grading_companies'])) {
-            $query->whereIn('card_models.grading_company_id', $filters['grading_companies']);
+            $query->whereHas('cardModel', function($q) use ($filters) {
+                $q->whereIn('grading_company_id', $filters['grading_companies']);
+            });
         }
 
-        // Filtri condition - ora dalla tabella card_listings
+        // Filtri condition - dalla tabella card_listings
         if (isset($filters['conditions']) && is_array($filters['conditions']) && !empty($filters['conditions'])) {
-            $query->whereIn('card_listings.condition', $filters['conditions']);
+            $query->whereIn('condition', $filters['conditions']);
         }
 
         // Ordinamento
@@ -1099,7 +1101,7 @@ class FootballFilterController extends Controller
         $sortOrder = $filters['sort_order'] ?? 'desc';
         
         // Validazione dell'ordinamento
-        $allowedSortFields = ['price', 'year', 'created_at', 'id', 'player_name', 'team_name'];
+        $allowedSortFields = ['price', 'condition', 'quantity', 'created_at', 'updated_at'];
         $allowedSortOrders = ['asc', 'desc'];
         
         if (!in_array($sortBy, $allowedSortFields)) {
@@ -1110,51 +1112,41 @@ class FootballFilterController extends Controller
             $sortOrder = 'desc';
         }
         
-        // Applica l'ordinamento con mapping dei campi
-        switch ($sortBy) {
-            case 'price':
-                $query->orderBy('card_models.price', $sortOrder);
-                break;
-            case 'player_name':
-                $query->orderBy('players.name', $sortOrder);
-                break;
-            case 'team_name':
-                $query->orderBy('teams.name', $sortOrder);
-                break;
-            default:
-                $query->orderBy('card_models.' . $sortBy, $sortOrder);
-                break;
-        }
+        // Applica l'ordinamento
+        $query->orderBy($sortBy, $sortOrder);
         
         // Ordinamento secondario per garantire consistenza
         if ($sortBy !== 'id') {
-            $query->orderBy('card_models.id', 'desc');
+            $query->orderBy('id', 'desc');
         }
 
         // Paginazione
         $page = $filters['page'] ?? 1;
         $perPage = $filters['per_page'] ?? 20;
         
-        $products = $query->paginate($perPage, ['*'], 'page', $page);
+        $listings = $query->paginate($perPage, ['*'], 'page', $page);
 
-        // Trasforma i dati per il frontend
-        $transformedProducts = $products->map(function($cardModel) {
+        // Trasforma i dati per il frontend usando le CardListing
+        $transformedProducts = $listings->map(function($listing) {
+            $cardModel = $listing->cardModel;
             return [
-                'id' => $cardModel->id,
+                'id' => $cardModel->id, // ID del CardModel per compatibilità con il frontend
+                'listing_id' => $listing->id, // ID della CardListing
                 'name' => $cardModel->player->name ?? 'Unknown Player',
                 'team' => $cardModel->team->name ?? 'Unknown Team',
                 'set' => $cardModel->cardSet->name ?? 'Unknown Set',
                 'year' => $cardModel->year,
                 'rarity' => $cardModel->rarity,
-                'condition' => 'excellent', // Default condition since we don't have card_listings yet
-                'price' => number_format($cardModel->price ?? 0, 2),
+                'condition' => $listing->condition ?? 'excellent',
+                'price' => number_format($listing->price ?? 0, 2),
+                'quantity' => $listing->quantity ?? 1,
                 'card_number_in_set' => $cardModel->card_number_in_set,
                 'is_rookie' => $cardModel->is_rookie ?? false,
                 'is_autograph' => $cardModel->is_autograph ?? false,
                 'is_relic' => $cardModel->is_relic ?? false,
                 'is_star' => $cardModel->is_star ?? false,
                 'is_legend' => $cardModel->is_legend ?? false,
-                'imageUrl' => $cardModel->image_url,
+                'imageUrl' => $cardModel->image_url ?? ($listing->images && count($listing->images) > 0 ? '/storage/' . $listing->images[0] : null),
                 'playerId' => $cardModel->player_id,
                 'teamId' => $cardModel->team_id,
                 'setId' => $cardModel->card_set_id,
@@ -1168,11 +1160,11 @@ class FootballFilterController extends Controller
 
         return response()->json([
             'data' => $transformedProducts,
-            'current_page' => $products->currentPage(),
-            'last_page' => $products->lastPage(),
-            'per_page' => $products->perPage(),
-            'total' => $products->total(),
-            'has_more_pages' => $products->hasMorePages()
+            'current_page' => $listings->currentPage(),
+            'last_page' => $listings->lastPage(),
+            'per_page' => $listings->perPage(),
+            'total' => $listings->total(),
+            'has_more_pages' => $listings->hasMorePages()
         ]);
     }
 }
