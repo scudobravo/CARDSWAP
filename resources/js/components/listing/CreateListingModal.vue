@@ -1345,16 +1345,26 @@ const createNewSingleListing = async () => {
           console.log(`📦 Compressione immagine ${index + 1}...`)
           const compressedFile = await compressImageForUpload(image.file)
           const compressedSizeMB = compressedFile.size / 1024 / 1024
-          console.log(`✅ Immagine ${index + 1} compressa: ${compressedSizeMB.toFixed(2)}MB`)
+          console.log(`✅ Immagine ${index + 1} compressa: ${compressedSizeMB.toFixed(2)}MB (riduzione: ${((1 - compressedFile.size / image.file.size) * 100).toFixed(1)}%)`)
+          
+          // Verifica che la compressione sia stata effettivamente applicata
+          if (compressedFile.size >= image.file.size) {
+            console.warn(`⚠️ Compressione non efficace: file compresso (${compressedSizeMB.toFixed(2)}MB) è grande quanto o più grande dell'originale (${fileSizeMB.toFixed(2)}MB)`)
+            // Usa comunque il file compresso, ma avvisa
+          }
+          
           formData.append('images[]', compressedFile)
           totalSize += compressedFile.size
           
           // Se dopo la compressione è ancora troppo grande, mostra errore
           if (compressedFile.size > 1.5 * 1024 * 1024) {
-            alert(`⚠️ Attenzione: L'immagine ${index + 1} è ancora troppo grande dopo la compressione (${compressedSizeMB.toFixed(2)}MB). Prova con un'immagine più piccola o di qualità inferiore.`)
+            const errorMsg = `⚠️ Attenzione: L'immagine ${index + 1} è ancora troppo grande dopo la compressione (${compressedSizeMB.toFixed(2)}MB). Prova con un'immagine più piccola o di qualità inferiore.`
+            console.error(errorMsg)
+            alert(errorMsg)
             throw new Error(`Immagine ${index + 1} troppo grande dopo compressione`)
           }
         } else {
+          console.log(`✅ Immagine ${index + 1} già piccola (${fileSizeMB.toFixed(2)}MB), non comprimere`)
           formData.append('images[]', image.file)
           totalSize += image.file.size
         }
@@ -1362,10 +1372,13 @@ const createNewSingleListing = async () => {
         console.error(`❌ Errore compressione immagine ${index + 1}:`, error)
         // Se la compressione fallisce, NON inviare il file originale se è troppo grande
         if (image.file.size < 2 * 1024 * 1024) {
+          console.log(`✅ Usando file originale per immagine ${index + 1} (${(image.file.size / 1024 / 1024).toFixed(2)}MB)`)
           formData.append('images[]', image.file)
           totalSize += image.file.size
         } else {
-          alert(`❌ L'immagine ${index + 1} è troppo grande (${(image.file.size / 1024 / 1024).toFixed(2)}MB) e non può essere compressa. Per favore, usa un'immagine più piccola.`)
+          const errorMsg = `❌ L'immagine ${index + 1} è troppo grande (${(image.file.size / 1024 / 1024).toFixed(2)}MB) e non può essere compressa. Per favore, usa un'immagine più piccola.`
+          console.error(errorMsg)
+          alert(errorMsg)
           throw new Error(`Immagine ${index + 1} troppo grande: ${(image.file.size / 1024 / 1024).toFixed(2)}MB`)
         }
       }
@@ -1376,7 +1389,9 @@ const createNewSingleListing = async () => {
   
   // Verifica che la dimensione totale non superi 4MB
   if (totalSize > 4 * 1024 * 1024) {
-    alert(`⚠️ Attenzione: La dimensione totale delle immagini (${(totalSize / 1024 / 1024).toFixed(2)}MB) è troppo grande. Per favore, carica meno immagini o immagini più piccole.`)
+    const errorMsg = `⚠️ Attenzione: La dimensione totale delle immagini (${(totalSize / 1024 / 1024).toFixed(2)}MB) è troppo grande. Per favore, carica meno immagini o immagini più piccole.`
+    console.error(errorMsg)
+    alert(errorMsg)
     throw new Error('Dimensione totale immagini troppo grande')
   }
   
