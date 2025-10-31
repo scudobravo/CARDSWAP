@@ -708,9 +708,10 @@ const searchCardSets = async () => {
   console.log('🔍 Ricerca set per:', query)
   
   try {
-    // Filtri slegati: i set non devono essere limitati da team/brand/year
+    // Includi team_id quando presente per filtrare correttamente i set
     const params = new URLSearchParams({ q: query })
     if (localFilters.value.player) params.append('player_id', localFilters.value.player)
+    if (localFilters.value.team) params.append('team_id', localFilters.value.team)
     
     const url = `/api/${props.category}/filters/card-sets/search?${params.toString()}`
     console.log('🔍 URL set:', url)
@@ -744,9 +745,10 @@ const loadAllCardSets = async () => {
   console.log('🔍 Caricamento tutti i set disponibili')
   
   try {
-    // Filtri slegati: i set non devono essere limitati da team/brand/year
+    // Includi team_id quando presente per filtrare correttamente i set
     const params = new URLSearchParams()
     if (localFilters.value.player) params.append('player_id', localFilters.value.player)
+    if (localFilters.value.team) params.append('team_id', localFilters.value.team)
     
     const url = `/api/${props.category}/filters/card-sets/search?${params.toString()}`
     console.log('🔍 URL set (all):', url)
@@ -781,14 +783,13 @@ const onSetFocus = async () => {
   console.log('🔍 selectedPlayer.value:', selectedPlayer.value?.name)
   console.log('🔍 filteredCardSets.value.length:', filteredCardSets.value.length)
   console.log('🔍 localFilters.value.player:', localFilters.value.player)
+  console.log('🔍 localFilters.value.team:', localFilters.value.team)
   
   showSetDropdown.value = true
   
-  // Se ci sono già set caricati per il giocatore selezionato, non fare ricerche inutili
-  if (selectedPlayer.value && filteredCardSets.value.length > 0) {
-    console.log('✅ Set già caricati per questo giocatore, li mostro')
-    return
-  }
+  // Ricarica sempre i set quando si fa focus per assicurarsi che siano aggiornati con i filtri correnti (player + team)
+  // Questo è importante perché quando viene selezionato un team, i set devono essere filtrati correttamente
+  console.log('🔄 Ricaricamento set con filtri correnti (player + team)')
   
   // Carica tutti i set disponibili quando si fa focus
   // Se non c'è query, mostra tutti i set disponibili
@@ -1341,7 +1342,8 @@ const loadCardSetsForPlayer = async () => {
     
     const params = new URLSearchParams()
     params.append('player_id', localFilters.value.player)
-    // NON includere team_id per evitare di limitare i risultati dei set
+    // Includi team_id quando presente per filtrare correttamente i set
+    if (localFilters.value.team) params.append('team_id', localFilters.value.team)
     
     const url = `/api/${props.category}/filters/card-sets/search?${params.toString()}`
     console.log('🔍 URL set per giocatore:', url)
@@ -1742,6 +1744,13 @@ watch(() => localFilters.value.set, () => {
 
 // Aggiorna lista carte quando cambiano brand/year/rarity
 watch(() => localFilters.value.brand, () => {
+  recomputeFilteredCards()
+})
+watch(() => localFilters.value.year, () => {
+  recomputeFilteredCards()
+})
+watch(() => localFilters.value.rarity, () => {
+  console.log('🔄 Rarity filter cambiato:', localFilters.value.rarity)
   recomputeFilteredCards()
 })
 // Watch per popolare selectedPlayer quando playerSearch cambia ma selectedPlayer è vuoto
