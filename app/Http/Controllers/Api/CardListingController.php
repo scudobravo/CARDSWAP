@@ -132,27 +132,21 @@ class CardListingController extends Controller
                 $cardListing->shippingZones()->attach($request->shipping_zones);
             }
 
-            // Approvazione automatica per utenti verificati
-            if (Auth::user()->stripe_identity_verified && Auth::user()->kyc_status === 'approved') {
-                $oldStatus = $cardListing->status;
-                $cardListing->publish(); // publish() include già approve() e imposta published_at
-                
-                // Ricarica l'inserzione per avere i dati aggiornati
-                $cardListing->refresh();
-                
-                // Trigger evento per notifiche
-                event(new \App\Events\ListingStatusChanged($cardListing, $oldStatus, 'active'));
-            } else {
-                $cardListing->submitForReview();
-            }
+            // Pubblica automaticamente tutte le inserzioni (rimosso requisito KYC)
+            $oldStatus = $cardListing->status;
+            $cardListing->publish(); // Imposta status a 'active' e published_at
+            
+            // Ricarica l'inserzione per avere i dati aggiornati
+            $cardListing->refresh();
+            
+            // Trigger evento per notifiche
+            event(new \App\Events\ListingStatusChanged($cardListing, $oldStatus, 'active'));
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => Auth::user()->stripe_identity_verified ? 
-                    'Inserzione pubblicata con successo' : 
-                    'Inserzione inviata per revisione',
+                'message' => 'Inserzione pubblicata con successo',
                 'data' => $cardListing->load([
                     'cardModel.category',
                     'cardModel.cardSet',
@@ -235,6 +229,9 @@ class CardListingController extends Controller
                 if (!empty($listingData['shipping_zones'])) {
                     $listing->shippingZones()->attach($listingData['shipping_zones']);
                 }
+                
+                // Pubblica automaticamente tutte le inserzioni bulk
+                $listing->publish();
                 
                 $listing->load(['cardModel', 'seller', 'shippingZones']);
                 $createdListings[] = $listing;
@@ -382,6 +379,11 @@ class CardListingController extends Controller
             // Aggiorna zone di spedizione se fornite
             if ($request->has('shipping_zones')) {
                 $cardListing->shippingZones()->sync($request->shipping_zones);
+            }
+
+            // Assicurati che l'inserzione sia pubblicata dopo l'aggiornamento
+            if ($cardListing->status !== 'active') {
+                $cardListing->publish();
             }
 
             DB::commit();
