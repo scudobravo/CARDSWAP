@@ -909,7 +909,13 @@ class FootballFilterController extends Controller
                     in_array($filters['subcategory'], ['sealed-packs', 'sealed-boxes']);
         
         // Base query per card_models con join per ordinamento
-        $query = CardModel::with(['player', 'team', 'cardSet', 'gradingCompany', 'cardListings'])
+        // IMPORTANTE: Filtra solo CardModel che hanno almeno una CardListing attiva
+        $query = CardModel::with(['player', 'team', 'cardSet', 'gradingCompany', 'cardListings' => function($q) {
+                $q->where('status', 'active');
+            }])
+            ->whereHas('cardListings', function($q) {
+                $q->where('status', 'active');
+            })
             ->leftJoin('players', 'card_models.player_id', '=', 'players.id')
             ->leftJoin('teams', 'card_models.team_id', '=', 'teams.id')
             ->leftJoin('card_listings', function($join) {
@@ -917,24 +923,36 @@ class FootballFilterController extends Controller
                      ->where('card_listings.status', '=', 'active');
             })
             ->select('card_models.*', 'card_listings.price as listing_price', 'card_listings.condition as listing_condition')
-            ->where('card_models.is_active', true);
+            ->where('card_models.is_active', true)
+            ->distinct(); // Evita duplicati quando ci sono più listings per lo stesso CardModel
 
         // Per sealed packs/boxes, applica solo Set, Year e Brand
         // Per altri, applica tutti i filtri disponibili
         if (!$isSealed) {
             // Applica filtri a catena: Player → Team → Set → Year → Brand → Rarity
             if (isset($filters['player_id']) && !empty($filters['player_id'])) {
+                // Gestisci sia array che singolo valore (Laravel converte player_id[] in array)
+                $playerIds = [];
                 if (is_array($filters['player_id'])) {
-                    $query->whereIn('card_models.player_id', $filters['player_id']);
+                    $playerIds = $filters['player_id'];
                 } else {
-                    // Se è un singolo player_id, cerca tutti i giocatori con lo stesso nome
-                    $player = Player::find($filters['player_id']);
+                    $playerIds = [$filters['player_id']];
+                }
+                
+                // Per ogni player_id, cerca tutti i giocatori con lo stesso nome
+                $allPlayerIds = [];
+                foreach ($playerIds as $playerId) {
+                    $player = Player::find($playerId);
                     if ($player) {
-                        $playerIds = Player::where('name', $player->name)->pluck('id')->toArray();
-                        $query->whereIn('card_models.player_id', $playerIds);
+                        $sameNamePlayers = Player::where('name', $player->name)->pluck('id')->toArray();
+                        $allPlayerIds = array_merge($allPlayerIds, $sameNamePlayers);
                     } else {
-                        $query->where('card_models.player_id', $filters['player_id']);
+                        $allPlayerIds[] = $playerId;
                     }
+                }
+                
+                if (!empty($allPlayerIds)) {
+                    $query->whereIn('card_models.player_id', array_unique($allPlayerIds));
                 }
             }
 
