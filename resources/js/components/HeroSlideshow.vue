@@ -1,5 +1,5 @@
 <template>
-  <section class="relative bg-white py-20 md:py-32">
+  <section class="relative bg-white py-20 md:py-32 overflow-hidden">
     <!-- Slides container -->
     <div 
       ref="slidesContainer"
