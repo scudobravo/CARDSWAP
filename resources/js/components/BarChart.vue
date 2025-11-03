@@ -44,19 +44,20 @@
         </text>
         
         <!-- Bars -->
-        <rect 
-          v-for="(value, index) in chartData" 
-          :key="index"
-          :x="60 + index * barWidth + index * 5" 
-          :y="getBarY(value)" 
-          :width="barWidth" 
-          :height="getBarHeight(value)"
-          fill="#1e40af"
-          class="hover:fill-blue-600 transition-colors duration-200 cursor-pointer"
-          :opacity="0.8"
-        >
-          <title>€{{ value }} - {{ labels[index] }}</title>
-        </rect>
+        <template v-for="(value, index) in chartData" :key="index">
+          <rect 
+            v-if="!isNaN(value) && value > 0 && !isNaN(getBarY(value)) && !isNaN(getBarHeight(value))"
+            :x="60 + index * (barWidth + 5)" 
+            :y="getBarY(value)" 
+            :width="barWidth" 
+            :height="getBarHeight(value)"
+            fill="#1e40af"
+            class="hover:fill-blue-600 transition-colors duration-200 cursor-pointer"
+            :opacity="0.8"
+          >
+            <title>€{{ value.toFixed(2) }} - {{ labels[index] }}</title>
+          </rect>
+        </template>
         
         <!-- X-axis labels -->
         <text 
@@ -77,8 +78,11 @@
       <p v-if="chartData.length > 0" class="text-sm text-gray-600 font-gill-sans">
         Ultimi {{ chartData.length }} punti dati
       </p>
-      <p v-if="chartData.length > 0" class="text-xs text-gray-500 mt-1">
+      <p v-if="chartData.length > 0 && Math.min(...chartData) !== Math.max(...chartData)" class="text-xs text-gray-500 mt-1">
         Min: €{{ Math.min(...chartData).toFixed(0) }} | Max: €{{ Math.max(...chartData).toFixed(0) }}
+      </p>
+      <p v-else-if="chartData.length > 0" class="text-xs text-gray-500 mt-1">
+        Prezzo: €{{ chartData[0].toFixed(0) }}
       </p>
       <p v-else class="text-xs text-gray-500">
         Prezzo corrente: €{{ parseFloat(currentPrice).toFixed(2) }}
@@ -127,14 +131,22 @@ const minValue = computed(() => {
 
 const yLabels = computed(() => {
   const range = maxValue.value - minValue.value
+  // Se range è 0 (tutti i valori sono uguali), mostra solo un label
+  if (range === 0) {
+    return [Math.round(maxValue.value)]
+  }
+  
   const step = range / 4
-  return [
+  const labels = [
     Math.round(maxValue.value),
     Math.round(maxValue.value - step),
     Math.round(maxValue.value - step * 2),
     Math.round(maxValue.value - step * 3),
     Math.round(minValue.value)
   ]
+  
+  // Filtra valori NaN
+  return labels.filter(label => !isNaN(label))
 })
 
 const visibleLabels = computed(() => {
@@ -143,19 +155,44 @@ const visibleLabels = computed(() => {
 })
 
 const barWidth = computed(() => {
-  return Math.max(20, (600 - (chartData.value.length - 1) * 5) / chartData.value.length)
+  if (chartData.value.length === 0) return 20
+  const calculatedWidth = (600 - (chartData.value.length - 1) * 5) / chartData.value.length
+  // Assicurati che sia un numero valido
+  return isNaN(calculatedWidth) || calculatedWidth <= 0 ? 20 : Math.max(20, calculatedWidth)
 })
 
 const getBarHeight = (value) => {
+  // Valida il valore
+  if (isNaN(value) || value <= 0) return 2
+  
   const range = maxValue.value - minValue.value
+  // Se range è 0 (tutti i valori sono uguali), usa un'altezza minima
+  if (range === 0) {
+    return 50 // Altezza fissa quando tutti i valori sono uguali
+  }
+  
   const normalizedValue = (value - minValue.value) / range
-  return Math.max(2, normalizedValue * 200) // Min height of 2px
+  const height = Math.max(2, normalizedValue * 200) // Min height of 2px
+  
+  // Assicurati che sia un numero valido
+  return isNaN(height) ? 2 : height
 }
 
 const getBarY = (value) => {
+  // Valida il valore
+  if (isNaN(value) || value <= 0) return 260 // Posizione in basso per valori non validi
+  
   const range = maxValue.value - minValue.value
+  // Se range è 0 (tutti i valori sono uguali), usa una posizione centrale
+  if (range === 0) {
+    return 160 // Posizione centrale quando tutti i valori sono uguali
+  }
+  
   const normalizedValue = (value - minValue.value) / range
-  return 60 + 200 - (normalizedValue * 200) // 60 is top margin, 200 is chart height
+  const y = 60 + 200 - (normalizedValue * 200) // 60 is top margin, 200 is chart height
+  
+  // Assicurati che sia un numero valido
+  return isNaN(y) ? 260 : y
 }
 
 // Methods
@@ -181,9 +218,16 @@ const loadPriceHistory = async () => {
       // Ordina per data (più vecchia prima)
       history.sort((a, b) => new Date(a.date) - new Date(b.date))
       
-      // Estrai dati e label
-      chartData.value = history.map(item => parseFloat(item.price))
-      labels.value = history.map(item => {
+      // Estrai dati e label, filtra valori non validi
+      const validData = history
+        .map(item => {
+          const price = parseFloat(item.price)
+          return isNaN(price) || price <= 0 ? null : { price, date: item.date }
+        })
+        .filter(item => item !== null)
+      
+      chartData.value = validData.map(item => item.price)
+      labels.value = validData.map(item => {
         const date = new Date(item.date)
         return date.toLocaleDateString('it-IT', { 
           weekday: 'short', 

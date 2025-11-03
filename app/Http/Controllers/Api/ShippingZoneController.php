@@ -20,12 +20,17 @@ class ShippingZoneController extends Controller
     }
 
     /**
-     * Ottieni tutte le zone di spedizione disponibili
+     * Ottieni tutte le zone di spedizione disponibili per l'utente autenticato (VENDITORE)
+     * Restituisce SOLO le zone personali del venditore, non quelle globali
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         try {
+            $userId = $request->user()->id;
+            
+            // Carica SOLO le zone personali del venditore
             $zones = ShippingZone::active()
+                ->where('user_id', $userId) // Solo zone del venditore autenticato
                 ->whereIn('zone_type', ['worldwide', 'continent', 'country', 'region'])
                 ->ordered()
                 ->get()
@@ -80,6 +85,15 @@ class ShippingZoneController extends Controller
 
         try {
             $zone = ShippingZone::findOrFail($request->zone_id);
+            
+            // Se l'utente è autenticato, verifica che la zona appartenga all'utente
+            if ($request->user() && $zone->user_id !== $request->user()->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Non autorizzato ad accedere a questa zona di spedizione'
+                ], 403);
+            }
+            
             $listing = null;
             
             if ($request->listing_id) {
@@ -140,7 +154,23 @@ class ShippingZoneController extends Controller
         ]);
 
         try {
-            $zones = ShippingZone::whereIn('id', $request->zone_ids)->get();
+            $query = ShippingZone::whereIn('id', $request->zone_ids);
+            
+            // Se l'utente è autenticato, filtra solo le sue zone
+            if ($request->user()) {
+                $query->where('user_id', $request->user()->id);
+            }
+            
+            $zones = $query->get();
+            
+            // Verifica che tutte le zone richieste siano state trovate
+            if ($zones->count() !== count($request->zone_ids) && $request->user()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Una o più zone di spedizione non sono accessibili'
+                ], 403);
+            }
+            
             $listing = null;
             
             if ($request->listing_id) {
@@ -293,6 +323,15 @@ class ShippingZoneController extends Controller
 
         try {
             $zone = ShippingZone::findOrFail($request->zone_id);
+            
+            // Se l'utente è autenticato, verifica che la zona appartenga all'utente
+            if ($request->user() && $zone->user_id !== $request->user()->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Non autorizzato ad accedere a questa zona di spedizione'
+                ], 403);
+            }
+            
             $supports = $zone->supportsCountry($request->country_code);
 
             return response()->json([

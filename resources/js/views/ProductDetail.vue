@@ -58,7 +58,10 @@
       <div v-else>
       <!-- Top Actions -->
       <div class="flex justify-end mb-6">
-        <button class="bg-secondary text-primary px-6 py-2 rounded-lg font-futura-bold text-sm hover:bg-secondary/90 transition-colors">
+        <button 
+          @click="openSellSameCardModal"
+          class="bg-secondary text-primary px-6 py-2 rounded-lg font-futura-bold text-sm hover:bg-secondary/90 transition-colors"
+        >
           SELL SAME CARD
         </button>
       </div>
@@ -325,54 +328,55 @@
       </div>
 
       <!-- Seller Details -->
-      <div class="bg-gray-50 p-6 rounded-lg mb-8">
+      <div class="bg-gray-50 p-4 md:p-6 rounded-lg mb-8">
         <h3 class="text-xl font-futura-bold text-primary mb-4">Seller Details</h3>
         
-        <div class="flex items-center justify-between">
-          <div class="flex items-center space-x-4">
-            <div class="flex items-center space-x-2">
-              <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+        <!-- Mobile-first: Stack verticale -->
+        <div class="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+          <!-- Informazioni venditore -->
+          <div class="flex flex-col space-y-3 md:flex-row md:items-center md:space-x-4 md:space-y-0 flex-1 min-w-0">
+            <!-- Nome venditore con indicatore online -->
+            <div class="flex items-center space-x-2 flex-shrink-0">
+              <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
                 <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
               </svg>
-              <a href="#" class="text-primary hover:text-secondary transition-colors font-futura-bold">
+              <a href="#" class="text-primary hover:text-secondary transition-colors font-futura-bold truncate">
                 {{ sellerName || 'Nome Venditore' }}
               </a>
             </div>
             
-            <div class="bg-primary text-white px-3 py-1 rounded-lg text-sm font-futura-bold">
-              {{ listing?.seller?.sales_count || 8 }} Numero di vendite
-            </div>
-            
-            <div class="flex items-center space-x-1">
-              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-              </svg>
-              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-              </svg>
-              <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-              </svg>
-              <svg class="w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-              </svg>
-              <svg class="w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-              </svg>
+            <!-- Badge vendite e stelle su stessa riga su mobile -->
+            <div class="flex items-center space-x-3 md:space-x-4 flex-wrap gap-2">
+              <div class="bg-primary text-white px-3 py-1 rounded-lg text-sm font-futura-bold whitespace-nowrap flex-shrink-0">
+                {{ listing?.seller?.total_sales || 0 }} Numero di vendite
+              </div>
+              
+              <div class="flex items-center space-x-1 flex-shrink-0">
+                <svg 
+                  v-for="(star, index) in 5" 
+                  :key="index"
+                  :class="['w-5 h-5', getStarClass(index)]" 
+                  fill="currentColor" 
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                </svg>
+              </div>
             </div>
           </div>
           
-          <div class="flex space-x-3">
+          <!-- Bottoni Chat e REPORT -->
+          <div class="flex flex-col sm:flex-row gap-2 md:flex-shrink-0 md:space-x-3 md:gap-0">
             <button 
               @click="showChatModal = true"
-              class="bg-primary text-white px-4 py-2 rounded-lg font-futura-bold text-sm hover:bg-primary/90 transition-colors"
+              class="w-full sm:w-auto bg-primary text-white px-4 py-2 rounded-lg font-futura-bold text-sm hover:bg-primary/90 transition-colors"
             >
               Chat
             </button>
             <button 
               @click="showReportPopup = true"
-              class="bg-red-500 text-white px-4 py-2 rounded-lg font-futura-bold text-sm hover:bg-red-600 transition-colors"
+              class="w-full sm:w-auto bg-red-500 text-white px-4 py-2 rounded-lg font-futura-bold text-sm hover:bg-red-600 transition-colors"
             >
               REPORT
             </button>
@@ -416,6 +420,14 @@
       :product-name="product.name"
       @close="showChatModal = false"
     />
+
+    <!-- Create Listing Modal for Sell Same Card -->
+    <CreateListingModal
+      :is-open="showCreateListingModal"
+      :preselected-card-model="preselectedCardModel"
+      @close="handleModalClose"
+      @created="handleListingCreated"
+    />
   </div>
 </template>
 
@@ -430,6 +442,7 @@ import ProductCarousel from '../components/ProductCarousel.vue'
 import ReportPopup from '../components/ReportPopup.vue'
 import VendorChatModal from '../components/VendorChatModal.vue'
 import BarChart from '../components/BarChart.vue'
+import CreateListingModal from '../components/listing/CreateListingModal.vue'
 import cardService from '../services/cardService.js'
 
 const route = useRoute()
@@ -499,6 +512,10 @@ const showChatModal = ref(false)
 const vendorId = ref(1) // ID del venditore (da ottenere dai dati del prodotto)
 const vendorName = ref('Nome Venditore')
 
+// Create Listing Modal for Sell Same Card
+const showCreateListingModal = ref(false)
+const preselectedCardModel = ref(null)
+
 // Cart functionality
 const isAddingToCart = ref(false)
 const addToCartMessage = ref('')
@@ -538,6 +555,30 @@ const mainImageUrl = computed(() => {
   
   return null
 })
+
+// Computed per calcolare le stelle in base al rating del venditore
+const sellerRating = computed(() => {
+  if (!listing.value?.seller?.rating) return 0
+  return parseFloat(listing.value.seller.rating) || 0
+})
+
+// Metodo per determinare se una stella deve essere piena o vuota
+// index va da 0 a 4, corrisponde alle stelle 1-5
+const getStarClass = (index) => {
+  const rating = sellerRating.value
+  const starNumber = index + 1 // Converti 0-4 in 1-5
+  
+  // Se il rating è >= numero stella, la stella è piena
+  if (rating >= starNumber) {
+    return 'text-yellow-400'
+  }
+  // Se il rating è >= numero stella - 0.5, mostra metà stella (per semplicità mostriamo piena)
+  if (rating >= starNumber - 0.5) {
+    return 'text-yellow-400'
+  }
+  // Altrimenti vuota
+  return 'text-gray-300'
+}
 
 // Methods
 const getImageUrl = (image) => {
@@ -638,6 +679,71 @@ const toggleWishlist = async () => {
   }
 }
 
+// Open Sell Same Card Modal
+const openSellSameCardModal = async () => {
+  try {
+    // Prepara i dati della carta da pre-selezionare
+    const cardModelId = product.value.id || listing.value?.card_model_id
+    
+    if (!cardModelId) {
+      alert('Errore: Impossibile identificare la carta')
+      return
+    }
+
+    // Carica i dettagli completi della carta se necessario
+    let cardModelData = null
+    if (listing.value?.card_model) {
+      // Usa i dati già disponibili
+      cardModelData = listing.value.card_model
+    } else {
+      // Carica i dettagli dalla API
+      try {
+        const response = await fetch(`/api/card-models/${cardModelId}`)
+        if (response.ok) {
+          const data = await response.json()
+          cardModelData = data.data || data
+        }
+      } catch (error) {
+        console.error('Errore nel caricamento dettagli carta:', error)
+      }
+    }
+
+    // Pre-popolare i dati della carta
+    preselectedCardModel.value = {
+      id: cardModelId,
+      ...cardModelData,
+      // Assicurati che i dati necessari siano presenti
+      player: cardModelData?.player || { name: product.value.name },
+      team: cardModelData?.team || { name: product.value.team },
+      card_set: cardModelData?.card_set || { name: product.value.set_name },
+      year: cardModelData?.year || product.value.year,
+      rarity: cardModelData?.rarity || product.value.rarity,
+      card_number: cardModelData?.card_number || product.value.card_number_in_set
+    }
+
+    // Apri il modal
+    showCreateListingModal.value = true
+  } catch (error) {
+    console.error('Errore nell\'apertura del modal:', error)
+    alert('Errore nell\'apertura del form di vendita')
+  }
+}
+
+// Handle listing created
+const handleListingCreated = () => {
+  showCreateListingModal.value = false
+  preselectedCardModel.value = null
+  // Opzionale: mostra un messaggio di successo o ricarica la pagina
+  // Potresti anche reindirizzare alla nuova inserzione o aggiornare la vista
+  console.log('Inserzione creata con successo!')
+}
+
+// Handle modal close
+const handleModalClose = () => {
+  showCreateListingModal.value = false
+  preselectedCardModel.value = null
+}
+
 const loadProductDetails = async () => {
   loading.value = true
   error.value = null
@@ -722,7 +828,9 @@ const loadProductDetails = async () => {
           seller: seller ? {
             id: seller.id,
             name: seller.name,
-            email: seller.email
+            email: seller.email,
+            total_sales: seller.total_sales ?? 0,
+            rating: seller.rating ?? 0
           } : null,
           card_model: {
             id: cardModel?.id,

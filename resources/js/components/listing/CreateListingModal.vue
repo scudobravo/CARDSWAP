@@ -247,7 +247,10 @@
                   <div class="flex-1">
                     <div class="flex items-center justify-between">
                       <h6 class="font-medium text-gray-900">{{ zone.name }}</h6>
-                      <span class="text-sm text-gray-500">{{ zone.delivery_days_min }}-{{ zone.delivery_days_max }} giorni</span>
+                      <span v-if="zone.delivery_days_min || zone.delivery_days_max" class="text-sm text-gray-500">
+                        {{ zone.delivery_days_min ?? '?' }}-{{ zone.delivery_days_max ?? '?' }} giorni
+                      </span>
+                      <span v-else class="text-sm text-gray-500">Tempi variabili</span>
                     </div>
                     <p class="text-sm text-gray-600 mt-1">{{ zone.description }}</p>
                   </div>
@@ -312,7 +315,10 @@
                   <div class="flex-1">
                     <div class="flex items-center justify-between">
                       <h6 class="font-medium text-gray-900">{{ zone.name }}</h6>
-                      <span class="text-sm text-gray-500">{{ zone.delivery_days_min }}-{{ zone.delivery_days_max }} giorni</span>
+                      <span v-if="zone.delivery_days_min || zone.delivery_days_max" class="text-sm text-gray-500">
+                        {{ zone.delivery_days_min ?? '?' }}-{{ zone.delivery_days_max ?? '?' }} giorni
+                      </span>
+                      <span v-else class="text-sm text-gray-500">Tempi variabili</span>
                     </div>
                     <p class="text-sm text-gray-600 mt-1">{{ zone.description }}</p>
                   </div>
@@ -428,6 +434,10 @@ const props = defineProps({
     default: false
   },
   editingListing: {
+    type: Object,
+    default: null
+  },
+  preselectedCardModel: {
     type: Object,
     default: null
   }
@@ -599,6 +609,36 @@ const resetForm = () => {
   hasSearched.value = false
   filteredCardModels.value = []
   selectedShippingZones.value = []
+  // Reset card images
+  cardImages.value = [null, null, null, null]
+  filters.value = {
+    playerSearch: '',
+    selectedPlayers: [],
+    team: '',
+    set: '',
+    rarity: '',
+    year: '',
+    brand: '',
+    numberedMin: null,
+    numberedMax: null,
+    autograph: '',
+    relic: '',
+    onCardAuto: '',
+    jewel: '',
+    rookie: '',
+    multiPlayer: [],
+    multiAutograph: [],
+    grading: '',
+    gradingScoreMin: null,
+    gradingScoreMax: null,
+    conditions: []
+  }
+  additionalDetails.value = {
+    condition: '',
+    gradingCompany: '',
+    gradingScore: '',
+    notes: ''
+  }
   listingData.value = {
     card_model_id: null,
     price: '',
@@ -1067,17 +1107,31 @@ const loadShippingZones = async () => {
       // L'endpoint ritorna { success: true, data: [...] }
       // In alcuni ambienti potremmo ricevere direttamente un array
       const rawZones = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : [])
+      console.log('📦 Raw zones ricevute:', rawZones.length, rawZones)
+      
       // Normalizza per garantire sempre id, name e giorni
       const normalized = rawZones.map((z) => {
         const source = z || {}
         const attrs = source.attributes || {}
         const id = source.id ?? attrs.id ?? source.zone_id
         const name = source.name || attrs.name || source.title || source.label || (source.country_code ? `Spedizione ${source.country_code}` : 'Zona')
-        const deliveryMin = source.delivery_days_min ?? attrs.delivery_days_min ?? source.min_days ?? ''
-        const deliveryMax = source.delivery_days_max ?? attrs.delivery_days_max ?? source.max_days ?? ''
+        // Gestisci null/undefined per i giorni di consegna
+        const deliveryMin = source.delivery_days_min ?? attrs.delivery_days_min ?? source.min_days ?? null
+        const deliveryMax = source.delivery_days_max ?? attrs.delivery_days_max ?? source.max_days ?? null
         const description = source.description || attrs.description || ''
-        return { id, name, delivery_days_min: deliveryMin, delivery_days_max: deliveryMax, description }
+        
+        console.log('📦 Normalizzazione zona:', { id, name, deliveryMin, deliveryMax, description })
+        
+        return { 
+          id, 
+          name, 
+          delivery_days_min: deliveryMin, 
+          delivery_days_max: deliveryMax, 
+          description 
+        }
       })
+      
+      console.log('✅ Zone normalizzate:', normalized.length, normalized)
       shippingZones.value = normalized
     } else {
       console.error('❌ Errore nel caricamento zone di spedizione:', response.status)
@@ -1784,8 +1838,217 @@ watch(() => props.isOpen, async (isOpen) => {
     if (hasShippingZones.value) {
       loadShippingZones()
     }
+    
+    // Se c'è una carta pre-selezionata (Sell Same Card), pre-popolare il form
+    // Aspetta che il componente sia completamente montato
+    if (props.preselectedCardModel) {
+      await nextTick()
+      await nextTick()
+      // Usa setTimeout per assicurarsi che ChainedFilters sia montato e ascolti gli eventi
+      setTimeout(() => {
+        initializePreselectedCard()
+      }, 100)
+    }
   }
 })
+
+// Inizializza carta pre-selezionata per "Sell Same Card"
+const initializePreselectedCard = async () => {
+  try {
+    console.log('🔄 Inizializzazione carta pre-selezionata:', props.preselectedCardModel)
+    
+    // Imposta la modalità single
+    selectedMode.value = 'single'
+    
+    // Imposta la categoria se disponibile
+    if (props.preselectedCardModel.category) {
+      selectedCategory.value = props.preselectedCardModel.category
+    }
+    
+    // Carica SEMPRE i dettagli completi dalla API per avere tutte le relazioni
+    let cardModelData = null
+    const cmId = props.preselectedCardModel.id
+    if (cmId) {
+      try {
+        console.log('📡 Caricamento dati completi carta da API:', cmId)
+        const resp = await fetch(`/api/card-models/${cmId}`)
+        if (resp.ok) {
+          const cmData = await resp.json()
+          // L'API restituisce { success: true, data: { card_model: ... } }
+          cardModelData = cmData.data?.card_model || cmData.data || cmData.card_model || cmData
+          console.log('✅ Dati carta caricati:', {
+            id: cardModelData.id,
+            hasPlayer: !!cardModelData.player,
+            hasTeam: !!cardModelData.team,
+            hasCardSet: !!cardModelData.card_set,
+            playerName: cardModelData.player?.name,
+            teamName: cardModelData.team?.name,
+            cardSetName: cardModelData.card_set?.name
+          })
+        } else {
+          console.error('❌ Errore HTTP nel caricamento carta:', resp.status)
+          // Fallback ai dati passati
+          cardModelData = props.preselectedCardModel
+        }
+      } catch (e) {
+        console.error('❌ Errore caricamento dettagli card model:', e)
+        // Fallback ai dati passati
+        cardModelData = props.preselectedCardModel
+      }
+    } else {
+      cardModelData = props.preselectedCardModel
+    }
+    
+    // Se ancora non abbiamo player o card_set, usa i dati fallback
+    if (!cardModelData.player || !cardModelData.card_set) {
+      console.warn('⚠️ Dati incompleti, uso dati passati come fallback')
+      cardModelData = {
+        ...cardModelData,
+        ...props.preselectedCardModel
+      }
+    }
+    
+    // Carica le carte del player se necessario (come in edit mode)
+    let playerWithCards = cardModelData.player
+    if (playerWithCards && (!playerWithCards.cards || playerWithCards.cards.length === 0)) {
+      try {
+        const playerId = playerWithCards.id
+        if (playerId) {
+          // Usa lo stesso endpoint di edit mode
+          const response = await fetch(`/api/${selectedCategory.value}/filters/players/${playerId}`, {
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          })
+          
+          if (response.ok) {
+            const contentType = response.headers.get('content-type')
+            if (contentType && contentType.includes('application/json')) {
+              const data = await response.json()
+              if (data.success && data.data?.player) {
+                playerWithCards = data.data.player
+                console.log('✅ Carte del giocatore caricate per sell same:', playerWithCards.cards?.length || 0)
+              } else if (data.player) {
+                playerWithCards = data.player
+                console.log('✅ Carte del giocatore caricate per sell same (formato alternativo):', playerWithCards.cards?.length || 0)
+              }
+            } else {
+              console.warn('⚠️ La risposta non è JSON, probabilmente non esiste l\'endpoint specifico')
+            }
+          } else {
+            console.warn('⚠️ Errore HTTP nel caricamento carte del giocatore:', response.status)
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ Errore nel caricamento carte del giocatore (non critico):', error.message)
+        // Non bloccare il flusso se non si riesce a caricare le carte
+      }
+    }
+    
+    // Imposta la carta selezionata
+    selectedCardModel.value = cardModelData
+    
+    // Imposta il card_model_id
+    listingData.value.card_model_id = cardModelData.id
+    
+    // Pre-popolare il prezzo dalla carta corrente se disponibile
+    if (props.preselectedCardModel.price) {
+      filters.value.price = props.preselectedCardModel.price
+    }
+    
+    // Pre-popolare altri campi se disponibili
+    if (props.preselectedCardModel.condition) {
+      additionalDetails.value.condition = props.preselectedCardModel.condition
+      listingData.value.condition = props.preselectedCardModel.condition
+    }
+    
+    // Popola i filtri con i dati della carta (come in modalità edit)
+    // IMPORTANTE: popola sia filters.value che dispatcha l'evento, come in edit mode
+    filters.value = {
+      ...filters.value,
+      brand: cardModelData.card_set?.brand || cardModelData.brand || '',
+      rarity: cardModelData.rarity || '',
+      year: cardModelData.year || cardModelData.card_set?.year || '',
+      number: cardModelData.card_number || cardModelData.card_number_in_set || '',
+      player: cardModelData.player?.id || '',
+      playerSearch: cardModelData.player?.display_name || cardModelData.player?.name || '',
+      selectedPlayers: cardModelData.player ? [cardModelData.player] : [],
+      team: cardModelData.team?.id || '',
+      set: cardModelData.card_set?.id || ''
+    }
+    
+    // Pre-popolare anche il prezzo se disponibile
+    if (props.preselectedCardModel.price) {
+      filters.value.price = props.preselectedCardModel.price
+    }
+    
+    // Estrai brand dal card_set
+    const brandFromSet = cardModelData.card_set?.brand || cardModelData.brand || ''
+    
+    // Non saltiamo lo step 1, mostriamo i campi già popolati
+    // L'utente può vedere che i filtri sono già compilati e passare allo step successivo
+    currentStep.value = 1 // Mostra lo step 1 con i campi già popolati
+    
+    // Aspetta che il componente sia completamente montato prima di dispatchare gli eventi
+    await nextTick()
+    await nextTick()
+    
+    // Usa setTimeout come in edit mode per assicurarsi che ChainedFilters sia completamente montato e ascolti gli eventi
+    setTimeout(() => {
+      console.log('🎯 Dispatching filters-populated per sell same card con:', {
+        player: playerWithCards?.name || playerWithCards?.id || 'MISSING',
+        team: cardModelData.team?.name || cardModelData.team?.id || 'MISSING',
+        card_set: cardModelData.card_set?.name || cardModelData.card_set?.id || 'MISSING',
+        rarity: cardModelData.rarity || 'MISSING',
+        year: cardModelData.year || cardModelData.card_set?.year || 'MISSING',
+        brand: brandFromSet || 'MISSING',
+        number: cardModelData.card_number || cardModelData.card_number_in_set || 'MISSING'
+      })
+      
+      // Verifica che tutti i dati necessari siano presenti
+      if (!playerWithCards && !cardModelData.player) {
+        console.error('❌ ERRORE: Player mancante nei dati!')
+      }
+      if (!cardModelData.team) {
+        console.error('❌ ERRORE: Team mancante nei dati!')
+      }
+      if (!cardModelData.card_set) {
+        console.error('❌ ERRORE: Card_set mancante nei dati!')
+      }
+      
+      // Dispatches event 'filters-populated' per popolare i filtri in ChainedFilters (come in edit mode)
+      // IMPORTANTE: passa il player con le carte caricate, non solo il player base
+      // IMPORTANTE: passa gli oggetti completi con ID e proprietà necessarie (id, name)
+      const eventData = {
+        player: playerWithCards || cardModelData.player, // Usa il player con le carte caricate
+        team: cardModelData.team, // Deve essere un oggetto con id e name
+        card_set: cardModelData.card_set, // Deve essere un oggetto con id e name
+        rarity: cardModelData.rarity,
+        year: cardModelData.year || cardModelData.card_set?.year,
+        brand: brandFromSet,
+        number: cardModelData.card_number || cardModelData.card_number_in_set
+      }
+      
+      console.log('📤 Dispatching event con dati:', JSON.stringify(eventData, null, 2))
+      
+      window.dispatchEvent(new CustomEvent('filters-populated', { 
+        detail: eventData
+      }))
+      
+      // Comunica esplicitamente la carta selezionata
+      window.dispatchEvent(new CustomEvent('card-selected', { 
+        detail: { 
+          card: selectedCardModel.value,
+          filters: filters.value,
+          category: selectedCategory.value
+        } 
+      }))
+    }, 600) // Timeout aumentato per dare più tempo
+  } catch (error) {
+    console.error('❌ Errore nell\'inizializzazione carta pre-selezionata:', error)
+  }
+}
 
 // Inizializza modalità edit
 const initializeEditMode = async (listing) => {

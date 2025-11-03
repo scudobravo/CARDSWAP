@@ -284,7 +284,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 
 // Props
 const props = defineProps({
@@ -1805,10 +1805,11 @@ const handleFiltersPopulated = async (event) => {
   
   // Popola Player (importante per la sezione "Seleziona Carta")
   if (data.player) {
+    // Assicurati che il player sia un oggetto completo
     selectedPlayer.value = data.player
     localFilters.value.player = data.player.id
     localFilters.value.playerSearch = '' // Lascia il campo vuoto, il tag mostrerà il nome
-    console.log('✅ Player popolato tramite filters-populated:', selectedPlayer.value)
+    console.log('✅ Player popolato tramite filters-populated:', selectedPlayer.value?.name || selectedPlayer.value?.display_name)
     
     // Inizializza le carte del giocatore se disponibili
     if (data.player.cards && data.player.cards.length > 0) {
@@ -1821,13 +1822,23 @@ const handleFiltersPopulated = async (event) => {
   // Popola Team
   if (data.team) {
     selectedTeam.value = data.team
-    localFilters.value.team = data.team.id
+    localFilters.value.team = data.team.id || data.team
+    localFilters.value.teamSearch = '' // Svuota il campo di ricerca, il tag mostrerà il nome
+    console.log('✅ Team popolato tramite filters-populated:', selectedTeam.value?.name)
   }
   
   // Popola Set
   if (data.card_set) {
     selectedCardSet.value = data.card_set
-    localFilters.value.set = data.card_set.id
+    localFilters.value.set = data.card_set.id || data.card_set
+    localFilters.value.setSearch = '' // Svuota il campo di ricerca, il tag mostrerà il nome
+    console.log('✅ Set popolato tramite filters-populated:', selectedCardSet.value?.name)
+  }
+  
+  // Popola Brand
+  if (data.brand) {
+    localFilters.value.brand = data.brand
+    console.log('✅ Brand popolato tramite filters-populated:', data.brand)
   }
   
   // Popola altri filtri
@@ -1835,16 +1846,19 @@ const handleFiltersPopulated = async (event) => {
     localFilters.value.rarity = data.rarity
     selectedRarity.value = data.rarity
     localFilters.value.raritySearch = data.rarity
+    console.log('✅ Rarity popolato tramite filters-populated:', data.rarity)
   }
   if (data.year) {
     localFilters.value.year = data.year
-  }
-  if (data.brand) {
-    localFilters.value.brand = data.brand
+    console.log('✅ Year popolato tramite filters-populated:', data.year)
   }
   if (data.number) {
     localFilters.value.number = data.number
+    console.log('✅ Number popolato tramite filters-populated:', data.number)
   }
+  
+  // Forza un re-render per assicurarsi che i tag vengano mostrati
+  await nextTick()
   
   // Aggiorna i filtri
   onFiltersChanged()

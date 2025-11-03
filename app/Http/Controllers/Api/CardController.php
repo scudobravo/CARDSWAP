@@ -358,7 +358,9 @@ class CardController extends Controller
                     'seller' => [
                         'id' => $listing->seller->id ?? null,
                         'name' => $listing->seller->name ?? 'Venditore',
-                        'email' => $listing->seller->email ?? null
+                        'email' => $listing->seller->email ?? null,
+                        'total_sales' => $listing->seller->total_sales ?? 0,
+                        'rating' => $listing->seller->rating ?? 0
                     ],
                     'created_at' => $card->created_at,
                     'updated_at' => $card->updated_at
@@ -503,7 +505,9 @@ class CardController extends Controller
                     'seller' => [
                         'id' => $listing->seller->id ?? null,
                         'name' => $listing->seller->name ?? 'Venditore',
-                        'email' => $listing->seller->email ?? null
+                        'email' => $listing->seller->email ?? null,
+                        'total_sales' => $listing->seller->total_sales ?? 0,
+                        'rating' => $listing->seller->rating ?? 0
                     ],
                     'created_at' => $card->created_at,
                     'updated_at' => $card->updated_at

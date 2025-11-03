@@ -536,6 +536,8 @@ class CardListingController extends Controller
                 'id' => $cardListing->seller->id,
                 'name' => $cardListing->seller->name,
                 'email' => $cardListing->seller->email,
+                'total_sales' => $cardListing->seller->total_sales ?? 0,
+                'rating' => $cardListing->seller->rating ?? 0,
             ] : null,
             'card_model' => $cardModel,
             'status' => $cardListing->status,

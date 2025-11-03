@@ -49,8 +49,7 @@ Route::get('/grading-companies', function () {
     }
 });
 
-// Shipping Zones - API pubbliche per selezione zone
-Route::get('/shipping-zones', [ShippingZoneController::class, 'index']);
+// Shipping Zones - API pubbliche per calcolo prezzi (non richiedono autenticazione)
 Route::post('/shipping-zones/calculate-price', [ShippingZoneController::class, 'calculatePrice']);
 Route::post('/shipping-zones/calculate-multiple-prices', [ShippingZoneController::class, 'calculateMultiplePrices']);
 Route::post('/shipping-zones/calculate-country-prices', [ShippingZoneController::class, 'calculateCountryPrices']);
@@ -59,6 +58,7 @@ Route::get('/shipping-zones/available-carriers', [ShippingZoneController::class,
 
 // Shipping Zones - Gestione zone (richiede autenticazione)
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/shipping-zones', [ShippingZoneController::class, 'index']); // Zone dell'utente autenticato
     Route::post('/shipping-zones', [ShippingZoneController::class, 'store']);
     Route::put('/shipping-zones/{id}', [ShippingZoneController::class, 'update']);
     Route::delete('/shipping-zones/{id}', [ShippingZoneController::class, 'destroy']);
