@@ -125,10 +125,6 @@
         <span class="font-medium">{{ product.set || 'Set' }}</span>
       </div>
       <div class="flex justify-between text-sm text-gray-600">
-        <span>Year:</span>
-        <span class="font-medium">{{ product.year || 'Year' }}</span>
-      </div>
-      <div class="flex justify-between text-sm text-gray-600">
         <span>Rarity:</span>
         <span class="font-medium">{{ product.rarity || 'Rarity' }}</span>
       </div>

@@ -237,8 +237,8 @@
                           <span class="font-medium truncate ml-2">{{ product.set || 'Set' }}</span>
                         </div>
                         <div class="flex justify-between">
-                          <span>Year:</span>
-                          <span class="font-medium">{{ product.year || 'Year' }}</span>
+                          <span>Rarity:</span>
+                          <span class="font-medium">{{ product.rarity || 'Rarity' }}</span>
                         </div>
                       </div>
                     </div>
@@ -393,8 +393,8 @@
                           <span class="font-medium">{{ product.set || 'Set' }}</span>
                         </div>
                         <div class="flex justify-between">
-                          <span>Year:</span>
-                          <span class="font-medium">{{ product.year || 'Year' }}</span>
+                          <span>Rarity:</span>
+                          <span class="font-medium">{{ product.rarity || 'Rarity' }}</span>
                         </div>
                       </div>
                     </div>
