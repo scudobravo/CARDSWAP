@@ -1268,4 +1268,67 @@ class FootballFilterController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get all card listings for sale filtered by player name
+     * Used for /top/football/{player-name} pages
+     */
+    public function getListingsByPlayerName(Request $request, $playerName)
+    {
+        try {
+            // Decodifica il nome del giocatore dall'URL slug
+            $decodedName = str_replace('-', ' ', urldecode($playerName));
+            $decodedName = ucwords($decodedName); // Capitalizza la prima lettera di ogni parola
+            
+            // Cerca tutti i giocatori con questo nome (potrebbero esserci più varianti)
+            $players = Player::where('name', 'LIKE', "%{$decodedName}%")
+                ->orWhere('name', 'LIKE', "%{$playerName}%")
+                ->get();
+            
+            if ($players->isEmpty()) {
+                return response()->json([
+                    'data' => [],
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => 20,
+                    'total' => 0,
+                    'has_more_pages' => false,
+                    'player_name' => $decodedName
+                ]);
+            }
+            
+            // Ottieni tutti gli ID dei giocatori trovati
+            $playerIds = $players->pluck('id')->toArray();
+            
+            // Usa la stessa logica di getFilteredProducts ma filtra per player_id
+            $filters = $request->all();
+            $filters['player_id'] = $playerIds;
+            
+            // Crea una nuova request con i filtri aggiornati
+            // Usa l'URL base per i filtri (l'URL esatto non è importante, servono solo i parametri)
+            $baseUrl = url('/api/football/filters/products');
+            $newRequest = Request::create($baseUrl, 'GET', $filters);
+            $newRequest->headers->add($request->headers->all());
+            
+            // Chiama getFilteredProducts con i filtri per player
+            return $this->getFilteredProducts($newRequest);
+            
+        } catch (\Exception $e) {
+            Log::error('Errore in getListingsByPlayerName', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'player_name' => $playerName
+            ]);
+            
+            return response()->json([
+                'data' => [],
+                'current_page' => 1,
+                'last_page' => 1,
+                'per_page' => 20,
+                'total' => 0,
+                'has_more_pages' => false,
+                'error' => config('app.debug') ? $e->getMessage() : 'Errore nel caricamento prodotti'
+            ], 500);
+        }
+    }
 }

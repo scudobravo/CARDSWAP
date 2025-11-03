@@ -12,6 +12,7 @@ use App\Models\GradingScore;
 use App\Models\CardModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PokemonFilterController extends Controller
 {
@@ -1026,5 +1027,68 @@ class PokemonFilterController extends Controller
             'total' => $products->total(),
             'has_more_pages' => $products->hasMorePages()
         ]);
+    }
+
+    /**
+     * Get all card listings for sale filtered by pokemon name
+     * Used for /top/pokemon/{pokemon-name} pages
+     */
+    public function getListingsByPlayerName(Request $request, $pokemonName)
+    {
+        try {
+            // Decodifica il nome del pokemon dall'URL slug
+            $decodedName = str_replace('-', ' ', urldecode($pokemonName));
+            $decodedName = ucwords($decodedName); // Capitalizza la prima lettera di ogni parola
+            
+            // Cerca tutti i pokemon con questo nome (potrebbero esserci più varianti)
+            $players = Player::where('name', 'LIKE', "%{$decodedName}%")
+                ->orWhere('name', 'LIKE', "%{$pokemonName}%")
+                ->get();
+            
+            if ($players->isEmpty()) {
+                return response()->json([
+                    'data' => [],
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => 20,
+                    'total' => 0,
+                    'has_more_pages' => false,
+                    'player_name' => $decodedName
+                ]);
+            }
+            
+            // Ottieni tutti gli ID dei pokemon trovati
+            $playerIds = $players->pluck('id')->toArray();
+            
+            // Usa la stessa logica di getFilteredProducts ma filtra per player_id
+            $filters = $request->all();
+            $filters['player_id'] = $playerIds;
+            
+            // Crea una nuova request con i filtri aggiornati
+            // Usa l'URL base per i filtri (l'URL esatto non è importante, servono solo i parametri)
+            $baseUrl = url('/api/pokemon/filters/products');
+            $newRequest = Request::create($baseUrl, 'GET', $filters);
+            $newRequest->headers->add($request->headers->all());
+            
+            // Chiama getFilteredProducts con i filtri per player
+            return $this->getFilteredProducts($newRequest);
+            
+        } catch (\Exception $e) {
+            Log::error('Errore in getListingsByPlayerName', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'pokemon_name' => $pokemonName
+            ]);
+            
+            return response()->json([
+                'data' => [],
+                'current_page' => 1,
+                'last_page' => 1,
+                'per_page' => 20,
+                'total' => 0,
+                'has_more_pages' => false,
+                'error' => config('app.debug') ? $e->getMessage() : 'Errore nel caricamento prodotti'
+            ], 500);
+        }
     }
 }

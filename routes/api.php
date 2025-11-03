@@ -238,6 +238,11 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 
+// Rotte per top players/pokemon (pubbliche) - devono essere prima per evitare conflitti
+Route::get('/top/football/{playerName}', [FootballFilterController::class, 'getListingsByPlayerName']);
+Route::get('/top/basketball/{playerName}', [BasketballFilterController::class, 'getListingsByPlayerName']);
+Route::get('/top/pokemon/{pokemonName}', [PokemonFilterController::class, 'getListingsByPlayerName']);
+
 // Rotte per categorie (pubbliche)
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{category}', [CategoryController::class, 'show']);

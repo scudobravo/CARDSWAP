@@ -61,6 +61,9 @@ import CookiePolicy from './views/CookiePolicy.vue';
 // Import Search Views
 import SearchResults from './views/SearchResults.vue';
 
+// Import Top Player Page
+import TopPlayerPage from './views/TopPlayerPage.vue';
+
 // Import dei file di traduzione
 import it from './locales/it.json';
 
@@ -123,6 +126,9 @@ const routes = [
     // Search Routes
     { path: '/search', component: SearchResults, name: 'search' },
     
+    // Top Player/Pokemon Routes - must be before category routes to avoid conflicts
+    { path: '/top/:category/:name', component: TopPlayerPage, name: 'top.player' },
+    
     // Listing detail route with category, listing ID and slug (SEO-friendly and unique)
     { path: '/:category/:listingId/:slug', component: ProductDetail, name: 'listing.detail' },
     
@@ -160,7 +166,7 @@ const authStore = useAuthStore();
 router.beforeEach(async (to, from, next) => {
   // Pagine pubbliche che non richiedono autenticazione
   const publicPages = ['/', '/login', '/register', '/categories', '/category/football', '/category/basketball', '/category/pokemon', '/terms-and-conditions', '/privacy-policy', '/cookie-policy', '/contact', '/search']
-  const isPublicPage = publicPages.includes(to.path) || to.path.startsWith('/category/') || to.path.startsWith('/categories/') || to.path.match(/^\/[^\/]+\/[^\/]+$/)
+  const isPublicPage = publicPages.includes(to.path) || to.path.startsWith('/category/') || to.path.startsWith('/categories/') || to.path.startsWith('/top/') || to.path.match(/^\/[^\/]+\/[^\/]+$/)
   
   // Se è una pagina pubblica, lascia passare senza controlli
   if (isPublicPage) {

@@ -1245,18 +1245,45 @@ const updateAvailableOptions = async () => {
 // (nessuna azione)
 
 const searchCards = () => {
-  // Convert to the format expected by the API
-  const searchFilters = {
-    player_id: localFilters.value.player,
-    team_id: localFilters.value.team,
-    set_id: localFilters.value.set,
-    brand: localFilters.value.brand,
-    rarity: localFilters.value.rarity,
-    year: localFilters.value.year,
-    numbered: localFilters.value.numbered,
-    number: localFilters.value.number,
-    price: localFilters.value.price
+  // Convert to the format expected by the card-models/search API
+  const searchFilters = {}
+  
+  // Convert player_id to selectedPlayers array (API expects array)
+  if (localFilters.value.player) {
+    searchFilters.selectedPlayers = [localFilters.value.player]
   }
+  
+  // Convert team_id to team (API expects 'team', not 'team_id')
+  if (localFilters.value.team) {
+    searchFilters.team = localFilters.value.team
+  }
+  
+  // Convert set_id to set (API expects 'set', not 'set_id')
+  if (localFilters.value.set) {
+    searchFilters.set = localFilters.value.set
+  }
+  
+  // Brand, rarity, year are already in the correct format
+  if (localFilters.value.brand) {
+    searchFilters.brand = localFilters.value.brand
+  }
+  
+  if (localFilters.value.rarity) {
+    searchFilters.rarity = localFilters.value.rarity
+  }
+  
+  if (localFilters.value.year) {
+    searchFilters.year = localFilters.value.year
+  }
+  
+  // Numbered filter (if exists)
+  if (localFilters.value.numbered !== undefined && localFilters.value.numbered !== null && localFilters.value.numbered !== '') {
+    searchFilters.numbered = localFilters.value.numbered
+  }
+  
+  // Note: number and price are not used by card-models/search API
+  // They are only relevant for single card listings
+  
   emit('search-cards', searchFilters)
 }
 

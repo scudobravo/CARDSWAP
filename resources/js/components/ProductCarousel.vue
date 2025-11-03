@@ -265,8 +265,8 @@ const goToProduct = (product) => {
     return
   }
   
-  // Fallback: formato vecchio per prodotti senza listing_id
-  // Mappa i tipi italiani ai tipi URL
+  // Per top players/pokemon (senza listing_id), naviga alla pagina /top/:category/:name
+  // Questo è il caso per le sezioni "Top Player" e "Top Pokemon" nella home
   const typeMap = {
     'Calcio': 'football',
     'Basketball': 'basketball', 
@@ -279,16 +279,17 @@ const goToProduct = (product) => {
     category = typeMap[product.type]
   }
   
-  // Genera lo slug dal nome
-  const slug = product.name
+  // Genera lo slug dal nome del giocatore/pokemon
+  const playerSlug = product.name
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '') // Rimuove caratteri speciali
     .replace(/\s+/g, '-') // Sostituisce spazi con trattini
     .replace(/-+/g, '-') // Rimuove trattini multipli
     .replace(/^-+|-+$/g, '') // Rimuove trattini all'inizio e alla fine
   
-  const url = `/${category}/${slug}`
-  console.log('Navigating to product:', url)
+  // Naviga alla pagina dei top players/pokemon
+  const url = `/top/${category}/${playerSlug}`
+  console.log('Navigating to top player page:', url)
   window.location.href = url
 }
 

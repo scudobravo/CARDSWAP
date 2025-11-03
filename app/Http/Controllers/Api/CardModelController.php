@@ -28,16 +28,31 @@ class CardModelController extends Controller
         // Filtro per giocatori
         if (!empty($filters['selectedPlayers']) && is_array($filters['selectedPlayers'])) {
             $query->whereIn('player_id', $filters['selectedPlayers']);
+        } elseif (!empty($filters['player'])) {
+            // Supporto per compatibilità: accetta anche un singolo player_id
+            $query->where('player_id', $filters['player']);
+        } elseif (!empty($filters['player_id'])) {
+            // Supporto per compatibilità: accetta anche player_id direttamente
+            $query->where('player_id', $filters['player_id']);
         }
         
         // Filtro per squadra
         if (!empty($filters['team'])) {
             $query->where('team_id', $filters['team']);
+        } elseif (!empty($filters['team_id'])) {
+            // Supporto per compatibilità: accetta anche team_id direttamente
+            $query->where('team_id', $filters['team_id']);
         }
         
         // Filtro per set
         if (!empty($filters['set'])) {
             $query->where('card_set_id', $filters['set']);
+        } elseif (!empty($filters['set_id'])) {
+            // Supporto per compatibilità: accetta anche set_id direttamente
+            $query->where('card_set_id', $filters['set_id']);
+        } elseif (!empty($filters['card_set_id'])) {
+            // Supporto per compatibilità: accetta anche card_set_id
+            $query->where('card_set_id', $filters['card_set_id']);
         }
         
         // Filtro per rarità
