@@ -69,12 +69,9 @@
                   @click="selectMode('single')"
                 >
                   <div class="text-center">
-                    <div class="mx-auto w-100 h-auto mb-4 flex items-center justify-center">
-                      <img src="/images/icons/single card- inserimento carta.svg" alt="Singola Carta" class="w-100 h-auto" />
-                    </div>
-                    <h5 class="text-lg font-semibold text-gray-900 mb-2">Inserimento Singola Carta</h5>
+                    <h5 class="text-2xl font-black text-gray-900 mb-3">Single Card</h5>
                     <p class="text-gray-600 text-sm">
-                      Perfetto per carte uniche o speciali. Upload immagini, filtri dettagliati, preview e conferma.
+                      Perfect for selling unique or special cards. Upload images, apply detailed filters, preview, and in just a click
                     </p>
                   </div>
                   <div v-if="selectedMode === 'single'" class="absolute top-2 right-2">
@@ -93,12 +90,9 @@
                   @click="selectMode('bulk')"
                 >
                   <div class="text-center">
-                    <div class="mx-auto w-100 h-auto mb-4 flex items-center justify-center">
-                      <img src="/images/icons/bulk cards - inserimento carta.svg" alt="Bulk Cards" class="w-100 h-auto" />
-                    </div>
-                    <h5 class="text-lg font-semibold text-gray-900 mb-2">Inserimento Bulk</h5>
+                    <h5 class="text-2xl font-black text-gray-900 mb-3">Bulk Cards</h5>
                     <p class="text-gray-600 text-sm">
-                      Ideale per collezioni. Selezione da filtri, tabella modificabile per prezzo e quantità.
+                      Ideal for card lots. Apply filters, adjust prices and quantities, and stay in full control with an editable card table.
                     </p>
                   </div>
                   <div v-if="selectedMode === 'bulk'" class="absolute top-2 right-2">

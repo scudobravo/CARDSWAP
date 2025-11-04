@@ -1,6 +1,6 @@
 <template>
   <!-- Non mostrare l'header nella dashboard -->
-  <header v-if="!isInDashboard">
+  <header v-if="!isInDashboard" :class="{ 'sticky top-0 z-50 shadow-lg': isSticky }">
     <!-- Top navigation - Blu scuro con logo bianco e icone a destra -->
     <div class="bg-primary text-white">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -130,9 +130,20 @@ const userName = computed(() => authStore.user?.name || authStore.user?.first_na
 const cartItemsCount = computed(() => isLoggedIn.value ? cartStore.totalItems : 0)
 const wishlistItemsCount = computed(() => isLoggedIn.value ? wishlistStore.totalItems : 0)
 
+// Sticky header logic
+const isSticky = ref(false)
+
+const handleScroll = () => {
+  // Attiva sticky quando scrolli più di 100px
+  isSticky.value = window.scrollY > 100
+}
+
 // Carica i dati utente se c'è un token ma non l'utente
 onMounted(async () => {
   console.log('Header mounted')
+  
+  // Aggiungi listener per scroll
+  window.addEventListener('scroll', handleScroll)
   
   // Se c'è un token ma non c'è l'utente, caricalo
   if (authStore.token && !authStore.user) {
@@ -151,6 +162,10 @@ onMounted(async () => {
   }
   // Per utenti non autenticati, non caricare nulla
   // I computed cartItemsCount e wishlistItemsCount restituiranno 0
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
 })
 
 // Funzione di logout

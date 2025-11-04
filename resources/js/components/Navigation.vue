@@ -246,7 +246,7 @@ const navigation = {
   categories: [
     {
       name: 'Calcio',
-      icon: '/images/icons/categoria football.png',
+      icon: '/images/icons/categoria football.svg',
       featured: [
         {
           name: 'Singles',
@@ -276,7 +276,7 @@ const navigation = {
     },
     {
       name: 'Basket',
-      icon: '/images/icons/categoria basketball.png',
+      icon: '/images/icons/categoria basketball.svg',
       featured: [
         {
           name: 'Singles',
@@ -306,7 +306,7 @@ const navigation = {
     },
     {
       name: 'Pokemon',
-      icon: '/images/icons/categoria pokemon.png',
+      icon: '/images/icons/categoria pokemon.svg',
       featured: [
         {
           name: 'Singles',

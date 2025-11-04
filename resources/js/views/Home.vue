@@ -118,21 +118,21 @@ const categories = ref([
     name: "Calcio",
     description: "Carte da calcio di tutte le leghe",
     type: "football",
-    icon: "/images/icons/categoria football.png"
+    icon: "/images/icons/categoria football.svg"
   },
   {
     id: 2,
     name: "Pokemon",
     description: "Colleziona le tue carte Pokemon preferite",
     type: "pokemon",
-    icon: "/images/icons/categoria pokemon.png"
+    icon: "/images/icons/categoria pokemon.svg"
   },
   {
     id: 3,
     name: "Basket",
     description: "Carte da basket NBA e internazionali",
     type: "basketball",
-    icon: "/images/icons/categoria basketball.png"
+    icon: "/images/icons/categoria basketball.svg"
   }
 ])
 
