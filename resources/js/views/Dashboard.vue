@@ -180,7 +180,8 @@
 
               <!-- User/Seller stats -->
               <template v-else>
-                <div class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                <!-- Ordini Totali -->
+                <router-link to="/purchases/orders" class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow cursor-pointer block">
                   <div class="flex items-center">
                     <div class="p-2 bg-primary rounded-lg">
                       <DocumentDuplicateIcon class="w-6 h-6 text-white" />
@@ -190,9 +191,10 @@
                       <p class="text-2xl font-futura-bold text-gray-900">{{ dashboardData.stats?.orders?.total || 0 }}</p>
                     </div>
                   </div>
-                </div>
+                </router-link>
                 
-                <div class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                <!-- Wishlist -->
+                <router-link to="/purchases/wishlist" class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow cursor-pointer block">
                   <div class="flex items-center">
                     <div class="p-2 bg-secondary rounded-lg">
                       <ChartPieIcon class="w-6 h-6 text-primary" />
@@ -202,9 +204,10 @@
                       <p class="text-2xl font-futura-bold text-gray-900">{{ dashboardData.stats?.wishlist?.total_items || 0 }}</p>
                     </div>
                   </div>
-                </div>
+                </router-link>
                 
-                <div class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                <!-- Inserzioni Attive -->
+                <router-link to="/sales/cards" class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow cursor-pointer block">
                   <div class="flex items-center">
                     <div class="p-2 bg-accent rounded-lg">
                       <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -216,9 +219,10 @@
                       <p class="text-2xl font-futura-bold text-gray-900">{{ dashboardData.stats?.listings?.active || 0 }}</p>
                     </div>
                   </div>
-                </div>
+                </router-link>
                 
-                <div class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                <!-- Carte Acquistate/Vendute -->
+                <router-link to="/purchases/orders" class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow cursor-pointer block">
                   <div class="flex items-center">
                     <div class="p-2 bg-accent-red rounded-lg">
                       <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -230,7 +234,7 @@
                       <p class="text-2xl font-futura-bold text-gray-900">{{ dashboardData.stats?.listings?.sold || 0 }}</p>
                     </div>
                   </div>
-                </div>
+                </router-link>
               </template>
             </div>
             

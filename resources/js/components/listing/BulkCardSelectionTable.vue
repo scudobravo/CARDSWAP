@@ -48,7 +48,7 @@
               Rarity
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Brand
+              {{ isBasketballMode ? 'Numbered' : 'Brand' }}
             </th>
           </tr>
         </thead>
@@ -83,7 +83,12 @@
               {{ card.rarity || '-' }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ card.card_set?.brand || '-' }}
+              <span v-if="isBasketballMode">
+                {{ card.card_number || card.card_number_in_set || '-' }}
+              </span>
+              <span v-else>
+                {{ card.card_set?.brand || '-' }}
+              </span>
             </td>
           </tr>
         </tbody>
@@ -122,6 +127,10 @@ const props = defineProps({
   hasSearched: {
     type: Boolean,
     default: false
+  },
+  category: {
+    type: String,
+    default: 'football'
   }
 })
 
@@ -134,6 +143,10 @@ const selectedCards = ref([])
 // Computed
 const allSelected = computed(() => {
   return props.cards.length > 0 && selectedCards.value.length === props.cards.length
+})
+
+const isBasketballMode = computed(() => {
+  return props.category === 'basketball'
 })
 
 // Methods

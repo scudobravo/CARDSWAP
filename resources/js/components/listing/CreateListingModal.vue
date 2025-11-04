@@ -173,6 +173,7 @@
             <BulkCardSelectionTable 
               :cards="filteredCardModels"
               :has-searched="hasSearched"
+              :category="selectedCategory"
               @cards-selected="handleCardsSelected"
               @proceed-to-bulk-edit="handleProceedToBulkEdit"
             />
