@@ -19,7 +19,7 @@
         <div class="flex items-center justify-center space-x-2">
           <!-- Pokemon Icon -->
           <div class="flex-shrink-0">
-            <img src="/images/icons/pokemon.png" alt="Pokemon" class="w-48 h-auto" />
+            <img src="/images/icons/pokemon.png" alt="Pokemon" class="w-24 md:w-48 h-auto" />
           </div>
           
           <!-- Category Info -->

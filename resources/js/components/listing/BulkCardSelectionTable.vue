@@ -47,7 +47,7 @@
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Rarity
             </th>
-            <th v-if="isBasketballMode" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Numbered
             </th>
           </tr>
@@ -82,7 +82,7 @@
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
               {{ card.rarity || '-' }}
             </td>
-            <td v-if="isBasketballMode" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
               {{ card.card_number || card.card_number_in_set || '-' }}
             </td>
           </tr>
@@ -138,10 +138,6 @@ const selectedCards = ref([])
 // Computed
 const allSelected = computed(() => {
   return props.cards.length > 0 && selectedCards.value.length === props.cards.length
-})
-
-const isBasketballMode = computed(() => {
-  return props.category === 'basketball'
 })
 
 // Methods

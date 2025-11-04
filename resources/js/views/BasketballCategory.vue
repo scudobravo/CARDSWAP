@@ -19,7 +19,7 @@
         <div class="flex items-center justify-center space-x-6">
           <!-- Basketball Icon -->
           <div class="flex-shrink-0">
-            <img src="/images/icons/basket.png" alt="Basketball" class="w-48 h-auto" />
+            <img src="/images/icons/basket.png" alt="Basketball" class="w-24 md:w-48 h-auto" />
           </div>
           
           <!-- Category Info -->

@@ -13,10 +13,11 @@
         </div>
         <button
           @click="openAdvancedModal"
-          class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+          class="inline-flex items-center justify-center p-2 md:px-4 md:py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
+          title="Nuova Zona Avanzata"
         >
-          <PlusIcon class="h-4 w-4 mr-2" />
-          Nuova Zona Avanzata
+          <PlusIcon class="h-5 w-5 md:h-4 md:w-4 md:mr-2" />
+          <span class="hidden md:inline">Nuova Zona Avanzata</span>
         </button>
       </div>
 
@@ -25,56 +26,59 @@
         <div
           v-for="zone in advancedZones"
           :key="zone.id"
-          class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
+          class="border border-gray-200 rounded-lg p-4 md:p-6 hover:border-gray-300 transition-colors bg-white"
         >
-          <div class="flex justify-between items-start">
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-2">
-                <h4 class="text-sm font-medium text-gray-900">{{ zone.name }}</h4>
-                <span
-                  :class="zone.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
-                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                >
-                  {{ zone.is_active ? 'Attiva' : 'Inattiva' }}
-                </span>
-                <span
-                  v-if="zone.use_shippo_pricing"
-                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                >
-                  SHIPPO
-                </span>
+          <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+            <div class="flex-1 min-w-0">
+              <!-- Header con nome e stato -->
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h4 class="text-base font-semibold text-gray-900">{{ zone.name }}</h4>
+                  <span
+                    :class="zone.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                    :title="zone.is_active ? 'La zona è attiva e può essere usata per le inserzioni' : 'La zona è inattiva e non può essere usata per le inserzioni'"
+                  >
+                    {{ zone.is_active ? 'Attiva' : 'Inattiva' }}
+                  </span>
+                </div>
+                
+                <!-- Azioni -->
+                <div class="flex items-center gap-2 ml-2">
+                  <button
+                    @click="openEditAdvancedModal(zone)"
+                    class="text-indigo-600 hover:text-indigo-900 text-sm font-medium whitespace-nowrap"
+                  >
+                    Modifica
+                  </button>
+                  <button
+                    @click="deleteZone(zone)"
+                    class="text-red-600 hover:text-red-900 text-sm font-medium whitespace-nowrap"
+                  >
+                    Elimina
+                  </button>
+                </div>
               </div>
-              <div class="text-sm text-gray-600 space-y-1">
-                <p><span class="font-medium">Tipo:</span> {{ getZoneTypeLabel(zone.zone_type) }}</p>
-                <p v-if="zone.is_worldwide"><span class="font-medium">Copertura:</span> Tutto il mondo</p>
+              
+              <!-- Dettagli zona -->
+              <div class="text-sm text-gray-600 space-y-1.5">
+                <p><span class="font-medium text-gray-900">Tipo:</span> {{ getZoneTypeLabel(zone.zone_type) }}</p>
+                <p v-if="zone.is_worldwide"><span class="font-medium text-gray-900">Copertura:</span> Tutto il mondo</p>
                 <p v-else-if="zone.included_countries && zone.included_countries.length > 0">
-                  <span class="font-medium">Continente:</span> {{ getContinentFromCountries(zone.included_countries) }}
+                  <span class="font-medium text-gray-900">Continente:</span> {{ getContinentFromCountries(zone.included_countries) }}
                 </p>
-                <p v-if="zone.included_countries && zone.included_countries.length > 0">
-                  <span class="font-medium">Paesi inclusi:</span> {{ zone.included_countries.join(', ') }}
+                <p v-if="zone.included_countries && zone.included_countries.length > 0" class="break-words">
+                  <span class="font-medium text-gray-900">Paesi inclusi:</span> 
+                  <span class="text-xs">{{ zone.included_countries.join(', ') }}</span>
                 </p>
                 <p v-if="zone.use_shippo_pricing && zone.shippo_markup > 0">
-                  <span class="font-medium">Markup SHIPPO:</span> +€{{ zone.shippo_markup }}
+                  <span class="font-medium text-gray-900">Markup:</span> +€{{ zone.shippo_markup }}
                 </p>
                 <p>
-                  <span class="font-medium">Consegna:</span>
+                  <span class="font-medium text-gray-900">Consegna:</span>
                   {{ zone.delivery_days_min }}-{{ zone.delivery_days_max }} giorni
                 </p>
               </div>
-            </div>
-            <div class="flex items-center gap-2 ml-4">
-              <button
-                @click="openEditAdvancedModal(zone)"
-                class="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
-              >
-                Modifica
-              </button>
-              <button
-                @click="deleteZone(zone)"
-                class="text-red-600 hover:text-red-900 text-sm font-medium"
-              >
-                Elimina
-              </button>
             </div>
           </div>
         </div>
@@ -162,6 +166,10 @@ const loadZones = async () => {
           zone.zone_type && ['worldwide', 'continent', 'country', 'region'].includes(zone.zone_type)
         )
         console.log('Zone avanzate caricate:', advancedZones.value.length)
+        if (advancedZones.value.length > 0) {
+          console.log('Prima zona caricata:', advancedZones.value[0])
+          console.log('is_active della prima zona:', advancedZones.value[0].is_active, typeof advancedZones.value[0].is_active)
+        }
       } else {
         console.error('Risposta API non è un array:', allZones)
         advancedZones.value = []
@@ -260,11 +268,12 @@ const closeAdvancedModal = () => {
       shippo_markup: editingAdvancedZone.value?.shippo_markup || 0.00,
       delivery_days_min: editingAdvancedZone.value?.delivery_days_min || 7,
       delivery_days_max: editingAdvancedZone.value?.delivery_days_max || 21,
-      is_active: editingAdvancedZone.value?.is_active ?? true,
+      is_active: editingAdvancedZone.value ? Boolean(editingAdvancedZone.value.is_active ?? true) : true,
       description: editingAdvancedZone.value?.description || `Zona ${zoneData.option} con prezzi SHIPPO`
     }
     
             console.log('🔍 saveData preparato:', saveData)
+            console.log('🔍 saveData.is_active:', saveData.is_active, typeof saveData.is_active)
             console.log('🔍 saveData.included_countries:', saveData.included_countries)
             console.log('🔍 saveData.excluded_countries:', saveData.excluded_countries)
 
@@ -298,6 +307,7 @@ const closeAdvancedModal = () => {
             if (response.ok) {
               const result = await response.json()
               console.log('✅ Zona avanzata salvata:', result)
+              console.log('✅ is_active salvato:', result.data?.is_active, typeof result.data?.is_active)
               console.log('✅ included_countries salvati:', result.data?.included_countries)
               console.log('✅ excluded_countries salvati:', result.data?.excluded_countries)
               await loadZones()

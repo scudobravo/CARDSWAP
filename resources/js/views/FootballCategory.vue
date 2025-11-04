@@ -19,7 +19,7 @@
         <div class="flex items-center justify-center space-x-2">
           <!-- Football Icon -->
           <div class="flex-shrink-0">
-            <img src="/images/icons/calcio.png" alt="Football" class="w-48 h-auto" />
+            <img src="/images/icons/calcio.png" alt="Football" class="w-24 md:w-48 h-auto" />
           </div>
           
           <!-- Category Info -->

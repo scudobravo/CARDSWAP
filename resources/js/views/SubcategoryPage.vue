@@ -206,7 +206,7 @@
                       <div class="flex flex-wrap gap-1 mt-2">
                         <!-- Numbered (preferisci card_number, fallback a card_number_in_set) -->
                         <div v-if="product.card_number || product.card_number_in_set" class="bg-gray-100 px-2 py-1 rounded text-xs font-bold text-primary">
-                          #{{ product.card_number || product.card_number_in_set }}
+                          /{{ product.card_number || product.card_number_in_set }}
                         </div>
                         <!-- Autograph -->
                         <div v-if="product.is_autograph" class="bg-gray-100 px-2 py-1 rounded text-xs font-bold text-primary">

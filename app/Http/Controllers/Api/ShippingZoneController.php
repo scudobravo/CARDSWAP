@@ -22,17 +22,28 @@ class ShippingZoneController extends Controller
     /**
      * Ottieni tutte le zone di spedizione disponibili per l'utente autenticato (VENDITORE)
      * Restituisce SOLO le zone personali del venditore, non quelle globali
+     * 
+     * @param Request $request
+     * @param bool $activeOnly - Se true, restituisce solo zone attive (default: false per gestione completa)
      */
     public function index(Request $request): JsonResponse
     {
         try {
             $userId = $request->user()->id;
             
-            // Carica SOLO le zone personali del venditore
-            $zones = ShippingZone::active()
-                ->where('user_id', $userId) // Solo zone del venditore autenticato
-                ->whereIn('zone_type', ['worldwide', 'continent', 'country', 'region'])
-                ->ordered()
+            // Controlla se richiediamo solo zone attive (per listing)
+            $activeOnly = $request->query('active_only', false);
+            
+            // Query base: SOLO le zone personali del venditore
+            $query = ShippingZone::where('user_id', $userId)
+                ->whereIn('zone_type', ['worldwide', 'continent', 'country', 'region']);
+            
+            // Se richiesto, filtra solo zone attive
+            if ($activeOnly) {
+                $query->active();
+            }
+            
+            $zones = $query->ordered()
                 ->get()
                 ->map(function ($zone) {
                     return [
@@ -41,6 +52,7 @@ class ShippingZoneController extends Controller
                         'country_code' => $zone->country_code,
                         'zone_type' => $zone->zone_type,
                         'is_worldwide' => $zone->is_worldwide,
+                        'is_active' => $zone->is_active, // Aggiunto is_active
                         'included_countries' => $zone->included_countries,
                         'excluded_countries' => $zone->excluded_countries,
                         'use_shippo_pricing' => $zone->use_shippo_pricing,
@@ -640,9 +652,29 @@ class ShippingZoneController extends Controller
             $zoneData = $request->all();
             $zoneData['user_id'] = $request->user()->id;
             
+            // Se is_active non è specificato o è null, impostalo a true di default
+            if (!isset($zoneData['is_active']) || $zoneData['is_active'] === null) {
+                $zoneData['is_active'] = true;
+            }
+            
+            // Assicurati che is_active sia un booleano
+            $zoneData['is_active'] = (bool) $zoneData['is_active'];
+            
+            Log::info('Dati zona prima della creazione:', [
+                'is_active' => $zoneData['is_active'],
+                'is_active_type' => gettype($zoneData['is_active']),
+                'all_data' => $zoneData
+            ]);
+            
             $zone = ShippingZone::create($zoneData);
             
-            Log::info('Zona creata:', $zone->toArray());
+            Log::info('Zona creata:', [
+                'id' => $zone->id,
+                'name' => $zone->name,
+                'is_active' => $zone->is_active,
+                'is_active_type' => gettype($zone->is_active),
+                'all_data' => $zone->toArray()
+            ]);
 
             return response()->json([
                 'success' => true,

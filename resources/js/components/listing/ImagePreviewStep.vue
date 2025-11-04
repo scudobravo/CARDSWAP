@@ -220,7 +220,7 @@
           <div v-for="(card, index) in selectedCards" :key="index" class="bg-white rounded-lg p-4 border border-gray-200">
             <div class="flex justify-between items-start mb-2">
               <h5 class="text-sm font-medium text-gray-900">{{ card.player?.name || 'N/A' }}</h5>
-              <span class="text-xs text-gray-500">#{{ card.number || 'N/A' }}</span>
+              <span class="text-xs text-gray-500">/{{ card.number || 'N/A' }}</span>
             </div>
             <div class="text-xs text-gray-600 space-y-1">
               <div>{{ card.team?.name || 'N/A' }}</div>

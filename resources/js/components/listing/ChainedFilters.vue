@@ -240,9 +240,9 @@
         >
           <!-- Header con nome e numero -->
           <div class="flex justify-between items-start mb-2">
-            <div class="text-sm font-medium text-gray-900 truncate flex-1 mr-2">{{ card.name }}</div>
+            <div class="text-sm font-medium text-gray-900 truncate flex-1 mr-2">{{ formatCardName(card.name) }}</div>
           <div v-if="card.card_number" class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
-            #{{ card.card_number }}
+            /{{ card.card_number }}
             </div>
           </div>
           
@@ -354,6 +354,12 @@ const availableYears = ref([])
 
 // Dropdown visibility state
 const showPlayerDropdown = ref(false)
+
+// Format card name: replace # with /
+const formatCardName = (name) => {
+  if (!name) return ''
+  return name.replace(/#/g, '/')
+}
 const showTeamDropdown = ref(false)
 const showSetDropdown = ref(false)
 const showRarityDropdown = ref(false)

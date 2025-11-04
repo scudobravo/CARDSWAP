@@ -369,11 +369,11 @@
         <button
           type="submit"
           :disabled="loading"
-          class="flex justify-center rounded-md bg-primary px-6 py-3 text-sm/6 font-gill-sans-semibold text-white shadow-xs hover:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50 disabled:cursor-not-allowed"
+          class="flex justify-center rounded-md bg-primary px-3 py-2 md:px-6 md:py-3 text-sm font-gill-sans-semibold text-white shadow-xs hover:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <div v-if="loading" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-          <UserIcon v-else class="h-4 w-4 mr-2" />
-          {{ loading ? 'Aggiornamento...' : 'Aggiorna Profilo' }}
+          <span class="md:hidden">{{ loading ? 'Aggiornamento...' : 'Aggiorna' }}</span>
+          <span class="hidden md:inline">{{ loading ? 'Aggiornamento...' : 'Aggiorna Profilo' }}</span>
         </button>
       </div>
     </form>
@@ -386,7 +386,6 @@ import { useAuthStore } from '@/stores/auth'
 import {
   CheckCircleIcon,
   XCircleIcon,
-  UserIcon,
   CheckIcon,
   XMarkIcon,
   ExclamationCircleIcon,

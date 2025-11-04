@@ -82,9 +82,9 @@
     <!-- Secondary section - Bianco con pulsante CATEGORY e campo ricerca -->
     <div v-if="!hideSecondaryBar" class="bg-white border-b border-gray-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center h-16 space-x-4">
+        <div class="flex items-center py-2 md:py-3 space-x-2 md:space-x-4">
           <!-- Pulsante CATEGORY -->
-          <router-link to="/categories" class="bg-secondary text-primary px-6 py-3 rounded-lg font-futura-bold text-sm uppercase hover:bg-opacity-90 transition-colors">
+          <router-link to="/categories" class="bg-secondary text-primary px-3 py-2 md:px-6 md:py-3 rounded-lg font-futura-bold text-xs md:text-sm uppercase hover:bg-opacity-90 transition-colors whitespace-nowrap">
             CATEGORY
           </router-link>
           
