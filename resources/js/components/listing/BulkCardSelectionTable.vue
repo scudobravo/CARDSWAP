@@ -47,8 +47,8 @@
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Rarity
             </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              {{ isBasketballMode ? 'Numbered' : 'Brand' }}
+            <th v-if="isBasketballMode" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Numbered
             </th>
           </tr>
         </thead>
@@ -82,13 +82,8 @@
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
               {{ card.rarity || '-' }}
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              <span v-if="isBasketballMode">
-                {{ card.card_number || card.card_number_in_set || '-' }}
-              </span>
-              <span v-else>
-                {{ card.card_set?.brand || '-' }}
-              </span>
+            <td v-if="isBasketballMode" class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              {{ card.card_number || card.card_number_in_set || '-' }}
             </td>
           </tr>
         </tbody>
