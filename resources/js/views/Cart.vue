@@ -89,18 +89,8 @@
                     </p>
 
                     <div class="flex items-center gap-3">
-                      <label :for="`quantity-${productIdx}`" class="text-xs sm:text-sm text-gray-600 whitespace-nowrap">Quantità:</label>
-                      <div class="grid w-20 sm:w-24 grid-cols-1 relative">
-                        <select :id="`quantity-${productIdx}`"
-                                :name="`quantity-${productIdx}`" 
-                                :aria-label="`Quantità, ${product.cardModel?.name || 'Carta'}`" 
-                                :value="product.quantity"
-                                @change="updateQuantity(product.id, product.seller_id, parseInt($event.target.value))"
-                                class="col-start-1 row-start-1 appearance-none rounded-md bg-white py-1.5 pr-8 pl-3 text-sm text-gray-900 border border-gray-300 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600">
-                          <option v-for="qty in 8" :key="qty" :value="qty">{{ qty }}</option>
-                        </select>
-                        <ChevronDownIcon class="pointer-events-none col-start-1 row-start-1 mr-2 size-4 self-center justify-self-end text-gray-500" aria-hidden="true" />
-                      </div>
+                      <span class="text-xs sm:text-sm text-gray-600 whitespace-nowrap">Quantità:</span>
+                      <span class="text-sm font-medium text-gray-900">1</span>
                     </div>
                   </div>
                 </div>
@@ -228,7 +218,12 @@ const removeFromCart = async (listingId, sellerId) => {
 
 const getProductImage = (product) => {
   if (product.images && product.images.length > 0) {
-    return product.images[0]
+    let imagePath = product.images[0]
+    // Se il percorso non inizia con /storage/ o http, aggiungi /storage/
+    if (imagePath && !imagePath.startsWith('/storage/') && !imagePath.startsWith('http') && !imagePath.startsWith('//')) {
+      imagePath = '/storage/' + imagePath
+    }
+    return imagePath
   }
   return null
 }

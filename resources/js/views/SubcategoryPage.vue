@@ -936,24 +936,27 @@ const handleImageError = (event) => {
     }
     
     const img = event.target
-    // Nascondi l'immagine che ha fallito
-    if (img && img.style) {
-      img.style.display = 'none'
+    if (!img) {
+      return
     }
+    
+    // Nascondi l'immagine che ha fallito usando classi CSS invece di style
+    img.classList.add('hidden')
     
     // Cerca il placeholder nel parent (il div contenitore)
     const parent = img.parentElement
-    if (parent) {
-      // Cerca un div placeholder nel parent (ora sempre presente nel DOM)
-      const placeholder = Array.from(parent.children).find(
-        el => el !== img && el.classList && el.classList.contains('bg-gray-200')
-      )
-      
-      // Mostra il placeholder se esiste
-      if (placeholder && placeholder.style) {
-        placeholder.classList.remove('hidden')
-        placeholder.style.display = 'flex'
-      }
+    if (!parent) {
+      return
+    }
+    
+    // Cerca un div placeholder nel parent (ora sempre presente nel DOM)
+    const placeholder = Array.from(parent.children).find(
+      el => el !== img && el && el.classList && el.classList.contains('bg-gray-200')
+    )
+    
+    // Mostra il placeholder se esiste, usando solo classi CSS
+    if (placeholder && placeholder.classList) {
+      placeholder.classList.remove('hidden')
     }
   } catch (error) {
     // Silenziosamente ignora errori per evitare di bloccare l'app

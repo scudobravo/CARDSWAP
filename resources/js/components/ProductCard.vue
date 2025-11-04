@@ -10,8 +10,8 @@
         class="w-full h-full object-cover"
         @error="handleImageError"
       />
-      <!-- Placeholder Image -->
-      <div v-else class="w-full h-full flex items-center justify-center bg-gray-200">
+      <!-- Placeholder Image - sempre presente ma nascosto se c'è immagine -->
+      <div :class="['w-full h-full flex items-center justify-center bg-gray-200', product.imageUrl ? 'hidden' : '']">
         <svg class="w-16 h-16 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
         </svg>
@@ -200,9 +200,39 @@ const formatPrice = (price) => {
 }
 
 const handleImageError = (event) => {
-  // Se l'immagine non viene caricata, mostra il placeholder
-  event.target.style.display = 'none'
-  event.target.parentElement.querySelector('.bg-gray-200').style.display = 'flex'
+  // Gestisci errori di caricamento immagini in modo sicuro
+  try {
+    if (!event || !event.target) {
+      return
+    }
+    
+    const img = event.target
+    if (!img) {
+      return
+    }
+    
+    // Nascondi l'immagine che ha fallito usando classi CSS
+    img.classList.add('hidden')
+    
+    // Cerca il placeholder nel parent
+    const parent = img.parentElement
+    if (!parent) {
+      return
+    }
+    
+    // Cerca un div placeholder nel parent
+    const placeholder = Array.from(parent.children).find(
+      el => el !== img && el && el.classList && el.classList.contains('bg-gray-200')
+    )
+    
+    // Mostra il placeholder se esiste, usando solo classi CSS
+    if (placeholder && placeholder.classList) {
+      placeholder.classList.remove('hidden')
+    }
+  } catch (error) {
+    // Silenziosamente ignora errori per evitare di bloccare l'app
+    console.warn('Errore nella gestione del fallimento immagine:', error)
+  }
 }
 
 const addToCart = async () => {
