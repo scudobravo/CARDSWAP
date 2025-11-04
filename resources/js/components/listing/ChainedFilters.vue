@@ -193,7 +193,12 @@
             step="0.01"
             min="0"
             placeholder="0.00"
-            class="block w-full h-10 pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none"
+            :class="[
+              'block w-full h-10 pl-8 pr-3 py-2 border rounded-md text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none',
+              priceError 
+                ? 'border-red-500 focus:border-red-500' 
+                : 'border-gray-300 focus:border-primary'
+            ]"
             @input="onFiltersChanged"
           />
         </div>
@@ -311,6 +316,10 @@ const props = defineProps({
   initialFilters: {
     type: Object,
     default: () => ({})
+  },
+  priceError: {
+    type: Boolean,
+    default: false
   }
 })
 

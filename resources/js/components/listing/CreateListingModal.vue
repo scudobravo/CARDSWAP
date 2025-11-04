@@ -128,6 +128,7 @@
               :show-price="true"
               :show-search-button="false"
               :initial-filters="filters"
+              :price-error="priceError"
               @filters-changed="handleFiltersChanged"
               @card-picked="selectCardModel"
             />
@@ -461,6 +462,7 @@ const bulkListings = ref([]) // For bulk mode
 const isDragOver = ref(false) // For drag & drop
 const selectedCategory = ref('football') // Categoria selezionata
 const hasShippingZones = ref(false) // Controllo esistenza zone di spedizione
+const priceError = ref(false) // Stato errore validazione prezzo
 
 // Listing data
 const listingData = ref({
@@ -570,6 +572,17 @@ const selectMode = (mode) => {
 }
 
 const nextStep = () => {
+  // Validazione prezzo al passo 1 (solo per single mode)
+  if (currentStep.value === 1 && selectedMode.value === 'single') {
+    const hasPrice = !!(filters.value.price || listingData.value.price)
+    if (!hasPrice) {
+      priceError.value = true
+      return
+    }
+    // Se il prezzo è presente, rimuovi l'errore
+    priceError.value = false
+  }
+  
   // Validazione specifica per le zone di spedizione
   if ((currentStep.value === 3 && selectedMode.value === 'single') || 
       (currentStep.value === 3 && selectedMode.value === 'bulk')) { // Step delle zone di spedizione
@@ -587,6 +600,8 @@ const nextStep = () => {
 const previousStep = () => {
   if (currentStep.value > 0) {
     currentStep.value--
+    // Reset errore prezzo quando si torna indietro
+    priceError.value = false
   }
 }
 
@@ -604,6 +619,7 @@ const resetForm = () => {
   hasSearched.value = false
   filteredCardModels.value = []
   selectedShippingZones.value = []
+  priceError.value = false // Reset errore prezzo
   // Reset card images
   cardImages.value = [null, null, null, null]
   filters.value = {
@@ -1844,6 +1860,13 @@ watch(() => props.isOpen, async (isOpen) => {
         initializePreselectedCard()
       }, 100)
     }
+  }
+})
+
+// Watch per rimuovere l'errore del prezzo quando viene inserito
+watch(() => filters.value.price, (newPrice) => {
+  if (priceError.value && newPrice) {
+    priceError.value = false
   }
 })
 
