@@ -8,9 +8,24 @@
     
     <nav class="flex flex-1 flex-col">
       <ul role="list" class="flex flex-1 flex-col gap-y-7">
-        <!-- Dashboard -->
+        <!-- Home & Dashboard -->
         <li>
           <ul role="list" class="-mx-2 space-y-1">
+            <li>
+              <a 
+                href="/" 
+                :class="[
+                  'text-gray-700 hover:bg-gray-50 hover:text-primary',
+                  'group flex gap-x-3 rounded-md p-2 text-sm/6 font-gill-sans-semibold'
+                ]"
+              >
+                <HomeIcon :class="[
+                  'text-gray-400 group-hover:text-primary',
+                  'size-6 shrink-0'
+                ]" aria-hidden="true" />
+                Home
+              </a>
+            </li>
             <li>
               <router-link 
                 to="/dashboard" 
@@ -19,7 +34,7 @@
                   'group flex gap-x-3 rounded-md p-2 text-sm/6 font-gill-sans-semibold'
                 ]"
               >
-                <HomeIcon :class="[
+                <Squares2X2Icon :class="[
                   $route.path === '/dashboard' ? 'text-primary' : 'text-gray-400 group-hover:text-primary',
                   'size-6 shrink-0'
                 ]" aria-hidden="true" />
@@ -269,6 +284,7 @@ import {
   FolderIcon,
   DocumentDuplicateIcon,
   ChartBarIcon,
+  Squares2X2Icon,
   StarIcon,
   BellIcon,
   LockClosedIcon,
