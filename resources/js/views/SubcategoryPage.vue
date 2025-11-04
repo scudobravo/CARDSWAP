@@ -188,7 +188,7 @@
                       class="w-full h-full object-cover"
                       @error="handleImageError"
                     />
-                    <div v-else class="w-full h-full flex items-center justify-center bg-gray-200">
+                    <div :class="['w-full h-full flex items-center justify-center bg-gray-200', product.imageUrl ? 'hidden' : '']">
                       <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
                       </svg>
@@ -273,7 +273,7 @@
                       class="w-full h-full object-cover"
                       @error="handleImageError"
                     />
-                    <div v-else class="w-full h-full flex items-center justify-center bg-gray-200">
+                    <div :class="['w-full h-full flex items-center justify-center bg-gray-200', product.imageUrl ? 'hidden' : '']">
                       <svg class="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
                       </svg>
@@ -929,11 +929,35 @@ const handleAddToCart = async (product, event) => {
 }
 
 const handleImageError = (event) => {
-  // Nascondi l'immagine e mostra il placeholder
-  event.target.style.display = 'none'
-  const placeholder = event.target.nextElementSibling
-  if (placeholder && placeholder.classList.contains('bg-gray-200')) {
-    placeholder.style.display = 'flex'
+  // Gestisci errori di caricamento immagini in modo sicuro
+  try {
+    if (!event || !event.target) {
+      return
+    }
+    
+    const img = event.target
+    // Nascondi l'immagine che ha fallito
+    if (img && img.style) {
+      img.style.display = 'none'
+    }
+    
+    // Cerca il placeholder nel parent (il div contenitore)
+    const parent = img.parentElement
+    if (parent) {
+      // Cerca un div placeholder nel parent (ora sempre presente nel DOM)
+      const placeholder = Array.from(parent.children).find(
+        el => el !== img && el.classList && el.classList.contains('bg-gray-200')
+      )
+      
+      // Mostra il placeholder se esiste
+      if (placeholder && placeholder.style) {
+        placeholder.classList.remove('hidden')
+        placeholder.style.display = 'flex'
+      }
+    }
+  } catch (error) {
+    // Silenziosamente ignora errori per evitare di bloccare l'app
+    console.warn('Errore nella gestione del fallimento immagine:', error)
   }
 }
 

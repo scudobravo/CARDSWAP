@@ -73,7 +73,7 @@
                   </div>
 
                   <!-- Prezzo -->
-                  <p class="text-sm sm:text-base font-medium text-gray-900 mb-2">€{{ product.price.toFixed(2) }}</p>
+                  <p class="text-sm sm:text-base font-medium text-gray-900 mb-2">€{{ formatPrice(product.price) }}</p>
 
                   <!-- Venditore -->
                   <p class="text-xs sm:text-sm text-gray-500 mb-3 break-words">
@@ -116,7 +116,7 @@
           <dl class="mt-6 space-y-4">
             <div class="flex items-center justify-between">
               <dt class="text-sm text-gray-600">Subtotale</dt>
-              <dd class="text-sm font-medium text-gray-900">€{{ subtotal.toFixed(2) }}</dd>
+              <dd class="text-sm font-medium text-gray-900">€{{ formatPrice(subtotal) }}</dd>
             </div>
             <div class="flex items-center justify-between border-t border-gray-200 pt-4">
               <dt class="flex items-center text-sm text-gray-600">
@@ -126,7 +126,7 @@
                   <QuestionMarkCircleIcon class="size-5" aria-hidden="true" />
                 </a>
               </dt>
-              <dd class="text-sm font-medium text-gray-900">€{{ totalShippingCost.toFixed(2) }}</dd>
+              <dd class="text-sm font-medium text-gray-900">€{{ formatPrice(totalShippingCost) }}</dd>
             </div>
             <div class="flex items-center justify-between border-t border-gray-200 pt-4">
               <dt class="flex text-sm text-gray-600">
@@ -136,11 +136,11 @@
                   <QuestionMarkCircleIcon class="size-5" aria-hidden="true" />
                 </a>
               </dt>
-              <dd class="text-sm font-medium text-gray-900">€{{ taxAmount.toFixed(2) }}</dd>
+              <dd class="text-sm font-medium text-gray-900">€{{ formatPrice(taxAmount) }}</dd>
             </div>
             <div class="flex items-center justify-between border-t border-gray-200 pt-4">
               <dt class="text-base font-medium text-gray-900">Totale ordine</dt>
-              <dd class="text-base font-medium text-gray-900">€{{ grandTotal.toFixed(2) }}</dd>
+              <dd class="text-base font-medium text-gray-900">€{{ formatPrice(grandTotal) }}</dd>
             </div>
           </dl>
 
@@ -194,7 +194,12 @@ const getCardUrl = (product) => {
 const isEmpty = computed(() => cartStore.isEmpty)
 const allCartItems = computed(() => cartStore.allCartItems)
 const subtotal = computed(() => {
-  return cartStore.allCartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+  return cartStore.allCartItems.reduce((sum, item) => {
+    const price = typeof item.price === 'string' 
+      ? parseFloat(String(item.price).replace(/€/g, '').replace(/,/g, '')) || 0
+      : (item.price || 0)
+    return sum + (price * item.quantity)
+  }, 0)
 })
 const totalShippingCost = computed(() => cartStore.totalShippingCost)
 const taxAmount = computed(() => subtotal.value * 0.22) // 22% IVA
@@ -239,6 +244,14 @@ const getConditionLabel = (condition) => {
     poor: 'Scarsa'
   }
   return labels[condition] || condition
+}
+
+const formatPrice = (price) => {
+  if (!price && price !== 0) return '0.00'
+  // Se il prezzo è già una stringa con €, rimuovilo
+  const priceStr = String(price).replace(/€/g, '').replace(/,/g, '').trim()
+  const priceNum = parseFloat(priceStr) || 0
+  return priceNum.toFixed(2)
 }
 
 const proceedToCheckout = () => {
