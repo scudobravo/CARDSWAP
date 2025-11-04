@@ -1,36 +1,21 @@
 <template>
   <router-link 
     :to="getCategoryRoute(category.type)" 
-    class="group relative overflow-hidden rounded-lg bg-gray-50 border-2 border-primary text-primary hover:shadow-2xl hover:border-primary/80 transition-all duration-300 transform hover:-translate-y-2 block"
+    class="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow duration-300 cursor-pointer group block"
   >
-    <!-- Content -->
-    <div class="relative z-10 p-8 h-full flex flex-col justify-center items-center text-center">
-      <!-- Icon -->
-      <div class="mb-6">
-        <div class="w-30 h-30 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-300">
-          <img 
-            :src="category.icon" 
-            :alt="category.name"
-            class="w-30 h-auto object-contain"
-          />
-        </div>
-      </div>
-      
-      <!-- Category name -->
-      <h3 class="text-5xl font-futura-bold mb-3 text-primary group-hover:text-primary/80 transition-colors duration-300">
-        {{ category.name }}
-      </h3>
+    <!-- Icon -->
+    <div class="mb-4">
+      <img 
+        :src="category.icon" 
+        :alt="category.name"
+        class="w-60 h-60 mx-auto object-contain"
+      />
     </div>
     
-    <!-- Hover overlay -->
-    <div class="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-    
-    <!-- Decorative elements -->
-    <!-- <div class="absolute top-4 right-4 opacity-20 group-hover:opacity-40 transition-opacity duration-300">
-      <div class="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
-        <span class="text-xs font-futura-bold text-primary">100%</span>
-      </div>
-    </div> -->
+    <!-- Category name -->
+    <h3 class="text-2xl font-futura-bold text-gray-900 group-hover:text-primary transition-colors duration-300">
+      {{ category.name }}
+    </h3>
   </router-link>
 </template>
 
