@@ -181,7 +181,7 @@
               <!-- User/Seller stats -->
               <template v-else>
                 <!-- Ordini Totali -->
-                <router-link to="/purchases/orders" class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow cursor-pointer block">
+                <router-link to="/sales/orders" class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow cursor-pointer block">
                   <div class="flex items-center">
                     <div class="p-2 bg-primary rounded-lg">
                       <DocumentDuplicateIcon class="w-6 h-6 text-white" />
