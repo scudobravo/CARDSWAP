@@ -59,9 +59,31 @@ export const useCartStore = defineStore('cart', () => {
   // Aggiunge un articolo al carrello
   const addToCart = async (listing, quantity = 1) => {
     try {
+      // Assicurati che listing_id sia una stringa valida e quantity sia un intero come richiesto dal backend
+      const listingIdRaw = listing.id || listing.listing_id
+      const listingId = listingIdRaw ? String(listingIdRaw).trim() : ''
+      const quantityInt = parseInt(quantity, 10) || 1
+      
+      // Validazione: listing_id non deve essere vuoto
+      if (!listingId || listingId === '' || listingId === 'undefined' || listingId === 'null') {
+        console.error('Listing ID non valido:', { listing, listingIdRaw, listingId })
+        return {
+          success: false,
+          message: 'ID inserzione non valido o mancante'
+        }
+      }
+      
+      // Validazione: quantity deve essere tra 1 e 100
+      if (quantityInt < 1 || quantityInt > 100) {
+        return {
+          success: false,
+          message: 'Quantità deve essere tra 1 e 100'
+        }
+      }
+      
       const response = await axios.post('/api/cart/add', {
-        listing_id: listing.id,
-        quantity: quantity
+        listing_id: listingId,
+        quantity: quantityInt
       })
 
       if (response.data.success) {

@@ -883,16 +883,18 @@ const handleAddToCart = async (product, event) => {
     event.stopPropagation()
   }
   
-  // Verifica che il product abbia un listing_id
-  if (!product.listing_id && !product.id) {
-    alert('Errore: ID inserzione non disponibile')
+  // Verifica che il product abbia un listing_id (obbligatorio per aggiungere al carrello)
+  if (!product.listing_id) {
+    console.error('Product senza listing_id:', product)
+    alert('Errore: Impossibile aggiungere al carrello. Inserzione non disponibile.')
     return
   }
   
   // Crea un oggetto listing minimale per il cart store
   // Il backend recupererà tutti i dati necessari tramite listing_id
+  // IMPORTANTE: listing_id deve essere una stringa come richiesto dal backend
   const listing = {
-    id: product.listing_id || product.id,
+    id: String(product.listing_id), // Converti in stringa come richiesto dal backend
     card_model_id: product.id,
     seller_id: product.seller_id || 1, // Fallback temporaneo, il backend dovrebbe fornirlo
     price: parseFloat(String(product.price || 0).replace(/€/g, '').replace(/,/g, '')) || 0,
@@ -914,7 +916,15 @@ const handleAddToCart = async (product, event) => {
     }
   } catch (error) {
     console.error('Errore nell\'aggiunta al carrello:', error)
-    alert('Errore nell\'aggiunta al carrello')
+    // Mostra messaggio più dettagliato se disponibile
+    if (error.response?.data?.errors) {
+      const errorMessages = Object.values(error.response.data.errors).flat().join(', ')
+      alert(`Errore: ${errorMessages}`)
+    } else if (error.response?.data?.message) {
+      alert(`Errore: ${error.response.data.message}`)
+    } else {
+      alert('Errore nell\'aggiunta al carrello. Controlla la console per i dettagli.')
+    }
   }
 }
 
