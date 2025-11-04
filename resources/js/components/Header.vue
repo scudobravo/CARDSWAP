@@ -8,7 +8,7 @@
           <!-- Logo CARDSWAP in bianco -->
           <div class="flex items-center">
             <router-link to="/">
-              <img src="/images/logos/logo-bianco.svg" alt="CARDSWAP TCG" class="h-10 w-auto" />
+              <img src="/images/logos/logo-bianco.svg" alt="CARDSWAP TCG" class="h-8 md:h-10 w-auto" />
             </router-link>
           </div>
           
