@@ -3,9 +3,9 @@
     <!-- Header -->
     <Header />
     
-    <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-24 pb-6">
+    <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 pb-6">
       <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl font-futura-bold text-primary mb-8">Carrello</h1>
+        <h1 class="text-2xl sm:text-3xl font-futura-bold text-primary mb-6 sm:mb-8">Carrello</h1>
       
       <!-- Carrello vuoto -->
       <div v-if="isEmpty" class="empty-cart text-center py-12">
@@ -29,80 +29,89 @@
           <h2 id="cart-heading" class="sr-only">Articoli nel tuo carrello</h2>
 
           <ul role="list" class="divide-y divide-gray-200 border-t border-b border-gray-200">
-            <li v-for="(product, productIdx) in allCartItems" :key="product.id" class="flex py-6 sm:py-10">
+            <li v-for="(product, productIdx) in allCartItems" :key="product.id" class="flex py-4 sm:py-6 lg:py-10">
               <div class="shrink-0 relative">
                 <img v-if="getProductImage(product)" 
                      :src="getProductImage(product)" 
                      :alt="product.cardModel?.name || 'Carta'" 
-                     class="size-24 rounded-md object-cover sm:size-48" />
-                <div v-else class="absolute inset-0 flex items-center justify-center bg-gray-300 rounded-md size-24 sm:size-48">
-                  <div class="text-center text-gray-500">
-                    <svg class="w-16 h-16 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     class="size-20 rounded-md object-cover sm:size-32 lg:size-48" />
+                <div v-else class="flex items-center justify-center bg-gray-300 rounded-md size-20 sm:size-32 lg:size-48">
+                  <div class="text-center text-gray-500 p-2">
+                    <svg class="w-8 h-8 mx-auto mb-1 opacity-50 sm:w-12 sm:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                     </svg>
-                    <p class="text-sm font-gill-sans">Immagine non disponibile</p>
+                    <p class="text-xs font-gill-sans sm:text-sm">Immagine non disponibile</p>
                   </div>
                 </div>
               </div>
 
-              <div class="ml-4 flex flex-1 flex-col justify-between sm:ml-6">
-                <div class="relative pr-9 sm:grid sm:grid-cols-2 sm:gap-x-6 sm:pr-0">
-                  <div>
-                    <div class="flex justify-between">
-                      <h3 class="text-sm">
-                        <router-link :to="getCardUrl(product)" 
-                                     class="font-medium text-gray-700 hover:text-gray-800">
-                          {{ product.cardModel?.name || 'Carta' }}
-                        </router-link>
-                      </h3>
-                    </div>
-                    <div class="mt-1 flex text-sm">
-                      <p class="text-gray-500">{{ getConditionLabel(product.condition) }}</p>
-                      <p v-if="product.cardModel?.set_name" 
-                         class="ml-4 border-l border-gray-200 pl-4 text-gray-500">
-                        {{ product.cardModel.set_name }}
-                      </p>
-                    </div>
-                    <p class="mt-1 text-sm font-medium text-gray-900">€{{ product.price.toFixed(2) }}</p>
-                    <p class="mt-1 text-xs text-gray-500">Venditore: {{ product.seller?.name || 'N/A' }}</p>
+              <div class="ml-3 sm:ml-4 lg:ml-6 flex flex-1 flex-col min-w-0">
+                <div class="flex-1 min-w-0">
+                  <!-- Header con nome e pulsante rimuovi -->
+                  <div class="flex items-start justify-between gap-2 mb-2">
+                    <h3 class="text-sm sm:text-base min-w-0 flex-1">
+                      <router-link :to="getCardUrl(product)" 
+                                   class="font-medium text-gray-700 hover:text-gray-800 break-words">
+                        {{ product.cardModel?.name || 'Carta' }}
+                      </router-link>
+                    </h3>
+                    <button type="button" 
+                            @click="removeFromCart(product.id, product.seller_id)"
+                            class="shrink-0 -mt-1 -mr-1 inline-flex p-2 text-gray-400 hover:text-gray-500">
+                      <span class="sr-only">Rimuovi</span>
+                      <XMarkIcon class="size-5" aria-hidden="true" />
+                    </button>
                   </div>
 
-                  <div class="mt-4 sm:mt-0 sm:pr-9">
-                    <div class="grid w-full max-w-16 grid-cols-1">
-                      <select :name="`quantity-${productIdx}`" 
-                              :aria-label="`Quantità, ${product.cardModel?.name || 'Carta'}`" 
-                              :value="product.quantity"
-                              @change="updateQuantity(product.id, product.seller_id, parseInt($event.target.value))"
-                              class="col-start-1 row-start-1 appearance-none rounded-md bg-white py-1.5 pr-8 pl-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6">
-                        <option v-for="qty in 8" :key="qty" :value="qty">{{ qty }}</option>
-                      </select>
-                      <ChevronDownIcon class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4" aria-hidden="true" />
-                    </div>
+                  <!-- Condizione e Set -->
+                  <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mb-2">
+                    <p class="text-xs sm:text-sm text-gray-500">{{ getConditionLabel(product.condition) }}</p>
+                    <p v-if="product.cardModel?.set_name" 
+                       class="text-xs sm:text-sm text-gray-500 border-l-0 sm:border-l border-gray-200 pl-0 sm:pl-4">
+                      {{ product.cardModel.set_name }}
+                    </p>
+                  </div>
 
-                    <div class="absolute top-0 right-0">
-                      <button type="button" 
-                              @click="removeFromCart(product.id, product.seller_id)"
-                              class="-m-2 inline-flex p-2 text-gray-400 hover:text-gray-500">
-                        <span class="sr-only">Rimuovi</span>
-                        <XMarkIcon class="size-5" aria-hidden="true" />
-                      </button>
+                  <!-- Prezzo -->
+                  <p class="text-sm sm:text-base font-medium text-gray-900 mb-2">€{{ product.price.toFixed(2) }}</p>
+
+                  <!-- Venditore -->
+                  <p class="text-xs sm:text-sm text-gray-500 mb-3 break-words">
+                    Venditore: {{ product.seller?.name || 'N/A' }}
+                  </p>
+
+                  <!-- Disponibilità e Quantità -->
+                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-auto">
+                    <p class="flex items-center space-x-2 text-xs sm:text-sm text-gray-700">
+                      <CheckIcon v-if="product.available" class="size-4 shrink-0 text-green-500 sm:size-5" aria-hidden="true" />
+                      <ClockIcon v-else class="size-4 shrink-0 text-gray-300 sm:size-5" aria-hidden="true" />
+                      <span>{{ product.available ? 'Disponibile' : 'Non disponibile' }}</span>
+                    </p>
+
+                    <div class="flex items-center gap-3">
+                      <label :for="`quantity-${productIdx}`" class="text-xs sm:text-sm text-gray-600 whitespace-nowrap">Quantità:</label>
+                      <div class="grid w-20 sm:w-24 grid-cols-1 relative">
+                        <select :id="`quantity-${productIdx}`"
+                                :name="`quantity-${productIdx}`" 
+                                :aria-label="`Quantità, ${product.cardModel?.name || 'Carta'}`" 
+                                :value="product.quantity"
+                                @change="updateQuantity(product.id, product.seller_id, parseInt($event.target.value))"
+                                class="col-start-1 row-start-1 appearance-none rounded-md bg-white py-1.5 pr-8 pl-3 text-sm text-gray-900 border border-gray-300 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600">
+                          <option v-for="qty in 8" :key="qty" :value="qty">{{ qty }}</option>
+                        </select>
+                        <ChevronDownIcon class="pointer-events-none col-start-1 row-start-1 mr-2 size-4 self-center justify-self-end text-gray-500" aria-hidden="true" />
+                      </div>
                     </div>
                   </div>
                 </div>
-
-                <p class="mt-4 flex space-x-2 text-sm text-gray-700">
-                  <CheckIcon v-if="product.available" class="size-5 shrink-0 text-green-500" aria-hidden="true" />
-                  <ClockIcon v-else class="size-5 shrink-0 text-gray-300" aria-hidden="true" />
-                  <span>{{ product.available ? 'Disponibile' : 'Non disponibile' }}</span>
-                </p>
               </div>
             </li>
           </ul>
         </section>
 
         <!-- Riepilogo ordine -->
-        <section aria-labelledby="summary-heading" class="mt-16 rounded-lg bg-gray-50 px-4 py-6 sm:p-6 lg:col-span-5 lg:mt-0 lg:p-8">
-          <h2 id="summary-heading" class="text-lg font-medium text-gray-900">Riepilogo ordine</h2>
+        <section aria-labelledby="summary-heading" class="mt-8 sm:mt-16 rounded-lg bg-gray-50 px-4 py-6 sm:p-6 lg:col-span-5 lg:mt-0 lg:p-8">
+          <h2 id="summary-heading" class="text-base sm:text-lg font-medium text-gray-900">Riepilogo ordine</h2>
 
           <dl class="mt-6 space-y-4">
             <div class="flex items-center justify-between">

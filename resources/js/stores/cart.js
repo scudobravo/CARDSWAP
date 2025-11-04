@@ -65,7 +65,11 @@ export const useCartStore = defineStore('cart', () => {
       })
 
       if (response.data.success) {
-        const sellerId = listing.seller_id.toString()
+        // Usa i dati dalla risposta API se disponibili, altrimenti usa i dati del listing passato
+        const cartItemData = response.data.data || listing
+        
+        // Usa seller_id dalla risposta API, poi dal listing, poi fallback a 1
+        const sellerId = (cartItemData.seller_id || listing.seller_id || 1).toString()
         
         // Inizializza l'array per il venditore se non esiste
         if (!cartItems.value[sellerId]) {
@@ -81,20 +85,20 @@ export const useCartStore = defineStore('cart', () => {
           // Aggiorna la quantità
           cartItems.value[sellerId][existingItemIndex].quantity += quantity
         } else {
-          // Aggiungi nuovo articolo
+          // Aggiungi nuovo articolo usando i dati dalla risposta API quando disponibili
           cartItems.value[sellerId].push({
-            id: listing.id,
-            card_model_id: listing.card_model_id,
-            seller_id: listing.seller_id,
-            price: listing.price,
+            id: cartItemData.id || listing.id,
+            card_model_id: cartItemData.card_model_id || listing.card_model_id,
+            seller_id: cartItemData.seller_id || listing.seller_id,
+            price: cartItemData.price || listing.price,
             quantity: quantity,
-            condition: listing.condition,
-            description: listing.description,
-            images: listing.images,
-            available: true,
-            seller: listing.seller,
-            cardModel: listing.card_model,
-            shippingZones: listing.shipping_zones || []
+            condition: cartItemData.condition || listing.condition,
+            description: cartItemData.description || listing.description,
+            images: cartItemData.images || listing.images,
+            available: cartItemData.available !== undefined ? cartItemData.available : true,
+            seller: cartItemData.seller || listing.seller,
+            cardModel: cartItemData.cardModel || cartItemData.card_model || listing.card_model,
+            shippingZones: cartItemData.shippingZones || cartItemData.shipping_zones || listing.shipping_zones || []
           })
         }
 

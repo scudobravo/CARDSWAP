@@ -247,7 +247,7 @@
                     <div class="mt-3 flex items-center justify-between">
                       <p class="text-lg font-bold text-gray-900">€{{ formatPrice(product.price) }}</p>
                       <button 
-                        @click="handleAddToCart(product)"
+                        @click="handleAddToCart(product, $event)"
                         class="w-8 h-8 bg-blue-600 rounded-md flex items-center justify-center hover:bg-blue-700 transition-colors"
                       >
                         <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -403,7 +403,7 @@
                     <div class="mt-4 flex items-center justify-between">
                       <p class="text-lg font-bold text-gray-900">€{{ formatPrice(product.price) }}</p>
                       <button 
-                        @click="handleAddToCart(product)"
+                        @click="handleAddToCart(product, $event)"
                         class="w-10 h-10 bg-blue-600 rounded-md flex items-center justify-center hover:bg-blue-700 transition-colors"
                       >
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -447,8 +447,10 @@ import Header from '../components/Header.vue'
 import Footer from '../components/Footer.vue'
 import AdvancedFilters from '../components/AdvancedFilters.vue'
 import ProductCard from '../components/ProductCard.vue'
+import { useCartStore } from '../stores/cart.js'
 
 const route = useRoute()
+const cartStore = useCartStore()
 
 // Reactive data
 const viewMode = ref('grid')
@@ -874,11 +876,46 @@ const goToProduct = (product) => {
   window.location.href = getCardUrl(product)
 }
 
-const handleAddToCart = (product) => {
-  console.log('Aggiunto al carrello:', product.name)
-  // Qui implementerai la logica per aggiungere al carrello
-  // Per ora mostriamo un feedback
-  alert(`${product.name} aggiunto al carrello!`)
+const handleAddToCart = async (product, event) => {
+  // Previeni la propagazione dell'evento per evitare che il click vada al router-link
+  if (event) {
+    event.preventDefault()
+    event.stopPropagation()
+  }
+  
+  // Verifica che il product abbia un listing_id
+  if (!product.listing_id && !product.id) {
+    alert('Errore: ID inserzione non disponibile')
+    return
+  }
+  
+  // Crea un oggetto listing minimale per il cart store
+  // Il backend recupererà tutti i dati necessari tramite listing_id
+  const listing = {
+    id: product.listing_id || product.id,
+    card_model_id: product.id,
+    seller_id: product.seller_id || 1, // Fallback temporaneo, il backend dovrebbe fornirlo
+    price: parseFloat(String(product.price || 0).replace(/€/g, '').replace(/,/g, '')) || 0,
+    condition: product.condition || 'NM',
+    description: product.description || '',
+    images: product.images || (product.imageUrl ? [product.imageUrl] : []),
+    seller: product.seller || null,
+    card_model: product.card_model || null,
+    shipping_zones: product.shipping_zones || []
+  }
+  
+  try {
+    const result = await cartStore.addToCart(listing, 1)
+    
+    if (result.success) {
+      alert(`${product.name || 'Carta'} aggiunta al carrello!`)
+    } else {
+      alert(result.message || 'Errore nell\'aggiunta al carrello')
+    }
+  } catch (error) {
+    console.error('Errore nell\'aggiunta al carrello:', error)
+    alert('Errore nell\'aggiunta al carrello')
+  }
 }
 
 const handleImageError = (event) => {
