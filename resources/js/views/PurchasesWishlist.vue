@@ -12,13 +12,13 @@
 
     <!-- Filtri e Controlli -->
     <div class="mb-6 bg-white rounded-lg border border-gray-200 p-4">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <!-- Filtri -->
-        <div class="flex flex-col sm:flex-row gap-4">
+      <div class="flex flex-col sm:flex-row gap-4">
+        <!-- Filtro Condizioni -->
+        <div class="relative flex-1">
           <select
             v-model="filters.condition"
             @change="loadWishlist"
-            class="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+            class="w-full appearance-none bg-white border border-gray-300 rounded-lg px-4 py-3 pr-10 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary cursor-pointer"
           >
             <option value="">Tutte le condizioni</option>
             <option value="any">Qualsiasi</option>
@@ -27,18 +27,30 @@
             <option value="excellent">Excellent</option>
             <option value="good">Good</option>
           </select>
-          
+          <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+        
+        <!-- Filtro Ordinamento -->
+        <div class="relative flex-1">
           <select
             v-model="filters.sortBy"
             @change="loadWishlist"
-            class="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+            class="w-full appearance-none bg-white border border-gray-300 rounded-lg px-4 py-3 pr-10 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary cursor-pointer"
           >
             <option value="created_at">Data aggiunta</option>
             <option value="max_price">Prezzo massimo</option>
             <option value="card_model_id">Nome carta</option>
           </select>
+          <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
         </div>
-
       </div>
     </div>
 
@@ -81,78 +93,77 @@
       <div
         v-for="item in wishlistItems"
         :key="item.id"
-        class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow"
+        class="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow"
       >
-        <div class="flex items-start justify-between">
-          <div class="flex-1">
-            <div class="flex items-center gap-4">
-              <!-- Immagine carta -->
-              <div class="flex-shrink-0">
-                <div v-if="(item.cardModel || item.card_model)?.image_url && (item.cardModel || item.card_model).image_url.trim() !== ''" class="h-20 w-14 rounded-md overflow-hidden">
-                  <img
-                    :src="(item.cardModel || item.card_model).image_url"
-                    :alt="(item.cardModel || item.card_model)?.name"
-                    class="h-full w-full object-cover"
-                  />
-                </div>
-                <div v-else class="h-20 w-14 rounded-lg overflow-hidden bg-cover bg-center bg-no-repeat relative bg-gray-300">
-                  <!-- Fallback content when no image -->
-                  <div class="absolute inset-0 flex items-center justify-center bg-gray-300">
-                    <div class="text-center text-gray-500">
-                      <svg class="w-8 h-8 mx-auto mb-1 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                      </svg>
-                      <p class="text-xs font-gill-sans">N/A</p>
-                    </div>
-                  </div>
-                </div>
+        <div class="flex flex-col sm:flex-row gap-4 sm:gap-6">
+          <!-- Immagine carta -->
+          <div class="flex-shrink-0">
+            <div v-if="(item.cardModel || item.card_model)?.image_url && (item.cardModel || item.card_model).image_url.trim() !== ''" 
+                 class="w-24 h-32 sm:w-28 sm:h-40 rounded-lg overflow-hidden bg-gray-100">
+              <img
+                :src="(item.cardModel || item.card_model).image_url"
+                :alt="(item.cardModel || item.card_model)?.name"
+                class="w-full h-full object-cover"
+              />
+            </div>
+            <div v-else class="w-24 h-32 sm:w-28 sm:h-40 rounded-lg bg-gray-200 flex items-center justify-center">
+              <div class="text-center text-gray-400">
+                <svg class="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <p class="text-xs font-gill-sans text-gray-500">N/A</p>
               </div>
+            </div>
+          </div>
 
-              <!-- Dettagli carta -->
-              <div class="flex-1 min-w-0">
-                <h3 class="text-lg font-gill-sans-semibold text-gray-900 truncate">
-                  {{ (item.cardModel || item.card_model)?.name }}
-                </h3>
-                <p class="text-sm text-gray-500">
-                  {{ (item.cardModel || item.card_model)?.set_name }} - {{ (item.cardModel || item.card_model)?.year }}
-                </p>
-                <div class="mt-2 flex items-center gap-4 text-sm text-gray-600">
-                  <span v-if="(item.cardModel || item.card_model)?.player">
-                    {{ (item.cardModel || item.card_model).player.name }}
-                  </span>
-                  <span v-if="(item.cardModel || item.card_model)?.team">
-                    {{ (item.cardModel || item.card_model).team.name }}
-                  </span>
-                  <span v-if="(item.cardModel || item.card_model)?.rarity" class="capitalize">
-                    {{ (item.cardModel || item.card_model).rarity }}
-                  </span>
+          <!-- Dettagli carta -->
+          <div class="flex-1 min-w-0 flex flex-col justify-between">
+            <div>
+              <h3 class="text-lg sm:text-xl font-futura-bold text-gray-900 mb-1">
+                {{ (item.cardModel || item.card_model)?.name || 'Carta' }}
+              </h3>
+              <p class="text-sm text-gray-500 mb-3">
+                {{ getCardSetName(item) }} - {{ (item.cardModel || item.card_model)?.year || '' }}
+              </p>
+              
+              <!-- Attributi carta -->
+              <div class="space-y-1 text-sm text-gray-600">
+                <div v-if="(item.cardModel || item.card_model)?.player">
+                  <span class="font-medium">{{ (item.cardModel || item.card_model).player.name || (item.cardModel || item.card_model).player.display_name }}</span>
+                </div>
+                <div v-if="(item.cardModel || item.card_model)?.team">
+                  <span>{{ (item.cardModel || item.card_model).team.name }}</span>
+                </div>
+                <div v-if="(item.cardModel || item.card_model)?.card_set?.name">
+                  <span>{{ (item.cardModel || item.card_model).card_set.name }}</span>
+                </div>
+                <div v-if="(item.cardModel || item.card_model)?.rarity">
+                  <span class="capitalize">{{ (item.cardModel || item.card_model).rarity }}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Prezzi e azioni -->
-          <div class="flex flex-col items-end gap-2">
-            <div class="text-right">
-              <p class="text-sm text-gray-500">Prezzo più basso</p>
-              <p class="text-lg font-gill-sans-semibold text-green-600">
+          <!-- Prezzo e azioni -->
+          <div class="flex flex-col items-start sm:items-end justify-between gap-4 sm:gap-2 w-full sm:min-w-[140px]">
+            <div class="w-full sm:text-right">
+              <p class="text-xs text-gray-500 mb-1">Prezzo più basso</p>
+              <p class="text-2xl sm:text-3xl font-futura-bold text-green-600">
                 {{ formatPrice(item.lowest_price) }}
-              </p>
-              <p v-if="item.max_price" class="text-sm text-gray-500">
-                Max: {{ formatPrice(item.max_price) }}
               </p>
             </div>
 
-            <div class="flex gap-2">
+            <!-- Pulsanti azioni -->
+            <div class="flex flex-row gap-2 w-full sm:w-auto">
               <button
                 @click="viewCard(item)"
-                class="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-xs font-gill-sans-semibold rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                class="flex-1 sm:flex-none inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-gill-sans-semibold text-gray-700 bg-white hover:bg-gray-50 transition-colors"
               >
                 Visualizza
               </button>
               <button
                 @click="removeFromWishlist(item.card_model_id)"
-                class="inline-flex items-center px-3 py-1 border border-red-300 shadow-sm text-xs font-gill-sans-semibold rounded-md text-red-700 bg-white hover:bg-red-50"
+                class="flex-1 sm:flex-none inline-flex items-center justify-center px-4 py-2 bg-red-600 rounded-lg text-sm font-gill-sans-semibold text-white hover:bg-red-700 transition-colors"
               >
                 Rimuovi
               </button>
@@ -297,11 +308,23 @@ const viewCard = (item) => {
 
 
 const formatPrice = (price) => {
-  if (!price) return 'N/A'
+  if (!price && price !== 0) return 'N/A'
+  // Formatta il prezzo come nell'immagine: 6.500,00 (senza simbolo €)
   return new Intl.NumberFormat('it-IT', {
-    style: 'currency',
-    currency: 'EUR'
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
   }).format(price)
+}
+
+const getCardSetName = (item) => {
+  const cardModel = item.cardModel || item.card_model
+  if (!cardModel) return ''
+  
+  // Prova diversi campi per il nome del set
+  return cardModel.card_set?.name || 
+         cardModel.set_name || 
+         cardModel.cardSet?.name || 
+         ''
 }
 
 const getPageNumbers = () => {
