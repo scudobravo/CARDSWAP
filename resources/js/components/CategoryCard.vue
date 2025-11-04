@@ -8,7 +8,7 @@
       <img 
         :src="category.icon" 
         :alt="category.name"
-        class="w-60 h-60 mx-auto object-contain"
+        class="w-24 h-24 md:w-48 md:h-48 mx-auto object-contain"
       />
     </div>
     

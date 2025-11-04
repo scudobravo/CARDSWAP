@@ -13,7 +13,7 @@
           </div>
           
           <!-- Icone a destra: carrello, cuore, chat, login/signup -->
-          <div class="flex items-center space-x-6">
+          <div class="flex items-center space-x-2">
             <!-- Carrello -->
             <router-link to="/cart" class="relative flex items-center space-x-2 hover:opacity-80 transition-opacity">
               <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
