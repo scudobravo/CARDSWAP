@@ -1832,7 +1832,7 @@ watch(() => props.editingListing, (newListing) => {
               rarity: selectedCardModel.value.rarity,
               year: selectedCardModel.value.year,
               brand: selectedCardModel.value.brand,
-              number: selectedCardModel.value.card_number || selectedCardModel.value.card_number_in_set || selectedCardModel.value.number
+              number: selectedCardModel.value.card_number || selectedCardModel.value.number // Solo card_number, NON card_number_in_set
             }
           }))
         }
@@ -1988,7 +1988,7 @@ const initializePreselectedCard = async () => {
       brand: cardModelData.card_set?.brand || cardModelData.brand || '',
       rarity: cardModelData.rarity || '',
       year: cardModelData.year || cardModelData.card_set?.year || '',
-      number: cardModelData.card_number || cardModelData.card_number_in_set || '',
+      number: cardModelData.card_number || '', // Solo card_number, NON card_number_in_set
       player: cardModelData.player?.id || '',
       playerSearch: cardModelData.player?.display_name || cardModelData.player?.name || '',
       selectedPlayers: cardModelData.player ? [cardModelData.player] : [],
@@ -2021,7 +2021,7 @@ const initializePreselectedCard = async () => {
         rarity: cardModelData.rarity || 'MISSING',
         year: cardModelData.year || cardModelData.card_set?.year || 'MISSING',
         brand: brandFromSet || 'MISSING',
-        number: cardModelData.card_number || cardModelData.card_number_in_set || 'MISSING'
+        number: cardModelData.card_number || 'MISSING' // Solo card_number, NON card_number_in_set
       })
       
       // Verifica che tutti i dati necessari siano presenti
@@ -2045,7 +2045,7 @@ const initializePreselectedCard = async () => {
         rarity: cardModelData.rarity,
         year: cardModelData.year || cardModelData.card_set?.year,
         brand: brandFromSet,
-        number: cardModelData.card_number || cardModelData.card_number_in_set
+        number: cardModelData.card_number || '' // Solo card_number, NON card_number_in_set
       }
       
       console.log('📤 Dispatching event con dati:', JSON.stringify(eventData, null, 2))
@@ -2125,7 +2125,7 @@ const initializeEditMode = async (listing) => {
       brand: selectedCardModel.value?.card_set?.brand || selectedCardModel.value?.brand || '',
       rarity: selectedCardModel.value?.rarity || '',
       year: selectedCardModel.value?.year || selectedCardModel.value?.card_set?.year || '',
-      number: selectedCardModel.value?.card_number || selectedCardModel.value?.card_number_in_set || '',
+      number: selectedCardModel.value?.card_number || '', // Solo card_number, NON card_number_in_set
       player: selectedCardModel.value?.player?.id || '',
       playerSearch: selectedCardModel.value?.player?.display_name || selectedCardModel.value?.player?.name || '',
       team: selectedCardModel.value?.team?.id || '',

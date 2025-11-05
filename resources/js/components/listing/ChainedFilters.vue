@@ -1027,11 +1027,15 @@ const selectCard = (card) => {
   }
   
   // Aggiorna il campo Numbered con il numero della carta selezionata
-  // Usa card_number (NUMBERED /) come valore per Number
-  const cardNumber = card.card_number || card.card_number_in_set
-  if (cardNumber) {
-    localFilters.value.number = cardNumber
-    console.log('✅ Campo Numbered aggiornato con:', cardNumber)
+  // Usa SOLO card_number (NUMBERED /) - NON usare card_number_in_set come fallback
+  // Se card_number è vuoto, il campo Numbered deve rimanere vuoto
+  if (card.card_number) {
+    localFilters.value.number = card.card_number
+    console.log('✅ Campo Numbered aggiornato con:', card.card_number)
+  } else {
+    // Se card_number è vuoto/null, resetta il campo Numbered
+    localFilters.value.number = null
+    console.log('✅ Campo Numbered resettato (card_number vuoto)')
   }
   
   // Notifica al parent la carta selezionata
