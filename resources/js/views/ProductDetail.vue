@@ -279,7 +279,7 @@
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-600 font-gill-sans">Rarity:</span>
-                <span class="font-futura-bold text-primary">{{ product.rarity || 'Rare' }}</span>
+                <span class="font-futura-bold text-primary">{{ product.rarity || 'Rare' }}{{ product.rarity_variation ? ` (${product.rarity_variation})` : '' }}</span>
               </div>
             </div>
             

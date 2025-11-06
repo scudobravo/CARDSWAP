@@ -106,7 +106,7 @@
                     {{ listing.cardModel?.set_name }} {{ listing.cardModel?.year }}
                   </p>
                   <p class="text-xs text-gray-400">
-                    {{ listing.cardModel?.rarity }}
+                    {{ listing.cardModel?.rarity }}{{ listing.cardModel?.rarity_variation ? ` (${listing.cardModel.rarity_variation})` : '' }}
                   </p>
                 </div>
               </div>

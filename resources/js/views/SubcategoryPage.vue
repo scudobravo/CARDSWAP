@@ -238,7 +238,7 @@
                         </div>
                         <div class="flex justify-between">
                           <span>Rarity:</span>
-                          <span class="font-medium">{{ product.rarity || 'Rarity' }}</span>
+                          <span class="font-medium">{{ product.rarity || 'Rarity' }}{{ product.rarity_variation ? ` (${product.rarity_variation})` : '' }}</span>
                         </div>
                       </div>
                     </div>
@@ -394,7 +394,7 @@
                         </div>
                         <div class="flex justify-between">
                           <span>Rarity:</span>
-                          <span class="font-medium">{{ product.rarity || 'Rarity' }}</span>
+                          <span class="font-medium">{{ product.rarity || 'Rarity' }}{{ product.rarity_variation ? ` (${product.rarity_variation})` : '' }}</span>
                         </div>
                       </div>
                     </div>

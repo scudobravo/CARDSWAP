@@ -104,7 +104,7 @@
             >
               <h6 class="font-semibold text-gray-900 text-sm">{{ card.name }}</h6>
               <p class="text-xs text-gray-600">{{ card.card_set?.name }} {{ card.year }}</p>
-              <p class="text-xs text-gray-500">{{ card.rarity }}</p>
+              <p class="text-xs text-gray-500">{{ card.rarity }}{{ card.rarity_variation ? ` (${card.rarity_variation})` : '' }}</p>
             </div>
           </div>
         </div>

@@ -309,7 +309,8 @@ class FootballFilterController extends Controller
                         'id' => $card->id,
                         'name' => $card->name,
                         'year' => $card->year,
-                        'rarity' => $card->rarity, // SOLO rarity, NON rarity_variation
+                        'rarity' => $card->rarity,
+                        'rarity_variation' => $card->rarity_variation,
                         'card_number' => $card->card_number,
                         'card_number_in_set' => $card->card_number_in_set,
                         'card_set' => $card->cardSet ? [
@@ -498,6 +499,7 @@ class FootballFilterController extends Controller
                     'name' => $card->name,
                     'year' => $card->year,
                     'rarity' => $card->rarity,
+                    'rarity_variation' => $card->rarity_variation,
                     'card_number' => $card->card_number,
                     'card_number_in_set' => $card->card_number_in_set,
                     'card_set' => $card->cardSet ? [

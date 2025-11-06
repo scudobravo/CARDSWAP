@@ -104,7 +104,7 @@
             <div class="flex-1 min-w-0">
               <h6 class="font-semibold text-gray-900 truncate">{{ cardModel.name }}</h6>
               <p class="text-sm text-gray-600">{{ cardModel.set_name }} {{ cardModel.year }}</p>
-              <p class="text-sm text-gray-500">{{ cardModel.rarity }}</p>
+              <p class="text-sm text-gray-500">{{ cardModel.rarity }}{{ cardModel.rarity_variation ? ` (${cardModel.rarity_variation})` : '' }}</p>
               <div v-if="cardModel.player" class="text-sm text-gray-500">
                 {{ cardModel.player.name }}
                 <span v-if="cardModel.team"> - {{ cardModel.team.name }}</span>

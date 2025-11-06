@@ -138,7 +138,7 @@
                   <span>{{ (item.cardModel || item.card_model).card_set.name }}</span>
                 </div>
                 <div v-if="(item.cardModel || item.card_model)?.rarity">
-                  <span class="capitalize">{{ (item.cardModel || item.card_model).rarity }}</span>
+                  <span class="capitalize">{{ (item.cardModel || item.card_model).rarity }}{{ (item.cardModel || item.card_model)?.rarity_variation ? ` (${(item.cardModel || item.card_model).rarity_variation})` : '' }}</span>
                 </div>
               </div>
             </div>

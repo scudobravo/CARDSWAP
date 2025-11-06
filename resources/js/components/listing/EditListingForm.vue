@@ -12,7 +12,7 @@
         <div class="flex-1">
           <h6 class="font-semibold text-gray-900">{{ listing.cardModel.name }}</h6>
           <p class="text-sm text-gray-600">{{ listing.cardModel.set_name }} {{ listing.cardModel.year }}</p>
-          <p class="text-sm text-gray-500">{{ listing.cardModel.rarity }}</p>
+          <p class="text-sm text-gray-500">{{ listing.cardModel.rarity }}{{ listing.cardModel.rarity_variation ? ` (${listing.cardModel.rarity_variation})` : '' }}</p>
         </div>
         <button 
           @click="clearCardModel"

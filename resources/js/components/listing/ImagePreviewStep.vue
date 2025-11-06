@@ -80,10 +80,21 @@
           <div class="bg-gray-50 rounded-lg p-6">
             <h4 class="text-md font-medium text-gray-900 mb-4">Dettagli Aggiuntivi</h4>
             <div class="space-y-4">
-              <!-- Condition -->
+              <!-- Grading Company -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Condizione</label>
-                <select v-model="additionalDetails.condition" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Grading Company</label>
+                <select v-model="additionalDetails.gradingCompany" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm">
+                  <option value="">Seleziona grading company</option>
+                  <option v-for="company in gradingCompanies" :key="company.id" :value="company.id">
+                    {{ company.name }}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Condition (Condizione carta) -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Condizione carta</label>
+                <select v-model="additionalDetails.condition" @change="syncAutographCondition" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm">
                   <option value="">Seleziona condizione</option>
                   <option value="mint">Mint</option>
                   <option value="near_mint">Near Mint</option>
@@ -95,14 +106,18 @@
                 </select>
               </div>
 
-              <!-- Grading Company -->
+              <!-- Autograph Condition (Condizione autografo) -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Grading Company</label>
-                <select v-model="additionalDetails.gradingCompany" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm">
-                  <option value="">Seleziona grading company</option>
-                  <option v-for="company in gradingCompanies" :key="company.id" :value="company.id">
-                    {{ company.name }}
-                  </option>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Condizione autografo</label>
+                <select v-model="additionalDetails.autographCondition" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm">
+                  <option value="">Seleziona condizione</option>
+                  <option value="mint">Mint</option>
+                  <option value="near_mint">Near Mint</option>
+                  <option value="excellent">Excellent</option>
+                  <option value="very_good">Very Good</option>
+                  <option value="good">Good</option>
+                  <option value="fair">Fair</option>
+                  <option value="poor">Poor</option>
                 </select>
               </div>
 
@@ -360,6 +375,7 @@ const isDragOver = ref(false)
 // Additional Details (Single Card)
 const additionalDetails = ref({
   condition: '',
+  autographCondition: '',
   gradingCompany: '',
   gradingScore: '',
   // Filtri Extra
@@ -372,6 +388,13 @@ const additionalDetails = ref({
   description: '',
   notes: ''
 })
+
+// Sincronizza Condizione autografo con Condizione carta
+const syncAutographCondition = () => {
+  if (additionalDetails.value.condition) {
+    additionalDetails.value.autographCondition = additionalDetails.value.condition
+  }
+}
 
 // Flag per evitare loop infiniti
 const isInitializing = ref(false)
@@ -435,21 +458,30 @@ watch(() => props.cardData, (newCardData) => {
     }
   }
   
-  // Popola additionalDetails con i dati esistenti solo se non sono già impostati
-  if (newCardData && (!additionalDetails.value.condition || !additionalDetails.value.gradingCompany)) {
-    additionalDetails.value = {
-      condition: newCardData.condition || '',
-      gradingCompany: newCardData.gradingCompany || '',
-      gradingScore: newCardData.gradingScore || '',
-      // Filtri Extra
-      autograph: newCardData.autograph || '',
-      relic: newCardData.relic || '',
-      onCardAuto: newCardData.onCardAuto || '',
-      rookie: newCardData.rookie || '',
-      jewel: newCardData.jewel || '',
-      multiAutograph: newCardData.multiAutograph || '',
-      description: newCardData.description || '',
-      notes: newCardData.notes || ''
+  // Popola additionalDetails con i dati esistenti o dalla carta selezionata
+  // Solo se i campi non sono già stati impostati manualmente dall'utente
+  if (newCardData) {
+    // Popola solo se i campi sono vuoti (non sovrascrivere se l'utente ha già inserito dati)
+    const shouldPopulate = !additionalDetails.value.condition || 
+                           !additionalDetails.value.gradingCompany ||
+                           (!additionalDetails.value.autograph && !additionalDetails.value.relic && !additionalDetails.value.onCardAuto)
+    
+    if (shouldPopulate) {
+      additionalDetails.value = {
+        condition: additionalDetails.value.condition || newCardData.condition || '',
+        autographCondition: additionalDetails.value.autographCondition || newCardData.autographCondition || newCardData.condition || '',
+        gradingCompany: additionalDetails.value.gradingCompany || newCardData.gradingCompany || '',
+        gradingScore: additionalDetails.value.gradingScore || newCardData.gradingScore || '',
+        // Filtri Extra - pre-popola dalla carta selezionata se non già impostati
+        autograph: additionalDetails.value.autograph || newCardData.autograph || '',
+        relic: additionalDetails.value.relic || newCardData.relic || '',
+        onCardAuto: additionalDetails.value.onCardAuto || newCardData.onCardAuto || '',
+        rookie: additionalDetails.value.rookie || newCardData.rookie || '',
+        jewel: additionalDetails.value.jewel || newCardData.jewel || '',
+        multiAutograph: additionalDetails.value.multiAutograph || newCardData.multiAutograph || '',
+        description: additionalDetails.value.description || newCardData.description || '',
+        notes: additionalDetails.value.notes || newCardData.notes || ''
+      }
     }
   }
 }, { immediate: true, deep: false, flush: 'post' }) // Aggiunto flush: 'post' per eseguire dopo il rendering

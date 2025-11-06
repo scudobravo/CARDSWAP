@@ -75,7 +75,8 @@ class CardListingController extends Controller
         $validator = Validator::make($request->all(), [
             'card_model_id' => 'required|exists:card_models,id',
             'price' => 'required|numeric|min:0.01|max:999999.99',
-            'condition' => 'required|in:mint,near_mint,excellent,good,light_played,played,poor',
+            'condition' => 'required|in:mint,near_mint,excellent,good,light_played,played,poor,fair,very_good',
+            'autograph_condition' => 'nullable|in:mint,near_mint,excellent,good,light_played,played,poor,fair,very_good',
             'quantity' => 'required|integer|min:1|max:1000',
             'language' => 'required|in:italian,english,spanish,french,german,portuguese',
             'is_foil' => 'boolean',
@@ -199,7 +200,8 @@ class CardListingController extends Controller
             'listings' => 'required|array|min:1|max:50',
             'listings.*.card_model_id' => 'required|exists:card_models,id',
             'listings.*.price' => 'required|numeric|min:0.01|max:999999.99',
-            'listings.*.condition' => 'required|in:mint,near_mint,excellent,good,light_played,played,poor',
+            'listings.*.condition' => 'required|in:mint,near_mint,excellent,good,light_played,played,poor,fair,very_good',
+            'listings.*.autograph_condition' => 'nullable|in:mint,near_mint,excellent,good,light_played,played,poor,fair,very_good',
             'listings.*.quantity' => 'required|integer|min:1|max:1000',
             'listings.*.language' => 'required|in:italian,english,spanish,french,german,portuguese',
             'listings.*.is_foil' => 'boolean',
@@ -584,7 +586,8 @@ class CardListingController extends Controller
 
         $validator = Validator::make($data, [
             'price' => 'sometimes|numeric|min:0.01|max:999999.99',
-            'condition' => 'sometimes|in:mint,near_mint,excellent,good,light_played,played,poor',
+            'condition' => 'sometimes|in:mint,near_mint,excellent,good,light_played,played,poor,fair,very_good',
+            'autograph_condition' => 'sometimes|nullable|in:mint,near_mint,excellent,good,light_played,played,poor,fair,very_good',
             'quantity' => 'sometimes|integer|min:1|max:1000',
             'language' => 'sometimes|in:italian,english,spanish,french,german,portuguese',
             'is_foil' => 'boolean',

@@ -16,6 +16,7 @@ class CardListing extends Model
         'seller_id',
         'price',
         'condition',
+        'autograph_condition',
         'quantity',
         'language',
         'is_foil',

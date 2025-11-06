@@ -508,6 +508,7 @@ const listingData = ref({
   price: '',
   quantity: 1,
   condition: '',
+  autograph_condition: '',
   language: '',
   is_foil: false,
   is_signed: false,
@@ -636,6 +637,38 @@ const nextStep = () => {
     }
   }
   
+  // Quando si passa dal Passo 1 al Passo 2, pre-popola i campi con i dati della carta selezionata
+  if (currentStep.value === 1 && selectedMode.value === 'single' && selectedCardModel.value) {
+    const card = selectedCardModel.value
+    
+    // Pre-popola le caratteristiche speciali dalla carta selezionata
+    // Solo se i campi non sono già stati impostati
+    if (!additionalDetails.value.autograph && !additionalDetails.value.relic) {
+      // Determina multiAutograph in base ai campi multi_player
+      let multiAutograph = ''
+      if (card.is_booklet) {
+        multiAutograph = 'booklet'
+      } else if (card.is_multi_player_quad) {
+        multiAutograph = 'quad'
+      } else if (card.is_multi_player_triple) {
+        multiAutograph = 'triple'
+      } else if (card.is_multi_player_dual) {
+        multiAutograph = 'dual'
+      }
+      
+      // Aggiorna additionalDetails con i dati della carta
+      additionalDetails.value = {
+        ...additionalDetails.value,
+        autograph: card.is_autograph ? 'yes' : 'no',
+        relic: card.is_relic ? 'yes' : 'no',
+        onCardAuto: card.is_on_card_auto ? 'yes' : 'no',
+        rookie: card.is_rookie ? 'yes' : 'no',
+        jewel: card.is_jewel ? 'yes' : 'no',
+        multiAutograph: multiAutograph
+      }
+    }
+  }
+  
   if (canProceed.value && currentStep.value < totalSteps.value - 1) {
     currentStep.value++
   }
@@ -699,6 +732,7 @@ const resetForm = () => {
     price: '',
     quantity: 1,
     condition: '',
+    autograph_condition: '',
     language: '',
     is_foil: false,
     is_signed: false,
@@ -1413,6 +1447,12 @@ const createNewSingleListing = async () => {
   const condition = additionalDetails.value.condition || 'mint'
   formData.append('condition', condition)
   
+  // Add autograph_condition (optional) - from additionalDetails, defaults to condition if not set
+  const autographCondition = additionalDetails.value.autographCondition || condition
+  if (autographCondition) {
+    formData.append('autograph_condition', autographCondition)
+  }
+  
   // Add language (required) - default to italian
   formData.append('language', 'italian')
   
@@ -1595,6 +1635,12 @@ const createBulkListings = async () => {
     formData.append('price', listing.price)
     formData.append('quantity', listing.quantity || 1)
     formData.append('condition', listing.condition)
+    // Add autograph_condition if available, otherwise use condition
+    if (listing.autograph_condition) {
+      formData.append('autograph_condition', listing.autograph_condition)
+    } else if (listing.condition) {
+      formData.append('autograph_condition', listing.condition)
+    }
     formData.append('language', listing.language || 'italian')
     
     // Dati opzionali
@@ -1693,6 +1739,7 @@ const getSingleCardData = computed(() => {
       ...baseData,
       // Dati dell'inserzione esistente
       condition: listingData.value.condition,
+      autographCondition: listingData.value.autograph_condition || listingData.value.condition,
       quantity: listingData.value.quantity,
       language: listingData.value.language,
       description: listingData.value.description,
@@ -1714,6 +1761,34 @@ const getSingleCardData = computed(() => {
       multiAutograph: '',
       // Passa TUTTE le immagini (esistenti + nuove) per mantenere la persistenza
       existingImages: cardImages.value.filter(img => img !== null)
+    }
+  }
+  
+  // Pre-popola i campi con i dati della carta selezionata (quando non è in modalità edit)
+  if (selectedCardModel.value) {
+    const card = selectedCardModel.value
+    
+    // Determina multiAutograph in base ai campi multi_player
+    let multiAutograph = ''
+    if (card.is_booklet) {
+      multiAutograph = 'booklet'
+    } else if (card.is_multi_player_quad) {
+      multiAutograph = 'quad'
+    } else if (card.is_multi_player_triple) {
+      multiAutograph = 'triple'
+    } else if (card.is_multi_player_dual) {
+      multiAutograph = 'dual'
+    }
+    
+    return {
+      ...baseData,
+      // Pre-popola le caratteristiche speciali dalla carta selezionata
+      autograph: card.is_autograph ? 'yes' : 'no',
+      relic: card.is_relic ? 'yes' : 'no',
+      onCardAuto: card.is_on_card_auto ? 'yes' : 'no',
+      rookie: card.is_rookie ? 'yes' : 'no',
+      jewel: card.is_jewel ? 'yes' : 'no',
+      multiAutograph: multiAutograph
     }
   }
   
@@ -1751,6 +1826,7 @@ const handleAdditionalDetailsChanged = (details) => {
   additionalDetails.value = details
   // Update listing data with additional details
   listingData.value.condition = details.condition
+  listingData.value.autograph_condition = details.autographCondition || details.condition
   listingData.value.grading_company = details.gradingCompany
   listingData.value.grading_score = details.gradingScore
   listingData.value.description = details.notes || details.description
@@ -2120,6 +2196,7 @@ const initializeEditMode = async (listing) => {
       card_model_id: listing.card_model_id,
       price: listing.price,
       condition: listing.condition,
+      autograph_condition: listing.autograph_condition || listing.condition,
       quantity: listing.quantity,
       language: listing.language,
       description: listing.description || '',
@@ -2177,6 +2254,7 @@ const initializeEditMode = async (listing) => {
     // Imposta additionalDetails con i dati dell'inserzione
     additionalDetails.value = {
       condition: listing.condition,
+      autographCondition: listing.autograph_condition || listing.condition,
       gradingCompany: listing.grading_company || '',
       gradingScore: listing.grading_score || '',
       notes: listing.description || '',
@@ -2289,6 +2367,12 @@ const updateSingleListing = async () => {
     // Aggiungi i dati dell'inserzione
     formData.append('price', listingData.value.price)
     formData.append('condition', listingData.value.condition)
+    // Add autograph_condition if available
+    if (listingData.value.autograph_condition) {
+      formData.append('autograph_condition', listingData.value.autograph_condition)
+    } else if (listingData.value.condition) {
+      formData.append('autograph_condition', listingData.value.condition)
+    }
     formData.append('quantity', listingData.value.quantity)
     formData.append('language', listingData.value.language)
     formData.append('description', listingData.value.description || '')
