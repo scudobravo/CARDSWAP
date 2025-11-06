@@ -120,9 +120,9 @@
             </div>
             <div class="flex items-center justify-between border-t border-gray-200 pt-4">
               <dt class="flex text-sm text-gray-600">
-                <span>IVA</span>
+                <span>Costo di gestione</span>
                 <a href="#" class="ml-2 shrink-0 text-gray-400 hover:text-gray-500">
-                  <span class="sr-only">Scopri di più su come viene calcolata l'IVA</span>
+                  <span class="sr-only">Scopri di più su come viene calcolato il costo di gestione</span>
                   <QuestionMarkCircleIcon class="size-5" aria-hidden="true" />
                 </a>
               </dt>
@@ -192,7 +192,7 @@ const subtotal = computed(() => {
   }, 0)
 })
 const totalShippingCost = computed(() => cartStore.totalShippingCost)
-const taxAmount = computed(() => subtotal.value * 0.22) // 22% IVA
+const taxAmount = computed(() => subtotal.value * 0.035) // 3.5% Costo di gestione (copre i costi Stripe)
 const grandTotal = computed(() => subtotal.value + totalShippingCost.value + taxAmount.value)
 
 const canProceedToCheckout = computed(() => {

@@ -172,7 +172,7 @@
                   <span class="text-gray-900">€{{ order.shipping_cost.toFixed(2) }}</span>
                 </div>
                 <div class="flex justify-between text-sm">
-                  <span class="text-gray-600">Tasse</span>
+                  <span class="text-gray-600">Costo di gestione</span>
                   <span class="text-gray-900">€{{ order.tax_amount.toFixed(2) }}</span>
                 </div>
                 <div class="border-t border-gray-200 pt-2">

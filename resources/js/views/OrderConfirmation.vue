@@ -97,7 +97,7 @@
                 <dd class="font-medium text-gray-900">€{{ parseFloat(order.shipping_cost).toFixed(2) }}</dd>
               </div>
               <div class="flex justify-between text-sm">
-                <dt class="text-gray-600">IVA</dt>
+                <dt class="text-gray-600">Costo di gestione</dt>
                 <dd class="font-medium text-gray-900">€{{ parseFloat(order.tax_amount).toFixed(2) }}</dd>
               </div>
               <div class="flex justify-between text-lg font-medium border-t border-gray-300 pt-2">

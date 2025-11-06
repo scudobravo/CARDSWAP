@@ -337,7 +337,7 @@ class CheckoutController extends Controller
             $shipping += $this->calculateShippingCost($sellerShippingMethod);
         }
 
-        $tax = $subtotal * 0.22; // 22% IVA
+        $tax = $subtotal * 0.035; // 3.5% Costo di gestione (copre i costi Stripe)
         $total = $subtotal + $shipping + $tax;
 
         return [
@@ -360,7 +360,7 @@ class CheckoutController extends Controller
         }
 
         $shipping = $this->calculateShippingCost($deliveryMethod);
-        $tax = $subtotal * 0.22; // 22% IVA
+        $tax = $subtotal * 0.035; // 3.5% Costo di gestione (copre i costi Stripe)
         $total = $subtotal + $shipping + $tax;
 
         return [

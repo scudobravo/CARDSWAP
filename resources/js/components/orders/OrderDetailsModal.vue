@@ -133,7 +133,7 @@
                   <span>€{{ order.shipping_cost }}</span>
                 </div>
                 <div v-if="order.tax_amount > 0" class="flex justify-between">
-                  <span>Tasse:</span>
+                  <span>Costo di gestione:</span>
                   <span>€{{ order.tax_amount }}</span>
                 </div>
                 <div class="flex justify-between text-base font-gill-sans-semibold text-gray-900 border-t border-gray-300 pt-2">

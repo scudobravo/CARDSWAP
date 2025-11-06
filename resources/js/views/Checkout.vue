@@ -374,7 +374,7 @@
                 <dd class="text-sm font-medium text-gray-900">€{{ orderSummary.shipping.toFixed(2) }}</dd>
               </div>
               <div class="flex items-center justify-between">
-                <dt class="text-sm">IVA</dt>
+                <dt class="text-sm">Costo di gestione</dt>
                 <dd class="text-sm font-medium text-gray-900">€{{ orderSummary.tax.toFixed(2) }}</dd>
               </div>
               <div class="flex items-center justify-between border-t border-gray-200 pt-6">
@@ -493,7 +493,7 @@ const orderSummary = computed(() => {
     return sum + shippingCost
   }, 0)
   
-  const tax = subtotal * 0.22 // 22% IVA
+  const tax = subtotal * 0.035 // 3.5% Costo di gestione (copre i costi Stripe)
   const total = subtotal + shipping + tax
   
   return {

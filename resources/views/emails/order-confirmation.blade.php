@@ -52,7 +52,7 @@
             <div class="section">
                 <p>Subtotale: € {{ number_format($totals['subtotal'], 2, ',', '.') }}<br>
                 Spedizione: € {{ number_format($totals['shipping'], 2, ',', '.') }}<br>
-                Tasse: € {{ number_format($totals['tax'] ?? 0, 2, ',', '.') }}</p>
+                Costo di gestione: € {{ number_format($totals['tax'] ?? 0, 2, ',', '.') }}</p>
                 <p class="total">Totale: € {{ number_format($totals['total'], 2, ',', '.') }}</p>
             </div>
 
