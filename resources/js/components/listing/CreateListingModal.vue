@@ -125,7 +125,7 @@
               :category="selectedCategory"
               :show-player="true"
               :show-number="true"
-              :show-price="true"
+              :show-price="false"
               :show-search-button="false"
               :initial-filters="filters"
               :price-error="priceError"
@@ -356,14 +356,52 @@
                     <h5 class="font-semibold text-gray-900">{{ selectedCardModel?.name }}</h5>
                     <p class="text-sm text-gray-600">{{ selectedCardModel?.set_name }} {{ selectedCardModel?.year }}</p>
                     <p class="text-sm text-gray-500">{{ additionalDetails.condition || 'mint' }}</p>
-                    <div class="mt-2">
-                      <span class="text-lg font-bold text-primary">€ {{ filters.price || '0.00' }}</span>
-                      <span class="text-sm text-gray-500 ml-2">x1</span>
-                    </div>
                     <div v-if="additionalDetails.notes" class="mt-2 text-sm text-gray-600">
                       {{ additionalDetails.notes }}
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Campi Prezzo e Quantità -->
+            <div class="max-w-md mx-auto space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                <!-- Prezzo -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Prezzo (€) *</label>
+                  <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span class="text-gray-500 text-sm">€</span>
+                    </div>
+                    <input 
+                      v-model="listingData.price"
+                      type="number" 
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      :class="[
+                        'block w-full pl-8 pr-3 py-2 border rounded-md text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none',
+                        priceError 
+                          ? 'border-red-500 focus:border-red-500' 
+                          : 'border-gray-300 focus:border-primary'
+                      ]"
+                      @input="priceError = false"
+                    />
+                  </div>
+                  <p v-if="priceError" class="mt-1 text-sm text-red-600">Il prezzo è obbligatorio</p>
+                </div>
+
+                <!-- Quantità -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Quantità *</label>
+                  <input 
+                    v-model.number="listingData.quantity"
+                    type="number" 
+                    min="1"
+                    placeholder="1"
+                    class="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none"
+                  />
                 </div>
               </div>
             </div>
@@ -549,7 +587,7 @@ const canProceed = computed(() => {
       }
     case 2:
       if (selectedMode.value === 'single') {
-        return !!(listingData.value && (filters.value.price || listingData.value.price))
+        return !!(listingData.value)
       } else {
         return bulkListings.value.length > 0 && bulkListings.value.every(listing => 
           listing.cardModel && listing.price && listing.condition
@@ -559,8 +597,14 @@ const canProceed = computed(() => {
       // Step zone di spedizione
       return selectedShippingZones.value.length > 0
     case 4:
-      // Anteprima: richiedi comunque la carta selezionata
-      return selectedCardModel.value !== null
+      // Anteprima: richiedi carta selezionata, prezzo obbligatorio e quantità valida
+      if (selectedMode.value === 'single') {
+        const hasCard = !!(selectedCardModel.value?.id || listingData.value.card_model_id)
+        const hasPrice = !!(listingData.value.price && parseFloat(listingData.value.price) > 0)
+        const hasQuantity = !!(listingData.value.quantity && parseInt(listingData.value.quantity) >= 1)
+        return hasCard && hasPrice && hasQuantity
+      }
+      return true
     default:
       return true
   }
@@ -572,9 +616,9 @@ const selectMode = (mode) => {
 }
 
 const nextStep = () => {
-  // Validazione prezzo al passo 1 (solo per single mode)
-  if (currentStep.value === 1 && selectedMode.value === 'single') {
-    const hasPrice = !!(filters.value.price || listingData.value.price)
+  // Validazione prezzo al passo 4 (solo per single mode)
+  if (currentStep.value === 4 && selectedMode.value === 'single') {
+    const hasPrice = !!(listingData.value.price && parseFloat(listingData.value.price) > 0)
     if (!hasPrice) {
       priceError.value = true
       return
@@ -1350,17 +1394,20 @@ const createNewSingleListing = async () => {
     return
   }
   
-  // Add price from filters (required)
-  if (filters.value.price) {
-    formData.append('price', filters.value.price)
+  // Add price from listingData (required)
+  if (listingData.value.price && parseFloat(listingData.value.price) > 0) {
+    formData.append('price', listingData.value.price)
   } else {
     console.error('price is required but not found')
     alert('Errore: Prezzo non inserito')
     return
   }
   
-  // Add quantity (default 1)
-  formData.append('quantity', '1')
+  // Add quantity from listingData
+  const quantity = listingData.value.quantity && parseInt(listingData.value.quantity) >= 1 
+    ? parseInt(listingData.value.quantity) 
+    : 1
+  formData.append('quantity', quantity.toString())
   
   // Add condition (required) - from additionalDetails or default
   const condition = additionalDetails.value.condition || 'mint'
@@ -1472,7 +1519,8 @@ const createNewSingleListing = async () => {
   
   console.log('Creating single listing with data:', {
     card_model_id: selectedCardModel.value.id,
-    price: filters.value.price,
+    price: listingData.value.price,
+    quantity: quantity,
     condition,
     language: 'italian',
     images: cardImages.value.filter(img => img).length,
@@ -1635,8 +1683,7 @@ const getSingleCardData = computed(() => {
     brand: filters.value.brand,
     rarity: filters.value.rarity,
     year: filters.value.year,
-    number: filters.value.number,
-    price: filters.value.price
+    number: filters.value.number
   }
   
   // In modalità edit, aggiungi i dati dell'inserzione esistente
@@ -1864,7 +1911,7 @@ watch(() => props.isOpen, async (isOpen) => {
 })
 
 // Watch per rimuovere l'errore del prezzo quando viene inserito
-watch(() => filters.value.price, (newPrice) => {
+watch(() => listingData.value.price, (newPrice) => {
   if (priceError.value && newPrice) {
     priceError.value = false
   }
@@ -1970,9 +2017,9 @@ const initializePreselectedCard = async () => {
     // Imposta il card_model_id
     listingData.value.card_model_id = cardModelData.id
     
-    // Pre-popolare il prezzo dalla carta corrente se disponibile
+    // Pre-popolare il prezzo dalla carta corrente se disponibile (in listingData per Step 4)
     if (props.preselectedCardModel.price) {
-      filters.value.price = props.preselectedCardModel.price
+      listingData.value.price = props.preselectedCardModel.price
     }
     
     // Pre-popolare altri campi se disponibili
@@ -1994,11 +2041,6 @@ const initializePreselectedCard = async () => {
       selectedPlayers: cardModelData.player ? [cardModelData.player] : [],
       team: cardModelData.team?.id || '',
       set: cardModelData.card_set?.id || ''
-    }
-    
-    // Pre-popolare anche il prezzo se disponibile
-    if (props.preselectedCardModel.price) {
-      filters.value.price = props.preselectedCardModel.price
     }
     
     // Estrai brand dal card_set
@@ -2120,7 +2162,6 @@ const initializeEditMode = async (listing) => {
     // Imposta i filtri con i dati della carta per compatibilità
     filters.value = {
       ...filters.value,
-      price: listing.price,
       condition: listing.condition,
       brand: selectedCardModel.value?.card_set?.brand || selectedCardModel.value?.brand || '',
       rarity: selectedCardModel.value?.rarity || '',

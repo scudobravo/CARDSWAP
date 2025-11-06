@@ -166,10 +166,10 @@
       
     </div>
 
-    <!-- Terza riga: Number e Price (Solo per Single Card) -->
-    <div v-if="showNumber || showPrice" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <!-- Terza riga: Number (Solo per Single Card) -->
+    <div v-if="showNumber" class="mb-4">
       <!-- Number Input (Solo per Single Card) -->
-      <div v-if="showNumber">
+      <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Numbered *</label>
         <input 
           v-model="localFilters.number"
@@ -178,30 +178,6 @@
           class="block w-full h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
           @input="onFiltersChanged"
         />
-      </div>
-
-      <!-- Price Input (Solo per Single Card) -->
-      <div v-if="showPrice">
-        <label class="block text-sm font-medium text-gray-700 mb-2">Price (€) *</label>
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <span class="text-gray-500 text-sm">€</span>
-          </div>
-          <input 
-            v-model="localFilters.price"
-            type="number" 
-            step="0.01"
-            min="0"
-            placeholder="0.00"
-            :class="[
-              'block w-full h-10 pl-8 pr-3 py-2 border rounded-md text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none',
-              priceError 
-                ? 'border-red-500 focus:border-red-500' 
-                : 'border-gray-300 focus:border-primary'
-            ]"
-            @input="onFiltersChanged"
-          />
-        </div>
       </div>
     </div>
 
