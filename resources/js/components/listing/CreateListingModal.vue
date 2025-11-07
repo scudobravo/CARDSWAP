@@ -641,6 +641,11 @@ const nextStep = () => {
   if (currentStep.value === 1 && selectedMode.value === 'single' && selectedCardModel.value) {
     const card = selectedCardModel.value
     
+    console.log('🔄 Pre-popolamento campi Passo 2 con carta:', card)
+    console.log('🔄 is_rookie:', card.is_rookie, typeof card.is_rookie)
+    console.log('🔄 is_autograph:', card.is_autograph, typeof card.is_autograph)
+    console.log('🔄 is_relic:', card.is_relic, typeof card.is_relic)
+    
     // Pre-popola le caratteristiche speciali dalla carta selezionata
     // Solo se i campi non sono già stati impostati
     if (!additionalDetails.value.autograph && !additionalDetails.value.relic) {
@@ -656,16 +661,27 @@ const nextStep = () => {
         multiAutograph = 'dual'
       }
       
+      // Converti i valori booleani (potrebbero essere 1/0 dal database o true/false)
+      const isRookie = card.is_rookie === true || card.is_rookie === 1 || card.is_rookie === '1'
+      const isAutograph = card.is_autograph === true || card.is_autograph === 1 || card.is_autograph === '1'
+      const isRelic = card.is_relic === true || card.is_relic === 1 || card.is_relic === '1'
+      const isOnCardAuto = card.is_on_card_auto === true || card.is_on_card_auto === 1 || card.is_on_card_auto === '1'
+      const isJewel = card.is_jewel === true || card.is_jewel === 1 || card.is_jewel === '1'
+      
+      console.log('🔄 Valori convertiti - isRookie:', isRookie, 'isAutograph:', isAutograph, 'isRelic:', isRelic)
+      
       // Aggiorna additionalDetails con i dati della carta
       additionalDetails.value = {
         ...additionalDetails.value,
-        autograph: card.is_autograph ? 'yes' : 'no',
-        relic: card.is_relic ? 'yes' : 'no',
-        onCardAuto: card.is_on_card_auto ? 'yes' : 'no',
-        rookie: card.is_rookie ? 'yes' : 'no',
-        jewel: card.is_jewel ? 'yes' : 'no',
+        autograph: isAutograph ? 'yes' : 'no',
+        relic: isRelic ? 'yes' : 'no',
+        onCardAuto: isOnCardAuto ? 'yes' : 'no',
+        rookie: isRookie ? 'yes' : 'no',
+        jewel: isJewel ? 'yes' : 'no',
         multiAutograph: multiAutograph
       }
+      
+      console.log('🔄 additionalDetails aggiornato:', additionalDetails.value)
     }
   }
   
@@ -1780,14 +1796,21 @@ const getSingleCardData = computed(() => {
       multiAutograph = 'dual'
     }
     
+    // Converti i valori booleani (potrebbero essere 1/0 dal database o true/false)
+    const isRookie = card.is_rookie === true || card.is_rookie === 1 || card.is_rookie === '1'
+    const isAutograph = card.is_autograph === true || card.is_autograph === 1 || card.is_autograph === '1'
+    const isRelic = card.is_relic === true || card.is_relic === 1 || card.is_relic === '1'
+    const isOnCardAuto = card.is_on_card_auto === true || card.is_on_card_auto === 1 || card.is_on_card_auto === '1'
+    const isJewel = card.is_jewel === true || card.is_jewel === 1 || card.is_jewel === '1'
+    
     return {
       ...baseData,
       // Pre-popola le caratteristiche speciali dalla carta selezionata
-      autograph: card.is_autograph ? 'yes' : 'no',
-      relic: card.is_relic ? 'yes' : 'no',
-      onCardAuto: card.is_on_card_auto ? 'yes' : 'no',
-      rookie: card.is_rookie ? 'yes' : 'no',
-      jewel: card.is_jewel ? 'yes' : 'no',
+      autograph: isAutograph ? 'yes' : 'no',
+      relic: isRelic ? 'yes' : 'no',
+      onCardAuto: isOnCardAuto ? 'yes' : 'no',
+      rookie: isRookie ? 'yes' : 'no',
+      jewel: isJewel ? 'yes' : 'no',
       multiAutograph: multiAutograph
     }
   }

@@ -226,7 +226,7 @@ class FootballFilterController extends Controller
         $players = $playersQuery->with(['team', 'cardModels' => function($query) {
                 $query->whereHas('category', function($catQuery) {
                     $catQuery->where('slug', 'calcio');
-                })->select('id', 'player_id', 'card_number', 'card_number_in_set', 'name', 'year', 'rarity', 'rarity_variation', 'card_set_id', 'team_id')
+                })->select('id', 'player_id', 'card_number', 'card_number_in_set', 'name', 'year', 'rarity', 'rarity_variation', 'is_rookie', 'is_autograph', 'is_relic', 'is_on_card_auto', 'is_jewel', 'is_booklet', 'is_multi_player_dual', 'is_multi_player_triple', 'is_multi_player_quad', 'card_set_id', 'team_id')
                 ->with(['cardSet:id,name,brand', 'team:id,name']);
             }])
             ->limit(100) // Limite ragionevole per evitare errori di memoria
@@ -313,6 +313,15 @@ class FootballFilterController extends Controller
                         'rarity_variation' => $card->rarity_variation,
                         'card_number' => $card->card_number,
                         'card_number_in_set' => $card->card_number_in_set,
+                        'is_rookie' => $card->is_rookie ?? false,
+                        'is_autograph' => $card->is_autograph ?? false,
+                        'is_relic' => $card->is_relic ?? false,
+                        'is_on_card_auto' => $card->is_on_card_auto ?? false,
+                        'is_jewel' => $card->is_jewel ?? false,
+                        'is_booklet' => $card->is_booklet ?? false,
+                        'is_multi_player_dual' => $card->is_multi_player_dual ?? false,
+                        'is_multi_player_triple' => $card->is_multi_player_triple ?? false,
+                        'is_multi_player_quad' => $card->is_multi_player_quad ?? false,
                         'card_set' => $card->cardSet ? [
                             'id' => $card->cardSet->id,
                             'name' => $card->cardSet->name,
@@ -502,6 +511,15 @@ class FootballFilterController extends Controller
                     'rarity_variation' => $card->rarity_variation,
                     'card_number' => $card->card_number,
                     'card_number_in_set' => $card->card_number_in_set,
+                    'is_rookie' => $card->is_rookie ?? false,
+                    'is_autograph' => $card->is_autograph ?? false,
+                    'is_relic' => $card->is_relic ?? false,
+                    'is_on_card_auto' => $card->is_on_card_auto ?? false,
+                    'is_jewel' => $card->is_jewel ?? false,
+                    'is_booklet' => $card->is_booklet ?? false,
+                    'is_multi_player_dual' => $card->is_multi_player_dual ?? false,
+                    'is_multi_player_triple' => $card->is_multi_player_triple ?? false,
+                    'is_multi_player_quad' => $card->is_multi_player_quad ?? false,
                     'card_set' => $card->cardSet ? [
                         'id' => $card->cardSet->id,
                         'name' => $card->cardSet->name,

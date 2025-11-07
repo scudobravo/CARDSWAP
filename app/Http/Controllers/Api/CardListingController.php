@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Eloquent\Builder;
 
 class CardListingController extends Controller
@@ -106,6 +107,11 @@ class CardListingController extends Controller
             $listingData = $request->all();
             $listingData['seller_id'] = Auth::id();
             $listingData['status'] = $request->get('status', 'draft');
+            
+            // Rimuovi autograph_condition se la colonna non esiste nel database
+            if (!Schema::hasColumn('card_listings', 'autograph_condition')) {
+                unset($listingData['autograph_condition']);
+            }
             
             // Assicurati che quantity sia un intero
             if (isset($listingData['quantity'])) {
@@ -232,6 +238,11 @@ class CardListingController extends Controller
             foreach ($request->input('listings') as $listingData) {
                 $listingData['seller_id'] = $sellerId;
                 $listingData['status'] = 'draft';
+                
+                // Rimuovi autograph_condition se la colonna non esiste nel database
+                if (!Schema::hasColumn('card_listings', 'autograph_condition')) {
+                    unset($listingData['autograph_condition']);
+                }
                 
                 $listing = CardListing::create($listingData);
                 
@@ -612,6 +623,11 @@ class CardListingController extends Controller
             DB::beginTransaction();
 
             $updateData = $data; // Usa i dati già convertiti
+            
+            // Rimuovi autograph_condition se la colonna non esiste nel database
+            if (!Schema::hasColumn('card_listings', 'autograph_condition')) {
+                unset($updateData['autograph_condition']);
+            }
             
             // Gestione immagini
             
