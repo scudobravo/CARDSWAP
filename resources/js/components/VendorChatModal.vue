@@ -1,5 +1,6 @@
 <template>
   <!-- Overlay -->
+  <Teleport to="body">
   <div v-if="isOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click="closeModal">
     <!-- Modal Content -->
     <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 h-[600px] flex flex-col" @click.stop>
@@ -97,10 +98,11 @@
       </div>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, watch, nextTick, Teleport } from 'vue'
 import { useAuthStore } from '../stores/auth.js'
 
 // Props
@@ -174,6 +176,7 @@ const formatTime = (timestamp) => {
 const loadMessages = async () => {
   if (!conversationId.value) {
     console.log('No conversationId, cannot load messages')
+    error.value = 'ID conversazione non disponibile'
     return
   }
 
@@ -182,39 +185,55 @@ const loadMessages = async () => {
 
   try {
     console.log('Fetching messages for conversation:', conversationId.value)
-    const response = await fetch(`/api/conversations/${conversationId.value}/messages`, {
+    const url = `/api/conversations/${conversationId.value}/messages`
+    console.log('Fetch URL:', url)
+    
+    const response = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${authStore.token}`,
         'Accept': 'application/json'
       }
     })
 
+    console.log('Response status:', response.status, response.statusText)
+
     if (response.ok) {
       const data = await response.json()
-      console.log('Messages response:', data)
+      console.log('Messages response:', JSON.stringify(data, null, 2))
+      
       // La risposta è paginata, quindi i messaggi sono in data.data.data o data.data
+      let loadedMessages = []
+      
       if (data.data?.data && Array.isArray(data.data.data)) {
-        messages.value = data.data.data
-        console.log('Loaded messages (from data.data.data):', messages.value.length)
+        loadedMessages = data.data.data
+        console.log('Loaded messages (from data.data.data):', loadedMessages.length)
       } else if (data.data && Array.isArray(data.data)) {
-        messages.value = data.data
-        console.log('Loaded messages (from data.data):', messages.value.length)
+        loadedMessages = data.data
+        console.log('Loaded messages (from data.data):', loadedMessages.length)
       } else if (Array.isArray(data)) {
-        messages.value = data
-        console.log('Loaded messages (from data):', messages.value.length)
+        loadedMessages = data
+        console.log('Loaded messages (from data):', loadedMessages.length)
       } else {
-        messages.value = []
-        console.log('No messages found in response')
+        console.log('No messages found in response, structure:', Object.keys(data))
+        error.value = 'Nessun messaggio trovato nella risposta'
       }
+      
+      messages.value = loadedMessages
+      console.log('Final messages array:', messages.value.length, 'messages')
+      
+      if (messages.value.length === 0) {
+        console.log('Messages array is empty after processing')
+      }
+      
       scrollToBottom()
     } else {
-      const errorData = await response.json()
+      const errorData = await response.json().catch(() => ({ message: 'Errore sconosciuto' }))
       console.error('Error loading messages:', errorData)
-      error.value = errorData.message || 'Errore nel caricamento dei messaggi'
+      error.value = errorData.message || `Errore nel caricamento dei messaggi (${response.status})`
     }
   } catch (err) {
     console.error('Error loading messages:', err)
-    error.value = 'Errore di connessione'
+    error.value = `Errore di connessione: ${err.message}`
   } finally {
     isLoading.value = false
   }
@@ -257,8 +276,11 @@ const sendMessage = async () => {
 }
 
 const startConversation = async () => {
+  console.log('startConversation called, props.conversationId:', props.conversationId, 'local conversationId:', conversationId.value)
+  
   // Se abbiamo già un conversationId (da props o da una sessione precedente), carica i messaggi
   if (props.conversationId) {
+    console.log('Using conversationId from props:', props.conversationId)
     conversationId.value = props.conversationId
     console.log('Loading messages for conversation:', conversationId.value)
     await loadMessages()
@@ -331,18 +353,24 @@ const scrollToBottom = () => {
 
 // Watch for modal open
 watch(() => props.isOpen, (newValue) => {
+  console.log('Modal isOpen changed:', newValue, 'conversationId:', props.conversationId, 'productId:', props.productId)
   if (newValue) {
     console.log('Modal opened, conversationId from props:', props.conversationId, 'productId:', props.productId)
     // Reset solo il messaggio corrente, non la conversazione
     newMessage.value = ''
     error.value = ''
+    // Forza il reset del conversationId locale se abbiamo uno nuovo dalle props
+    if (props.conversationId) {
+      conversationId.value = null
+    }
     startConversation()
   } else {
     // Quando si chiude, resetta tutto
+    console.log('Modal closed, resetting')
     resetModal()
     conversationId.value = null
   }
-})
+}, { immediate: true })
 
 // Watch per conversationId nelle props (quando cambia)
 watch(() => props.conversationId, (newId) => {

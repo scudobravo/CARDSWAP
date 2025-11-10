@@ -252,8 +252,13 @@ const formatTime = (timestamp) => {
 }
 
 const openConversation = (conversation) => {
+  console.log('Opening conversation:', conversation)
+  console.log('Conversation ID:', conversation.id)
+  console.log('Has listing:', !!conversation.listing)
+  console.log('Has messages (last_message_at):', !!conversation.last_message_at)
   selectedConversation.value = conversation
   showChatModal.value = true
+  console.log('Modal should be open now, showChatModal:', showChatModal.value)
 }
 
 const closeChatModal = () => {
