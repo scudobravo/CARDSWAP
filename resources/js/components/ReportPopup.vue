@@ -86,7 +86,7 @@
 
       <!-- Error Message -->
       <div v-if="showError" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm font-gill-sans">
-        Errore nell'invio del report. Riprova più tardi.
+        {{ errorMessage || 'Errore nell\'invio del report. Riprova più tardi.' }}
       </div>
     </div>
   </div>
@@ -121,6 +121,7 @@ const email = ref('')
 const isSubmitting = ref(false)
 const showSuccess = ref(false)
 const showError = ref(false)
+const errorMessage = ref('')
 
 // Problem types
 const problemTypes = ref([
@@ -145,25 +146,39 @@ const resetForm = () => {
   email.value = ''
   showSuccess.value = false
   showError.value = false
+  errorMessage.value = ''
   isSubmitting.value = false
 }
 
 const submitReport = async () => {
   if (!selectedProblemType.value) return
 
+  // Validazione dati prima di inviare
+  if (!props.productId) {
+    showError.value = true
+    errorMessage.value = 'ID prodotto non disponibile. Ricarica la pagina e riprova.'
+    return
+  }
+
+  if (!props.sellerName || props.sellerName.trim() === '' || props.sellerName === 'Nome Venditore') {
+    showError.value = true
+    errorMessage.value = 'Nome venditore non disponibile. Ricarica la pagina e riprova.'
+    return
+  }
+
   isSubmitting.value = true
   showSuccess.value = false
   showError.value = false
+  errorMessage.value = ''
 
   try {
-    // Prepare report data
+    // Prepare report data - converti product_id in stringa
     const reportData = {
-      product_id: props.productId,
-      seller_name: props.sellerName,
+      product_id: String(props.productId),
+      seller_name: props.sellerName.trim(),
       problem_type: selectedProblemType.value,
-      details: details.value,
-      email: email.value,
-      timestamp: new Date().toISOString()
+      details: details.value.trim() || null,
+      email: email.value.trim() || null
     }
 
     // Send report via API
@@ -172,22 +187,39 @@ const submitReport = async () => {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
       },
       body: JSON.stringify(reportData)
     })
 
-    if (response.ok) {
+    const responseData = await response.json().catch(() => ({}))
+
+    if (response.ok && responseData.success) {
       showSuccess.value = true
       // Auto close after 2 seconds
       setTimeout(() => {
         closePopup()
       }, 2000)
     } else {
-      throw new Error('Failed to submit report')
+      // Gestisci errori di validazione o altri errori
+      const errorMsg = responseData.error || responseData.message || 'Errore nell\'invio del report'
+      const validationErrors = responseData.errors
+      
+      if (validationErrors && typeof validationErrors === 'object') {
+        // Mostra errori di validazione specifici
+        const errorList = Object.values(validationErrors).flat()
+        errorMessage.value = errorList.length > 0 
+          ? errorList.join(', ') 
+          : errorMsg
+      } else {
+        errorMessage.value = errorMsg
+      }
+      showError.value = true
+      console.error('Error submitting report:', responseData)
     }
   } catch (error) {
     console.error('Error submitting report:', error)
+    errorMessage.value = 'Errore di connessione. Verifica la tua connessione internet e riprova.'
     showError.value = true
   } finally {
     isSubmitting.value = false

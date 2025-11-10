@@ -406,7 +406,7 @@
     <!-- Report Popup -->
     <ReportPopup 
       :is-open="showReportPopup"
-      :product-id="product.id"
+      :product-id="listing?.id || product?.listing_id || product?.id || null"
       :seller-name="sellerName"
       @close="showReportPopup = false"
     />

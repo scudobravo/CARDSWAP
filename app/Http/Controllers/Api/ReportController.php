@@ -16,8 +16,14 @@ class ReportController extends Controller
      */
     public function submitReport(Request $request): JsonResponse
     {
+        // Normalizza product_id come stringa (può arrivare come numero o stringa)
+        $requestData = $request->all();
+        if (isset($requestData['product_id'])) {
+            $requestData['product_id'] = (string) $requestData['product_id'];
+        }
+
         // Validate request
-        $validator = Validator::make($request->all(), [
+        $validator = Validator::make($requestData, [
             'product_id' => 'required|string',
             'seller_name' => 'required|string|max:255',
             'problem_type' => 'required|string|in:fake_card,wrong_condition,overpriced,inappropriate_content,seller_behavior,technical_issue,other',
@@ -34,16 +40,25 @@ class ReportController extends Controller
         }
 
         try {
-            $reportData = $request->all();
+            $reportData = $requestData;
             $reportData['timestamp'] = now();
             $reportData['ip_address'] = $request->ip();
             $reportData['user_agent'] = $request->userAgent();
 
-            // Log the report
+            // Log the report (sempre, anche se l'email fallisce)
             Log::info('Report submitted', $reportData);
 
-            // Send email notification
-            $this->sendReportEmail($reportData);
+            // Tenta di inviare l'email, ma non fallire se non riesce
+            try {
+                $this->sendReportEmail($reportData);
+            } catch (\Exception $emailException) {
+                // Log l'errore email ma continua
+                Log::warning('Failed to send report email', [
+                    'error' => $emailException->getMessage(),
+                    'report_data' => $reportData
+                ]);
+                // Il report è comunque stato loggato, quindi consideriamolo un successo parziale
+            }
 
             return response()->json([
                 'success' => true,
@@ -53,12 +68,13 @@ class ReportController extends Controller
         } catch (\Exception $e) {
             Log::error('Error processing report', [
                 'error' => $e->getMessage(),
-                'data' => $request->all()
+                'trace' => $e->getTraceAsString(),
+                'data' => $requestData
             ]);
 
             return response()->json([
                 'success' => false,
-                'error' => 'Errore nell\'invio del report'
+                'error' => 'Errore nell\'invio del report. Riprova più tardi.'
             ], 500);
         }
     }
