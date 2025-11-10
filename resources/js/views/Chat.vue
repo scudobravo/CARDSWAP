@@ -51,7 +51,10 @@
                     <!-- Badge messaggi non letti (stile WhatsApp) -->
                     <span 
                       v-if="getUnreadCount(conversation) > 0"
-                      class="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs font-futura-bold rounded-full flex items-center justify-center border-2 border-white"
+                      :class="[
+                        'absolute -top-1 -right-1 bg-red-500 text-white text-xs font-futura-bold rounded-full flex items-center justify-center border-2 border-white',
+                        getUnreadCount(conversation) > 99 ? 'px-1.5 py-0.5 min-w-[24px]' : 'h-5 w-5'
+                      ]"
                     >
                       {{ getUnreadCount(conversation) > 99 ? '99+' : getUnreadCount(conversation) }}
                     </span>
