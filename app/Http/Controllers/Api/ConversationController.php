@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\CardListing;
 use App\Models\OrderConversation;
 use App\Models\OrderMessage;
 use Illuminate\Http\Request;
@@ -23,7 +24,13 @@ class ConversationController extends Controller
         $user = Auth::user();
 
         $query = OrderConversation::query()
-            ->with(['order', 'buyer', 'seller'])
+            ->with([
+                'order', 
+                'listing.card_model.player',
+                'listing.card_model.card_set',
+                'buyer', 
+                'seller'
+            ])
             ->orderByDesc('last_message_at');
 
         if ($user->role === 'buyer') {
@@ -36,6 +43,10 @@ class ConversationController extends Controller
 
         if ($request->filled('order_id')) {
             $query->where('order_id', $request->integer('order_id'));
+        }
+
+        if ($request->filled('listing_id')) {
+            $query->where('listing_id', $request->integer('listing_id'));
         }
 
         $perPage = $request->integer('per_page', 15);
@@ -92,6 +103,88 @@ class ConversationController extends Controller
                 'last_message_at' => now(),
             ]
         );
+
+        return response()->json(['success' => true, 'data' => $conversation]);
+    }
+
+    /**
+     * Crea o trova conversazione tra buyer e seller per un listing/prodotto
+     */
+    public function startForListing(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'listing_id' => 'required|integer|exists:card_listings,id',
+            'seller_id' => 'required|integer|exists:users,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dati non validi',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = Auth::user();
+        $listing = CardListing::findOrFail($request->listing_id);
+        $sellerId = $request->integer('seller_id');
+
+        // Verifica che il venditore sia il proprietario del listing
+        if ($listing->seller_id !== $sellerId) {
+            return response()->json(['success' => false, 'message' => 'Venditore non valido per questo listing'], 403);
+        }
+
+        // Se l'utente è il venditore stesso, cerca conversazioni esistenti
+        if ($user->id === $sellerId) {
+            // Il venditore può solo vedere conversazioni esistenti, non crearne di nuove
+            $conversation = OrderConversation::where('listing_id', $listing->id)
+                ->where('seller_id', $sellerId)
+                ->orderByDesc('last_message_at')
+                ->first();
+
+            if (!$conversation) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nessuna conversazione trovata per questo prodotto. I compratori possono iniziare una conversazione cliccando su "Chat".'
+                ], 404);
+            }
+
+            // Carica le relazioni
+            $conversation->load([
+                'listing.card_model.player',
+                'listing.card_model.card_set',
+                'buyer', 
+                'seller'
+            ]);
+
+            return response()->json(['success' => true, 'data' => $conversation]);
+        }
+
+        // Se l'utente è un buyer, può creare o trovare una conversazione
+        if ($user->role !== 'buyer') {
+            return response()->json(['success' => false, 'message' => 'Solo i compratori possono avviare una nuova conversazione'], 403);
+        }
+
+        // Crea o trova la conversazione
+        $conversation = OrderConversation::firstOrCreate(
+            [
+                'listing_id' => $listing->id,
+                'buyer_id' => $user->id,
+                'seller_id' => $sellerId,
+            ],
+            [
+                'status' => 'open',
+                'last_message_at' => now(),
+            ]
+        );
+
+        // Carica le relazioni
+        $conversation->load([
+            'listing.card_model.player',
+            'listing.card_model.card_set',
+            'buyer', 
+            'seller'
+        ]);
 
         return response()->json(['success' => true, 'data' => $conversation]);
     }
@@ -245,14 +338,19 @@ class ConversationController extends Controller
 
         $emailData = [
             'order_number' => optional($conversation->order)->order_number,
+            'listing_title' => optional($conversation->listing)->card_model?->player?->name ?? 'Prodotto',
             'sender_name' => optional($message->sender)->name,
             'message_preview' => mb_strimwidth($message->body, 0, 120, '...'),
-            'conversation_url' => config('app.url') . '/dashboard/messages/' . $conversation->id,
+            'conversation_url' => config('app.url') . '/chat',
         ];
 
-        Mail::send('emails.new-message', $emailData, function ($m) use ($recipient, $recipientName, $conversation) {
+        $subject = $conversation->order 
+            ? 'Nuovo messaggio sull\'ordine #' . $conversation->order->order_number
+            : 'Nuovo messaggio sul prodotto: ' . ($conversation->listing->card_model?->player?->name ?? 'Prodotto');
+
+        Mail::send('emails.new-message', $emailData, function ($m) use ($recipient, $recipientName, $subject) {
             $m->to($recipient, (string) $recipientName)
-              ->subject('Nuovo messaggio sull\'ordine #' . optional($conversation->order)->order_number);
+              ->subject($subject);
         });
 
         $conversation->last_email_notification_at = $now;

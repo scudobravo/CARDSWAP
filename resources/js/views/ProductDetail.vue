@@ -414,7 +414,7 @@
     <!-- Chat Modal -->
     <VendorChatModal 
       :is-open="showChatModal"
-      :product-id="product.id || 'temp'"
+      :product-id="listing?.id || product.listing_id || null"
       :vendor-id="vendorId"
       :vendor-name="vendorName"
       :product-name="product.name"

@@ -41,6 +41,21 @@
                 Dashboard
               </router-link>
             </li>
+            <li>
+              <router-link 
+                to="/chat" 
+                :class="[
+                  $route.path === '/chat' ? 'bg-gray-50 text-primary' : 'text-gray-700 hover:bg-gray-50 hover:text-primary',
+                  'group flex gap-x-3 rounded-md p-2 text-sm/6 font-gill-sans-semibold'
+                ]"
+              >
+                <ChatBubbleLeftRightIcon :class="[
+                  $route.path === '/chat' ? 'text-primary' : 'text-gray-400 group-hover:text-primary',
+                  'size-6 shrink-0'
+                ]" aria-hidden="true" />
+                Messaggi
+              </router-link>
+            </li>
           </ul>
         </li>
 
@@ -291,7 +306,8 @@ import {
   GlobeAltIcon,
   ArrowRightOnRectangleIcon,
   PlusIcon,
-  TruckIcon
+  TruckIcon,
+  ChatBubbleLeftRightIcon
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()

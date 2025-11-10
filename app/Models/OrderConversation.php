@@ -10,6 +10,7 @@ class OrderConversation extends Model
 {
     protected $fillable = [
         'order_id',
+        'listing_id',
         'buyer_id',
         'seller_id',
         'status',
@@ -28,6 +29,11 @@ class OrderConversation extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    public function listing(): BelongsTo
+    {
+        return $this->belongsTo(CardListing::class, 'listing_id');
     }
 
     public function buyer(): BelongsTo

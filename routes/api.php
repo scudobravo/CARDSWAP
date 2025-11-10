@@ -530,6 +530,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('conversations')->group(function () {
         Route::get('/', [ConversationController::class, 'index']);
         Route::post('/start', [ConversationController::class, 'start']);
+        Route::post('/start-for-listing', [ConversationController::class, 'startForListing']);
         Route::get('/{conversation}/messages', [ConversationController::class, 'messages']);
         Route::post('/{conversation}/messages', [ConversationController::class, 'sendMessage']);
         Route::patch('/{conversation}/read', [ConversationController::class, 'markRead']);

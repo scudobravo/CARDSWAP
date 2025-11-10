@@ -55,7 +55,7 @@
                   : 'bg-gray-100 text-gray-900'
               ]"
             >
-              <p class="text-sm font-gill-sans">{{ message.message }}</p>
+              <p class="text-sm font-gill-sans">{{ message.body || message.message }}</p>
               <p 
                 :class="[
                   'text-xs mt-1',
@@ -108,9 +108,13 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  conversationId: {
+    type: [String, Number],
+    default: null
+  },
   productId: {
     type: [String, Number],
-    required: true
+    default: null
   },
   vendorId: {
     type: [String, Number],
@@ -165,58 +169,125 @@ const formatTime = (timestamp) => {
   })
 }
 
-// TODO: Implementare il caricamento dei messaggi quando l'API sarà estesa
+const loadMessages = async () => {
+  if (!conversationId.value) return
+
+  isLoading.value = true
+  error.value = ''
+
+  try {
+    const response = await fetch(`/api/conversations/${conversationId.value}/messages`, {
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`,
+        'Accept': 'application/json'
+      }
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      messages.value = data.data?.data || data.data || []
+      scrollToBottom()
+    } else {
+      const errorData = await response.json()
+      error.value = errorData.message || 'Errore nel caricamento dei messaggi'
+    }
+  } catch (err) {
+    console.error('Error loading messages:', err)
+    error.value = 'Errore di connessione'
+  } finally {
+    isLoading.value = false
+  }
+}
 
 const sendMessage = async () => {
-  if (!newMessage.value.trim()) return
+  if (!newMessage.value.trim() || !conversationId.value) return
   
   isSending.value = true
   error.value = ''
   
   try {
-    // Per ora, simula l'invio del messaggio
-    const message = {
-      id: Date.now(),
-      message: newMessage.value.trim(),
-      sender_id: currentUserId.value,
-      created_at: new Date().toISOString()
+    const response = await fetch(`/api/conversations/${conversationId.value}/messages`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        body: newMessage.value.trim()
+      })
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      // Aggiungi il messaggio alla lista
+      messages.value.push(data.data)
+      newMessage.value = ''
+      scrollToBottom()
+    } else {
+      const errorData = await response.json()
+      error.value = errorData.message || 'Errore nell\'invio del messaggio'
     }
-    
-    messages.value.push(message)
-    newMessage.value = ''
-    scrollToBottom()
-    
-    // TODO: Implementare l'invio reale dei messaggi
-    // Il sistema attuale richiede una conversazione basata su ordine
-    // Dovremmo estendere l'API per supportare conversazioni su prodotti
-    
   } catch (err) {
     console.error('Error sending message:', err)
-    error.value = 'Errore nell\'invio del messaggio'
+    error.value = 'Errore di connessione'
   } finally {
     isSending.value = false
   }
 }
 
 const startConversation = async () => {
+  // Se abbiamo già un conversationId, carica i messaggi
+  if (props.conversationId) {
+    conversationId.value = props.conversationId
+    await loadMessages()
+    return
+  }
+
+  // Altrimenti, crea una nuova conversazione o trova una esistente
+  if (!props.productId) {
+    error.value = 'ID prodotto non disponibile'
+    isLoading.value = false
+    return
+  }
+
   isLoading.value = true
   error.value = ''
   
   try {
-    // Per ora, simula una conversazione esistente
-    // In futuro, questo dovrebbe creare una conversazione basata sul prodotto
-    conversationId.value = `product_${props.productId}_vendor_${props.vendorId}`
-    
-    // Simula il caricamento dei messaggi
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    messages.value = []
-    
-    // TODO: Implementare la creazione di conversazioni per prodotti
-    // Il sistema attuale richiede un order_id, ma per i prodotti dovremmo
-    // creare un sistema diverso o modificare l'API esistente
+    const response = await fetch('/api/conversations/start-for-listing', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        listing_id: props.productId,
+        seller_id: props.vendorId
+      })
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      conversationId.value = data.data.id
+      await loadMessages()
+    } else if (response.status === 404) {
+      // Nessuna conversazione trovata (per venditori)
+      const errorData = await response.json()
+      error.value = errorData.message || 'Nessuna conversazione trovata. Vai alla pagina Chat per vedere tutte le conversazioni.'
+      // Chiudi il modal dopo 3 secondi e reindirizza alla pagina chat
+      setTimeout(() => {
+        closeModal()
+        window.location.href = '/chat'
+      }, 3000)
+    } else {
+      const errorData = await response.json()
+      error.value = errorData.message || 'Errore nell\'avvio della conversazione. Assicurati di essere loggato.'
+    }
   } catch (err) {
     console.error('Error starting conversation:', err)
-    error.value = 'Errore nell\'avvio della conversazione. Assicurati di essere loggato.'
+    error.value = 'Errore di connessione'
   } finally {
     isLoading.value = false
   }
