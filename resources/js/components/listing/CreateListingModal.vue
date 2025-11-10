@@ -252,6 +252,7 @@
           <div v-if="currentStep === 1 && selectedMode === 'sealed-pack'" class="space-y-6">
             <div class="text-center mb-6">
               <h4 class="text-xl font-semibold text-gray-900 mb-2">Sealed Pack</h4>
+              <p class="text-sm text-gray-600 italic mb-2">Factory-sealed items only. No re-sealed or opened products.</p>
               <p class="text-gray-600">Seleziona i filtri per la tua busta sigillata</p>
             </div>
             
@@ -269,6 +270,8 @@
             <ChainedFilters 
               :category="selectedCategory"
               :show-player="false"
+              :show-team="false"
+              :show-rarity="false"
               :show-number="false"
               :show-price="false"
               :show-search-button="false"
@@ -281,6 +284,7 @@
           <div v-if="currentStep === 1 && selectedMode === 'sealed-box'" class="space-y-6">
             <div class="text-center mb-6">
               <h4 class="text-xl font-semibold text-gray-900 mb-2">Sealed Box</h4>
+              <p class="text-sm text-gray-600 italic mb-2">Factory-sealed items only. No re-sealed or opened products.</p>
               <p class="text-gray-600">Seleziona i filtri per la tua scatola sigillata</p>
             </div>
             
@@ -298,6 +302,8 @@
             <ChainedFilters 
               :category="selectedCategory"
               :show-player="false"
+              :show-team="false"
+              :show-rarity="false"
               :show-number="false"
               :show-price="false"
               :show-search-button="false"

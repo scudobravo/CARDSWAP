@@ -36,9 +36,9 @@
     </div>
 
     <!-- Prima riga: Team e Set -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div :class="['grid gap-4 mb-4', showTeam ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1']">
       <!-- Team Selection -->
-      <div>
+      <div v-if="showTeam">
         <label class="block text-sm font-medium text-gray-700 mb-2">Team</label>
         <div class="relative">
           <input 
@@ -101,7 +101,7 @@
     </div>
 
     <!-- Seconda riga: Brand, Rarity, Year -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+    <div :class="['grid gap-4 mb-4', showRarity ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2']">
       <!-- Brand Selection -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Brand</label>
@@ -116,7 +116,7 @@
       </div>
 
       <!-- Rarity Selection -->
-      <div>
+      <div v-if="showRarity">
         <label class="block text-sm font-medium text-gray-700 mb-2">
           Rarity
         </label>
@@ -288,6 +288,14 @@ const props = defineProps({
   showSearchButton: {
     type: Boolean,
     default: false
+  },
+  showTeam: {
+    type: Boolean,
+    default: true
+  },
+  showRarity: {
+    type: Boolean,
+    default: true
   },
   initialFilters: {
     type: Object,
