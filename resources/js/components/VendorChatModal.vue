@@ -157,7 +157,8 @@ const closeModal = () => {
 const resetModal = () => {
   newMessage.value = ''
   messages.value = []
-  conversationId.value = null
+  // Non resettare conversationId se esiste già, così possiamo ricaricare i messaggi
+  // conversationId.value = null
   error.value = ''
 }
 
@@ -185,7 +186,16 @@ const loadMessages = async () => {
 
     if (response.ok) {
       const data = await response.json()
-      messages.value = data.data?.data || data.data || []
+      // La risposta è paginata, quindi i messaggi sono in data.data.data o data.data
+      if (data.data?.data && Array.isArray(data.data.data)) {
+        messages.value = data.data.data
+      } else if (data.data && Array.isArray(data.data)) {
+        messages.value = data.data
+      } else if (Array.isArray(data)) {
+        messages.value = data
+      } else {
+        messages.value = []
+      }
       scrollToBottom()
     } else {
       const errorData = await response.json()
@@ -220,10 +230,9 @@ const sendMessage = async () => {
 
     if (response.ok) {
       const data = await response.json()
-      // Aggiungi il messaggio alla lista
-      messages.value.push(data.data)
+      // Ricarica tutti i messaggi per essere sicuri di avere la versione più aggiornata
+      await loadMessages()
       newMessage.value = ''
-      scrollToBottom()
     } else {
       const errorData = await response.json()
       error.value = errorData.message || 'Errore nell\'invio del messaggio'
@@ -237,9 +246,15 @@ const sendMessage = async () => {
 }
 
 const startConversation = async () => {
-  // Se abbiamo già un conversationId, carica i messaggi
+  // Se abbiamo già un conversationId (da props o da una sessione precedente), carica i messaggi
   if (props.conversationId) {
     conversationId.value = props.conversationId
+    await loadMessages()
+    return
+  }
+
+  // Se abbiamo già un conversationId salvato per questo prodotto, usalo
+  if (conversationId.value) {
     await loadMessages()
     return
   }
@@ -304,8 +319,14 @@ const scrollToBottom = () => {
 // Watch for modal open
 watch(() => props.isOpen, (newValue) => {
   if (newValue) {
-    resetModal()
+    // Reset solo il messaggio corrente, non la conversazione
+    newMessage.value = ''
+    error.value = ''
     startConversation()
+  } else {
+    // Quando si chiude, resetta tutto
+    resetModal()
+    conversationId.value = null
   }
 })
 

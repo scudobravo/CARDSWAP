@@ -417,7 +417,7 @@
       :product-id="listing?.id || product.listing_id || null"
       :vendor-id="vendorId"
       :vendor-name="vendorName"
-      :product-name="product.name"
+      :product-name="getProductDisplayName()"
       @close="showChatModal = false"
     />
 
@@ -1094,6 +1094,39 @@ const getCategoryName = () => {
     return categoryMap[route.params.category] || 'Categoria'
   }
   return product.value.category || 'Categoria'
+}
+
+const getProductDisplayName = () => {
+  // Costruisci un nome descrittivo per il prodotto
+  const parts = []
+  
+  if (product.value.name && product.value.name !== 'Player') {
+    parts.push(product.value.name)
+  }
+  
+  if (product.value.team && product.value.team !== 'Team Name' && product.value.team !== 'Unknown Team') {
+    parts.push(product.value.team)
+  }
+  
+  if (product.value.set_name && product.value.set_name !== 'Set Name') {
+    parts.push(product.value.set_name)
+  }
+  
+  if (product.value.year) {
+    parts.push(product.value.year)
+  }
+  
+  // Se abbiamo almeno un nome, usalo, altrimenti usa un fallback
+  if (parts.length > 0) {
+    return parts.join(' - ')
+  }
+  
+  // Fallback: prova a costruire da listing se disponibile
+  if (listing.value?.card_model?.player?.name) {
+    return listing.value.card_model.player.name
+  }
+  
+  return product.value.name || 'Prodotto'
 }
 
 onMounted(async () => {
