@@ -164,8 +164,9 @@ const getInitials = (name) => {
 }
 
 const getConversationTitle = (conversation) => {
-  if (conversation.listing?.cardModel?.player?.name) {
-    return `Prodotto: ${conversation.listing.cardModel.player.name}`
+  // L'API restituisce snake_case, quindi usiamo card_model invece di cardModel
+  if (conversation.listing?.card_model?.player?.name) {
+    return `Prodotto: ${conversation.listing.card_model.player.name}`
   } else if (conversation.order?.order_number) {
     return `Ordine #${conversation.order.order_number}`
   } else if (conversation.order?.id) {
@@ -176,8 +177,9 @@ const getConversationTitle = (conversation) => {
 
 const getProductName = (conversation) => {
   // Costruisci un nome descrittivo per il prodotto
-  if (conversation.listing?.cardModel) {
-    const cardModel = conversation.listing.cardModel
+  // L'API restituisce snake_case, quindi usiamo card_model invece di cardModel
+  if (conversation.listing?.card_model) {
+    const cardModel = conversation.listing.card_model
     const parts = []
     
     if (cardModel.player?.name) {
@@ -188,8 +190,9 @@ const getProductName = (conversation) => {
       parts.push(cardModel.team.name)
     }
     
-    if (cardModel.cardSet?.name) {
-      parts.push(cardModel.cardSet.name)
+    // L'API restituisce card_set invece di cardSet
+    if (cardModel.card_set?.name) {
+      parts.push(cardModel.card_set.name)
     }
     
     if (cardModel.year) {
