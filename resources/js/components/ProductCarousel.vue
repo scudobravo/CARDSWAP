@@ -3,8 +3,8 @@
     <!-- Section header -->
     <div class="mb-4">
       <h2 class="text-3xl font-futura-bold text-primary">{{ title }}</h2>
-      <div v-if="!hideSeeAll" class="mt-0 text-right">
-        <a :href="seeAllUrl || '#'" class="text-primary hover:text-secondary transition-colors font-gill-sans-semibold text-sm">
+      <div v-if="!shouldHideSeeAll" class="mt-0 text-right">
+        <a :href="seeAllUrl || (category ? `/category/${category}` : '#')" class="text-primary hover:text-secondary transition-colors font-gill-sans-semibold text-sm">
           {{ seeAllText }}
           <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -90,7 +90,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import cardService from '../services/cardService.js'
 
 // Props
@@ -127,6 +127,7 @@ const props = defineProps({
 
 // Router
 const router = useRouter()
+const route = useRoute()
 
 // Reactive data
 const dynamicProducts = ref([])
@@ -149,6 +150,23 @@ const displayProducts = computed(() => {
     return dynamicProducts.value.length > 0 ? dynamicProducts.value : props.products
   }
   return props.products
+})
+
+// Computed property to check if we're already on the category page
+const isOnCategoryPage = computed(() => {
+  if (!props.category) return false
+  const currentPath = route.path
+  const categoryPath = `/category/${props.category}`
+  return currentPath === categoryPath
+})
+
+// Computed property to determine if we should hide the "See All" button
+const shouldHideSeeAll = computed(() => {
+  // Hide if explicitly set via prop
+  if (props.hideSeeAll) return true
+  // Hide if we're already on the category page
+  if (isOnCategoryPage.value) return true
+  return false
 })
 
 // Computed property for "VEDI TUTTO" text based on category
