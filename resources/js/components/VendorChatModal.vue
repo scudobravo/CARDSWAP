@@ -36,7 +36,6 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M16 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
           <p class="text-gray-500 font-gill-sans">Nessun messaggio ancora. Inizia la conversazione!</p>
-          <p v-if="conversationId" class="text-xs text-gray-400 mt-2">Conversation ID: {{ conversationId }}</p>
         </div>
 
         <!-- Messages List -->
@@ -79,8 +78,17 @@
             type="text" 
             placeholder="Scrivi un messaggio..."
             class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary font-gill-sans text-sm"
-            :disabled="isSending"
+            :disabled="isSending || isLoading"
           />
+          <button 
+            type="button"
+            @click="loadMessages"
+            :disabled="isLoading || !conversationId"
+            class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            title="Aggiorna messaggi"
+          >
+            <ArrowPathIcon :class="['w-5 h-5 text-gray-600', isLoading && 'animate-spin']" />
+          </button>
           <button 
             type="submit"
             :disabled="!newMessage.trim() || isSending"
@@ -102,8 +110,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick, onUnmounted, Teleport } from 'vue'
+import { ref, computed, watch, nextTick, Teleport } from 'vue'
 import { useAuthStore } from '../stores/auth.js'
+import { ArrowPathIcon } from '@heroicons/vue/24/outline'
 
 // Props
 const props = defineProps({
@@ -134,7 +143,7 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'messages-updated'])
 
 // Store
 const authStore = useAuthStore()
@@ -175,7 +184,6 @@ const formatTime = (timestamp) => {
 
 const loadMessages = async () => {
   if (!conversationId.value) {
-    console.log('No conversationId, cannot load messages')
     error.value = 'ID conversazione non disponibile'
     return
   }
@@ -184,9 +192,7 @@ const loadMessages = async () => {
   error.value = ''
 
   try {
-    console.log('Fetching messages for conversation:', conversationId.value)
     const url = `/api/conversations/${conversationId.value}/messages`
-    console.log('Fetch URL:', url)
     
     const response = await fetch(url, {
       headers: {
@@ -195,44 +201,31 @@ const loadMessages = async () => {
       }
     })
 
-    console.log('Response status:', response.status, response.statusText)
-
     if (response.ok) {
       const data = await response.json()
-      console.log('Messages response:', JSON.stringify(data, null, 2))
       
       // La risposta è paginata, quindi i messaggi sono in data.data.data o data.data
       let loadedMessages = []
       
       if (data.data?.data && Array.isArray(data.data.data)) {
         loadedMessages = data.data.data
-        console.log('Loaded messages (from data.data.data):', loadedMessages.length)
       } else if (data.data && Array.isArray(data.data)) {
         loadedMessages = data.data
-        console.log('Loaded messages (from data.data):', loadedMessages.length)
       } else if (Array.isArray(data)) {
         loadedMessages = data
-        console.log('Loaded messages (from data):', loadedMessages.length)
       } else {
-        console.log('No messages found in response, structure:', Object.keys(data))
         error.value = 'Nessun messaggio trovato nella risposta'
       }
       
       messages.value = loadedMessages
-      console.log('Final messages array:', messages.value.length, 'messages')
-      
-      if (messages.value.length === 0) {
-        console.log('Messages array is empty after processing')
-      }
-      
       scrollToBottom()
+      // Notifica il parent che i messaggi sono stati aggiornati (per aggiornare i contatori)
+      emit('messages-updated')
     } else {
       const errorData = await response.json().catch(() => ({ message: 'Errore sconosciuto' }))
-      console.error('Error loading messages:', errorData)
       error.value = errorData.message || `Errore nel caricamento dei messaggi (${response.status})`
     }
   } catch (err) {
-    console.error('Error loading messages:', err)
     error.value = `Errore di connessione: ${err.message}`
   } finally {
     isLoading.value = false
@@ -263,12 +256,13 @@ const sendMessage = async () => {
       // Ricarica tutti i messaggi per essere sicuri di avere la versione più aggiornata
       await loadMessages()
       newMessage.value = ''
+      // Notifica il parent che i messaggi sono stati aggiornati
+      emit('messages-updated')
     } else {
       const errorData = await response.json()
       error.value = errorData.message || 'Errore nell\'invio del messaggio'
     }
   } catch (err) {
-    console.error('Error sending message:', err)
     error.value = 'Errore di connessione'
   } finally {
     isSending.value = false
@@ -276,20 +270,15 @@ const sendMessage = async () => {
 }
 
 const startConversation = async () => {
-  console.log('startConversation called, props.conversationId:', props.conversationId, 'local conversationId:', conversationId.value)
-  
   // Se abbiamo già un conversationId (da props o da una sessione precedente), carica i messaggi
   if (props.conversationId) {
-    console.log('Using conversationId from props:', props.conversationId)
     conversationId.value = props.conversationId
-    console.log('Loading messages for conversation:', conversationId.value)
     await loadMessages()
     return
   }
 
   // Se abbiamo già un conversationId salvato per questo prodotto, usalo
   if (conversationId.value) {
-    console.log('Using existing conversationId:', conversationId.value)
     await loadMessages()
     return
   }
@@ -336,7 +325,6 @@ const startConversation = async () => {
       error.value = errorData.message || 'Errore nell\'avvio della conversazione. Assicurati di essere loggato.'
     }
   } catch (err) {
-    console.error('Error starting conversation:', err)
     error.value = 'Errore di connessione'
   } finally {
     isLoading.value = false
@@ -351,57 +339,22 @@ const scrollToBottom = () => {
   })
 }
 
-// Polling per aggiornare i messaggi ogni 3 secondi quando il modal è aperto
-let pollingInterval = null
-
-const startPolling = () => {
-  if (pollingInterval) {
-    clearInterval(pollingInterval)
-  }
-  pollingInterval = setInterval(() => {
-    if (conversationId.value && !isSending.value && !isLoading.value) {
-      console.log('Polling: reloading messages...')
-      loadMessages()
-    }
-  }, 3000) // Ogni 3 secondi
-}
-
-const stopPolling = () => {
-  if (pollingInterval) {
-    clearInterval(pollingInterval)
-    pollingInterval = null
-  }
-}
-
 // Watch for modal open
 watch(() => props.isOpen, (newValue) => {
-  console.log('Modal isOpen changed:', newValue, 'conversationId:', props.conversationId, 'productId:', props.productId)
   if (newValue) {
-    console.log('Modal opened, conversationId from props:', props.conversationId, 'productId:', props.productId)
     // Reset solo il messaggio corrente, non la conversazione
     newMessage.value = ''
     error.value = ''
     // Se abbiamo un conversationId dalle props, usalo direttamente
     if (props.conversationId) {
-      console.log('Setting conversationId from props:', props.conversationId)
       conversationId.value = props.conversationId
-      loadMessages().then(() => {
-        // Avvia il polling dopo che i messaggi sono stati caricati
-        startPolling()
-      })
+      loadMessages()
     } else {
       // Altrimenti, avvia una nuova conversazione
-      startConversation().then(() => {
-        // Avvia il polling dopo che la conversazione è stata creata
-        if (conversationId.value) {
-          startPolling()
-        }
-      })
+      startConversation()
     }
   } else {
-    // Quando si chiude, ferma il polling e resetta tutto
-    console.log('Modal closed, resetting')
-    stopPolling()
+    // Quando si chiude, resetta tutto
     resetModal()
     conversationId.value = null
   }
@@ -410,11 +363,8 @@ watch(() => props.isOpen, (newValue) => {
 // Watch per conversationId nelle props (quando cambia)
 watch(() => props.conversationId, (newId) => {
   if (newId && props.isOpen) {
-    console.log('ConversationId prop changed:', newId)
     conversationId.value = newId
-    loadMessages().then(() => {
-      startPolling()
-    })
+    loadMessages()
   }
 })
 
@@ -422,9 +372,4 @@ watch(() => props.conversationId, (newId) => {
 watch(messages, () => {
   scrollToBottom()
 }, { deep: true })
-
-// Cleanup quando il componente viene smontato
-onUnmounted(() => {
-  stopPolling()
-})
 </script>

@@ -44,22 +44,23 @@
               <div class="flex-1 min-w-0">
                 <!-- Header con nome utente e badge -->
                 <div class="flex items-center space-x-3 mb-2">
-                  <div class="flex-shrink-0">
+                  <div class="flex-shrink-0 relative">
                     <div class="h-10 w-10 rounded-full bg-primary text-white flex items-center justify-center font-futura-bold">
                       {{ getInitials(conversation.seller?.name || conversation.buyer?.name || 'U') }}
                     </div>
+                    <!-- Badge messaggi non letti (stile WhatsApp) -->
+                    <span 
+                      v-if="getUnreadCount(conversation) > 0"
+                      class="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs font-futura-bold rounded-full flex items-center justify-center border-2 border-white"
+                    >
+                      {{ getUnreadCount(conversation) > 99 ? '99+' : getUnreadCount(conversation) }}
+                    </span>
                   </div>
                   <div class="flex-1 min-w-0">
-                    <div class="flex items-center space-x-2">
+                    <div class="flex items-center justify-between">
                       <h3 class="text-lg font-futura-bold text-primary truncate">
                         {{ authStore.user?.role === 'buyer' ? conversation.seller?.name : conversation.buyer?.name }}
                       </h3>
-                      <span 
-                        v-if="getUnreadCount(conversation) > 0"
-                        class="bg-primary text-white text-xs font-futura-bold px-2 py-1 rounded-full"
-                      >
-                        {{ getUnreadCount(conversation) }}
-                      </span>
                     </div>
                     <p class="text-sm text-gray-600 font-gill-sans truncate">
                       {{ getConversationTitle(conversation) }}
@@ -100,6 +101,7 @@
       :vendor-name="authStore.user?.role === 'buyer' ? selectedConversation.seller?.name : selectedConversation.buyer?.name"
       :product-name="getProductName(selectedConversation)"
       @close="closeChatModal"
+      @messages-updated="loadConversations"
     />
   </div>
 </template>
@@ -138,41 +140,25 @@ const loadConversations = async () => {
 
     if (response.ok) {
       const data = await response.json()
-      console.log('Conversations API response:', JSON.stringify(data, null, 2))
-      console.log('Response structure:', {
-        hasData: !!data.data,
-        hasDataData: !!(data.data?.data),
-        dataType: Array.isArray(data.data) ? 'array' : typeof data.data,
-        dataDataType: Array.isArray(data.data?.data) ? 'array' : typeof data.data?.data,
-      })
       
       // La risposta paginata ha questa struttura: { success: true, data: { data: [...], current_page: 1, ... } }
       if (data.data?.data && Array.isArray(data.data.data)) {
         conversations.value = data.data.data
-        console.log('Loaded conversations from data.data.data:', conversations.value.length)
       } else if (Array.isArray(data.data)) {
         conversations.value = data.data
-        console.log('Loaded conversations from data.data:', conversations.value.length)
       } else if (Array.isArray(data)) {
         conversations.value = data
-        console.log('Loaded conversations from data:', conversations.value.length)
       } else {
-        console.error('Unexpected response structure:', data)
         conversations.value = []
       }
-      
-      console.log('Final conversations count:', conversations.value.length)
     } else if (response.status === 401) {
       error.value = 'Sessione scaduta. Effettua il login.'
-      console.error('Unauthorized - session expired')
       authStore.logout()
     } else {
       const errorData = await response.json().catch(() => ({ message: 'Errore sconosciuto' }))
-      console.error('Error loading conversations:', response.status, errorData)
       error.value = errorData.message || 'Errore nel caricamento delle conversazioni'
     }
   } catch (err) {
-    console.error('Error loading conversations:', err)
     error.value = 'Errore di connessione'
   } finally {
     loading.value = false
@@ -245,9 +231,13 @@ const getProductName = (conversation) => {
 }
 
 const getUnreadCount = (conversation) => {
-  if (authStore.user?.role === 'buyer') {
+  const userId = authStore.user?.id
+  if (!userId) return 0
+  
+  // Controlla se l'utente è il buyer o il seller in questa conversazione specifica
+  if (userId === conversation.buyer_id) {
     return conversation.unread_count_buyer || 0
-  } else if (authStore.user?.role === 'seller') {
+  } else if (userId === conversation.seller_id) {
     return conversation.unread_count_seller || 0
   }
   return 0
@@ -277,13 +267,8 @@ const formatTime = (timestamp) => {
 }
 
 const openConversation = (conversation) => {
-  console.log('Opening conversation:', conversation)
-  console.log('Conversation ID:', conversation.id)
-  console.log('Has listing:', !!conversation.listing)
-  console.log('Has messages (last_message_at):', !!conversation.last_message_at)
   selectedConversation.value = conversation
   showChatModal.value = true
-  console.log('Modal should be open now, showChatModal:', showChatModal.value)
 }
 
 const closeChatModal = () => {
@@ -305,7 +290,6 @@ onMounted(async () => {
     try {
       await authStore.fetchUser()
     } catch (err) {
-      console.error('Error fetching user:', err)
       error.value = 'Errore nel caricamento dei dati utente'
       return
     }
