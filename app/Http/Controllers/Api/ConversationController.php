@@ -23,6 +23,27 @@ class ConversationController extends Controller
     {
         $user = Auth::user();
 
+        \Log::info('Conversations API called - START', [
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+            'user_role' => $user->role,
+        ]);
+
+        // Prima verifica quante conversazioni ci sono totali nel database
+        $totalInDb = OrderConversation::count();
+        $totalForUserAsBuyer = OrderConversation::where('buyer_id', $user->id)->count();
+        $totalForUserAsSeller = OrderConversation::where('seller_id', $user->id)->count();
+        $totalForUser = OrderConversation::where(function($q) use ($user) {
+            $q->where('buyer_id', $user->id)->orWhere('seller_id', $user->id);
+        })->count();
+
+        \Log::info('Conversations counts', [
+            'total_in_db' => $totalInDb,
+            'total_for_user_as_buyer' => $totalForUserAsBuyer,
+            'total_for_user_as_seller' => $totalForUserAsSeller,
+            'total_for_user' => $totalForUser,
+        ]);
+
         $query = OrderConversation::query()
             ->with([
                 'order', 
@@ -36,16 +57,20 @@ class ConversationController extends Controller
         // Filtra le conversazioni in base al ruolo dell'utente
         if ($user->role === 'buyer') {
             $query->where('buyer_id', $user->id);
+            \Log::info('Applied buyer filter', ['buyer_id' => $user->id]);
         } elseif ($user->role === 'seller') {
             $query->where('seller_id', $user->id);
+            \Log::info('Applied seller filter', ['seller_id' => $user->id]);
         } elseif ($user->role === 'admin') {
             // admin: può vedere tutto, opzionale filtri
+            \Log::info('Admin user - showing all conversations');
         } else {
             // Per altri ruoli o utenti senza ruolo, mostra le conversazioni dove l'utente è buyer o seller
             $query->where(function($q) use ($user) {
                 $q->where('buyer_id', $user->id)
                   ->orWhere('seller_id', $user->id);
             });
+            \Log::info('Applied general filter', ['user_id' => $user->id]);
         }
 
         if ($request->filled('order_id')) {
@@ -56,16 +81,28 @@ class ConversationController extends Controller
             $query->where('listing_id', $request->integer('listing_id'));
         }
 
-        $perPage = $request->integer('per_page', 15);
-        $conversations = $query->paginate($perPage);
-        
-        \Log::info('Conversations API called', [
-            'user_id' => $user->id,
-            'user_role' => $user->role,
-            'total_conversations' => $conversations->total(),
-            'conversations_count' => $conversations->count(),
-            'conversation_ids' => $conversations->pluck('id')->toArray(),
-        ]);
+        // Log della query SQL prima dell'esecuzione
+        \Log::info('Query SQL', ['sql' => $query->toSql(), 'bindings' => $query->getBindings()]);
+
+        try {
+            $perPage = $request->integer('per_page', 15);
+            $conversations = $query->paginate($perPage);
+            
+            \Log::info('Conversations API called - SUCCESS', [
+                'user_id' => $user->id,
+                'user_role' => $user->role,
+                'total_conversations' => $conversations->total(),
+                'conversations_count' => $conversations->count(),
+                'conversation_ids' => $conversations->pluck('id')->toArray(),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Conversations API error', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
+        }
         
         return response()->json([
             'success' => true,
