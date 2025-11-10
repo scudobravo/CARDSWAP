@@ -1849,7 +1849,7 @@ const handleAdditionalDetailsChanged = (details) => {
   additionalDetails.value = details
   // Update listing data with additional details
   listingData.value.condition = details.condition
-  listingData.value.autograph_condition = details.autographCondition || details.condition
+  listingData.value.autograph_condition = details.autographCondition || ''
   listingData.value.grading_company = details.gradingCompany
   listingData.value.grading_score = details.gradingScore
   listingData.value.description = details.notes || details.description

@@ -451,30 +451,37 @@ watch(() => props.cardData, (newCardData) => {
     }
   }
   
-  // Popola additionalDetails con i dati esistenti o dalla carta selezionata
-  // Solo se i campi non sono già stati impostati manualmente dall'utente
-  if (newCardData) {
-    // Popola solo se i campi sono vuoti (non sovrascrivere se l'utente ha già inserito dati)
-    const shouldPopulate = !additionalDetails.value.condition || 
-                           !additionalDetails.value.gradingCompany ||
-                           (!additionalDetails.value.autograph && !additionalDetails.value.relic && !additionalDetails.value.onCardAuto)
+  // Popola additionalDetails SOLO al primo caricamento (quando hasInitialized è false)
+  // NON popolare se l'utente ha già interagito con i campi
+  if (newCardData && !hasInitialized.value) {
+    // Popola solo se i campi sono completamente vuoti
+    const shouldPopulate = !additionalDetails.value.condition && 
+                           !additionalDetails.value.gradingCompany &&
+                           !additionalDetails.value.autographCondition &&
+                           !additionalDetails.value.autograph && 
+                           !additionalDetails.value.relic && 
+                           !additionalDetails.value.onCardAuto
     
     if (shouldPopulate) {
       additionalDetails.value = {
-        condition: additionalDetails.value.condition || newCardData.condition || '',
-        autographCondition: additionalDetails.value.autographCondition || newCardData.autographCondition || newCardData.condition || '',
-        gradingCompany: additionalDetails.value.gradingCompany || newCardData.gradingCompany || '',
-        gradingScore: additionalDetails.value.gradingScore || newCardData.gradingScore || '',
+        condition: newCardData.condition || '',
+        // NON usare condition come fallback per autographCondition
+        autographCondition: newCardData.autographCondition || '',
+        gradingCompany: newCardData.gradingCompany || '',
+        gradingScore: newCardData.gradingScore || '',
         // Filtri Extra - pre-popola dalla carta selezionata se non già impostati
-        autograph: additionalDetails.value.autograph || newCardData.autograph || '',
-        relic: additionalDetails.value.relic || newCardData.relic || '',
-        onCardAuto: additionalDetails.value.onCardAuto || newCardData.onCardAuto || '',
-        rookie: additionalDetails.value.rookie || newCardData.rookie || '',
-        jewel: additionalDetails.value.jewel || newCardData.jewel || '',
-        multiAutograph: additionalDetails.value.multiAutograph || newCardData.multiAutograph || '',
-        description: additionalDetails.value.description || newCardData.description || '',
-        notes: additionalDetails.value.notes || newCardData.notes || ''
+        autograph: newCardData.autograph || '',
+        relic: newCardData.relic || '',
+        onCardAuto: newCardData.onCardAuto || '',
+        rookie: newCardData.rookie || '',
+        jewel: newCardData.jewel || '',
+        multiAutograph: newCardData.multiAutograph || '',
+        description: newCardData.description || '',
+        notes: newCardData.notes || ''
       }
+      
+      // Marca come inizializzato dopo il primo popolamento
+      hasInitialized.value = true
     }
   }
 }, { immediate: true, deep: false, flush: 'post' }) // Aggiunto flush: 'post' per eseguire dopo il rendering
