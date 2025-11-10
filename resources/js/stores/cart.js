@@ -114,6 +114,7 @@ export const useCartStore = defineStore('cart', () => {
             seller_id: cartItemData.seller_id || listing.seller_id,
             price: cartItemData.price || listing.price,
             quantity: quantity,
+            available_quantity: cartItemData.available_quantity || listing.quantity || 1,
             condition: cartItemData.condition || listing.condition,
             description: cartItemData.description || listing.description,
             images: cartItemData.images || listing.images,
@@ -197,6 +198,9 @@ export const useCartStore = defineStore('cart', () => {
             } else {
               cartItems.value[sellerIdStr][itemIndex].quantity = quantity
               cartItems.value[sellerIdStr][itemIndex].available = response.data.data.available
+              if (response.data.data.available_quantity !== undefined) {
+                cartItems.value[sellerIdStr][itemIndex].available_quantity = response.data.data.available_quantity
+              }
             }
           }
         }

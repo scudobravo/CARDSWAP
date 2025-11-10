@@ -64,6 +64,7 @@ class CartController extends Controller
                             'seller_id' => $listing->seller_id,
                             'price' => $listing->price,
                             'quantity' => $item['quantity'],
+                            'available_quantity' => $listing->quantity, // Quantità disponibile totale del venditore
                             'condition' => $listing->condition,
                             'description' => $listing->description,
                             'images' => $listing->images,
@@ -131,6 +132,7 @@ class CartController extends Controller
                     'seller_id' => 1,
                     'price' => 95.00,
                     'quantity' => $request->quantity,
+                    'available_quantity' => 1, // Mock: quantità disponibile = 1 (per test)
                     'condition' => 'LIGHT PLAYED',
                     'description' => 'Carta in ottime condizioni',
                     'images' => [],
@@ -186,6 +188,7 @@ class CartController extends Controller
                 'seller_id' => $listing->seller_id,
                 'price' => $listing->price,
                 'quantity' => $request->quantity,
+                'available_quantity' => $listing->quantity, // Quantità disponibile totale del venditore
                 'condition' => $listing->condition,
                 'description' => $listing->description,
                 'images' => $listing->images,
@@ -250,6 +253,7 @@ class CartController extends Controller
                 'data' => [
                     'listing_id' => $listing->id,
                     'quantity' => $request->quantity,
+                    'available_quantity' => $listing->quantity, // Quantità disponibile totale del venditore
                     'available' => $listing->quantity >= $request->quantity
                 ]
             ]);

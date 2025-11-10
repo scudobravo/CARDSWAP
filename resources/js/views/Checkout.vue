@@ -355,7 +355,7 @@
                           aria-label="Quantità" 
                           class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white py-2 pr-8 pl-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 sm:text-sm/6"
                         >
-                          <option v-for="qty in Array.from({length: Math.min(product.maxQuantity, 8)}, (_, i) => i + 1)" :key="qty" :value="qty">{{ qty }}</option>
+                          <option v-for="qty in Array.from({length: product.maxQuantity}, (_, i) => i + 1)" :key="qty" :value="qty">{{ qty }}</option>
                         </select>
                         <ChevronDownIcon class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4" aria-hidden="true" />
                       </div>
@@ -383,7 +383,14 @@
               </div>
             </dl>
 
-            <div class="border-t border-gray-200 px-4 py-6 sm:px-6">
+            <div class="border-t border-gray-200 px-4 py-6 sm:px-6 space-y-3">
+              <button 
+                type="button"
+                @click="router.push('/cart')"
+                class="w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-base font-medium text-gray-700 shadow-xs hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-50 focus:outline-hidden"
+              >
+                Annulla checkout
+              </button>
               <button 
                 type="submit" 
                 :disabled="!canProcessPayment || isProcessing"
@@ -473,9 +480,10 @@ const cartProducts = computed(() => {
     title: item.cardModel?.name || 'Prodotto',
     condition: item.condition,
     seller: item.seller?.name || 'Venditore',
+    seller_id: item.seller_id || item.seller?.id,
     price: parseFloat(item.price),
     quantity: item.quantity,
-    maxQuantity: item.available ? 8 : item.quantity,
+    maxQuantity: item.available_quantity || item.quantity || 1, // Usa la quantità disponibile del venditore
     imageSrc: item.images?.[0] || null,
     imageAlt: item.cardModel?.name || 'Prodotto',
     href: getCardUrl(item)
@@ -540,7 +548,13 @@ const selectAddress = (address) => {
 
 const removeFromCart = async (product) => {
   try {
-    const result = await cartStore.removeFromCart(product.id, product.seller_id)
+    // Usa seller_id dal prodotto mappato, altrimenti cerca nell'item originale
+    const sellerId = product.seller_id || cartStore.allCartItems.find(item => item.id === product.id)?.seller_id
+    if (!sellerId) {
+      console.error('Seller ID non trovato per il prodotto:', product)
+      return
+    }
+    const result = await cartStore.removeFromCart(product.id, sellerId)
     if (!result.success) {
       console.error('Errore nella rimozione:', result.message)
     }
@@ -551,14 +565,33 @@ const removeFromCart = async (product) => {
 
 const updateQuantity = async (product) => {
   try {
-    const result = await cartStore.updateQuantity(product.id, product.seller_id, product.quantity)
+    // Usa seller_id dal prodotto mappato, altrimenti cerca nell'item originale
+    const sellerId = product.seller_id || cartStore.allCartItems.find(item => item.id === product.id)?.seller_id
+    if (!sellerId) {
+      console.error('Seller ID non trovato per il prodotto:', product)
+      return
+    }
+    const result = await cartStore.updateQuantity(product.id, sellerId, product.quantity)
     if (!result.success) {
       console.error('Errore nell\'aggiornamento quantità:', result.message)
-      // Ripristina la quantità precedente
-      product.quantity = product.quantity === 1 ? 1 : product.quantity - 1
+      // Ripristina la quantità precedente dal carrello
+      const originalItem = cartStore.allCartItems.find(item => item.id === product.id)
+      if (originalItem) {
+        product.quantity = originalItem.quantity
+      }
+    } else {
+      // Aggiorna maxQuantity se disponibile nella risposta
+      if (result.data?.available_quantity !== undefined) {
+        product.maxQuantity = result.data.available_quantity
+      }
     }
   } catch (error) {
     console.error('Errore nell\'aggiornamento quantità:', error)
+    // Ripristina la quantità precedente dal carrello
+    const originalItem = cartStore.allCartItems.find(item => item.id === product.id)
+    if (originalItem) {
+      product.quantity = originalItem.quantity
+    }
   }
 }
 
