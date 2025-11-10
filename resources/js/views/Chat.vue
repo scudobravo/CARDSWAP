@@ -164,8 +164,8 @@ const getInitials = (name) => {
 }
 
 const getConversationTitle = (conversation) => {
-  if (conversation.listing?.card_model?.player?.name) {
-    return `Prodotto: ${conversation.listing.card_model.player.name}`
+  if (conversation.listing?.cardModel?.player?.name) {
+    return `Prodotto: ${conversation.listing.cardModel.player.name}`
   } else if (conversation.order?.order_number) {
     return `Ordine #${conversation.order.order_number}`
   } else if (conversation.order?.id) {
@@ -175,8 +175,8 @@ const getConversationTitle = (conversation) => {
 }
 
 const getProductName = (conversation) => {
-  if (conversation.listing?.card_model?.player?.name) {
-    return conversation.listing.card_model.player.name
+  if (conversation.listing?.cardModel?.player?.name) {
+    return conversation.listing.cardModel.player.name
   } else if (conversation.order?.order_number) {
     return `Ordine #${conversation.order.order_number}`
   } else if (conversation.order?.id) {

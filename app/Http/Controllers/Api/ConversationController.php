@@ -26,8 +26,8 @@ class ConversationController extends Controller
         $query = OrderConversation::query()
             ->with([
                 'order', 
-                'listing.card_model.player',
-                'listing.card_model.card_set',
+                'listing.cardModel.player',
+                'listing.cardModel.cardSet',
                 'buyer', 
                 'seller'
             ])
@@ -151,8 +151,8 @@ class ConversationController extends Controller
 
             // Carica le relazioni
             $conversation->load([
-                'listing.card_model.player',
-                'listing.card_model.card_set',
+                'listing.cardModel.player',
+                'listing.cardModel.cardSet',
                 'buyer', 
                 'seller'
             ]);
@@ -180,8 +180,8 @@ class ConversationController extends Controller
 
         // Carica le relazioni
         $conversation->load([
-            'listing.card_model.player',
-            'listing.card_model.card_set',
+            'listing.cardModel.player',
+            'listing.cardModel.cardSet',
             'buyer', 
             'seller'
         ]);
@@ -338,7 +338,7 @@ class ConversationController extends Controller
 
         $emailData = [
             'order_number' => optional($conversation->order)->order_number,
-            'listing_title' => optional($conversation->listing)->card_model?->player?->name ?? 'Prodotto',
+            'listing_title' => optional($conversation->listing)->cardModel?->player?->name ?? 'Prodotto',
             'sender_name' => optional($message->sender)->name,
             'message_preview' => mb_strimwidth($message->body, 0, 120, '...'),
             'conversation_url' => config('app.url') . '/chat',
@@ -346,7 +346,7 @@ class ConversationController extends Controller
 
         $subject = $conversation->order 
             ? 'Nuovo messaggio sull\'ordine #' . $conversation->order->order_number
-            : 'Nuovo messaggio sul prodotto: ' . ($conversation->listing->card_model?->player?->name ?? 'Prodotto');
+            : 'Nuovo messaggio sul prodotto: ' . ($conversation->listing->cardModel?->player?->name ?? 'Prodotto');
 
         Mail::send('emails.new-message', $emailData, function ($m) use ($recipient, $recipientName, $subject) {
             $m->to($recipient, (string) $recipientName)
