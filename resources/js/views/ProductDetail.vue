@@ -296,7 +296,7 @@
             <!-- Add to Cart Button -->
             <button 
               @click="addToCart"
-              :disabled="isAddingToCart || !listing"
+              :disabled="isAddingToCart || !product.id"
               class="w-full bg-primary text-white py-3 px-6 rounded-lg font-futura-bold text-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span v-if="isAddingToCart">Aggiungendo...</span>
@@ -621,6 +621,32 @@ const updateThumbnailsScrollButtons = () => {
 }
 
 const addToCart = async () => {
+  // Se non c'è listing ma c'è product, crea un listing temporaneo
+  if (!listing.value && product.value.id) {
+    listing.value = {
+      id: product.value.listing_id || `listing_${product.value.id}`,
+      card_model_id: product.value.id,
+      seller_id: product.value.seller?.id || 1,
+      price: parseFloat(String(product.value.price || 0).replace(/€/g, '').replace(/,/g, '')) || 95,
+      quantity: product.value.quantity || 1,
+      condition: product.value.condition || 'LIGHT PLAYED',
+      description: product.value.description || 'Carta in ottime condizioni',
+      images: product.value.images || (product.value.image_url ? [product.value.image_url] : []),
+      available: true,
+      seller: product.value.seller || {
+        id: 1,
+        name: 'Venditore',
+        email: 'vendor@example.com'
+      },
+      card_model: {
+        id: product.value.id,
+        name: product.value.name,
+        category: product.value.category
+      },
+      shipping_zones: []
+    }
+  }
+  
   if (!listing.value) {
     addToCartMessage.value = 'Dati del prodotto non disponibili'
     return
