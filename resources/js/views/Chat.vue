@@ -175,13 +175,44 @@ const getConversationTitle = (conversation) => {
 }
 
 const getProductName = (conversation) => {
-  if (conversation.listing?.cardModel?.player?.name) {
-    return conversation.listing.cardModel.player.name
-  } else if (conversation.order?.order_number) {
+  // Costruisci un nome descrittivo per il prodotto
+  if (conversation.listing?.cardModel) {
+    const cardModel = conversation.listing.cardModel
+    const parts = []
+    
+    if (cardModel.player?.name) {
+      parts.push(cardModel.player.name)
+    }
+    
+    if (cardModel.team?.name) {
+      parts.push(cardModel.team.name)
+    }
+    
+    if (cardModel.cardSet?.name) {
+      parts.push(cardModel.cardSet.name)
+    }
+    
+    if (cardModel.year) {
+      parts.push(cardModel.year)
+    }
+    
+    if (parts.length > 0) {
+      return parts.join(' - ')
+    }
+    
+    // Fallback al nome del player se disponibile
+    if (cardModel.player?.name) {
+      return cardModel.player.name
+    }
+  }
+  
+  // Per conversazioni basate su ordini
+  if (conversation.order?.order_number) {
     return `Ordine #${conversation.order.order_number}`
   } else if (conversation.order?.id) {
     return `Ordine #${conversation.order.id}`
   }
+  
   return 'Prodotto'
 }
 

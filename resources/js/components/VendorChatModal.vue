@@ -171,12 +171,16 @@ const formatTime = (timestamp) => {
 }
 
 const loadMessages = async () => {
-  if (!conversationId.value) return
+  if (!conversationId.value) {
+    console.log('No conversationId, cannot load messages')
+    return
+  }
 
   isLoading.value = true
   error.value = ''
 
   try {
+    console.log('Fetching messages for conversation:', conversationId.value)
     const response = await fetch(`/api/conversations/${conversationId.value}/messages`, {
       headers: {
         'Authorization': `Bearer ${authStore.token}`,
@@ -186,19 +190,25 @@ const loadMessages = async () => {
 
     if (response.ok) {
       const data = await response.json()
+      console.log('Messages response:', data)
       // La risposta è paginata, quindi i messaggi sono in data.data.data o data.data
       if (data.data?.data && Array.isArray(data.data.data)) {
         messages.value = data.data.data
+        console.log('Loaded messages (from data.data.data):', messages.value.length)
       } else if (data.data && Array.isArray(data.data)) {
         messages.value = data.data
+        console.log('Loaded messages (from data.data):', messages.value.length)
       } else if (Array.isArray(data)) {
         messages.value = data
+        console.log('Loaded messages (from data):', messages.value.length)
       } else {
         messages.value = []
+        console.log('No messages found in response')
       }
       scrollToBottom()
     } else {
       const errorData = await response.json()
+      console.error('Error loading messages:', errorData)
       error.value = errorData.message || 'Errore nel caricamento dei messaggi'
     }
   } catch (err) {
@@ -249,12 +259,14 @@ const startConversation = async () => {
   // Se abbiamo già un conversationId (da props o da una sessione precedente), carica i messaggi
   if (props.conversationId) {
     conversationId.value = props.conversationId
+    console.log('Loading messages for conversation:', conversationId.value)
     await loadMessages()
     return
   }
 
   // Se abbiamo già un conversationId salvato per questo prodotto, usalo
   if (conversationId.value) {
+    console.log('Using existing conversationId:', conversationId.value)
     await loadMessages()
     return
   }
@@ -319,6 +331,7 @@ const scrollToBottom = () => {
 // Watch for modal open
 watch(() => props.isOpen, (newValue) => {
   if (newValue) {
+    console.log('Modal opened, conversationId from props:', props.conversationId, 'productId:', props.productId)
     // Reset solo il messaggio corrente, non la conversazione
     newMessage.value = ''
     error.value = ''
@@ -327,6 +340,15 @@ watch(() => props.isOpen, (newValue) => {
     // Quando si chiude, resetta tutto
     resetModal()
     conversationId.value = null
+  }
+})
+
+// Watch per conversationId nelle props (quando cambia)
+watch(() => props.conversationId, (newId) => {
+  if (newId && props.isOpen) {
+    console.log('ConversationId prop changed:', newId)
+    conversationId.value = newId
+    loadMessages()
   }
 })
 
