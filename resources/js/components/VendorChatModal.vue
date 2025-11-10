@@ -102,7 +102,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick, Teleport } from 'vue'
+import { ref, computed, onMounted, watch, nextTick, onUnmounted, Teleport } from 'vue'
 import { useAuthStore } from '../stores/auth.js'
 
 // Props
@@ -351,6 +351,28 @@ const scrollToBottom = () => {
   })
 }
 
+// Polling per aggiornare i messaggi ogni 3 secondi quando il modal è aperto
+let pollingInterval = null
+
+const startPolling = () => {
+  if (pollingInterval) {
+    clearInterval(pollingInterval)
+  }
+  pollingInterval = setInterval(() => {
+    if (conversationId.value && !isSending.value && !isLoading.value) {
+      console.log('Polling: reloading messages...')
+      loadMessages()
+    }
+  }, 3000) // Ogni 3 secondi
+}
+
+const stopPolling = () => {
+  if (pollingInterval) {
+    clearInterval(pollingInterval)
+    pollingInterval = null
+  }
+}
+
 // Watch for modal open
 watch(() => props.isOpen, (newValue) => {
   console.log('Modal isOpen changed:', newValue, 'conversationId:', props.conversationId, 'productId:', props.productId)
@@ -359,14 +381,27 @@ watch(() => props.isOpen, (newValue) => {
     // Reset solo il messaggio corrente, non la conversazione
     newMessage.value = ''
     error.value = ''
-    // Forza il reset del conversationId locale se abbiamo uno nuovo dalle props
+    // Se abbiamo un conversationId dalle props, usalo direttamente
     if (props.conversationId) {
-      conversationId.value = null
+      console.log('Setting conversationId from props:', props.conversationId)
+      conversationId.value = props.conversationId
+      loadMessages().then(() => {
+        // Avvia il polling dopo che i messaggi sono stati caricati
+        startPolling()
+      })
+    } else {
+      // Altrimenti, avvia una nuova conversazione
+      startConversation().then(() => {
+        // Avvia il polling dopo che la conversazione è stata creata
+        if (conversationId.value) {
+          startPolling()
+        }
+      })
     }
-    startConversation()
   } else {
-    // Quando si chiude, resetta tutto
+    // Quando si chiude, ferma il polling e resetta tutto
     console.log('Modal closed, resetting')
+    stopPolling()
     resetModal()
     conversationId.value = null
   }
@@ -377,7 +412,9 @@ watch(() => props.conversationId, (newId) => {
   if (newId && props.isOpen) {
     console.log('ConversationId prop changed:', newId)
     conversationId.value = newId
-    loadMessages()
+    loadMessages().then(() => {
+      startPolling()
+    })
   }
 })
 
@@ -385,4 +422,9 @@ watch(() => props.conversationId, (newId) => {
 watch(messages, () => {
   scrollToBottom()
 }, { deep: true })
+
+// Cleanup quando il componente viene smontato
+onUnmounted(() => {
+  stopPolling()
+})
 </script>

@@ -200,10 +200,26 @@ class ConversationController extends Controller
             return response()->json(['success' => false, 'message' => 'Non autorizzato'], 403);
         }
 
+        $totalMessages = $conversation->messages()->count();
+        $visibleMessages = $conversation->messages()->where('is_hidden', false)->count();
+        
+        \Log::info('Loading messages', [
+            'conversation_id' => $conversation->id,
+            'user_id' => $user->id,
+            'total_messages' => $totalMessages,
+            'visible_messages' => $visibleMessages,
+        ]);
+
         $messages = $conversation->messages()
             ->where('is_hidden', false)
             ->orderBy('created_at', 'asc')
             ->paginate($request->integer('per_page', 20));
+
+        \Log::info('Messages loaded', [
+            'conversation_id' => $conversation->id,
+            'messages_count' => $messages->count(),
+            'sender_ids' => $messages->pluck('sender_id')->toArray(),
+        ]);
 
         // Mark as read for viewer
         $this->markAsRead($conversation, $user->id);
@@ -259,10 +275,25 @@ class ConversationController extends Controller
             return response()->json(['success' => false, 'message' => 'Conversazione chiusa'], 400);
         }
 
+        \Log::info('Sending message', [
+            'conversation_id' => $conversation->id,
+            'user_id' => $user->id,
+            'buyer_id' => $conversation->buyer_id,
+            'seller_id' => $conversation->seller_id,
+            'body_length' => strlen($request->get('body')),
+        ]);
+
         $message = OrderMessage::create([
             'conversation_id' => $conversation->id,
             'sender_id' => $user->id,
             'body' => $request->get('body'),
+        ]);
+
+        \Log::info('Message created', [
+            'message_id' => $message->id,
+            'conversation_id' => $message->conversation_id,
+            'sender_id' => $message->sender_id,
+            'is_hidden' => $message->is_hidden,
         ]);
 
         // Incrementa contatori rate limiting
