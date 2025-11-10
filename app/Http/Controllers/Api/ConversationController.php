@@ -33,12 +33,19 @@ class ConversationController extends Controller
             ])
             ->orderByDesc('last_message_at');
 
+        // Filtra le conversazioni in base al ruolo dell'utente
         if ($user->role === 'buyer') {
             $query->where('buyer_id', $user->id);
         } elseif ($user->role === 'seller') {
             $query->where('seller_id', $user->id);
-        } else {
+        } elseif ($user->role === 'admin') {
             // admin: può vedere tutto, opzionale filtri
+        } else {
+            // Per altri ruoli o utenti senza ruolo, mostra le conversazioni dove l'utente è buyer o seller
+            $query->where(function($q) use ($user) {
+                $q->where('buyer_id', $user->id)
+                  ->orWhere('seller_id', $user->id);
+            });
         }
 
         if ($request->filled('order_id')) {
@@ -50,9 +57,19 @@ class ConversationController extends Controller
         }
 
         $perPage = $request->integer('per_page', 15);
+        $conversations = $query->paginate($perPage);
+        
+        \Log::info('Conversations API called', [
+            'user_id' => $user->id,
+            'user_role' => $user->role,
+            'total_conversations' => $conversations->total(),
+            'conversations_count' => $conversations->count(),
+            'conversation_ids' => $conversations->pluck('id')->toArray(),
+        ]);
+        
         return response()->json([
             'success' => true,
-            'data' => $query->paginate($perPage)
+            'data' => $conversations
         ]);
     }
 

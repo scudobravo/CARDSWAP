@@ -138,12 +138,37 @@ const loadConversations = async () => {
 
     if (response.ok) {
       const data = await response.json()
-      conversations.value = data.data?.data || data.data || []
+      console.log('Conversations API response:', JSON.stringify(data, null, 2))
+      console.log('Response structure:', {
+        hasData: !!data.data,
+        hasDataData: !!(data.data?.data),
+        dataType: Array.isArray(data.data) ? 'array' : typeof data.data,
+        dataDataType: Array.isArray(data.data?.data) ? 'array' : typeof data.data?.data,
+      })
+      
+      // La risposta paginata ha questa struttura: { success: true, data: { data: [...], current_page: 1, ... } }
+      if (data.data?.data && Array.isArray(data.data.data)) {
+        conversations.value = data.data.data
+        console.log('Loaded conversations from data.data.data:', conversations.value.length)
+      } else if (Array.isArray(data.data)) {
+        conversations.value = data.data
+        console.log('Loaded conversations from data.data:', conversations.value.length)
+      } else if (Array.isArray(data)) {
+        conversations.value = data
+        console.log('Loaded conversations from data:', conversations.value.length)
+      } else {
+        console.error('Unexpected response structure:', data)
+        conversations.value = []
+      }
+      
+      console.log('Final conversations count:', conversations.value.length)
     } else if (response.status === 401) {
       error.value = 'Sessione scaduta. Effettua il login.'
+      console.error('Unauthorized - session expired')
       authStore.logout()
     } else {
-      const errorData = await response.json()
+      const errorData = await response.json().catch(() => ({ message: 'Errore sconosciuto' }))
+      console.error('Error loading conversations:', response.status, errorData)
       error.value = errorData.message || 'Errore nel caricamento delle conversazioni'
     }
   } catch (err) {
