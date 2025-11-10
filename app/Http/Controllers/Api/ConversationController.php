@@ -54,23 +54,19 @@ class ConversationController extends Controller
             ])
             ->orderByDesc('last_message_at');
 
-        // Filtra le conversazioni in base al ruolo dell'utente
-        if ($user->role === 'buyer') {
-            $query->where('buyer_id', $user->id);
-            \Log::info('Applied buyer filter', ['buyer_id' => $user->id]);
-        } elseif ($user->role === 'seller') {
-            $query->where('seller_id', $user->id);
-            \Log::info('Applied seller filter', ['seller_id' => $user->id]);
-        } elseif ($user->role === 'admin') {
+        // Filtra le conversazioni: mostra quelle dove l'utente è buyer O seller
+        // Il ruolo generale (buyer/seller) indica solo se può comprare/vendere in generale,
+        // ma in una conversazione specifica può essere buyer o seller
+        if ($user->role === 'admin') {
             // admin: può vedere tutto, opzionale filtri
             \Log::info('Admin user - showing all conversations');
         } else {
-            // Per altri ruoli o utenti senza ruolo, mostra le conversazioni dove l'utente è buyer o seller
+            // Per tutti gli utenti (buyer, seller, ecc.), mostra le conversazioni dove l'utente è buyer o seller
             $query->where(function($q) use ($user) {
                 $q->where('buyer_id', $user->id)
                   ->orWhere('seller_id', $user->id);
             });
-            \Log::info('Applied general filter', ['user_id' => $user->id]);
+            \Log::info('Applied user filter (buyer_id OR seller_id)', ['user_id' => $user->id, 'user_role' => $user->role]);
         }
 
         if ($request->filled('order_id')) {
