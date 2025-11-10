@@ -46,7 +46,7 @@
                 <div class="flex items-center space-x-3 mb-2">
                   <div class="flex-shrink-0 relative">
                     <div class="h-10 w-10 rounded-full bg-primary text-white flex items-center justify-center font-futura-bold">
-                      {{ getInitials(conversation.seller?.name || conversation.buyer?.name || 'U') }}
+                      {{ getInitials(getOtherUserName(conversation)) }}
                     </div>
                     <!-- Badge messaggi non letti (stile WhatsApp) -->
                     <span 
@@ -62,7 +62,7 @@
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center justify-between">
                       <h3 class="text-lg font-futura-bold text-primary truncate">
-                        {{ authStore.user?.role === 'buyer' ? conversation.seller?.name : conversation.buyer?.name }}
+                        {{ getOtherUserName(conversation) }}
                       </h3>
                     </div>
                     <p class="text-sm text-gray-600 font-gill-sans truncate">
@@ -100,8 +100,8 @@
       :is-open="showChatModal"
       :conversation-id="selectedConversation.id"
       :product-id="selectedConversation.listing?.id || null"
-      :vendor-id="authStore.user?.role === 'buyer' ? selectedConversation.seller_id : selectedConversation.buyer_id"
-      :vendor-name="authStore.user?.role === 'buyer' ? selectedConversation.seller?.name : selectedConversation.buyer?.name"
+      :vendor-id="getOtherUserId(selectedConversation)"
+      :vendor-name="getOtherUserName(selectedConversation)"
       :product-name="getProductName(selectedConversation)"
       @close="closeChatModal"
       @messages-updated="loadConversations"
@@ -175,6 +175,38 @@ const getInitials = (name) => {
     return names[0].charAt(0).toUpperCase()
   }
   return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase()
+}
+
+const getOtherUserName = (conversation) => {
+  const userId = authStore.user?.id
+  if (!userId) return 'Utente'
+  
+  // Se l'utente loggato è il buyer, mostra il nome del seller
+  if (userId === conversation.buyer_id) {
+    return conversation.seller?.name || 'Venditore'
+  }
+  // Se l'utente loggato è il seller, mostra il nome del buyer
+  if (userId === conversation.seller_id) {
+    return conversation.buyer?.name || 'Acquirente'
+  }
+  
+  return 'Utente'
+}
+
+const getOtherUserId = (conversation) => {
+  const userId = authStore.user?.id
+  if (!userId) return null
+  
+  // Se l'utente loggato è il buyer, restituisce l'ID del seller
+  if (userId === conversation.buyer_id) {
+    return conversation.seller_id
+  }
+  // Se l'utente loggato è il seller, restituisce l'ID del buyer
+  if (userId === conversation.seller_id) {
+    return conversation.buyer_id
+  }
+  
+  return null
 }
 
 const getConversationTitle = (conversation) => {
