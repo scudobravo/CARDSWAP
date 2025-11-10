@@ -152,7 +152,7 @@
                     {{ getStatusLabel(listing.status) }}
                   </span>
                   <h4 class="text-sm font-medium text-gray-900 truncate">
-                    {{ listing.card_model?.name }}
+                    {{ formatCardName(listing.card_model?.name) }}
                   </h4>
                   <p class="text-xs md:text-sm text-gray-500 truncate">
                     {{ listing.card_model?.set_name }} {{ listing.card_model?.year }}
@@ -503,6 +503,14 @@ const formatPrice = (price) => {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(price)
+}
+
+const formatCardName = (name) => {
+  if (!name) return ''
+  // Sostituisce # seguito da numeri con / seguito dai numeri
+  // Esempio: "Fabio Cannavaro #75" -> "Fabio Cannavaro /75"
+  // Gestisce anche spazi: "# 75" -> "/75"
+  return name.replace(/#\s*(\d+)/g, '/$1')
 }
 
 const getStatusClass = (status) => {
