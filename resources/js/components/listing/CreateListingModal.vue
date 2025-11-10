@@ -62,19 +62,40 @@
               </div>
               
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-                <!-- Single (che porta a single e bulk) -->
+                <!-- Single Card -->
                 <div 
                   class="relative border-2 rounded-lg p-6 cursor-pointer transition-all duration-200 hover:border-primary hover:shadow-lg"
-                  :class="{ 'border-primary bg-primary/5': selectedMode === 'single' || selectedMode === 'bulk' }"
+                  :class="{ 'border-primary bg-primary/5': selectedMode === 'single' }"
                   @click="selectMode('single')"
                 >
                   <div class="text-center">
-                    <h5 class="text-2xl font-black text-gray-900 mb-3">Single</h5>
+                    <h5 class="text-2xl font-black text-gray-900 mb-3">Single Card</h5>
                     <p class="text-gray-600 text-sm">
-                      Per carte singole o inserzioni bulk. Upload immagini, applica filtri dettagliati, anteprima e in un click
+                      Perfect for selling unique or special cards. Upload images, apply detailed filters, preview, and in just a click
                     </p>
                   </div>
-                  <div v-if="selectedMode === 'single' || selectedMode === 'bulk'" class="absolute top-2 right-2">
+                  <div v-if="selectedMode === 'single'" class="absolute top-2 right-2">
+                    <div class="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                      <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Bulk Cards -->
+                <div 
+                  class="relative border-2 rounded-lg p-6 cursor-pointer transition-all duration-200 hover:border-primary hover:shadow-lg"
+                  :class="{ 'border-primary bg-primary/5': selectedMode === 'bulk' }"
+                  @click="selectMode('bulk')"
+                >
+                  <div class="text-center">
+                    <h5 class="text-2xl font-black text-gray-900 mb-3">Bulk Cards</h5>
+                    <p class="text-gray-600 text-sm">
+                      Ideal for card lots. Apply filters, adjust prices and quantities, and stay in full control with an editable card table.
+                    </p>
+                  </div>
+                  <div v-if="selectedMode === 'bulk'" class="absolute top-2 right-2">
                     <div class="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
                       <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
@@ -175,38 +196,6 @@
               @card-picked="selectCardModel"
             />
 
-          </div>
-
-          <!-- Step 1: Scelta tra Single e Bulk (quando si seleziona "Single") -->
-          <div v-if="currentStep === 1 && selectedMode === 'single' && !selectedCardModel" class="space-y-6">
-            <div class="text-center mb-6">
-              <h4 class="text-xl font-semibold text-gray-900 mb-2">Scegli il tipo di inserzione</h4>
-              <p class="text-gray-600">Vuoi creare una carta singola o un'inserzione bulk?</p>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div 
-                class="relative border-2 rounded-lg p-6 cursor-pointer transition-all duration-200 hover:border-primary hover:shadow-lg"
-                :class="{ 'border-primary bg-primary/5': selectedMode === 'single' && selectedCardModel }"
-                @click="selectMode('single')"
-              >
-                <div class="text-center">
-                  <h5 class="text-xl font-black text-gray-900 mb-2">Single Card</h5>
-                  <p class="text-gray-600 text-sm">Per una singola carta</p>
-                </div>
-              </div>
-              
-              <div 
-                class="relative border-2 rounded-lg p-6 cursor-pointer transition-all duration-200 hover:border-primary hover:shadow-lg"
-                :class="{ 'border-primary bg-primary/5': selectedMode === 'bulk' }"
-                @click="selectMode('bulk')"
-              >
-                <div class="text-center">
-                  <h5 class="text-xl font-black text-gray-900 mb-2">Bulk Cards</h5>
-                  <p class="text-gray-600 text-sm">Per più carte insieme</p>
-                </div>
-              </div>
-            </div>
           </div>
 
           <!-- Step 1: Selezione Modelli Carta (Bulk) -->
@@ -1894,6 +1883,9 @@ const createSingleListing = async () => {
 const createNewSingleListing = async () => {
   const formData = new FormData()
   
+  // Tipo di inserzione
+  formData.append('listing_type', 'single')
+  
   // Add card_model_id (required) – usa selezione corrente o ID salvato
   const cmId = selectedCardModel.value?.id || listingData.value.card_model_id
   if (cmId) {
@@ -2107,6 +2099,7 @@ const createBulkListings = async () => {
       language: listing.language
     })
     
+    formData.append('listing_type', 'bulk')
     formData.append('card_model_id', listing.card_model_id)
     formData.append('price', listing.price)
     formData.append('quantity', listing.quantity || 1)
@@ -2159,20 +2152,36 @@ const createBulkListings = async () => {
     })
     
       try {
-        const response = await axios.post('/api/listings', formData, {
+        const response = await fetch('/api/listings', {
+          method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'multipart/form-data'
-          }
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+          },
+          body: formData
         })
         
-        createdListings.push(response.data.data)
+        if (!response.ok) {
+          let errorData = {}
+          try {
+            errorData = await response.json()
+          } catch (e) {
+            errorData = { message: 'Errore nella creazione inserzione' }
+          }
+          const error = new Error(errorData.message || 'Errore nella creazione inserzione')
+          error.response = { data: errorData }
+          throw error
+        }
+        
+        const data = await response.json()
+        createdListings.push(data.data)
         console.log(`✅ Inserzione ${i + 1}/${bulkListings.value.length} creata con successo`)
     } catch (error) {
       console.error(`❌ Errore nella creazione inserzione ${i + 1}:`, error)
       
       // Gestione specifica per errore KYC
-      if (error.response && error.response.data && error.response.data.requires_kyc) {
+      const errorData = error.response?.data || (error.message ? { message: error.message } : {})
+      if (errorData.requires_kyc) {
         alert(`⚠️ Verifica identità richiesta!\n\nPer creare inserzioni devi completare la verifica della tua identità.\n\nClicca OK per essere reindirizzato alla pagina di verifica.`)
         // Reindirizza alla pagina KYC
         window.location.href = '/dashboard/kyc'
@@ -2182,6 +2191,8 @@ const createBulkListings = async () => {
       if (error.response && error.response.data && error.response.data.errors) {
         console.error(`❌ Dettagli errore:`, error.response.data.errors)
         alert(`Errore nella creazione inserzione ${i + 1}: ${JSON.stringify(error.response.data.errors)}`)
+      } else if (errorData.message) {
+        alert(`Errore nella creazione inserzione ${i + 1}: ${errorData.message}`)
       } else {
         alert(`Errore nella creazione inserzione ${i + 1}`)
       }
