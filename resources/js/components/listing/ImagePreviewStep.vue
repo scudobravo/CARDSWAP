@@ -94,7 +94,7 @@
               <!-- Condition (Condizione carta) -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Condizione carta</label>
-                <select v-model="additionalDetails.condition" @change="syncAutographCondition" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm">
+                <select v-model="additionalDetails.condition" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm">
                   <option value="">Seleziona condizione</option>
                   <option value="mint">Mint</option>
                   <option value="near_mint">Near Mint</option>
@@ -388,13 +388,6 @@ const additionalDetails = ref({
   description: '',
   notes: ''
 })
-
-// Sincronizza Condizione autografo con Condizione carta
-const syncAutographCondition = () => {
-  if (additionalDetails.value.condition) {
-    additionalDetails.value.autographCondition = additionalDetails.value.condition
-  }
-}
 
 // Flag per evitare loop infiniti
 const isInitializing = ref(false)
