@@ -62,19 +62,19 @@
               </div>
               
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-                <!-- Singola Carta -->
+                <!-- Single (che porta a single e bulk) -->
                 <div 
                   class="relative border-2 rounded-lg p-6 cursor-pointer transition-all duration-200 hover:border-primary hover:shadow-lg"
-                  :class="{ 'border-primary bg-primary/5': selectedMode === 'single' }"
+                  :class="{ 'border-primary bg-primary/5': selectedMode === 'single' || selectedMode === 'bulk' }"
                   @click="selectMode('single')"
                 >
                   <div class="text-center">
-                    <h5 class="text-2xl font-black text-gray-900 mb-3">Single Card</h5>
+                    <h5 class="text-2xl font-black text-gray-900 mb-3">Single</h5>
                     <p class="text-gray-600 text-sm">
-                      Perfect for selling unique or special cards. Upload images, apply detailed filters, preview, and in just a click
+                      Per carte singole o inserzioni bulk. Upload immagini, applica filtri dettagliati, anteprima e in un click
                     </p>
                   </div>
-                  <div v-if="selectedMode === 'single'" class="absolute top-2 right-2">
+                  <div v-if="selectedMode === 'single' || selectedMode === 'bulk'" class="absolute top-2 right-2">
                     <div class="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
                       <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
@@ -83,19 +83,61 @@
                   </div>
                 </div>
 
-                <!-- Bulk Cards -->
+                <!-- Sealed Pack -->
                 <div 
                   class="relative border-2 rounded-lg p-6 cursor-pointer transition-all duration-200 hover:border-primary hover:shadow-lg"
-                  :class="{ 'border-primary bg-primary/5': selectedMode === 'bulk' }"
-                  @click="selectMode('bulk')"
+                  :class="{ 'border-primary bg-primary/5': selectedMode === 'sealed-pack' }"
+                  @click="selectMode('sealed-pack')"
                 >
                   <div class="text-center">
-                    <h5 class="text-2xl font-black text-gray-900 mb-3">Bulk Cards</h5>
+                    <h5 class="text-2xl font-black text-gray-900 mb-3">Sealed Pack</h5>
                     <p class="text-gray-600 text-sm">
-                      Ideal for card lots. Apply filters, adjust prices and quantities, and stay in full control with an editable card table.
+                      Per buste sigillate. Seleziona categoria, set, anno e brand, poi aggiungi foto, quantità e prezzo
                     </p>
                   </div>
-                  <div v-if="selectedMode === 'bulk'" class="absolute top-2 right-2">
+                  <div v-if="selectedMode === 'sealed-pack'" class="absolute top-2 right-2">
+                    <div class="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                      <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Sealed Box -->
+                <div 
+                  class="relative border-2 rounded-lg p-6 cursor-pointer transition-all duration-200 hover:border-primary hover:shadow-lg"
+                  :class="{ 'border-primary bg-primary/5': selectedMode === 'sealed-box' }"
+                  @click="selectMode('sealed-box')"
+                >
+                  <div class="text-center">
+                    <h5 class="text-2xl font-black text-gray-900 mb-3">Sealed Box</h5>
+                    <p class="text-gray-600 text-sm">
+                      Per scatole sigillate. Seleziona categoria, set, anno e brand, poi aggiungi foto, quantità e prezzo
+                    </p>
+                  </div>
+                  <div v-if="selectedMode === 'sealed-box'" class="absolute top-2 right-2">
+                    <div class="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                      <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Lot -->
+                <div 
+                  class="relative border-2 rounded-lg p-6 cursor-pointer transition-all duration-200 hover:border-primary hover:shadow-lg"
+                  :class="{ 'border-primary bg-primary/5': selectedMode === 'lot' }"
+                  @click="selectMode('lot')"
+                >
+                  <div class="text-center">
+                    <h5 class="text-2xl font-black text-gray-900 mb-3">Lot</h5>
+                    <p class="text-gray-600 text-sm">
+                      Per lotti di carte. Seleziona categoria, inserisci titolo e descrizione, poi aggiungi foto e prezzo
+                    </p>
+                  </div>
+                  <div v-if="selectedMode === 'lot'" class="absolute top-2 right-2">
                     <div class="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
                       <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
@@ -133,6 +175,38 @@
               @card-picked="selectCardModel"
             />
 
+          </div>
+
+          <!-- Step 1: Scelta tra Single e Bulk (quando si seleziona "Single") -->
+          <div v-if="currentStep === 1 && selectedMode === 'single' && !selectedCardModel" class="space-y-6">
+            <div class="text-center mb-6">
+              <h4 class="text-xl font-semibold text-gray-900 mb-2">Scegli il tipo di inserzione</h4>
+              <p class="text-gray-600">Vuoi creare una carta singola o un'inserzione bulk?</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div 
+                class="relative border-2 rounded-lg p-6 cursor-pointer transition-all duration-200 hover:border-primary hover:shadow-lg"
+                :class="{ 'border-primary bg-primary/5': selectedMode === 'single' && selectedCardModel }"
+                @click="selectMode('single')"
+              >
+                <div class="text-center">
+                  <h5 class="text-xl font-black text-gray-900 mb-2">Single Card</h5>
+                  <p class="text-gray-600 text-sm">Per una singola carta</p>
+                </div>
+              </div>
+              
+              <div 
+                class="relative border-2 rounded-lg p-6 cursor-pointer transition-all duration-200 hover:border-primary hover:shadow-lg"
+                :class="{ 'border-primary bg-primary/5': selectedMode === 'bulk' }"
+                @click="selectMode('bulk')"
+              >
+                <div class="text-center">
+                  <h5 class="text-xl font-black text-gray-900 mb-2">Bulk Cards</h5>
+                  <p class="text-gray-600 text-sm">Per più carte insieme</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Step 1: Selezione Modelli Carta (Bulk) -->
@@ -185,6 +259,104 @@
             </div>
           </div>
 
+          <!-- Step 1: Filtri per Sealed Pack -->
+          <div v-if="currentStep === 1 && selectedMode === 'sealed-pack'" class="space-y-6">
+            <div class="text-center mb-6">
+              <h4 class="text-xl font-semibold text-gray-900 mb-2">Sealed Pack</h4>
+              <p class="text-gray-600">Seleziona i filtri per la tua busta sigillata</p>
+            </div>
+            
+            <!-- Selezione Categoria -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Categoria *</label>
+              <select v-model="selectedCategory" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm/6">
+                <option value="football">Calcio</option>
+                <option value="basketball">Basketball</option>
+                <option value="pokemon">Pokemon</option>
+              </select>
+            </div>
+
+            <!-- Chained Filters semplificati (solo Set, Year, Brand) -->
+            <ChainedFilters 
+              :category="selectedCategory"
+              :show-player="false"
+              :show-number="false"
+              :show-price="false"
+              :show-search-button="false"
+              :initial-filters="filters"
+              @filters-changed="handleFiltersChanged"
+            />
+          </div>
+
+          <!-- Step 1: Filtri per Sealed Box -->
+          <div v-if="currentStep === 1 && selectedMode === 'sealed-box'" class="space-y-6">
+            <div class="text-center mb-6">
+              <h4 class="text-xl font-semibold text-gray-900 mb-2">Sealed Box</h4>
+              <p class="text-gray-600">Seleziona i filtri per la tua scatola sigillata</p>
+            </div>
+            
+            <!-- Selezione Categoria -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Categoria *</label>
+              <select v-model="selectedCategory" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm/6">
+                <option value="football">Calcio</option>
+                <option value="basketball">Basketball</option>
+                <option value="pokemon">Pokemon</option>
+              </select>
+            </div>
+
+            <!-- Chained Filters semplificati (solo Set, Year, Brand) -->
+            <ChainedFilters 
+              :category="selectedCategory"
+              :show-player="false"
+              :show-number="false"
+              :show-price="false"
+              :show-search-button="false"
+              :initial-filters="filters"
+              @filters-changed="handleFiltersChanged"
+            />
+          </div>
+
+          <!-- Step 1: Form per Lot -->
+          <div v-if="currentStep === 1 && selectedMode === 'lot'" class="space-y-6">
+            <div class="text-center mb-6">
+              <h4 class="text-xl font-semibold text-gray-900 mb-2">Lot</h4>
+              <p class="text-gray-600">Inserisci i dettagli del tuo lotto</p>
+            </div>
+            
+            <!-- Selezione Categoria -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Categoria *</label>
+              <select v-model="selectedCategory" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm/6">
+                <option value="football">Calcio</option>
+                <option value="basketball">Basketball</option>
+                <option value="pokemon">Pokemon</option>
+              </select>
+            </div>
+
+            <!-- Titolo -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Titolo *</label>
+              <input 
+                v-model="listingData.title"
+                type="text"
+                placeholder="Es: Lot di 50 carte Pokemon"
+                class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
+              />
+            </div>
+
+            <!-- Descrizione -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Descrizione *</label>
+              <textarea 
+                v-model="listingData.description"
+                rows="4"
+                placeholder="Descrivi il contenuto del lotto..."
+                class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
+              ></textarea>
+            </div>
+          </div>
+
           <!-- Step 2: Preview e Immagini (Singola) -->
           <div v-if="currentStep === 2 && selectedMode === 'single'" class="space-y-6">
             <ImagePreviewStep
@@ -196,6 +368,183 @@
             />
           </div>
 
+
+          <!-- Step 2: Foto, Quantità e Prezzo per Sealed Pack -->
+          <div v-if="currentStep === 2 && selectedMode === 'sealed-pack'" class="space-y-6">
+            <div class="text-center mb-6">
+              <h4 class="text-xl font-semibold text-gray-900 mb-2">Foto, Quantità e Prezzo</h4>
+            </div>
+            
+            <!-- Upload Foto -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Foto *</label>
+              <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-primary">
+                <div class="space-y-1 text-center">
+                  <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-4h-12m-2-5a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  <div class="flex text-sm text-gray-600">
+                    <label class="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary-dark focus-within:outline-none">
+                      <span>Carica una foto</span>
+                      <input type="file" class="sr-only" accept="image/*" @change="handleSealedImageUpload($event, 'sealed-pack')" multiple />
+                    </label>
+                    <p class="pl-1">o trascina e rilascia</p>
+                  </div>
+                  <p class="text-xs text-gray-500">PNG, JPG, GIF fino a 10MB</p>
+                </div>
+              </div>
+              <div v-if="cardImages.filter(img => img !== null).length > 0" class="mt-4 grid grid-cols-4 gap-4">
+                <div v-for="(img, index) in cardImages" :key="index" class="relative">
+                  <img v-if="img" :src="img.preview || img" alt="Preview" class="w-full h-32 object-cover rounded-md" />
+                  <button v-if="img" @click="removeImage(index)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">×</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Prezzo e Quantità -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Prezzo (€) *</label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span class="text-gray-500 text-sm">€</span>
+                  </div>
+                  <input 
+                    v-model="listingData.price"
+                    type="number" 
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    class="block w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Quantità *</label>
+                <input 
+                  v-model.number="listingData.quantity"
+                  type="number" 
+                  min="1"
+                  placeholder="1"
+                  class="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Foto, Quantità e Prezzo per Sealed Box -->
+          <div v-if="currentStep === 2 && selectedMode === 'sealed-box'" class="space-y-6">
+            <div class="text-center mb-6">
+              <h4 class="text-xl font-semibold text-gray-900 mb-2">Foto, Quantità e Prezzo</h4>
+            </div>
+            
+            <!-- Upload Foto -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Foto *</label>
+              <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-primary">
+                <div class="space-y-1 text-center">
+                  <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-4h-12m-2-5a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  <div class="flex text-sm text-gray-600">
+                    <label class="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary-dark focus-within:outline-none">
+                      <span>Carica una foto</span>
+                      <input type="file" class="sr-only" accept="image/*" @change="handleSealedImageUpload($event, 'sealed-box')" multiple />
+                    </label>
+                    <p class="pl-1">o trascina e rilascia</p>
+                  </div>
+                  <p class="text-xs text-gray-500">PNG, JPG, GIF fino a 10MB</p>
+                </div>
+              </div>
+              <div v-if="cardImages.filter(img => img !== null).length > 0" class="mt-4 grid grid-cols-4 gap-4">
+                <div v-for="(img, index) in cardImages" :key="index" class="relative">
+                  <img v-if="img" :src="img.preview || img" alt="Preview" class="w-full h-32 object-cover rounded-md" />
+                  <button v-if="img" @click="removeImage(index)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">×</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Prezzo e Quantità -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Prezzo (€) *</label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span class="text-gray-500 text-sm">€</span>
+                  </div>
+                  <input 
+                    v-model="listingData.price"
+                    type="number" 
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    class="block w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Quantità *</label>
+                <input 
+                  v-model.number="listingData.quantity"
+                  type="number" 
+                  min="1"
+                  placeholder="1"
+                  class="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Foto e Prezzo per Lot -->
+          <div v-if="currentStep === 2 && selectedMode === 'lot'" class="space-y-6">
+            <div class="text-center mb-6">
+              <h4 class="text-xl font-semibold text-gray-900 mb-2">Foto e Prezzo</h4>
+            </div>
+            
+            <!-- Upload Foto -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Foto *</label>
+              <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-primary">
+                <div class="space-y-1 text-center">
+                  <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-4h-12m-2-5a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  <div class="flex text-sm text-gray-600">
+                    <label class="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary-dark focus-within:outline-none">
+                      <span>Carica una foto</span>
+                      <input type="file" class="sr-only" accept="image/*" @change="handleSealedImageUpload($event, 'lot')" multiple />
+                    </label>
+                    <p class="pl-1">o trascina e rilascia</p>
+                  </div>
+                  <p class="text-xs text-gray-500">PNG, JPG, GIF fino a 10MB</p>
+                </div>
+              </div>
+              <div v-if="cardImages.filter(img => img !== null).length > 0" class="mt-4 grid grid-cols-4 gap-4">
+                <div v-for="(img, index) in cardImages" :key="index" class="relative">
+                  <img v-if="img" :src="img.preview || img" alt="Preview" class="w-full h-32 object-cover rounded-md" />
+                  <button v-if="img" @click="removeImage(index)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">×</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Prezzo -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Prezzo (€) *</label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span class="text-gray-500 text-sm">€</span>
+                </div>
+                <input 
+                  v-model="listingData.price"
+                  type="number" 
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  class="block w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
 
           <!-- Step 2: Bulk Edit (con immagini integrate) -->
           <div v-if="currentStep === 2 && selectedMode === 'bulk'" class="space-y-6">
@@ -275,6 +624,74 @@
                 class="px-6 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {{ isSubmitting ? 'Salvataggio in corso...' : 'Crea Inserzioni Bulk' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 3: Zone di Spedizione (Sealed Pack, Sealed Box, Lot) -->
+          <div v-if="currentStep === 3 && (selectedMode === 'sealed-pack' || selectedMode === 'sealed-box' || selectedMode === 'lot')" class="space-y-6">
+            <div class="text-center">
+              <h4 class="text-xl font-semibold text-gray-900 mb-2">Zone di Spedizione</h4>
+              <p class="text-gray-600">Seleziona le zone dove vuoi spedire</p>
+              <div class="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p class="text-sm text-yellow-800">
+                  <strong>⚠️ Obbligatorio:</strong> Devi selezionare almeno una zona di spedizione per pubblicare l'inserzione
+                </p>
+              </div>
+            </div>
+            
+            <div class="space-y-4">
+              <div 
+                v-for="zone in shippingZones" 
+                :key="zone.id"
+                class="border rounded-lg p-4 transition-all duration-200 hover:shadow-md"
+                :class="{
+                  'border-primary bg-primary/5': selectedShippingZones.includes(zone.id),
+                  'border-gray-300': !selectedShippingZones.includes(zone.id)
+                }"
+              >
+                <label class="flex items-start space-x-3 cursor-pointer">
+                  <input 
+                    v-model="selectedShippingZones"
+                    :value="zone.id"
+                    type="checkbox"
+                    class="h-5 w-5 text-primary focus:ring-primary border-gray-300 rounded mt-1"
+                  />
+                  <div class="flex-1">
+                    <div class="flex items-center justify-between">
+                      <h6 class="font-medium text-gray-900">{{ zone.name }}</h6>
+                      <span v-if="zone.delivery_days_min || zone.delivery_days_max" class="text-sm text-gray-500">
+                        {{ zone.delivery_days_min ?? '?' }}-{{ zone.delivery_days_max ?? '?' }} giorni
+                      </span>
+                      <span v-else class="text-sm text-gray-500">Tempi variabili</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-1">{{ zone.description }}</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+            
+            <!-- Validazione zone di spedizione -->
+            <div v-if="selectedShippingZones.length === 0" class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p class="text-sm text-red-800">
+                <strong>⚠️ Attenzione:</strong> Devi selezionare almeno una zona di spedizione per procedere
+              </p>
+            </div>
+            
+            <!-- Pulsanti -->
+            <div class="mt-6 flex items-center justify-between">
+              <button 
+                @click="previousStep"
+                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+              >
+                Indietro
+              </button>
+              <button
+                @click="createListing"
+                :disabled="selectedShippingZones.length === 0 || isSubmitting"
+                class="px-6 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {{ isSubmitting ? 'Salvataggio in corso...' : 'Crea Inserzione' }}
               </button>
             </div>
           </div>
@@ -562,9 +979,12 @@ const filters = ref({
 const totalSteps = computed(() => {
   if (selectedMode.value === 'single') {
     return 5 // Step 0 (selezione modalità), step 1 (selezione carta), step 2 (immagini + dettagli), step 3 (zone spedizione), step 4 (anteprima)
-  } else {
+  } else if (selectedMode.value === 'bulk') {
     return 4 // Step 0 (selezione modalità), step 1 (selezione carte), step 2 (dettagli + immagini), step 3 (zone spedizione)
+  } else if (selectedMode.value === 'sealed-pack' || selectedMode.value === 'sealed-box' || selectedMode.value === 'lot') {
+    return 3 // Step 0 (selezione modalità), step 1 (filtri/dati), step 2 (foto e prezzo), step 3 (zone spedizione)
   }
+  return 3
 })
 
 // Anteprima immagine per lo step finale: usa immagine caricata, altrimenti immagine del modello, altrimenti null
@@ -582,22 +1002,40 @@ const canProceed = computed(() => {
       if (selectedMode.value === 'single') {
         // Deve essere selezionata una carta (accetta anche l'ID già memorizzato)
         return !!(selectedCardModel.value?.id || listingData.value.card_model_id)
-      } else {
+      } else if (selectedMode.value === 'bulk') {
         // In bulk consenti di passare se ci sono risultati o già selezioni
         return filteredCardModels.value.length > 0 || selectedCardModels.value.length > 0
+      } else if (selectedMode.value === 'sealed-pack' || selectedMode.value === 'sealed-box') {
+        // Per sealed-pack e sealed-box: categoria obbligatoria, set, anno e brand opzionali
+        return !!selectedCategory.value
+      } else if (selectedMode.value === 'lot') {
+        // Per lot: categoria, titolo e descrizione obbligatori
+        return !!selectedCategory.value && !!listingData.value.title && !!listingData.value.description
       }
+      return false
     case 2:
       if (selectedMode.value === 'single') {
         return !!(listingData.value)
-      } else {
+      } else if (selectedMode.value === 'bulk') {
         // In modalità bulk, verifica che ci siano listings con card_model_id, price e condition
-        // Accetta anche se selectedCardsForBulkEdit ha carte selezionate (prima che venga applicato il bulk edit)
         const hasListings = bulkListings.value.length > 0 && bulkListings.value.every(listing => 
           (listing.cardModel || listing.card_model_id) && listing.price && listing.condition
         )
         const hasSelectedCards = selectedCardsForBulkEdit.value.length > 0
         return hasListings || hasSelectedCards
+      } else if (selectedMode.value === 'sealed-pack' || selectedMode.value === 'sealed-box') {
+        // Foto, prezzo e quantità obbligatori
+        const hasImages = cardImages.value.some(img => img !== null)
+        const hasPrice = !!(listingData.value.price && parseFloat(listingData.value.price) > 0)
+        const hasQuantity = !!(listingData.value.quantity && parseInt(listingData.value.quantity) >= 1)
+        return hasImages && hasPrice && hasQuantity
+      } else if (selectedMode.value === 'lot') {
+        // Foto e prezzo obbligatori (senza quantità)
+        const hasImages = cardImages.value.some(img => img !== null)
+        const hasPrice = !!(listingData.value.price && parseFloat(listingData.value.price) > 0)
+        return hasImages && hasPrice
       }
+      return false
     case 3:
       // Step zone di spedizione
       return selectedShippingZones.value.length > 0
@@ -1073,6 +1511,11 @@ const handleImageUpload = (event) => {
   processImageFiles(files)
 }
 
+const handleSealedImageUpload = (event, type) => {
+  const files = Array.from(event.target.files)
+  processImageFiles(files)
+}
+
 // Drag & Drop handlers
 const handleDragOver = (event) => {
   event.preventDefault()
@@ -1400,8 +1843,14 @@ const createListing = async () => {
     isSubmitting.value = true
     if (selectedMode.value === 'single') {
       await createSingleListing()
-    } else {
+    } else if (selectedMode.value === 'bulk') {
       await createBulkListings()
+    } else if (selectedMode.value === 'sealed-pack') {
+      await createSealedPackListing()
+    } else if (selectedMode.value === 'sealed-box') {
+      await createSealedBoxListing()
+    } else if (selectedMode.value === 'lot') {
+      await createLotListing()
     }
   } catch (error) {
     console.error('Errore nella creazione inserzioni:', error)
@@ -1743,6 +2192,188 @@ const createBulkListings = async () => {
     console.log(`✅ ${createdListings.length} inserzioni create con successo`)
     emit('created', createdListings)
     closeModal()
+  }
+}
+
+const createSealedPackListing = async () => {
+  const formData = new FormData()
+  
+  // Tipo di inserzione
+  formData.append('listing_type', 'sealed-pack')
+  
+  // Categoria
+  formData.append('category', selectedCategory.value)
+  
+  // Filtri selezionati
+  if (filters.value.set) {
+    formData.append('card_set_id', filters.value.set)
+  }
+  if (filters.value.year) {
+    formData.append('year', filters.value.year)
+  }
+  if (filters.value.brand) {
+    formData.append('brand', filters.value.brand)
+  }
+  
+  // Prezzo e quantità
+  formData.append('price', listingData.value.price)
+  formData.append('quantity', listingData.value.quantity.toString())
+  
+  // Condizione di default
+  formData.append('condition', 'mint')
+  formData.append('language', 'italian')
+  
+  // Immagini
+  cardImages.value.forEach((img, index) => {
+    if (img && img.file) {
+      formData.append(`images[${index}]`, img.file)
+    }
+  })
+  
+  // Zone di spedizione
+  selectedShippingZones.value.forEach(zoneId => {
+    formData.append('shipping_zones[]', zoneId)
+  })
+  
+  try {
+    const response = await fetch('/api/listings', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      }
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.message || 'Errore nella creazione inserzione')
+    }
+    
+    const data = await response.json()
+    emit('created', data.data)
+    closeModal()
+  } catch (error) {
+    console.error('Errore nella creazione sealed pack:', error)
+    throw error
+  }
+}
+
+const createSealedBoxListing = async () => {
+  const formData = new FormData()
+  
+  // Tipo di inserzione
+  formData.append('listing_type', 'sealed-box')
+  
+  // Categoria
+  formData.append('category', selectedCategory.value)
+  
+  // Filtri selezionati
+  if (filters.value.set) {
+    formData.append('card_set_id', filters.value.set)
+  }
+  if (filters.value.year) {
+    formData.append('year', filters.value.year)
+  }
+  if (filters.value.brand) {
+    formData.append('brand', filters.value.brand)
+  }
+  
+  // Prezzo e quantità
+  formData.append('price', listingData.value.price)
+  formData.append('quantity', listingData.value.quantity.toString())
+  
+  // Condizione di default
+  formData.append('condition', 'mint')
+  formData.append('language', 'italian')
+  
+  // Immagini
+  cardImages.value.forEach((img, index) => {
+    if (img && img.file) {
+      formData.append(`images[${index}]`, img.file)
+    }
+  })
+  
+  // Zone di spedizione
+  selectedShippingZones.value.forEach(zoneId => {
+    formData.append('shipping_zones[]', zoneId)
+  })
+  
+  try {
+    const response = await fetch('/api/listings', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      }
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.message || 'Errore nella creazione inserzione')
+    }
+    
+    const data = await response.json()
+    emit('created', data.data)
+    closeModal()
+  } catch (error) {
+    console.error('Errore nella creazione sealed box:', error)
+    throw error
+  }
+}
+
+const createLotListing = async () => {
+  const formData = new FormData()
+  
+  // Tipo di inserzione
+  formData.append('listing_type', 'lot')
+  
+  // Categoria
+  formData.append('category', selectedCategory.value)
+  
+  // Titolo e descrizione
+  formData.append('title', listingData.value.title)
+  formData.append('description', listingData.value.description)
+  
+  // Prezzo (senza quantità per i lot)
+  formData.append('price', listingData.value.price)
+  formData.append('quantity', '1') // Default a 1 per i lot
+  
+  // Condizione di default
+  formData.append('condition', 'mint')
+  formData.append('language', 'italian')
+  
+  // Immagini
+  cardImages.value.forEach((img, index) => {
+    if (img && img.file) {
+      formData.append(`images[${index}]`, img.file)
+    }
+  })
+  
+  // Zone di spedizione
+  selectedShippingZones.value.forEach(zoneId => {
+    formData.append('shipping_zones[]', zoneId)
+  })
+  
+  try {
+    const response = await fetch('/api/listings', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      }
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.message || 'Errore nella creazione inserzione')
+    }
+    
+    const data = await response.json()
+    emit('created', data.data)
+    closeModal()
+  } catch (error) {
+    console.error('Errore nella creazione lot:', error)
+    throw error
   }
 }
 

@@ -1143,24 +1143,27 @@ class FootballFilterController extends Controller
             
             switch ($subcategory) {
                 case 'singles':
-                    // Carte singole: quantity = 1
-                    $query->where('quantity', 1);
+                    // Carte singole: listing_type = 'single' o 'bulk' (per retrocompatibilità)
+                    $query->where(function($q) {
+                        $q->where('listing_type', 'single')
+                          ->orWhere('listing_type', 'bulk')
+                          ->orWhereNull('listing_type'); // Retrocompatibilità con inserzioni esistenti
+                    });
                     break;
                     
                 case 'sealed-packs':
-                    // Buste sigillate: quantity > 1, sealed
-                    $query->where('quantity', '>', 1)
-                          ->where('quantity', '<=', 20); // Range ragionevole per buste
+                    // Buste sigillate: listing_type = 'sealed-pack'
+                    $query->where('listing_type', 'sealed-pack');
                     break;
                     
                 case 'sealed-boxes':
-                    // Scatole sigillate: quantity molto alta
-                    $query->where('quantity', '>', 20); // Molte carte = scatola
+                    // Scatole sigillate: listing_type = 'sealed-box'
+                    $query->where('listing_type', 'sealed-box');
                     break;
                     
                 case 'lot':
-                    // Lotti: quantity > 1
-                    $query->where('quantity', '>', 1);
+                    // Lotti: listing_type = 'lot'
+                    $query->where('listing_type', 'lot');
                     break;
             }
         }

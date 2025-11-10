@@ -13,6 +13,8 @@ class CardListing extends Model
     use HasFactory;
     protected $fillable = [
         'card_model_id',
+        'listing_type',
+        'title',
         'seller_id',
         'price',
         'condition',

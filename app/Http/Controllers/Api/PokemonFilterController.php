@@ -910,35 +910,34 @@ class PokemonFilterController extends Controller
             if ($hasListings) {
                 switch ($subcategory) {
                     case 'singles':
-                        // Carte singole: quantity = 1, non sealed
+                        // Carte singole: listing_type = 'single' o 'bulk' (per retrocompatibilità)
                         $query->whereHas('cardListings', function($q) {
-                            $q->where('quantity', 1)
-                              ->where('is_limited', false);
+                            $q->where(function($subQ) {
+                                $subQ->where('listing_type', 'single')
+                                     ->orWhere('listing_type', 'bulk')
+                                     ->orWhereNull('listing_type'); // Retrocompatibilità
+                            });
                         });
                         break;
                         
                     case 'sealed-packs':
-                        // Buste sigillate: quantity > 1, sealed
+                        // Buste sigillate: listing_type = 'sealed-pack'
                         $query->whereHas('cardListings', function($q) {
-                            $q->where('quantity', '>', 1)
-                              ->where('quantity', '<=', 20) // Range ragionevole per buste
-                              ->where('is_limited', true);
+                            $q->where('listing_type', 'sealed-pack');
                         });
                         break;
                         
                     case 'sealed-boxes':
-                        // Scatole sigillate: quantity molto alta, sealed
+                        // Scatole sigillate: listing_type = 'sealed-box'
                         $query->whereHas('cardListings', function($q) {
-                            $q->where('quantity', '>', 20) // Molte carte = scatola
-                              ->where('is_limited', true);
+                            $q->where('listing_type', 'sealed-box');
                         });
                         break;
                         
                     case 'lot':
-                        // Lotti: quantity > 1, non sealed
+                        // Lotti: listing_type = 'lot'
                         $query->whereHas('cardListings', function($q) {
-                            $q->where('quantity', '>', 1)
-                              ->where('is_limited', false);
+                            $q->where('listing_type', 'lot');
                         });
                         break;
                 }

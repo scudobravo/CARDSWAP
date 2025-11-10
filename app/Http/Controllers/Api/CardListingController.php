@@ -73,24 +73,43 @@ class CardListingController extends Controller
         // Create a new request with converted data
         $request->merge($data);
         
-        $validator = Validator::make($request->all(), [
-            'card_model_id' => 'required|exists:card_models,id',
+        $listingType = $request->get('listing_type', 'single');
+        
+        $rules = [
+            'listing_type' => 'required|in:single,bulk,sealed-pack,sealed-box,lot',
             'price' => 'required|numeric|min:0.01|max:999999.99',
             'condition' => 'required|in:mint,near_mint,excellent,good,light_played,played,poor,fair,very_good',
             'autograph_condition' => 'nullable|in:mint,near_mint,excellent,good,light_played,played,poor,fair,very_good',
-            'quantity' => 'required|integer|min:1|max:1000',
             'language' => 'required|in:italian,english,spanish,french,german,portuguese',
             'is_foil' => 'boolean',
             'is_signed' => 'boolean',
             'is_altered' => 'boolean',
             'is_first_edition' => 'boolean',
+            'is_negotiable' => 'boolean',
             'description' => 'nullable|string|max:1000',
             'images' => 'nullable|array',
-            'images.*' => 'nullable|file|image|max:10240', // 10MB max iniziale - verrà compressa lato server
+            'images.*' => 'nullable|file|image|max:10240',
             'shipping_zones' => 'required|array|min:1',
             'shipping_zones.*' => 'exists:shipping_zones,id',
             'status' => 'in:draft,active,paused,inactive',
-        ]);
+        ];
+        
+        // Regole specifiche per tipo
+        if (in_array($listingType, ['single', 'bulk'])) {
+            $rules['card_model_id'] = 'required|exists:card_models,id';
+            $rules['quantity'] = 'required|integer|min:1|max:1000';
+        } elseif (in_array($listingType, ['sealed-pack', 'sealed-box'])) {
+            $rules['quantity'] = 'required|integer|min:1|max:1000';
+            $rules['card_set_id'] = 'nullable|exists:card_sets,id';
+            $rules['year'] = 'nullable|string';
+            $rules['brand'] = 'nullable|string';
+        } elseif ($listingType === 'lot') {
+            $rules['title'] = 'required|string|max:255';
+            $rules['description'] = 'required|string|max:1000';
+            $rules['quantity'] = 'nullable|integer|min:1|max:1000';
+        }
+        
+        $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
             return response()->json([
@@ -107,6 +126,12 @@ class CardListingController extends Controller
             $listingData = $request->all();
             $listingData['seller_id'] = Auth::id();
             $listingData['status'] = $request->get('status', 'draft');
+            $listingData['listing_type'] = $listingType;
+            
+            // Per sealed-pack, sealed-box e lot, card_model_id può essere null
+            if (in_array($listingType, ['sealed-pack', 'sealed-box', 'lot'])) {
+                $listingData['card_model_id'] = null;
+            }
             
             // Rimuovi autograph_condition se la colonna non esiste nel database
             if (!Schema::hasColumn('card_listings', 'autograph_condition')) {
@@ -118,6 +143,11 @@ class CardListingController extends Controller
                 $listingData['quantity'] = (int) $listingData['quantity'];
             } else {
                 $listingData['quantity'] = 1; // Default a 1 se non specificato
+            }
+            
+            // Per i lot, quantity è sempre 1
+            if ($listingType === 'lot') {
+                $listingData['quantity'] = 1;
             }
 
             // Gestione immagini con compressione automatica
