@@ -332,7 +332,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 
 // Props
 const props = defineProps({
@@ -401,6 +401,7 @@ const applyBulkEdit = () => {
   
   const listings = props.selectedCards.map(card => ({
     card_model_id: card.id,
+    cardModel: card, // Aggiungi anche cardModel per compatibilità
     ...bulkData.value
   }))
   
@@ -409,7 +410,11 @@ const applyBulkEdit = () => {
   // Emetti sia i listings che le immagini
   emit('apply-bulk-edit', listings)
   emit('bulk-images-uploaded', bulkImages.value)
-  emit('next-step')
+  
+  // Usa nextTick per assicurarsi che bulkListings sia aggiornato prima di chiamare nextStep
+  nextTick(() => {
+    emit('next-step')
+  })
 }
 
 // Gestione immagini bulk

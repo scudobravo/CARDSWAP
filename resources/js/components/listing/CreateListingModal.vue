@@ -590,9 +590,13 @@ const canProceed = computed(() => {
       if (selectedMode.value === 'single') {
         return !!(listingData.value)
       } else {
-        return bulkListings.value.length > 0 && bulkListings.value.every(listing => 
-          listing.cardModel && listing.price && listing.condition
+        // In modalità bulk, verifica che ci siano listings con card_model_id, price e condition
+        // Accetta anche se selectedCardsForBulkEdit ha carte selezionate (prima che venga applicato il bulk edit)
+        const hasListings = bulkListings.value.length > 0 && bulkListings.value.every(listing => 
+          (listing.cardModel || listing.card_model_id) && listing.price && listing.condition
         )
+        const hasSelectedCards = selectedCardsForBulkEdit.value.length > 0
+        return hasListings || hasSelectedCards
       }
     case 3:
       // Step zone di spedizione
@@ -982,7 +986,14 @@ const handleBulkEditGoBack = () => {
 
 const handleApplyBulkEdit = (listings) => {
   console.log('🔍 CreateListingModal - Ricevute listings:', listings)
-  bulkListings.value = listings
+  // Assicuriamoci che le listings abbiano tutti i campi necessari
+  bulkListings.value = listings.map(listing => ({
+    ...listing,
+    // Assicurati che price e condition siano sempre presenti (dovrebbero già esserlo da BulkEditForm)
+    price: listing.price || '1.00',
+    condition: listing.condition || 'mint',
+    quantity: listing.quantity || 1
+  }))
   console.log('✅ Bulk listings aggiornate:', bulkListings.value)
   // Non chiamiamo nextStep() qui, lasciamo che sia il footer a gestire la navigazione
 }
