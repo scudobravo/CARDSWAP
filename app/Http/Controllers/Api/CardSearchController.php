@@ -81,23 +81,38 @@ class CardSearchController extends Controller
         }
 
         // Filtro per range numerato (min e max)
-        // Usa card_number_in_set e estrae il numero prima della barra "/"
-        // IMPORTANTE: Applica entrambi i filtri insieme per evitare problemi con whereNotNull duplicati
+        // Usa card_number_in_set e estrae il numero all'inizio della stringa
+        // Gestisce formati come: "1", "5/100", "01-gen", "1-AU", "A-01" (estrae solo il numero iniziale)
         if ($request->filled('numbered_min') || $request->filled('numbered_max')) {
             $query->whereNotNull('card_number_in_set')
-                  ->where('card_number_in_set', '!=', '')
-                  ->where('card_number_in_set', 'REGEXP', '^[0-9]+'); // Assicura che inizi con un numero
+                  ->where('card_number_in_set', '!=', '');
+            
+            // Estrae solo i numeri all'inizio della stringa (prima di qualsiasi carattere non numerico)
+            // Usa REGEXP_SUBSTR per estrarre la sequenza di numeri all'inizio
+            // IMPORTANTE: Filtra solo le righe che hanno un numero all'inizio (REGEXP_SUBSTR non NULL)
+            $query->whereRaw(
+                "REGEXP_SUBSTR(
+                    CASE 
+                        WHEN LOCATE('/', card_number_in_set) > 0 
+                        THEN SUBSTRING_INDEX(card_number_in_set, '/', 1)
+                        ELSE card_number_in_set
+                    END,
+                    '^[0-9]+'
+                ) IS NOT NULL"
+            );
             
             if ($request->filled('numbered_min')) {
                 $numberedMin = (int)$request->get('numbered_min');
-                // Estrae il numero prima della barra "/" se presente, altrimenti usa l'intera stringa
                 $query->whereRaw(
                     "CAST(
-                        CASE 
-                            WHEN LOCATE('/', card_number_in_set) > 0 
-                            THEN SUBSTRING_INDEX(card_number_in_set, '/', 1)
-                            ELSE card_number_in_set
-                        END AS UNSIGNED
+                        REGEXP_SUBSTR(
+                            CASE 
+                                WHEN LOCATE('/', card_number_in_set) > 0 
+                                THEN SUBSTRING_INDEX(card_number_in_set, '/', 1)
+                                ELSE card_number_in_set
+                            END,
+                            '^[0-9]+'
+                        ) AS UNSIGNED
                     ) >= ?",
                     [$numberedMin]
                 );
@@ -105,14 +120,16 @@ class CardSearchController extends Controller
             
             if ($request->filled('numbered_max')) {
                 $numberedMax = (int)$request->get('numbered_max');
-                // Estrae il numero prima della barra "/" se presente, altrimenti usa l'intera stringa
                 $query->whereRaw(
                     "CAST(
-                        CASE 
-                            WHEN LOCATE('/', card_number_in_set) > 0 
-                            THEN SUBSTRING_INDEX(card_number_in_set, '/', 1)
-                            ELSE card_number_in_set
-                        END AS UNSIGNED
+                        REGEXP_SUBSTR(
+                            CASE 
+                                WHEN LOCATE('/', card_number_in_set) > 0 
+                                THEN SUBSTRING_INDEX(card_number_in_set, '/', 1)
+                                ELSE card_number_in_set
+                            END,
+                            '^[0-9]+'
+                        ) AS UNSIGNED
                     ) <= ?",
                     [$numberedMax]
                 );
