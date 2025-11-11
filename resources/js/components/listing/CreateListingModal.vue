@@ -848,7 +848,7 @@
             Avanti
           </button>
           <button 
-            v-else-if="selectedMode === 'single'"
+            v-else-if="currentStep === totalSteps - 1 && (selectedMode === 'single' || selectedMode === 'sealed-pack' || selectedMode === 'sealed-box' || selectedMode === 'lot')"
             @click="isEdit ? updateSingleListing() : createListing()"
             :disabled="!canProceed || isSubmitting"
             class="px-6 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -977,7 +977,7 @@ const totalSteps = computed(() => {
   } else if (selectedMode.value === 'bulk') {
     return 4 // Step 0 (selezione modalità), step 1 (selezione carte), step 2 (dettagli + immagini), step 3 (zone spedizione)
   } else if (selectedMode.value === 'sealed-pack' || selectedMode.value === 'sealed-box' || selectedMode.value === 'lot') {
-    return 3 // Step 0 (selezione modalità), step 1 (filtri/dati), step 2 (foto e prezzo), step 3 (zone spedizione)
+    return 4 // Step 0 (selezione modalità), step 1 (filtri/dati), step 2 (foto e prezzo), step 3 (zone spedizione)
   }
   return 3
 })
