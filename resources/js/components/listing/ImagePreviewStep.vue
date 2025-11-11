@@ -473,6 +473,11 @@ watch(() => props.cardData, (newCardData) => {
       hasInitialized.value = true
     }
   }
+  
+  // Aggiorna sempre le note se presenti nei dati (per supportare la modifica di listing esistenti)
+  if (newCardData && newCardData.notes !== undefined && newCardData.notes !== null) {
+    additionalDetails.value.notes = newCardData.notes
+  }
 }, { immediate: true, deep: false, flush: 'post' }) // Aggiunto flush: 'post' per eseguire dopo il rendering
 
 

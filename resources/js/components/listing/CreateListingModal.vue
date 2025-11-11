@@ -2431,7 +2431,7 @@ const getSingleCardData = computed(() => {
       // Dati aggiuntivi per il componente ImagePreviewStep
       gradingCompany: additionalDetails.value.gradingCompany,
       gradingScore: additionalDetails.value.gradingScore,
-      notes: additionalDetails.value.notes,
+      notes: additionalDetails.value.notes || listingData.value.description || '',
       // Caratteristiche speciali
       autograph: listingData.value.is_signed ? 'yes' : 'no',
       relic: listingData.value.is_altered ? 'yes' : 'no',
