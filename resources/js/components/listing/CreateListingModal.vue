@@ -2944,20 +2944,23 @@ const initializeEditMode = async (listing) => {
       autographCondition: listing.autograph_condition || listing.condition,
       gradingCompany: listing.grading_company || '',
       gradingScore: listing.grading_score || '',
-      notes: listing.description || '',
+      notes: listing.description || listing.notes || '', // Popola notes da description se notes non esiste
       // Caratteristiche speciali
       autograph: listing.is_signed ? 'yes' : 'no',
       relic: listing.is_altered ? 'yes' : 'no',
       onCardAuto: listing.is_signed ? 'yes' : 'no',
       rookie: listing.is_first_edition ? 'yes' : 'no',
       jewel: listing.is_foil ? 'yes' : 'no',
-      multiAutograph: '',
-      description: listing.description || ''
+      multiAutograph: ''
     }
     
     // Imposta le zone di spedizione
-    if (listing.shipping_zones) {
-      selectedShippingZones.value = listing.shipping_zones.map(zone => zone.id)
+    if (listing.shipping_zones && Array.isArray(listing.shipping_zones) && listing.shipping_zones.length > 0) {
+      selectedShippingZones.value = listing.shipping_zones.map(zone => zone.id || zone)
+    } else if (listing.shippingZones && Array.isArray(listing.shippingZones) && listing.shippingZones.length > 0) {
+      selectedShippingZones.value = listing.shippingZones.map(zone => zone.id || zone)
+    } else {
+      selectedShippingZones.value = []
     }
     
     // Imposta le immagini se presenti (sono memorizzate come array JSON)
@@ -3062,7 +3065,12 @@ const updateSingleListing = async () => {
     }
     formData.append('quantity', listingData.value.quantity)
     formData.append('language', listingData.value.language)
-    formData.append('description', listingData.value.description || '')
+    // Salva notes come description per retrocompatibilità con il backend
+    if (additionalDetails.value.notes) {
+      formData.append('description', additionalDetails.value.notes)
+    } else if (listingData.value.description) {
+      formData.append('description', listingData.value.description)
+    }
     formData.append('is_foil', listingData.value.is_foil ? 'true' : 'false')
     formData.append('is_signed', listingData.value.is_signed ? 'true' : 'false')
     formData.append('is_altered', listingData.value.is_altered ? 'true' : 'false')
@@ -3118,7 +3126,10 @@ const updateSingleListing = async () => {
       throw new Error('Dimensione totale immagini troppo grande')
     }
     
-    // Aggiungi le zone di spedizione
+    // Aggiungi le zone di spedizione (obbligatorio)
+    if (selectedShippingZones.value.length === 0) {
+      throw new Error('Devi selezionare almeno una zona di spedizione')
+    }
     selectedShippingZones.value.forEach(zoneId => {
       formData.append('shipping_zones[]', zoneId)
     })
