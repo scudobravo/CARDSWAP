@@ -1060,12 +1060,13 @@ class FootballFilterController extends Controller
                     // Estrae solo i numeri all'inizio della stringa (prima di qualsiasi carattere non numerico)
                     // Usa REGEXP_SUBSTR per estrarre la sequenza di numeri all'inizio
                     // IMPORTANTE: Filtra solo le righe che hanno un numero all'inizio (REGEXP_SUBSTR non NULL)
+                    // NOTA: Dentro whereHas, usiamo solo il nome della colonna senza prefisso tabella
                     $q->whereRaw(
                         "REGEXP_SUBSTR(
                             CASE 
-                                WHEN LOCATE('/', card_models.card_number_in_set) > 0 
-                                THEN SUBSTRING_INDEX(card_models.card_number_in_set, '/', 1)
-                                ELSE card_models.card_number_in_set
+                                WHEN LOCATE('/', card_number_in_set) > 0 
+                                THEN SUBSTRING_INDEX(card_number_in_set, '/', 1)
+                                ELSE card_number_in_set
                             END,
                             '^[0-9]+'
                         ) IS NOT NULL"
@@ -1077,9 +1078,9 @@ class FootballFilterController extends Controller
                             "CAST(
                                 REGEXP_SUBSTR(
                                     CASE 
-                                        WHEN LOCATE('/', card_models.card_number_in_set) > 0 
-                                        THEN SUBSTRING_INDEX(card_models.card_number_in_set, '/', 1)
-                                        ELSE card_models.card_number_in_set
+                                        WHEN LOCATE('/', card_number_in_set) > 0 
+                                        THEN SUBSTRING_INDEX(card_number_in_set, '/', 1)
+                                        ELSE card_number_in_set
                                     END,
                                     '^[0-9]+'
                                 ) AS UNSIGNED
@@ -1094,9 +1095,9 @@ class FootballFilterController extends Controller
                             "CAST(
                                 REGEXP_SUBSTR(
                                     CASE 
-                                        WHEN LOCATE('/', card_models.card_number_in_set) > 0 
-                                        THEN SUBSTRING_INDEX(card_models.card_number_in_set, '/', 1)
-                                        ELSE card_models.card_number_in_set
+                                        WHEN LOCATE('/', card_number_in_set) > 0 
+                                        THEN SUBSTRING_INDEX(card_number_in_set, '/', 1)
+                                        ELSE card_number_in_set
                                     END,
                                     '^[0-9]+'
                                 ) AS UNSIGNED
