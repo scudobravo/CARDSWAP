@@ -1094,6 +1094,26 @@ class FootballFilterController extends Controller
                 });
             }
 
+            if (isset($filters['onCardAuto']) && $filters['onCardAuto'] !== '') {
+                $query->whereHas('cardModel', function($q) use ($filters) {
+                    if ($filters['onCardAuto'] === 'yes') {
+                        $q->where('is_on_card_auto', true);
+                    } elseif ($filters['onCardAuto'] === 'no') {
+                        $q->where('is_on_card_auto', false);
+                    }
+                });
+            }
+
+            if (isset($filters['jewel']) && $filters['jewel'] !== '') {
+                $query->whereHas('cardModel', function($q) use ($filters) {
+                    if ($filters['jewel'] === 'yes') {
+                        $q->where('is_jewel', true);
+                    } elseif ($filters['jewel'] === 'no') {
+                        $q->where('is_jewel', false);
+                    }
+                });
+            }
+
             // Filtri grading
             if (isset($filters['grading']) && $filters['grading'] !== '') {
                 $query->whereHas('cardModel', function($q) use ($filters) {

@@ -881,6 +881,39 @@ class PokemonFilterController extends Controller
             if (isset($filters['numbered_max']) && !empty($filters['numbered_max'])) {
                 $query->where('card_models.card_number_in_set', '<=', $filters['numbered_max']);
             }
+
+            // Filtri extra
+            if (isset($filters['autograph']) && $filters['autograph'] !== '') {
+                if ($filters['autograph'] === 'yes') {
+                    $query->where('card_models.is_autograph', true);
+                } elseif ($filters['autograph'] === 'no') {
+                    $query->where('card_models.is_autograph', false);
+                }
+            }
+
+            if (isset($filters['relic']) && $filters['relic'] !== '') {
+                if ($filters['relic'] === 'yes') {
+                    $query->where('card_models.is_relic', true);
+                } elseif ($filters['relic'] === 'no') {
+                    $query->where('card_models.is_relic', false);
+                }
+            }
+
+            if (isset($filters['onCardAuto']) && $filters['onCardAuto'] !== '') {
+                if ($filters['onCardAuto'] === 'yes') {
+                    $query->where('card_models.is_on_card_auto', true);
+                } elseif ($filters['onCardAuto'] === 'no') {
+                    $query->where('card_models.is_on_card_auto', false);
+                }
+            }
+
+            if (isset($filters['jewel']) && $filters['jewel'] !== '') {
+                if ($filters['jewel'] === 'yes') {
+                    $query->where('card_models.is_jewel', true);
+                } elseif ($filters['jewel'] === 'no') {
+                    $query->where('card_models.is_jewel', false);
+                }
+            }
         }
         
         // Filtri comuni a tutte le sottocategorie: Set, Year, Brand
