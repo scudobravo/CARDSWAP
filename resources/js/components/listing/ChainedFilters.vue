@@ -1058,6 +1058,9 @@ const removeTeam = () => {
 }
 
 const selectCardSet = (set) => {
+  // Preserva l'anno selezionato manualmente dall'utente
+  const userSelectedYear = localFilters.value.year
+  
   selectedCardSet.value = set
   localFilters.value.set = set.id
   localFilters.value.setSearch = ''
@@ -1070,6 +1073,14 @@ const selectCardSet = (set) => {
   console.log('✅ Team mantenuto:', selectedTeam.value?.name)
   
   // Non precompilare brand/year automaticamente: filtri slegati
+  // IMPORTANTE: NON popolare l'anno automaticamente dal set se l'utente ha già selezionato un anno
+  // L'utente deve poter selezionare manualmente l'anno senza che venga sovrascritto
+  
+  // Ripristina l'anno selezionato manualmente dall'utente (se presente)
+  if (userSelectedYear) {
+    localFilters.value.year = userSelectedYear
+    console.log('✅ Anno selezionato manualmente preservato:', userSelectedYear)
+  }
   
   // Filtri slegati: non aggiornare opzioni a cascata
   
@@ -1495,7 +1506,15 @@ const loadChainedData = async () => {
       availableRarities.value = data.rarities
     }
     if (data.years && data.years.length) {
+      // IMPORTANTE: Aggiorna solo le opzioni disponibili, NON il valore selezionato
+      // Preserva l'anno selezionato manualmente dall'utente
+      const currentYear = localFilters.value.year
       availableYears.value = data.years
+      // Ripristina l'anno selezionato manualmente se è ancora valido
+      if (currentYear && data.years.includes(currentYear)) {
+        localFilters.value.year = currentYear
+        console.log('✅ Anno selezionato manualmente preservato dopo aggiornamento opzioni:', currentYear)
+      }
     }
 
     if ((!data.brands || data.brands.length === 0) || (!data.rarities || data.rarities.length === 0) || (!data.years || data.years.length === 0)) {
