@@ -1073,22 +1073,32 @@ const selectCardSet = (set) => {
   console.log('✅ Set selezionato per logica a cascata:', set.name)
   console.log('✅ Team mantenuto:', selectedTeam.value?.name)
   console.log('✅ Anno corrente prima della selezione set:', userSelectedYear)
+  console.log('✅ Anno del set selezionato:', set.year)
+  
+  // IMPORTANTE: Se il set ha un anno e l'utente NON ha ancora selezionato un anno manualmente,
+  // popola automaticamente l'anno dal set
+  // Questo permette di selezionare "STADIUM CLUB CHROME UCC (2022/23)" e avere l'anno 2022/23 popolato automaticamente
+  if (set.year && (!userSelectedYear || userSelectedYear === '')) {
+    localFilters.value.year = set.year
+    console.log('✅ Anno popolato automaticamente dal set:', set.year)
+  } else if (userSelectedYear && userSelectedYear !== '') {
+    // Se l'utente ha già selezionato un anno manualmente, preservalo
+    console.log('✅ Anno selezionato manualmente preservato:', userSelectedYear)
+  }
   
   // IMPORTANTE: Carica le opzioni disponibili per l'anno quando viene selezionato un set
   // Questo aggiorna il dropdown Year con le annate disponibili per il set selezionato
   loadChainedData()
   
-  // IMPORTANTE: NON popolare l'anno automaticamente dal set
-  // L'utente deve poter selezionare manualmente l'anno senza che venga sovrascritto
-  // NON fare: localFilters.value.year = set.year (questo sovrascriverebbe l'anno selezionato manualmente)
-  
-  // Ripristina SEMPRE l'anno selezionato manualmente dall'utente (se presente)
-  // Questo assicura che anche se c'è qualche logica che popola l'anno, viene preservato
-  if (userSelectedYear) {
-    // Usa nextTick per assicurarsi che il valore venga impostato dopo il caricamento delle opzioni
+  // Assicurati che l'anno selezionato venga preservato anche dopo il caricamento delle opzioni
+  if (localFilters.value.year) {
+    const yearToPreserve = localFilters.value.year
     nextTick(() => {
-      localFilters.value.year = userSelectedYear
-      console.log('✅ Anno selezionato manualmente preservato dopo nextTick:', userSelectedYear)
+      // Verifica che l'anno sia ancora valido tra le opzioni disponibili
+      if (availableYears.value.includes(yearToPreserve)) {
+        localFilters.value.year = yearToPreserve
+        console.log('✅ Anno preservato dopo caricamento opzioni:', yearToPreserve)
+      }
     })
   }
   
