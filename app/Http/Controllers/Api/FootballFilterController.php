@@ -1050,27 +1050,60 @@ class FootballFilterController extends Controller
             }
 
             // Filtro per range numerato
-            if (isset($filters['numbered_min']) && !empty($filters['numbered_min'])) {
-                $numberedMin = (int)$filters['numbered_min'];
-                $query->whereHas('cardModel', function($q) use ($numberedMin) {
+            // Usa card_number_in_set e estrae il numero all'inizio della stringa
+            // Gestisce formati come: "1", "5/100", "01-gen", "1-AU", "A-01" (estrae solo il numero iniziale)
+            if (isset($filters['numbered_min']) && !empty($filters['numbered_min']) || isset($filters['numbered_max']) && !empty($filters['numbered_max'])) {
+                $query->whereHas('cardModel', function($q) use ($filters) {
                     $q->whereNotNull('card_number_in_set')
-                      ->where('card_number_in_set', '!=', '')
-                      ->whereRaw(
-                          "CAST(SUBSTRING_INDEX(card_models.card_number_in_set, '/', 1) AS UNSIGNED) >= ?",
-                          [$numberedMin]
-                      );
-                });
-            }
-
-            if (isset($filters['numbered_max']) && !empty($filters['numbered_max'])) {
-                $numberedMax = (int)$filters['numbered_max'];
-                $query->whereHas('cardModel', function($q) use ($numberedMax) {
-                    $q->whereNotNull('card_number_in_set')
-                      ->where('card_number_in_set', '!=', '')
-                      ->whereRaw(
-                          "CAST(SUBSTRING_INDEX(card_models.card_number_in_set, '/', 1) AS UNSIGNED) <= ?",
-                          [$numberedMax]
-                      );
+                      ->where('card_number_in_set', '!=', '');
+                    
+                    // Estrae solo i numeri all'inizio della stringa (prima di qualsiasi carattere non numerico)
+                    // Usa REGEXP_SUBSTR per estrarre la sequenza di numeri all'inizio
+                    // IMPORTANTE: Filtra solo le righe che hanno un numero all'inizio (REGEXP_SUBSTR non NULL)
+                    $q->whereRaw(
+                        "REGEXP_SUBSTR(
+                            CASE 
+                                WHEN LOCATE('/', card_models.card_number_in_set) > 0 
+                                THEN SUBSTRING_INDEX(card_models.card_number_in_set, '/', 1)
+                                ELSE card_models.card_number_in_set
+                            END,
+                            '^[0-9]+'
+                        ) IS NOT NULL"
+                    );
+                    
+                    if (isset($filters['numbered_min']) && !empty($filters['numbered_min'])) {
+                        $numberedMin = (int)$filters['numbered_min'];
+                        $q->whereRaw(
+                            "CAST(
+                                REGEXP_SUBSTR(
+                                    CASE 
+                                        WHEN LOCATE('/', card_models.card_number_in_set) > 0 
+                                        THEN SUBSTRING_INDEX(card_models.card_number_in_set, '/', 1)
+                                        ELSE card_models.card_number_in_set
+                                    END,
+                                    '^[0-9]+'
+                                ) AS UNSIGNED
+                            ) >= ?",
+                            [$numberedMin]
+                        );
+                    }
+                    
+                    if (isset($filters['numbered_max']) && !empty($filters['numbered_max'])) {
+                        $numberedMax = (int)$filters['numbered_max'];
+                        $q->whereRaw(
+                            "CAST(
+                                REGEXP_SUBSTR(
+                                    CASE 
+                                        WHEN LOCATE('/', card_models.card_number_in_set) > 0 
+                                        THEN SUBSTRING_INDEX(card_models.card_number_in_set, '/', 1)
+                                        ELSE card_models.card_number_in_set
+                                    END,
+                                    '^[0-9]+'
+                                ) AS UNSIGNED
+                            ) <= ?",
+                            [$numberedMax]
+                        );
+                    }
                 });
             }
 
