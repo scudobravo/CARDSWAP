@@ -1058,7 +1058,8 @@ const removeTeam = () => {
 }
 
 const selectCardSet = (set) => {
-  // Preserva l'anno selezionato manualmente dall'utente
+  // IMPORTANTE: Preserva l'anno selezionato manualmente dall'utente PRIMA di qualsiasi operazione
+  // Questo deve essere fatto PRIMA di impostare selectedCardSet per evitare che venga sovrascritto
   const userSelectedYear = localFilters.value.year
   
   selectedCardSet.value = set
@@ -1071,15 +1072,20 @@ const selectCardSet = (set) => {
   // I filtri si accumulano progressivamente per creare query più specifiche
   console.log('✅ Set selezionato per logica a cascata:', set.name)
   console.log('✅ Team mantenuto:', selectedTeam.value?.name)
+  console.log('✅ Anno corrente prima della selezione set:', userSelectedYear)
   
-  // Non precompilare brand/year automaticamente: filtri slegati
-  // IMPORTANTE: NON popolare l'anno automaticamente dal set se l'utente ha già selezionato un anno
+  // IMPORTANTE: NON popolare l'anno automaticamente dal set
   // L'utente deve poter selezionare manualmente l'anno senza che venga sovrascritto
+  // NON fare: localFilters.value.year = set.year (questo sovrascriverebbe l'anno selezionato manualmente)
   
-  // Ripristina l'anno selezionato manualmente dall'utente (se presente)
+  // Ripristina SEMPRE l'anno selezionato manualmente dall'utente (se presente)
+  // Questo assicura che anche se c'è qualche logica che popola l'anno, viene preservato
   if (userSelectedYear) {
-    localFilters.value.year = userSelectedYear
-    console.log('✅ Anno selezionato manualmente preservato:', userSelectedYear)
+    // Usa nextTick per assicurarsi che il valore venga impostato dopo qualsiasi altra logica
+    nextTick(() => {
+      localFilters.value.year = userSelectedYear
+      console.log('✅ Anno selezionato manualmente preservato dopo nextTick:', userSelectedYear)
+    })
   }
   
   // Filtri slegati: non aggiornare opzioni a cascata
@@ -1851,10 +1857,20 @@ const handleFiltersPopulated = async (event) => {
   
   // Popola Set
   if (data.card_set) {
+    // Preserva l'anno selezionato manualmente dall'utente prima di popolare il set
+    const userSelectedYear = localFilters.value.year
+    
     selectedCardSet.value = data.card_set
     localFilters.value.set = data.card_set.id || data.card_set
     localFilters.value.setSearch = '' // Svuota il campo di ricerca, il tag mostrerà il nome
     console.log('✅ Set popolato tramite filters-populated:', selectedCardSet.value?.name)
+    
+    // IMPORTANTE: NON popolare l'anno automaticamente dal set se l'utente ha già selezionato un anno
+    // Ripristina l'anno selezionato manualmente dall'utente (se presente)
+    if (userSelectedYear) {
+      localFilters.value.year = userSelectedYear
+      console.log('✅ Anno selezionato manualmente preservato dopo popolamento set:', userSelectedYear)
+    }
   }
   
   // Popola Brand
@@ -1870,9 +1886,16 @@ const handleFiltersPopulated = async (event) => {
     localFilters.value.raritySearch = data.rarity
     console.log('✅ Rarity popolato tramite filters-populated:', data.rarity)
   }
-  if (data.year) {
+  // IMPORTANTE: Popola l'anno SOLO se esplicitamente fornito nei dati, NON dal set
+  // Questo evita che l'anno venga popolato automaticamente quando viene selezionato un set
+  if (data.year && !data.card_set) {
+    // Popola l'anno solo se NON stiamo popolando anche un set (per evitare conflitti)
     localFilters.value.year = data.year
     console.log('✅ Year popolato tramite filters-populated:', data.year)
+  } else if (data.year && data.card_set && !localFilters.value.year) {
+    // Popola l'anno solo se non c'è già un anno selezionato manualmente
+    localFilters.value.year = data.year
+    console.log('✅ Year popolato tramite filters-populated (nessun anno esistente):', data.year)
   }
   if (data.number) {
     localFilters.value.number = data.number
