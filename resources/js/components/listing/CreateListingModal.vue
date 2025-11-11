@@ -1199,7 +1199,24 @@ const resetForm = () => {
 }
 
 const handleFiltersChanged = async (newFilters) => {
+  // IMPORTANTE: Preserva l'anno selezionato manualmente dall'utente
+  // Se l'utente ha già selezionato un anno, non sovrascriverlo quando viene selezionato un set
+  const userSelectedYear = filters.value.year
+  
+  // Aggiorna i filtri con i nuovi valori
   filters.value = newFilters
+  
+  // Se l'utente aveva selezionato manualmente un anno, ripristinalo
+  // Questo evita che l'anno venga perso quando viene selezionato un set
+  if (userSelectedYear && userSelectedYear !== '' && (!newFilters.year || newFilters.year === '')) {
+    filters.value.year = userSelectedYear
+    console.log('✅ Anno selezionato manualmente preservato in handleFiltersChanged:', userSelectedYear)
+  } else if (userSelectedYear && newFilters.year && newFilters.year !== userSelectedYear) {
+    // Se l'utente aveva selezionato un anno e viene passato un anno diverso (probabilmente dal set),
+    // preserva l'anno selezionato manualmente dall'utente
+    filters.value.year = userSelectedYear
+    console.log('✅ Anno selezionato manualmente preservato (sovrascritto anno dal set):', userSelectedYear)
+  }
   
   // Cerca automaticamente solo durante lo step di selezione (step 1)
   if (selectedMode.value === 'single' && currentStep.value === 1) {
@@ -1207,7 +1224,7 @@ const handleFiltersChanged = async (newFilters) => {
     if (selectedCardModel.value?.id || listingData.value.card_model_id) {
       return
     }
-    await searchSingleCard(newFilters)
+    await searchSingleCard(filters.value)
   }
 }
 
