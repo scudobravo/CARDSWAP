@@ -90,7 +90,17 @@
 
                     <div class="flex items-center gap-3">
                       <span class="text-xs sm:text-sm text-gray-600 whitespace-nowrap">Quantità:</span>
-                      <span class="text-sm font-medium text-gray-900">1</span>
+                      <div class="grid grid-cols-1">
+                        <select 
+                          :value="product.quantity"
+                          @change="updateQuantity(product.id, product.seller_id, parseInt($event.target.value))"
+                          aria-label="Quantità" 
+                          class="col-start-1 row-start-1 w-20 appearance-none rounded-md bg-white border border-gray-300 py-1.5 pr-8 pl-3 text-sm text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600"
+                        >
+                          <option v-for="qty in Array.from({length: getMaxQuantity(product)}, (_, i) => i + 1)" :key="qty" :value="qty">{{ qty }}</option>
+                        </select>
+                        <ChevronDownIcon class="pointer-events-none col-start-1 row-start-1 mr-2 size-4 self-center justify-self-end text-gray-500" aria-hidden="true" />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -247,6 +257,11 @@ const formatPrice = (price) => {
   const priceStr = String(price).replace(/€/g, '').replace(/,/g, '').trim()
   const priceNum = parseFloat(priceStr) || 0
   return priceNum.toFixed(2)
+}
+
+const getMaxQuantity = (product) => {
+  // Usa available_quantity se disponibile, altrimenti usa quantity o 1
+  return product.available_quantity || product.quantity || 1
 }
 
 const proceedToCheckout = () => {

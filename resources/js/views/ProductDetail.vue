@@ -634,6 +634,7 @@ const addToCart = async () => {
       seller_id: product.value.seller?.id || 1,
       price: parseFloat(String(product.value.price || 0).replace(/€/g, '').replace(/,/g, '')) || 95,
       quantity: product.value.quantity || 1,
+      available_quantity: product.value.quantity || 1, // Quantità disponibile totale del venditore
       condition: product.value.condition || 'LIGHT PLAYED',
       description: product.value.description || 'Carta in ottime condizioni',
       images: product.value.images || (product.value.image_url ? [product.value.image_url] : []),
@@ -852,6 +853,7 @@ const loadProductDetails = async () => {
           seller_id: seller?.id,
           price: parseFloat(listing.price),
           quantity: listing.quantity || 1,
+          available_quantity: listing.quantity || 1, // Quantità disponibile totale del venditore
           condition: listing.condition || 'LIGHT PLAYED',
           description: listing.description || 'Carta in ottime condizioni',
           images: images,
@@ -927,6 +929,7 @@ const loadProductDetails = async () => {
           seller_id: response.data.seller.id,
           price: parseFloat(String(product.value.price || 0).replace(/€/g, '').replace(/,/g, '')) || 95,
           quantity: product.value.quantity || 1,
+          available_quantity: product.value.quantity || 1, // Quantità disponibile totale del venditore
           condition: product.value.condition || 'LIGHT PLAYED',
           description: product.value.description || 'Carta in ottime condizioni',
           images: product.value.images || (product.value.image_url ? [product.value.image_url] : []),
@@ -952,6 +955,7 @@ const loadProductDetails = async () => {
           seller_id: 1,
           price: parseFloat(String(product.value.price || 0).replace(/€/g, '').replace(/,/g, '')) || 95,
           quantity: product.value.quantity || 1,
+          available_quantity: product.value.quantity || 1, // Quantità disponibile totale del venditore
           condition: product.value.condition || 'LIGHT PLAYED',
           description: product.value.description || 'Carta in ottime condizioni',
           images: product.value.images || (product.value.image_url ? [product.value.image_url] : []),
