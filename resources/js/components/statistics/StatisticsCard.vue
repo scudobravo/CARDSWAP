@@ -20,6 +20,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { formatPriceItaliana } from '../../utils/priceFormatter'
 
 const props = defineProps({
   label: {
@@ -54,7 +55,7 @@ const props = defineProps({
 
 const formattedValue = computed(() => {
   if (props.format === 'currency') {
-    return `€${Number(props.value).toFixed(2)}`
+    return `€${formatPriceItaliana(Number(props.value))}`
   } else if (props.format === 'percentage') {
     return `${Number(props.value).toFixed(1)}%`
   } else {

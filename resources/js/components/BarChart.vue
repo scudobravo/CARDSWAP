@@ -55,7 +55,7 @@
             class="hover:fill-blue-600 transition-colors duration-200 cursor-pointer"
             :opacity="0.8"
           >
-            <title>€{{ value.toFixed(2) }} - {{ labels[index] }}</title>
+            <title>€{{ formatPriceItaliana(value) }} - {{ labels[index] }}</title>
           </rect>
         </template>
         
@@ -79,13 +79,13 @@
         Ultimi {{ chartData.length }} punti dati
       </p>
       <p v-if="chartData.length > 0 && Math.min(...chartData) !== Math.max(...chartData)" class="text-xs text-gray-500 mt-1">
-        Min: €{{ Math.min(...chartData).toFixed(0) }} | Max: €{{ Math.max(...chartData).toFixed(0) }}
+        Min: €{{ formatPriceItaliana(Math.min(...chartData)) }} | Max: €{{ formatPriceItaliana(Math.max(...chartData)) }}
       </p>
       <p v-else-if="chartData.length > 0" class="text-xs text-gray-500 mt-1">
-        Prezzo: €{{ chartData[0].toFixed(0) }}
+        Prezzo: €{{ formatPriceItaliana(chartData[0]) }}
       </p>
       <p v-else class="text-xs text-gray-500">
-        Prezzo corrente: €{{ parseFloat(currentPrice).toFixed(2) }}
+        Prezzo corrente: €{{ formatPriceItaliana(parseFloat(currentPrice)) }}
       </p>
     </div>
   </div>
@@ -94,6 +94,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
+import { formatPriceItaliana } from '../utils/priceFormatter'
 
 // Props
 const props = defineProps({

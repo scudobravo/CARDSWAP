@@ -47,7 +47,7 @@
         </div>
         <div class="ml-3">
           <p class="text-sm font-gill-sans text-gray-500">Totale Vendite</p>
-          <p class="text-2xl font-futura-bold text-gray-900">€{{ stats.total_sales.toFixed(2) }}</p>
+          <p class="text-2xl font-futura-bold text-gray-900">€{{ formatPriceItaliana(stats.total_sales) }}</p>
         </div>
       </div>
     </div>
@@ -55,6 +55,7 @@
 </template>
 
 <script setup>
+import { formatPriceItaliana } from '../../utils/priceFormatter'
 import { 
   ClockIcon, 
   TruckIcon, 

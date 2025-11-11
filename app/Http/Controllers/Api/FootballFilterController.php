@@ -1263,7 +1263,7 @@ class FootballFilterController extends Controller
                 'year' => $cardModel->year,
                 'rarity' => $cardModel->rarity,
                 'condition' => $listing->condition ?? 'excellent',
-                'price' => number_format($listing->price ?? 0, 2),
+                'price' => number_format($listing->price ?? 0, 2, ',', '.'), // Formato italiano: punto per migliaia, virgola per decimali
                 'quantity' => $listing->quantity ?? 1,
                 'card_number_in_set' => $cardModel->card_number_in_set,
                 'card_number' => $cardModel->card_number,

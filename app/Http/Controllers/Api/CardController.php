@@ -243,7 +243,7 @@ class CardController extends Controller
         }
         
         $price = $basePrice * $multiplier;
-        return '€' . number_format($price, 2);
+        return '€' . number_format($price, 2, ',', '.'); // Formato italiano: punto per migliaia, virgola per decimali
     }
 
     /**
@@ -340,7 +340,7 @@ class CardController extends Controller
                     'set_name' => $card->cardSet->name ?? $card->set_name ?? 'Set Name',
                     'year' => $card->year ?: date('Y'),
                     'rarity' => $card->rarity ?: 'Rare',
-                    'price' => number_format($listing->price, 2),
+                    'price' => number_format($listing->price, 2, ',', '.'), // Formato italiano: punto per migliaia, virgola per decimali
                     'rating' => $this->getEstimatedRating($card),
                     'image_url' => $imageUrl,
                     'images' => $images,
@@ -487,7 +487,7 @@ class CardController extends Controller
                     'set_name' => $card->cardSet->name ?? $card->set_name ?? 'Set Name',
                     'year' => $card->year ?: date('Y'),
                     'rarity' => $card->rarity ?: 'Rare',
-                    'price' => number_format($listing->price, 2),
+                    'price' => number_format($listing->price, 2, ',', '.'), // Formato italiano: punto per migliaia, virgola per decimali
                     'rating' => $this->getEstimatedRating($card),
                     'image_url' => $imageUrl,
                     'images' => $images,

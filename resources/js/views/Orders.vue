@@ -86,7 +86,7 @@
                   {{ getStatusLabel(order.status) }}
                 </span>
                 <p class="text-lg font-semibold text-gray-900 mt-1">
-                  €{{ order.total_amount.toFixed(2) }}
+                  €{{ formatPriceItaliana(order.total_amount) }}
                 </p>
               </div>
             </div>
@@ -127,10 +127,10 @@
                   
                   <div class="text-right">
                     <p class="font-medium text-gray-900">
-                      €{{ item.total_price.toFixed(2) }}
+                      €{{ formatPriceItaliana(item.total_price) }}
                     </p>
                     <p class="text-sm text-gray-500">
-                      {{ item.quantity }}x €{{ item.unit_price.toFixed(2) }}
+                      {{ item.quantity }}x €{{ formatPriceItaliana(item.unit_price) }}
                     </p>
                   </div>
                 </div>
@@ -165,20 +165,20 @@
               <div class="space-y-2">
                 <div class="flex justify-between text-sm">
                   <span class="text-gray-600">Subtotale</span>
-                  <span class="text-gray-900">€{{ order.subtotal.toFixed(2) }}</span>
+                  <span class="text-gray-900">€{{ formatPriceItaliana(order.subtotal) }}</span>
                 </div>
                 <div class="flex justify-between text-sm">
                   <span class="text-gray-600">Spedizione</span>
-                  <span class="text-gray-900">€{{ order.shipping_cost.toFixed(2) }}</span>
+                  <span class="text-gray-900">€{{ formatPriceItaliana(order.shipping_cost) }}</span>
                 </div>
                 <div class="flex justify-between text-sm">
                   <span class="text-gray-600">Costo di gestione</span>
-                  <span class="text-gray-900">€{{ order.tax_amount.toFixed(2) }}</span>
+                  <span class="text-gray-900">€{{ formatPriceItaliana(order.tax_amount) }}</span>
                 </div>
                 <div class="border-t border-gray-200 pt-2">
                   <div class="flex justify-between font-semibold">
                     <span class="text-gray-900">Totale</span>
-                    <span class="text-gray-900">€{{ order.total_amount.toFixed(2) }}</span>
+                    <span class="text-gray-900">€{{ formatPriceItaliana(order.total_amount) }}</span>
                   </div>
                 </div>
               </div>
@@ -245,6 +245,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { formatPriceItaliana } from '../utils/priceFormatter'
 
 const authStore = useAuthStore()
 

@@ -113,7 +113,7 @@
                       €{{ item.price }}
                     </p>
                     <p class="text-xs text-gray-500">
-                      Totale: €{{ (item.price * item.quantity).toFixed(2) }}
+                      Totale: €{{ formatPriceItaliana(item.price * item.quantity) }}
                     </p>
                   </div>
                 </div>
@@ -167,6 +167,7 @@
 
 <script setup>
 import { XMarkIcon, PhotoIcon } from '@heroicons/vue/24/outline'
+import { formatPriceItaliana } from '../../utils/priceFormatter'
 
 defineProps({
   order: {

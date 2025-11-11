@@ -449,6 +449,7 @@ import VendorChatModal from '../components/VendorChatModal.vue'
 import BarChart from '../components/BarChart.vue'
 import CreateListingModal from '../components/listing/CreateListingModal.vue'
 import cardService from '../services/cardService.js'
+import { formatPriceItaliana } from '../utils/priceFormatter'
 
 const route = useRoute()
 const cartStore = useCartStore()
@@ -1112,11 +1113,7 @@ const handleImageError = (event) => {
 }
 
 const formatPrice = (price) => {
-  if (!price && price !== 0) return '€0.00'
-  // Se il prezzo è già una stringa con € o virgole, rimuovili
-  const priceStr = String(price).replace(/€/g, '').replace(/,/g, '').trim()
-  const priceNum = parseFloat(priceStr) || 0
-  return '€' + priceNum.toFixed(2)
+  return formatPriceItaliana(price, true) // Include il simbolo €
 }
 
 const getCategoryName = () => {

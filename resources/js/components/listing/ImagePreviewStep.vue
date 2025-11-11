@@ -229,7 +229,7 @@
             <div class="text-xs text-gray-600 space-y-1">
               <div>{{ card.team?.name || 'N/A' }}</div>
               <div>{{ card.set?.name || 'N/A' }}</div>
-              <div class="font-semibold text-primary">€{{ card.price || '0.00' }}</div>
+              <div class="font-semibold text-primary">€{{ formatPriceItaliana(card.price || 0) }}</div>
             </div>
           </div>
         </div>
@@ -320,6 +320,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { formatPriceItaliana } from '../../utils/priceFormatter'
 
 // Props
 const props = defineProps({

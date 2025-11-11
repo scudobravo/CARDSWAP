@@ -30,7 +30,7 @@
               </div>
               <div class="text-right">
                 <p class="text-sm font-medium text-gray-900">
-                  Totale: €{{ parseFloat(order.total_amount).toFixed(2) }}
+                  Totale: €{{ formatPriceItaliana(order.total_amount) }}
                 </p>
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                       :class="getStatusClass(order.status)">
@@ -62,10 +62,10 @@
                 </div>
                 <div class="text-right">
                   <p class="text-sm font-medium text-gray-900">
-                    €{{ (parseFloat(item.price) * item.quantity).toFixed(2) }}
+                    €{{ formatPriceItaliana(parseFloat(item.price) * item.quantity) }}
                   </p>
                   <p class="text-sm text-gray-500">
-                    {{ item.quantity }}x €{{ parseFloat(item.price).toFixed(2) }}
+                    {{ item.quantity }}x €{{ formatPriceItaliana(parseFloat(item.price)) }}
                   </p>
                 </div>
               </div>
@@ -90,19 +90,19 @@
             <dl class="space-y-2">
               <div class="flex justify-between text-sm">
                 <dt class="text-gray-600">Subtotale</dt>
-                <dd class="font-medium text-gray-900">€{{ parseFloat(order.subtotal).toFixed(2) }}</dd>
+                <dd class="font-medium text-gray-900">€{{ formatPriceItaliana(order.subtotal) }}</dd>
               </div>
               <div class="flex justify-between text-sm">
                 <dt class="text-gray-600">Spedizione</dt>
-                <dd class="font-medium text-gray-900">€{{ parseFloat(order.shipping_cost).toFixed(2) }}</dd>
+                <dd class="font-medium text-gray-900">€{{ formatPriceItaliana(order.shipping_cost) }}</dd>
               </div>
               <div class="flex justify-between text-sm">
                 <dt class="text-gray-600">Costo di gestione</dt>
-                <dd class="font-medium text-gray-900">€{{ parseFloat(order.tax_amount).toFixed(2) }}</dd>
+                <dd class="font-medium text-gray-900">€{{ formatPriceItaliana(order.tax_amount) }}</dd>
               </div>
               <div class="flex justify-between text-lg font-medium border-t border-gray-300 pt-2">
                 <dt class="text-gray-900">Totale</dt>
-                <dd class="text-gray-900">€{{ parseFloat(order.total_amount).toFixed(2) }}</dd>
+                <dd class="text-gray-900">€{{ formatPriceItaliana(order.total_amount) }}</dd>
               </div>
             </dl>
           </div>
@@ -154,6 +154,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
 import axios from 'axios'
+import { formatPriceItaliana } from '../utils/priceFormatter'
 
 const route = useRoute()
 const router = useRouter()

@@ -435,6 +435,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
+import { formatPriceItaliana } from '../utils/priceFormatter'
 import {
   Disclosure,
   DisclosureButton,
@@ -967,11 +968,7 @@ const handleImageError = (event) => {
 }
 
 const formatPrice = (price) => {
-  if (!price && price !== 0) return '0.00'
-  // Se il prezzo è già una stringa con €, rimuovilo
-  const priceStr = String(price).replace(/€/g, '').replace(/,/g, '').trim()
-  const priceNum = parseFloat(priceStr) || 0
-  return priceNum.toFixed(2)
+  return formatPriceItaliana(price, false)
 }
 
 // Intersection Observer setup

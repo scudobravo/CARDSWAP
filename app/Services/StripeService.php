@@ -684,7 +684,7 @@ class StripeService
         $seller->notifications()->create([
             'type' => 'payment_received',
             'title' => 'Pagamento ricevuto',
-            'message' => 'Hai ricevuto €' . number_format($transfer->amount / 100, 2) . ' per la vendita',
+            'message' => 'Hai ricevuto €' . number_format($transfer->amount / 100, 2, ',', '.') . ' per la vendita', // Formato italiano: punto per migliaia, virgola per decimali
             'data' => [
                 'transfer_id' => $transfer->id,
                 'amount' => $transfer->amount / 100,
@@ -708,7 +708,7 @@ class StripeService
         $seller->notifications()->create([
             'type' => 'payment_failed',
             'title' => 'Errore trasferimento',
-            'message' => 'Si è verificato un errore nel trasferimento di €' . number_format($transfer->amount / 100, 2),
+            'message' => 'Si è verificato un errore nel trasferimento di €' . number_format($transfer->amount / 100, 2, ',', '.'), // Formato italiano: punto per migliaia, virgola per decimali
             'data' => [
                 'transfer_id' => $transfer->id,
                 'amount' => $transfer->amount / 100,

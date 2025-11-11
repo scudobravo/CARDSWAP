@@ -19,6 +19,55 @@ use Illuminate\Database\Eloquent\Builder;
 class CardListingController extends Controller
 {
     /**
+     * Normalizza un prezzo da formato italiano (15.000,00) a formato database (15000.00)
+     * Gestisce anche formati internazionali (15000.00)
+     * 
+     * @param mixed $price
+     * @return float
+     */
+    private function normalizePrice($price)
+    {
+        if (is_null($price) || $price === '') {
+            return 0.0;
+        }
+
+        // Se è già un numero, restituiscilo
+        if (is_numeric($price)) {
+            return (float) $price;
+        }
+
+        // Converti stringa a numero, gestendo formati italiani e internazionali
+        $priceStr = (string) $price;
+        $priceStr = str_replace('€', '', $priceStr); // Rimuovi simbolo €
+        $priceStr = str_replace(' ', '', $priceStr); // Rimuovi spazi
+        $priceStr = trim($priceStr);
+
+        // Se contiene una virgola come separatore decimale (formato italiano)
+        if (strpos($priceStr, ',') !== false && strpos($priceStr, '.') === false) {
+            // Formato italiano: "15.000,50" -> rimuovi punti migliaia, sostituisci virgola con punto
+            $priceStr = str_replace('.', '', $priceStr);
+            $priceStr = str_replace(',', '.', $priceStr);
+        } elseif (strpos($priceStr, ',') !== false && strpos($priceStr, '.') !== false) {
+            // Formato misto: determina quale è il separatore decimale
+            $lastComma = strrpos($priceStr, ',');
+            $lastDot = strrpos($priceStr, '.');
+            if ($lastComma > $lastDot) {
+                // Virgola è il separatore decimale (formato italiano)
+                $priceStr = str_replace('.', '', $priceStr);
+                $priceStr = str_replace(',', '.', $priceStr);
+            } else {
+                // Punto è il separatore decimale (formato internazionale)
+                $priceStr = str_replace(',', '', $priceStr);
+            }
+        } else {
+            // Solo punto o solo virgola o nessuno
+            $priceStr = str_replace(',', '.', $priceStr);
+        }
+
+        $priceNum = (float) $priceStr;
+        return is_nan($priceNum) ? 0.0 : $priceNum;
+    }
+    /**
      * Display a listing of card listings with filters and pagination
      */
     public function index(Request $request): JsonResponse
@@ -136,6 +185,11 @@ class CardListingController extends Controller
             // Rimuovi autograph_condition se la colonna non esiste nel database
             if (!Schema::hasColumn('card_listings', 'autograph_condition')) {
                 unset($listingData['autograph_condition']);
+            }
+            
+            // Normalizza il prezzo da formato italiano (15.000,00) a formato database (15000.00)
+            if (isset($listingData['price'])) {
+                $listingData['price'] = $this->normalizePrice($listingData['price']);
             }
             
             // Assicurati che quantity sia un intero
@@ -274,6 +328,11 @@ class CardListingController extends Controller
                     unset($listingData['autograph_condition']);
                 }
                 
+                // Normalizza il prezzo da formato italiano (15.000,00) a formato database (15000.00)
+                if (isset($listingData['price'])) {
+                    $listingData['price'] = $this->normalizePrice($listingData['price']);
+                }
+                
                 $listing = CardListing::create($listingData);
                 
                 // Gestione zone di spedizione
@@ -390,7 +449,7 @@ class CardListingController extends Controller
                     'name' => $cardModel->player->name ?? $cardModel->player_name ?? $cardModel->name ?? 'Player',
                     'team' => $cardModel->team->name ?? 'Unknown Team',
                     'type' => $this->getCategoryType($cardModel->category->name ?? ''),
-                    'price' => '€' . number_format($listing->price, 2, '.', ''),
+                    'price' => '€' . number_format($listing->price, 2, ',', '.'), // Formato italiano: punto per migliaia, virgola per decimali
                     'rating' => '4.5',
                     'image_url' => $imageUrl,
                     'images' => $listing->images ?? [],
@@ -653,6 +712,11 @@ class CardListingController extends Controller
             DB::beginTransaction();
 
             $updateData = $data; // Usa i dati già convertiti
+            
+            // Normalizza il prezzo da formato italiano (15.000,00) a formato database (15000.00)
+            if (isset($updateData['price'])) {
+                $updateData['price'] = $this->normalizePrice($updateData['price']);
+            }
             
             // Rimuovi autograph_condition se la colonna non esiste nel database
             if (!Schema::hasColumn('card_listings', 'autograph_condition')) {

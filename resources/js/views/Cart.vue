@@ -170,6 +170,7 @@ import Header from '../components/Header.vue'
 import Footer from '../components/Footer.vue'
 import { ChevronDownIcon } from '@heroicons/vue/16/solid'
 import { CheckIcon, ClockIcon, QuestionMarkCircleIcon, XMarkIcon } from '@heroicons/vue/20/solid'
+import { formatPriceItaliana, normalizePrice } from '../utils/priceFormatter'
 
 const router = useRouter()
 const cartStore = useCartStore()
@@ -195,15 +196,27 @@ const isEmpty = computed(() => cartStore.isEmpty)
 const allCartItems = computed(() => cartStore.allCartItems)
 const subtotal = computed(() => {
   return cartStore.allCartItems.reduce((sum, item) => {
-    const price = typeof item.price === 'string' 
-      ? parseFloat(String(item.price).replace(/€/g, '').replace(/,/g, '')) || 0
-      : (item.price || 0)
-    return sum + (price * item.quantity)
+    const price = normalizePrice(item.price)
+    const quantity = parseInt(item.quantity) || 1
+    return sum + (price * quantity)
   }, 0)
 })
-const totalShippingCost = computed(() => cartStore.totalShippingCost)
-const taxAmount = computed(() => subtotal.value * 0.035) // 3.5% Costo di gestione (copre i costi Stripe)
-const grandTotal = computed(() => subtotal.value + totalShippingCost.value + taxAmount.value)
+const totalShippingCost = computed(() => {
+  // Normalizza il costo di spedizione dal cartStore
+  return normalizePrice(cartStore.totalShippingCost)
+})
+const taxAmount = computed(() => {
+  // Calcola il costo di gestione (3.5% del subtotale)
+  const subtotalValue = normalizePrice(subtotal.value)
+  return subtotalValue * 0.035 // 3.5% Costo di gestione (copre i costi Stripe)
+})
+const grandTotal = computed(() => {
+  // Assicurati che tutti i valori siano numeri normalizzati
+  const subtotalValue = normalizePrice(subtotal.value)
+  const shippingValue = normalizePrice(totalShippingCost.value)
+  const taxValue = normalizePrice(taxAmount.value)
+  return subtotalValue + shippingValue + taxValue
+})
 
 const canProceedToCheckout = computed(() => {
   return !isEmpty.value && allCartItems.value.length > 0
@@ -252,11 +265,7 @@ const getConditionLabel = (condition) => {
 }
 
 const formatPrice = (price) => {
-  if (!price && price !== 0) return '0.00'
-  // Se il prezzo è già una stringa con €, rimuovilo
-  const priceStr = String(price).replace(/€/g, '').replace(/,/g, '').trim()
-  const priceNum = parseFloat(priceStr) || 0
-  return priceNum.toFixed(2)
+  return formatPriceItaliana(price, false)
 }
 
 const getMaxQuantity = (product) => {

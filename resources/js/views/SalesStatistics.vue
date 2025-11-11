@@ -160,7 +160,7 @@
               </div>
               <div class="text-right">
                 <p class="text-sm font-gill-sans-semibold text-gray-900">{{ product.quantity_sold }} venduti</p>
-                <p class="text-xs text-gray-500">€{{ product.total_revenue.toFixed(2) }}</p>
+                <p class="text-xs text-gray-500">€{{ formatPriceItaliana(product.total_revenue) }}</p>
               </div>
             </div>
           </div>
@@ -219,10 +219,10 @@
                   {{ month.orders }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  €{{ month.sales.toFixed(2) }}
+                  €{{ formatPriceItaliana(month.sales) }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  €{{ month.average_order_value.toFixed(2) }}
+                  €{{ formatPriceItaliana(month.average_order_value) }}
                 </td>
               </tr>
             </tbody>
@@ -247,6 +247,7 @@ import { ref, onMounted } from 'vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import StatisticsCard from '@/components/statistics/StatisticsCard.vue'
 import SalesChart from '@/components/statistics/SalesChart.vue'
+import { formatPriceItaliana } from '../utils/priceFormatter'
 import { 
   ChartBarIcon, 
   CurrencyEuroIcon, 

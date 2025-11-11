@@ -72,7 +72,7 @@
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                €{{ parseFloat(zone.shipping_cost).toFixed(2) }}
+                €{{ formatPriceItaliana(zone.shipping_cost) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 {{ zone.delivery_days_min }}-{{ zone.delivery_days_max }} giorni
@@ -242,6 +242,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { formatPriceItaliana } from '../../utils/priceFormatter'
 
 // Props
 const props = defineProps({

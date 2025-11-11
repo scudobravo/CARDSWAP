@@ -868,6 +868,7 @@ import ChainedFilters from './ChainedFilters.vue'
 import BulkCardSelectionTable from './BulkCardSelectionTable.vue'
 import BulkEditForm from './BulkEditForm.vue'
 import ImagePreviewStep from './ImagePreviewStep.vue'
+import { normalizePrice } from '../../utils/priceFormatter'
 
 // Props
 const props = defineProps({
@@ -1902,9 +1903,16 @@ const createNewSingleListing = async () => {
     return
   }
   
-  // Add price from listingData (required)
-  if (listingData.value.price && parseFloat(listingData.value.price) > 0) {
-    formData.append('price', listingData.value.price)
+  // Add price from listingData (required) - normalizza il prezzo prima di inviarlo
+  if (listingData.value.price) {
+    const normalizedPrice = normalizePrice(listingData.value.price)
+    if (normalizedPrice > 0) {
+      formData.append('price', normalizedPrice.toString())
+    } else {
+      console.error('price is required but not found')
+      alert('Errore: Prezzo non inserito')
+      return
+    }
   } else {
     console.error('price is required but not found')
     alert('Errore: Prezzo non inserito')
@@ -2107,7 +2115,9 @@ const createBulkListings = async () => {
     
     formData.append('listing_type', 'bulk')
     formData.append('card_model_id', listing.card_model_id)
-    formData.append('price', listing.price)
+    // Normalizza il prezzo prima di inviarlo
+    const normalizedPrice = normalizePrice(listing.price)
+    formData.append('price', normalizedPrice.toString())
     formData.append('quantity', listing.quantity || 1)
     formData.append('condition', listing.condition)
     // Add autograph_condition if available, otherwise use condition
@@ -2238,7 +2248,9 @@ const createSealedPackListing = async () => {
   }
   
   // Prezzo e quantità
-  formData.append('price', listingData.value.price)
+  // Normalizza il prezzo prima di inviarlo
+  const normalizedPrice = normalizePrice(listingData.value.price)
+  formData.append('price', normalizedPrice.toString())
   formData.append('quantity', listingData.value.quantity.toString())
   
   // Condizione di default
@@ -2301,7 +2313,9 @@ const createSealedBoxListing = async () => {
   }
   
   // Prezzo e quantità
-  formData.append('price', listingData.value.price)
+  // Normalizza il prezzo prima di inviarlo
+  const normalizedPrice = normalizePrice(listingData.value.price)
+  formData.append('price', normalizedPrice.toString())
   formData.append('quantity', listingData.value.quantity.toString())
   
   // Condizione di default
@@ -2357,7 +2371,9 @@ const createLotListing = async () => {
   formData.append('description', listingData.value.description)
   
   // Prezzo (senza quantità per i lot)
-  formData.append('price', listingData.value.price)
+  // Normalizza il prezzo prima di inviarlo
+  const normalizedPrice = normalizePrice(listingData.value.price)
+  formData.append('price', normalizedPrice.toString())
   formData.append('quantity', '1') // Default a 1 per i lot
   
   // Condizione di default
@@ -3056,7 +3072,9 @@ const updateSingleListing = async () => {
     
     // Aggiungi i dati dell'inserzione (assicurati che tutti i campi necessari siano presenti)
     if (listingData.value.price !== undefined && listingData.value.price !== null) {
-      formData.append('price', listingData.value.price)
+      // Normalizza il prezzo prima di inviarlo
+  const normalizedPrice = normalizePrice(listingData.value.price)
+  formData.append('price', normalizedPrice.toString())
     }
     if (listingData.value.condition) {
       formData.append('condition', listingData.value.condition)

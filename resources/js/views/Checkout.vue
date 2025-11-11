@@ -345,7 +345,7 @@
                   </div>
 
                   <div class="flex flex-1 items-end justify-between pt-2">
-                    <p class="mt-1 text-sm font-medium text-gray-900">€{{ (product.price * product.quantity).toFixed(2) }}</p>
+                    <p class="mt-1 text-sm font-medium text-gray-900">€{{ formatPriceItaliana(product.price * product.quantity) }}</p>
 
                     <div class="ml-4">
                       <div class="grid grid-cols-1">
@@ -367,19 +367,19 @@
             <dl class="space-y-6 border-t border-gray-200 px-4 py-6 sm:px-6">
               <div class="flex items-center justify-between">
                 <dt class="text-sm">Subtotale</dt>
-                <dd class="text-sm font-medium text-gray-900">€{{ orderSummary.subtotal.toFixed(2) }}</dd>
+                <dd class="text-sm font-medium text-gray-900">€{{ formatPriceItaliana(orderSummary.subtotal) }}</dd>
               </div>
               <div class="flex items-center justify-between">
                 <dt class="text-sm">Spedizione</dt>
-                <dd class="text-sm font-medium text-gray-900">€{{ orderSummary.shipping.toFixed(2) }}</dd>
+                <dd class="text-sm font-medium text-gray-900">€{{ formatPriceItaliana(orderSummary.shipping) }}</dd>
               </div>
               <div class="flex items-center justify-between">
                 <dt class="text-sm">Costo di gestione</dt>
-                <dd class="text-sm font-medium text-gray-900">€{{ orderSummary.tax.toFixed(2) }}</dd>
+                <dd class="text-sm font-medium text-gray-900">€{{ formatPriceItaliana(orderSummary.tax) }}</dd>
               </div>
               <div class="flex items-center justify-between border-t border-gray-200 pt-6">
                 <dt class="text-base font-medium">Totale</dt>
-                <dd class="text-base font-medium text-gray-900">€{{ orderSummary.total.toFixed(2) }}</dd>
+                <dd class="text-base font-medium text-gray-900">€{{ formatPriceItaliana(orderSummary.total) }}</dd>
               </div>
             </dl>
 
@@ -421,6 +421,7 @@ import { useAuthStore } from '@/stores/auth'
 import { ChevronDownIcon } from '@heroicons/vue/16/solid'
 import { CheckCircleIcon, TrashIcon } from '@heroicons/vue/20/solid'
 import axios from 'axios'
+import { formatPriceItaliana, normalizePrice } from '../utils/priceFormatter'
 
 const router = useRouter()
 const cartStore = useCartStore()
@@ -492,15 +493,20 @@ const cartProducts = computed(() => {
 
 const orderSummary = computed(() => {
   const sellers = cartStore.sellers
-  const subtotal = sellers.reduce((sum, seller) => sum + seller.subtotal, 0)
+  // Normalizza i subtotali per assicurarsi che siano numeri
+  const subtotal = sellers.reduce((sum, seller) => {
+    const sellerSubtotal = normalizePrice(seller.subtotal)
+    return sum + sellerSubtotal
+  }, 0)
   
   // Calcola spedizione per ogni venditore basata sul metodo selezionato
   const shipping = sellers.reduce((sum, seller) => {
     const selectedMethod = selectedShippingMethods.value[seller.id]
     const shippingCost = getShippingCostForMethod(selectedMethod, seller.id)
-    return sum + shippingCost
+    return sum + normalizePrice(shippingCost)
   }, 0)
   
+  // Calcola il costo di gestione (3.5% del subtotale)
   const tax = subtotal * 0.035 // 3.5% Costo di gestione (copre i costi Stripe)
   const total = subtotal + shipping + tax
   
@@ -856,7 +862,7 @@ const calculateShippingRates = async () => {
             id: rate.object_id,
             title: rate.service_name,
             turnaround: `${rate.estimated_days || '3-7'} giorni lavorativi`,
-            price: `€${rate.amount.toFixed(2)}`,
+            price: `€${formatPriceItaliana(rate.amount)}`,
             service_type: rate.service_type,
             carrier: rate.carrier,
             original_amount: rate.original_amount
@@ -904,8 +910,7 @@ const getShippingCostForMethod = (methodId, sellerId = null) => {
   if (sellerId && deliveryMethods.value[sellerId]) {
     const method = deliveryMethods.value[sellerId].find(m => m.id === methodId)
     if (method) {
-      const priceStr = method.price.replace('€', '').replace(',', '.')
-      return parseFloat(priceStr) || 0
+      return normalizePrice(method.price)
     }
   }
   
@@ -913,8 +918,7 @@ const getShippingCostForMethod = (methodId, sellerId = null) => {
   for (const sellerMethods of Object.values(deliveryMethods.value)) {
     const method = sellerMethods.find(m => m.id === methodId)
     if (method) {
-      const priceStr = method.price.replace('€', '').replace(',', '.')
-      return parseFloat(priceStr) || 0
+      return normalizePrice(method.price)
     }
   }
   

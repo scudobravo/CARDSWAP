@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import axios from 'axios'
+import { normalizePrice } from '../utils/priceFormatter'
 
 export const useCartStore = defineStore('cart', () => {
   // Stato del carrello: oggetto con seller_id come chiave
@@ -22,7 +23,12 @@ export const useCartStore = defineStore('cart', () => {
     return Object.keys(cartItems.value).map(sellerId => {
       const sellerItems = cartItems.value[sellerId]
       const seller = sellerItems[0]?.seller
-      const subtotal = sellerItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+      // Normalizza i prezzi prima di calcolare il subtotale
+      const subtotal = sellerItems.reduce((sum, item) => {
+        const price = normalizePrice(item.price)
+        const quantity = parseInt(item.quantity) || 1
+        return sum + (price * quantity)
+      }, 0)
       const shippingCost = getShippingCostForSeller(sellerId)
       
       return {

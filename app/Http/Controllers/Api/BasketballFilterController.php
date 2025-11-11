@@ -1018,7 +1018,7 @@ class BasketballFilterController extends Controller
                 'year' => $cardModel->year,
                 'rarity' => $cardModel->rarity,
                 'condition' => 'excellent', // Default condition since we don't have card_listings yet
-                'price' => number_format($cardModel->price ?? 0, 2),
+                'price' => number_format($cardModel->price ?? 0, 2, ',', '.'), // Formato italiano: punto per migliaia, virgola per decimali
                 'card_number_in_set' => $cardModel->card_number_in_set,
                 'is_rookie' => $cardModel->is_rookie ?? false,
                 'is_autograph' => $cardModel->is_autograph ?? false,

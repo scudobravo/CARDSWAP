@@ -138,7 +138,7 @@
               <div class="mt-3 flex items-center justify-between">
                 <div>
                   <p class="text-lg font-gill-sans-bold text-primary">
-                    €{{ parseFloat(listing.price).toFixed(2) }}
+                    €{{ formatPriceItaliana(listing.price) }}
                   </p>
                   <p class="text-xs text-gray-500 capitalize">
                     {{ listing.condition }} - Qty: {{ listing.quantity }}
@@ -200,6 +200,7 @@ import { useAuthStore } from '@/stores/auth'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import CreateListingModal from '@/components/listing/CreateListingModal.vue'
 import { PlusIcon, FolderIcon, ExclamationTriangleIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import { formatPriceItaliana } from '../utils/priceFormatter'
 
 const authStore = useAuthStore()
 const kycCompleted = computed(() => authStore.user?.kyc_status === 'approved')

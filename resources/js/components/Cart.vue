@@ -44,7 +44,7 @@
               </div>
               <div class="text-right">
                 <p class="text-sm text-gray-500">Subtotale</p>
-                <p class="font-semibold text-gray-900">€{{ seller.subtotal.toFixed(2) }}</p>
+                <p class="font-semibold text-gray-900">€{{ formatPriceItaliana(seller.subtotal) }}</p>
               </div>
             </div>
           </div>
@@ -102,8 +102,8 @@
 
                   <!-- Prezzo -->
                   <div class="text-right">
-                    <p class="font-semibold text-gray-900">€{{ (item.price * item.quantity).toFixed(2) }}</p>
-                    <p class="text-sm text-gray-500">€{{ item.price.toFixed(2) }} cad.</p>
+                    <p class="font-semibold text-gray-900">€{{ formatPriceItaliana(item.price * item.quantity) }}</p>
+                    <p class="text-sm text-gray-500">€{{ formatPriceItaliana(item.price) }} cad.</p>
                   </div>
 
                   <!-- Rimuovi -->
@@ -149,9 +149,9 @@
                 <p class="font-semibold text-gray-900">Totale {{ seller.name }}</p>
               </div>
               <div class="text-right">
-                <p class="text-sm text-gray-600">€{{ seller.subtotal.toFixed(2) }}</p>
-                <p class="text-sm text-gray-600">€{{ seller.shippingCost.toFixed(2) }}</p>
-                <p class="font-semibold text-gray-900">€{{ seller.total.toFixed(2) }}</p>
+                <p class="text-sm text-gray-600">€{{ formatPriceItaliana(seller.subtotal) }}</p>
+                <p class="text-sm text-gray-600">€{{ formatPriceItaliana(seller.shippingCost) }}</p>
+                <p class="font-semibold text-gray-900">€{{ formatPriceItaliana(seller.total) }}</p>
               </div>
             </div>
           </div>
@@ -165,18 +165,18 @@
         <div class="space-y-2 mb-4">
           <div class="flex justify-between text-sm">
             <span class="text-gray-600">Subtotale ({{ totalItems }} articoli)</span>
-            <span class="text-gray-900">€{{ (grandTotal - totalShippingCost).toFixed(2) }}</span>
+            <span class="text-gray-900">€{{ formatPriceItaliana(grandTotal - totalShippingCost) }}</span>
           </div>
           <div class="flex justify-between text-sm">
             <span class="text-gray-600">Spedizione</span>
-            <span class="text-gray-900">€{{ totalShippingCost.toFixed(2) }}</span>
+            <span class="text-gray-900">€{{ formatPriceItaliana(totalShippingCost) }}</span>
           </div>
         </div>
 
         <div class="border-t border-gray-200 pt-4">
           <div class="flex justify-between items-center">
             <span class="text-lg font-semibold text-gray-900">Totale</span>
-            <span class="text-xl font-bold text-gray-900">€{{ grandTotal.toFixed(2) }}</span>
+            <span class="text-xl font-bold text-gray-900">€{{ formatPriceItaliana(grandTotal) }}</span>
           </div>
         </div>
 
@@ -201,6 +201,7 @@
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
+import { formatPriceItaliana } from '../utils/priceFormatter'
 
 const router = useRouter()
 const cartStore = useCartStore()

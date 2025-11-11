@@ -69,20 +69,20 @@
       <div class="space-y-2">
         <div class="flex justify-between text-sm">
           <span>Subtotale:</span>
-          <span>€{{ subtotal.toFixed(2) }}</span>
+          <span>€{{ formatPriceItaliana(subtotal) }}</span>
         </div>
         <div class="flex justify-between text-sm">
           <span>Spedizione:</span>
-          <span>€{{ shipping.toFixed(2) }}</span>
+          <span>€{{ formatPriceItaliana(shipping) }}</span>
         </div>
         <div class="flex justify-between text-sm">
           <span>Tasse:</span>
-          <span>€{{ taxes.toFixed(2) }}</span>
+          <span>€{{ formatPriceItaliana(taxes) }}</span>
         </div>
         <div class="border-t pt-2">
           <div class="flex justify-between text-lg font-semibold">
             <span>Totale:</span>
-            <span>€{{ total.toFixed(2) }}</span>
+            <span>€{{ formatPriceItaliana(total) }}</span>
           </div>
         </div>
       </div>
@@ -156,6 +156,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import AvailabilityStatus from '../availability/AvailabilityStatus.vue'
 import availabilityService from '../../services/AvailabilityService.js'
+import { formatPriceItaliana } from '../../utils/priceFormatter'
 
 // Props
 const props = defineProps({
