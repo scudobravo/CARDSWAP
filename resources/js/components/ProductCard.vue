@@ -143,7 +143,7 @@
         €{{ formatPrice(product.price) }}
       </div>
       <button 
-        @click="addToCart"
+        @click.stop="addToCart"
         class="w-10 h-10 bg-blue-600 rounded-md flex items-center justify-center hover:bg-blue-700 transition-colors"
         :disabled="loading"
         aria-label="Aggiungi al carrello"
