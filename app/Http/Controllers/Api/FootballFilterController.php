@@ -1050,61 +1050,117 @@ class FootballFilterController extends Controller
             }
 
             // Filtro per range numerato
-            // Usa card_number_in_set e estrae il numero all'inizio della stringa
+            // IMPORTANTE: Il frontend mostra card_number se presente, altrimenti card_number_in_set
+            // Quindi dobbiamo filtrare su entrambi i campi, preferendo card_number
             // Gestisce formati come: "1", "5/100", "01-gen", "1-AU", "A-01" (estrae solo il numero iniziale)
             if (isset($filters['numbered_min']) && !empty($filters['numbered_min']) || isset($filters['numbered_max']) && !empty($filters['numbered_max'])) {
                 $query->whereHas('cardModel', function($q) use ($filters) {
-                    $q->whereNotNull('card_number_in_set')
-                      ->where('card_number_in_set', '!=', '');
-                    
-                    // Estrae solo i numeri all'inizio della stringa (prima di qualsiasi carattere non numerico)
-                    // Usa REGEXP_SUBSTR per estrarre la sequenza di numeri all'inizio
-                    // IMPORTANTE: Filtra solo le righe che hanno un numero all'inizio (REGEXP_SUBSTR non NULL)
-                    // NOTA: Dentro whereHas, usiamo solo il nome della colonna senza prefisso tabella
-                    $q->whereRaw(
-                        "REGEXP_SUBSTR(
-                            CASE 
-                                WHEN LOCATE('/', card_number_in_set) > 0 
-                                THEN SUBSTRING_INDEX(card_number_in_set, '/', 1)
-                                ELSE card_number_in_set
-                            END,
-                            '^[0-9]+'
-                        ) IS NOT NULL"
-                    );
-                    
-                    if (isset($filters['numbered_min']) && !empty($filters['numbered_min'])) {
-                        $numberedMin = (int)$filters['numbered_min'];
-                        $q->whereRaw(
-                            "CAST(
-                                REGEXP_SUBSTR(
+                    // Filtra su card_number se presente, altrimenti su card_number_in_set
+                    // Usa COALESCE per preferire card_number
+                    $q->where(function($subQ) use ($filters) {
+                        // Caso 1: card_number non è NULL e non è vuoto
+                        $subQ->where(function($q1) use ($filters) {
+                            $q1->whereNotNull('card_number')
+                               ->where('card_number', '!=', '')
+                               ->whereRaw(
+                                   "REGEXP_SUBSTR(
+                                       CASE 
+                                           WHEN LOCATE('/', card_number) > 0 
+                                           THEN SUBSTRING_INDEX(card_number, '/', 1)
+                                           ELSE card_number
+                                       END,
+                                       '^[0-9]+'
+                                   ) IS NOT NULL"
+                               );
+                            
+                            if (isset($filters['numbered_min']) && !empty($filters['numbered_min'])) {
+                                $numberedMin = (int)$filters['numbered_min'];
+                                $q1->whereRaw(
+                                    "CAST(
+                                        REGEXP_SUBSTR(
+                                            CASE 
+                                                WHEN LOCATE('/', card_number) > 0 
+                                                THEN SUBSTRING_INDEX(card_number, '/', 1)
+                                                ELSE card_number
+                                            END,
+                                            '^[0-9]+'
+                                        ) AS UNSIGNED
+                                    ) >= ?",
+                                    [$numberedMin]
+                                );
+                            }
+                            
+                            if (isset($filters['numbered_max']) && !empty($filters['numbered_max'])) {
+                                $numberedMax = (int)$filters['numbered_max'];
+                                $q1->whereRaw(
+                                    "CAST(
+                                        REGEXP_SUBSTR(
+                                            CASE 
+                                                WHEN LOCATE('/', card_number) > 0 
+                                                THEN SUBSTRING_INDEX(card_number, '/', 1)
+                                                ELSE card_number
+                                            END,
+                                            '^[0-9]+'
+                                        ) AS UNSIGNED
+                                    ) <= ?",
+                                    [$numberedMax]
+                                );
+                            }
+                        })
+                        // Caso 2: card_number è NULL o vuoto, usa card_number_in_set
+                        ->orWhere(function($q2) use ($filters) {
+                            $q2->where(function($q3) {
+                                $q3->whereNull('card_number')
+                                   ->orWhere('card_number', '=', '');
+                            })
+                            ->whereNotNull('card_number_in_set')
+                            ->where('card_number_in_set', '!=', '')
+                            ->whereRaw(
+                                "REGEXP_SUBSTR(
                                     CASE 
                                         WHEN LOCATE('/', card_number_in_set) > 0 
                                         THEN SUBSTRING_INDEX(card_number_in_set, '/', 1)
                                         ELSE card_number_in_set
                                     END,
                                     '^[0-9]+'
-                                ) AS UNSIGNED
-                            ) >= ?",
-                            [$numberedMin]
-                        );
-                    }
-                    
-                    if (isset($filters['numbered_max']) && !empty($filters['numbered_max'])) {
-                        $numberedMax = (int)$filters['numbered_max'];
-                        $q->whereRaw(
-                            "CAST(
-                                REGEXP_SUBSTR(
-                                    CASE 
-                                        WHEN LOCATE('/', card_number_in_set) > 0 
-                                        THEN SUBSTRING_INDEX(card_number_in_set, '/', 1)
-                                        ELSE card_number_in_set
-                                    END,
-                                    '^[0-9]+'
-                                ) AS UNSIGNED
-                            ) <= ?",
-                            [$numberedMax]
-                        );
-                    }
+                                ) IS NOT NULL"
+                            );
+                            
+                            if (isset($filters['numbered_min']) && !empty($filters['numbered_min'])) {
+                                $numberedMin = (int)$filters['numbered_min'];
+                                $q2->whereRaw(
+                                    "CAST(
+                                        REGEXP_SUBSTR(
+                                            CASE 
+                                                WHEN LOCATE('/', card_number_in_set) > 0 
+                                                THEN SUBSTRING_INDEX(card_number_in_set, '/', 1)
+                                                ELSE card_number_in_set
+                                            END,
+                                            '^[0-9]+'
+                                        ) AS UNSIGNED
+                                    ) >= ?",
+                                    [$numberedMin]
+                                );
+                            }
+                            
+                            if (isset($filters['numbered_max']) && !empty($filters['numbered_max'])) {
+                                $numberedMax = (int)$filters['numbered_max'];
+                                $q2->whereRaw(
+                                    "CAST(
+                                        REGEXP_SUBSTR(
+                                            CASE 
+                                                WHEN LOCATE('/', card_number_in_set) > 0 
+                                                THEN SUBSTRING_INDEX(card_number_in_set, '/', 1)
+                                                ELSE card_number_in_set
+                                            END,
+                                            '^[0-9]+'
+                                        ) AS UNSIGNED
+                                    ) <= ?",
+                                    [$numberedMax]
+                                );
+                            }
+                        });
+                    });
                 });
             }
 
