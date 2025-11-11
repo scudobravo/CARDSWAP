@@ -85,20 +85,35 @@ class CardSearchController extends Controller
         // IMPORTANTE: Applica entrambi i filtri insieme per evitare problemi con whereNotNull duplicati
         if ($request->filled('numbered_min') || $request->filled('numbered_max')) {
             $query->whereNotNull('card_number_in_set')
-                  ->where('card_number_in_set', '!=', '');
+                  ->where('card_number_in_set', '!=', '')
+                  ->where('card_number_in_set', 'REGEXP', '^[0-9]+'); // Assicura che inizi con un numero
             
             if ($request->filled('numbered_min')) {
                 $numberedMin = (int)$request->get('numbered_min');
+                // Estrae il numero prima della barra "/" se presente, altrimenti usa l'intera stringa
                 $query->whereRaw(
-                    "CAST(SUBSTRING_INDEX(card_number_in_set, '/', 1) AS UNSIGNED) >= ?",
+                    "CAST(
+                        CASE 
+                            WHEN LOCATE('/', card_number_in_set) > 0 
+                            THEN SUBSTRING_INDEX(card_number_in_set, '/', 1)
+                            ELSE card_number_in_set
+                        END AS UNSIGNED
+                    ) >= ?",
                     [$numberedMin]
                 );
             }
             
             if ($request->filled('numbered_max')) {
                 $numberedMax = (int)$request->get('numbered_max');
+                // Estrae il numero prima della barra "/" se presente, altrimenti usa l'intera stringa
                 $query->whereRaw(
-                    "CAST(SUBSTRING_INDEX(card_number_in_set, '/', 1) AS UNSIGNED) <= ?",
+                    "CAST(
+                        CASE 
+                            WHEN LOCATE('/', card_number_in_set) > 0 
+                            THEN SUBSTRING_INDEX(card_number_in_set, '/', 1)
+                            ELSE card_number_in_set
+                        END AS UNSIGNED
+                    ) <= ?",
                     [$numberedMax]
                 );
             }
