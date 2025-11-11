@@ -1255,6 +1255,14 @@ const searchSingleCard = async (filters) => {
           // ✅ RIMOSSO: price non è un filtro di ricerca, è un input dell'utente
         }
         
+        // Aggiungi filtri per numerazione (min e max)
+        if (filters.numberedMin !== null && filters.numberedMin !== undefined && filters.numberedMin !== '') {
+          searchFilters.numbered_min = filters.numberedMin
+        }
+        if (filters.numberedMax !== null && filters.numberedMax !== undefined && filters.numberedMax !== '') {
+          searchFilters.numbered_max = filters.numberedMax
+        }
+        
         console.log('🔍 Filtri convertiti per API:', searchFilters)
         
         // Rimuovi parametri vuoti
