@@ -714,15 +714,26 @@ class FootballFilterController extends Controller
             $filters = $request->all();
             $response = [];
 
-            // Base query per card_models che hanno CardListing attive
+            // Base query per card_models
+            // IMPORTANTE: Non filtrare per cardListings attive quando si crea una nuova inserzione
+            // (ad esempio per sealed box/pack) perché non ci sono ancora inserzioni attive
             $cardModelsQuery = \App\Models\CardModel::query()
                 ->where('is_active', true)
                 ->whereHas('category', function($catQuery) {
                     $catQuery->where('slug', 'calcio');
-                })
-                ->whereHas('cardListings', function($listingQuery) {
+                });
+            
+            // Filtra per cardListings attive SOLO se non stiamo creando una nuova inserzione
+            // (cioè se non c'è solo set_id o brand senza player/team, che indica creazione sealed box/pack)
+            $isCreatingNewListing = (isset($filters['set_id']) && !empty($filters['set_id'])) 
+                && (!isset($filters['player_id']) || empty($filters['player_id']))
+                && (!isset($filters['team_id']) || empty($filters['team_id']));
+            
+            if (!$isCreatingNewListing) {
+                $cardModelsQuery->whereHas('cardListings', function($listingQuery) {
                     $listingQuery->where('status', 'active');
                 });
+            }
 
         // Filtri a catena: Player → Team → Set → Year → Brand → Rarity
         if (isset($filters['player_id']) && !empty($filters['player_id'])) {
