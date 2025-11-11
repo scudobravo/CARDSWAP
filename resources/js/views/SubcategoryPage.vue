@@ -797,6 +797,14 @@ const loadProducts = async (reset = false) => {
       params.append('relic', filters.value.relic)
     }
 
+    if (filters.value.onCardAuto && filters.value.onCardAuto !== '') {
+      params.append('onCardAuto', filters.value.onCardAuto)
+    }
+
+    if (filters.value.jewel && filters.value.jewel !== '') {
+      params.append('jewel', filters.value.jewel)
+    }
+
     if (filters.value.rookie && filters.value.rookie !== '') {
       params.append('rookie', filters.value.rookie)
     }
