@@ -1074,6 +1074,10 @@ const selectCardSet = (set) => {
   console.log('✅ Team mantenuto:', selectedTeam.value?.name)
   console.log('✅ Anno corrente prima della selezione set:', userSelectedYear)
   
+  // IMPORTANTE: Carica le opzioni disponibili per l'anno quando viene selezionato un set
+  // Questo aggiorna il dropdown Year con le annate disponibili per il set selezionato
+  loadChainedData()
+  
   // IMPORTANTE: NON popolare l'anno automaticamente dal set
   // L'utente deve poter selezionare manualmente l'anno senza che venga sovrascritto
   // NON fare: localFilters.value.year = set.year (questo sovrascriverebbe l'anno selezionato manualmente)
@@ -1081,14 +1085,12 @@ const selectCardSet = (set) => {
   // Ripristina SEMPRE l'anno selezionato manualmente dall'utente (se presente)
   // Questo assicura che anche se c'è qualche logica che popola l'anno, viene preservato
   if (userSelectedYear) {
-    // Usa nextTick per assicurarsi che il valore venga impostato dopo qualsiasi altra logica
+    // Usa nextTick per assicurarsi che il valore venga impostato dopo il caricamento delle opzioni
     nextTick(() => {
       localFilters.value.year = userSelectedYear
       console.log('✅ Anno selezionato manualmente preservato dopo nextTick:', userSelectedYear)
     })
   }
-  
-  // Filtri slegati: non aggiornare opzioni a cascata
   
   onFiltersChanged()
 }
