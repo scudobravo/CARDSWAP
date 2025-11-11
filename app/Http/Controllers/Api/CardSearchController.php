@@ -82,24 +82,26 @@ class CardSearchController extends Controller
 
         // Filtro per range numerato (min e max)
         // Usa card_number_in_set e estrae il numero prima della barra "/"
-        if ($request->filled('numbered_min')) {
-            $numberedMin = (int)$request->get('numbered_min');
+        // IMPORTANTE: Applica entrambi i filtri insieme per evitare problemi con whereNotNull duplicati
+        if ($request->filled('numbered_min') || $request->filled('numbered_max')) {
             $query->whereNotNull('card_number_in_set')
-                  ->where('card_number_in_set', '!=', '')
-                  ->whereRaw(
-                      "CAST(SUBSTRING_INDEX(card_number_in_set, '/', 1) AS UNSIGNED) >= ?",
-                      [$numberedMin]
-                  );
-        }
-
-        if ($request->filled('numbered_max')) {
-            $numberedMax = (int)$request->get('numbered_max');
-            $query->whereNotNull('card_number_in_set')
-                  ->where('card_number_in_set', '!=', '')
-                  ->whereRaw(
-                      "CAST(SUBSTRING_INDEX(card_number_in_set, '/', 1) AS UNSIGNED) <= ?",
-                      [$numberedMax]
-                  );
+                  ->where('card_number_in_set', '!=', '');
+            
+            if ($request->filled('numbered_min')) {
+                $numberedMin = (int)$request->get('numbered_min');
+                $query->whereRaw(
+                    "CAST(SUBSTRING_INDEX(card_number_in_set, '/', 1) AS UNSIGNED) >= ?",
+                    [$numberedMin]
+                );
+            }
+            
+            if ($request->filled('numbered_max')) {
+                $numberedMax = (int)$request->get('numbered_max');
+                $query->whereRaw(
+                    "CAST(SUBSTRING_INDEX(card_number_in_set, '/', 1) AS UNSIGNED) <= ?",
+                    [$numberedMax]
+                );
+            }
         }
 
         // Filtri per tipo di carta
