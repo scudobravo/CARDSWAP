@@ -81,9 +81,9 @@
             @focus="onSetFocus"
             @blur="onSetBlur"
           />
-          <div v-if="filteredCardSets.length > 0 && showSetDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+          <div v-if="filteredCardSets.length > 0 && showSetDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-sm md:text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
             <div v-for="set in filteredCardSets" :key="set.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectCardSet(set)">
-              <span class="font-normal block truncate">{{ set.name }} ({{ set.year }})</span>
+              <span class="font-normal block truncate text-xs md:text-sm">{{ set.name }} ({{ set.year }})</span>
             </div>
           </div>
         </div>
