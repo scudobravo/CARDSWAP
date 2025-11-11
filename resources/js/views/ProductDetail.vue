@@ -288,6 +288,11 @@
               <span class="text-primary font-futura-bold">{{ product.condition || 'LIGHT PLAYED' }}</span>
             </div>
             
+            <!-- Notes -->
+            <div v-if="product.description" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p class="text-sm text-gray-700 font-gill-sans whitespace-pre-wrap">{{ product.description }}</p>
+            </div>
+            
             <!-- Price -->
             <div class="text-2xl font-futura-bold text-primary">
               {{ formatPrice(product.price) }}

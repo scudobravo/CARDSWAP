@@ -199,23 +199,12 @@
                 </select>
               </div>
 
-              <!-- Description -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Descrizione</label>
-                <textarea
-                  v-model="additionalDetails.description"
-                  rows="4"
-                  placeholder="Descrizione della carta..."
-                  class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm"
-                ></textarea>
-              </div>
-
               <!-- Notes -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Note</label>
                 <textarea
                   v-model="additionalDetails.notes"
-                  rows="3"
+                  rows="4"
                   placeholder="Note aggiuntive sulla carta..."
                   class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm"
                 ></textarea>

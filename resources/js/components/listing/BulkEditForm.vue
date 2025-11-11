@@ -286,24 +286,13 @@
               </select>
             </div>
 
-            <!-- Description -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Descrizione</label>
-              <textarea 
-                v-model="bulkData.description"
-                rows="4"
-                placeholder="Descrizione comune per tutte le carte..."
-                class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm"
-              ></textarea>
-            </div>
-
             <!-- Notes -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Note</label>
               <textarea 
                 v-model="bulkData.notes"
-                rows="3"
-                placeholder="Note aggiuntive..."
+                rows="4"
+                placeholder="Note aggiuntive sulla carta..."
                 class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm"
               ></textarea>
             </div>

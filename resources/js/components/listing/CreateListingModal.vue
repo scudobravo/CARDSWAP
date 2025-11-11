@@ -2122,7 +2122,12 @@ const createBulkListings = async () => {
     if (listing.number) formData.append('number', listing.number)
     if (listing.grading_company) formData.append('grading_company', listing.grading_company)
     if (listing.grading_score) formData.append('grading_score', listing.grading_score)
-    if (listing.description) formData.append('description', listing.description)
+    // Salva notes come description per retrocompatibilità con il backend
+    if (listing.notes) {
+      formData.append('description', listing.notes)
+    } else if (listing.description) {
+      formData.append('description', listing.description)
+    }
     
     // Boolean fields
     formData.append('is_foil', listing.is_foil ? 'true' : 'false')

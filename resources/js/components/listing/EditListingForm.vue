@@ -212,23 +212,12 @@
           </select>
         </div>
 
-        <!-- Description -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Descrizione</label>
-          <textarea
-            v-model="formData.description"
-            rows="4"
-            placeholder="Descrizione della carta..."
-            class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm"
-          ></textarea>
-        </div>
-
         <!-- Notes -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Note</label>
           <textarea
             v-model="formData.notes"
-            rows="3"
+            rows="4"
             placeholder="Note aggiuntive sulla carta..."
             class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm"
           ></textarea>
@@ -366,14 +355,14 @@
       </div>
     </div>
 
-    <!-- Descrizione -->
+    <!-- Notes -->
     <div>
-      <label class="block text-sm font-medium text-gray-700 mb-2">Descrizione</label>
+      <label class="block text-sm font-medium text-gray-700 mb-2">Note</label>
       <textarea 
-        v-model="formData.description"
-        rows="3"
+        v-model="formData.notes"
+        rows="4"
         class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none"
-        placeholder="Descrivi la condizione, eventuali difetti, storia della carta..."
+        placeholder="Note aggiuntive sulla carta..."
       ></textarea>
     </div>
 
@@ -455,8 +444,8 @@ const formData = ref({
   is_altered: props.listing.is_altered || false,
   is_first_edition: props.listing.is_first_edition || false,
   is_negotiable: props.listing.is_negotiable || false,
-  description: props.listing.description || '',
-  notes: props.listing.notes || '',
+    description: props.listing.description || '', // Mantenuto per retrocompatibilità, ma non usato nel form
+    notes: props.listing.notes || props.listing.description || '', // Popola notes da description se notes non esiste
   images: props.listing.images || []
 })
 
@@ -544,7 +533,9 @@ const save = () => {
   const updatedListing = {
     ...props.listing,
     ...formData.value,
-    card_model_id: formData.value.cardModel?.id || null
+    card_model_id: formData.value.cardModel?.id || null,
+    // Salva notes come description per retrocompatibilità con il backend
+    description: formData.value.notes || ''
   }
   emit('save', updatedListing)
 }
@@ -590,8 +581,8 @@ watch(() => props.listing, (newListing) => {
     is_altered: newListing.is_altered || false,
     is_first_edition: newListing.is_first_edition || false,
     is_negotiable: newListing.is_negotiable || false,
-    description: newListing.description || '',
-    notes: newListing.notes || '',
+    description: newListing.description || '', // Mantenuto per retrocompatibilità, ma non usato nel form
+    notes: newListing.notes || newListing.description || '', // Popola notes da description se notes non esiste
     images: newListing.images || []
   }
 }, { deep: true })
