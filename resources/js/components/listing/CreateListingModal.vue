@@ -3054,23 +3054,35 @@ const updateSingleListing = async () => {
     // Usa FormData per supportare le immagini
     const formData = new FormData()
     
-    // Aggiungi i dati dell'inserzione
-    formData.append('price', listingData.value.price)
-    formData.append('condition', listingData.value.condition)
+    // Aggiungi i dati dell'inserzione (assicurati che tutti i campi necessari siano presenti)
+    if (listingData.value.price !== undefined && listingData.value.price !== null) {
+      formData.append('price', listingData.value.price)
+    }
+    if (listingData.value.condition) {
+      formData.append('condition', listingData.value.condition)
+    }
     // Add autograph_condition if available
     if (listingData.value.autograph_condition) {
       formData.append('autograph_condition', listingData.value.autograph_condition)
     } else if (listingData.value.condition) {
       formData.append('autograph_condition', listingData.value.condition)
     }
-    formData.append('quantity', listingData.value.quantity)
-    formData.append('language', listingData.value.language)
+    if (listingData.value.quantity !== undefined && listingData.value.quantity !== null) {
+      formData.append('quantity', listingData.value.quantity)
+    }
+    if (listingData.value.language) {
+      formData.append('language', listingData.value.language)
+    } else {
+      // Default a 'italian' se non specificato
+      formData.append('language', 'italian')
+    }
     // Salva notes come description per retrocompatibilità con il backend
     if (additionalDetails.value.notes) {
       formData.append('description', additionalDetails.value.notes)
     } else if (listingData.value.description) {
       formData.append('description', listingData.value.description)
     }
+    // Campi booleani - sempre inviati
     formData.append('is_foil', listingData.value.is_foil ? 'true' : 'false')
     formData.append('is_signed', listingData.value.is_signed ? 'true' : 'false')
     formData.append('is_altered', listingData.value.is_altered ? 'true' : 'false')
@@ -3137,23 +3149,55 @@ const updateSingleListing = async () => {
     // Aggiungi _method=PUT per Laravel
     formData.append('_method', 'PUT')
     
-    // Usa POST invece di PUT per FormData (Laravel non processa correttamente PUT con multipart)
-    const response = await axios.post(`/api/listings/${props.editingListing.id}`, formData, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'multipart/form-data'
-      }
+    // Log dei dati inviati per debug
+    console.log('📤 Dati inviati per update:', {
+      price: listingData.value.price,
+      condition: listingData.value.condition,
+      quantity: listingData.value.quantity,
+      language: listingData.value.language,
+      description: additionalDetails.value.notes || listingData.value.description,
+      shipping_zones: selectedShippingZones.value,
+      is_foil: listingData.value.is_foil,
+      is_signed: listingData.value.is_signed,
+      is_altered: listingData.value.is_altered,
+      is_first_edition: listingData.value.is_first_edition,
+      is_negotiable: listingData.value.is_negotiable
     })
     
-    // Axios restituisce direttamente i dati
-    const data = response.data
-    console.log('✅ Inserzione aggiornata:', data)
-    
-    if (data.success) {
-      emit('updated', data.data)
-      closeModal()
-    } else {
-      throw new Error(data.message || 'Errore nell\'aggiornamento dell\'inserzione')
+    // Usa POST invece di PUT per FormData (Laravel non processa correttamente PUT con multipart)
+    try {
+      const response = await axios.post(`/api/listings/${props.editingListing.id}`, formData, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      
+      // Axios restituisce direttamente i dati
+      const data = response.data
+      console.log('✅ Inserzione aggiornata:', data)
+      
+      if (data.success) {
+        emit('updated', data.data)
+        closeModal()
+      } else {
+        throw new Error(data.message || 'Errore nell\'aggiornamento dell\'inserzione')
+      }
+    } catch (error) {
+      console.error('❌ Errore completo:', error)
+      if (error.response && error.response.data) {
+        console.error('❌ Dettagli errore backend:', error.response.data)
+        if (error.response.data.errors) {
+          console.error('❌ Errori di validazione:', error.response.data.errors)
+          const errorMessages = Object.entries(error.response.data.errors)
+            .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+            .join('\n')
+          alert(`Errore di validazione:\n\n${errorMessages}`)
+        } else if (error.response.data.message) {
+          alert(`Errore: ${error.response.data.message}`)
+        }
+      }
+      throw error
     }
   } catch (error) {
     console.error('❌ Errore nell\'aggiornamento inserzione:', error)
