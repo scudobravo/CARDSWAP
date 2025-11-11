@@ -1796,7 +1796,11 @@ watch(() => localFilters.value.team, () => {
 watch(() => localFilters.value.set, () => {
   console.log('🔄 Set filter cambiato:', localFilters.value.set)
   filterCardsBySet()
-  // Filtri slegati: non aggiornare opzioni a cascata
+  // IMPORTANTE: Carica le opzioni disponibili per l'anno quando viene selezionato un set
+  // Questo aggiorna il dropdown Year con le annate disponibili per il set selezionato
+  if (localFilters.value.set) {
+    loadChainedData()
+  }
 })
 
 // Aggiorna lista carte quando cambiano brand/year/rarity
