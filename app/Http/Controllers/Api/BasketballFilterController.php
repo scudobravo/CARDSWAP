@@ -907,20 +907,21 @@ class BasketballFilterController extends Controller
                 }
             }
 
-            // Filtri multi player (booklet, dual, triple, quad)
+            // Filtro booklet (yes/no) - separato da multi player
+            if (isset($filters['booklet']) && $filters['booklet'] !== '') {
+                if ($filters['booklet'] === 'yes') {
+                    $query->where('card_models.is_booklet', true);
+                } elseif ($filters['booklet'] === 'no') {
+                    $query->where('card_models.is_booklet', false);
+                }
+            }
+
+            // Filtri multi player (dual, triple, quad) - booklet rimosso perché è un filtro separato
             if (isset($filters['multi_player']) && is_array($filters['multi_player']) && !empty($filters['multi_player'])) {
                 $query->where(function($subQ) use ($filters) {
                     $first = true;
                     foreach ($filters['multi_player'] as $multiPlayerType) {
                         switch ($multiPlayerType) {
-                            case 'booklet':
-                                if ($first) {
-                                    $subQ->where('card_models.is_booklet', true);
-                                    $first = false;
-                                } else {
-                                    $subQ->orWhere('card_models.is_booklet', true);
-                                }
-                                break;
                             case 'dual':
                                 if ($first) {
                                     $subQ->where('card_models.is_multi_player_dual', true);
@@ -950,21 +951,13 @@ class BasketballFilterController extends Controller
                 });
             }
 
-            // Filtri multi autograph (booklet, dual, triple, quad)
+            // Filtri multi autograph (dual, triple, quad) - booklet rimosso perché è un filtro separato
             // Nota: multi autograph usa gli stessi campi di multi player
             if (isset($filters['multi_autograph']) && is_array($filters['multi_autograph']) && !empty($filters['multi_autograph'])) {
                 $query->where(function($subQ) use ($filters) {
                     $first = true;
                     foreach ($filters['multi_autograph'] as $multiAutographType) {
                         switch ($multiAutographType) {
-                            case 'booklet':
-                                if ($first) {
-                                    $subQ->where('card_models.is_booklet', true);
-                                    $first = false;
-                                } else {
-                                    $subQ->orWhere('card_models.is_booklet', true);
-                                }
-                                break;
                             case 'dual':
                                 if ($first) {
                                     $subQ->where('card_models.is_multi_player_dual', true);

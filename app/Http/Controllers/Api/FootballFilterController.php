@@ -1215,21 +1215,24 @@ class FootballFilterController extends Controller
                 });
             }
 
-            // Filtri multi player (booklet, dual, triple, quad)
+            // Filtro booklet (yes/no) - separato da multi player
+            if (isset($filters['booklet']) && $filters['booklet'] !== '') {
+                $query->whereHas('cardModel', function($q) use ($filters) {
+                    if ($filters['booklet'] === 'yes') {
+                        $q->where('is_booklet', true);
+                    } elseif ($filters['booklet'] === 'no') {
+                        $q->where('is_booklet', false);
+                    }
+                });
+            }
+
+            // Filtri multi player (dual, triple, quad) - booklet rimosso perché è un filtro separato
             if (isset($filters['multi_player']) && is_array($filters['multi_player']) && !empty($filters['multi_player'])) {
                 $query->whereHas('cardModel', function($q) use ($filters) {
                     $q->where(function($subQ) use ($filters) {
                         $first = true;
                         foreach ($filters['multi_player'] as $multiPlayerType) {
                             switch ($multiPlayerType) {
-                                case 'booklet':
-                                    if ($first) {
-                                        $subQ->where('is_booklet', true);
-                                        $first = false;
-                                    } else {
-                                        $subQ->orWhere('is_booklet', true);
-                                    }
-                                    break;
                                 case 'dual':
                                     if ($first) {
                                         $subQ->where('is_multi_player_dual', true);
@@ -1260,7 +1263,7 @@ class FootballFilterController extends Controller
                 });
             }
 
-            // Filtri multi autograph (booklet, dual, triple, quad)
+            // Filtri multi autograph (dual, triple, quad) - booklet rimosso perché è un filtro separato
             // Nota: multi autograph usa gli stessi campi di multi player
             if (isset($filters['multi_autograph']) && is_array($filters['multi_autograph']) && !empty($filters['multi_autograph'])) {
                 $query->whereHas('cardModel', function($q) use ($filters) {
@@ -1268,14 +1271,6 @@ class FootballFilterController extends Controller
                         $first = true;
                         foreach ($filters['multi_autograph'] as $multiAutographType) {
                             switch ($multiAutographType) {
-                                case 'booklet':
-                                    if ($first) {
-                                        $subQ->where('is_booklet', true);
-                                        $first = false;
-                                    } else {
-                                        $subQ->orWhere('is_booklet', true);
-                                    }
-                                    break;
                                 case 'dual':
                                     if ($first) {
                                         $subQ->where('is_multi_player_dual', true);

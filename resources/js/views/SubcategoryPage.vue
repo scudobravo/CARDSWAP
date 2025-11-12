@@ -531,6 +531,7 @@ const filters = ref({
   relic: '',
   onCardAuto: '',
   jewel: '',
+  booklet: '',
   rookie: '',
   multiPlayer: [],
   multiAutograph: [],
@@ -553,9 +554,8 @@ const numberedPresets = [
   { label: '301+', min: 301, max: 999 }
 ]
 
-// Multi player/autograph options
+// Multi player/autograph options (booklet rimosso perché è già presente nei Filtri Extra)
 const multiPlayerOptions = [
-  { label: 'Booklet', value: 'booklet' },
   { label: 'Dual', value: 'dual' },
   { label: 'Triple', value: 'triple' },
   { label: 'Quad', value: 'quad' }
@@ -717,6 +717,7 @@ const clearFilters = () => {
     relic: '',
     onCardAuto: '',
     jewel: '',
+    booklet: '',
     rookie: '',
     multiPlayer: [],
     multiAutograph: [],
@@ -803,6 +804,10 @@ const loadProducts = async (reset = false) => {
 
     if (filters.value.jewel && filters.value.jewel !== '') {
       params.append('jewel', filters.value.jewel)
+    }
+
+    if (filters.value.booklet && filters.value.booklet !== '') {
+      params.append('booklet', filters.value.booklet)
     }
 
     if (filters.value.rookie && filters.value.rookie !== '') {
