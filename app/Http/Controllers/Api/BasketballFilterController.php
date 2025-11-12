@@ -910,19 +910,40 @@ class BasketballFilterController extends Controller
             // Filtri multi player (booklet, dual, triple, quad)
             if (isset($filters['multi_player']) && is_array($filters['multi_player']) && !empty($filters['multi_player'])) {
                 $query->where(function($subQ) use ($filters) {
+                    $first = true;
                     foreach ($filters['multi_player'] as $multiPlayerType) {
                         switch ($multiPlayerType) {
                             case 'booklet':
-                                $subQ->orWhere('card_models.is_booklet', true);
+                                if ($first) {
+                                    $subQ->where('card_models.is_booklet', true);
+                                    $first = false;
+                                } else {
+                                    $subQ->orWhere('card_models.is_booklet', true);
+                                }
                                 break;
                             case 'dual':
-                                $subQ->orWhere('card_models.is_multi_player_dual', true);
+                                if ($first) {
+                                    $subQ->where('card_models.is_multi_player_dual', true);
+                                    $first = false;
+                                } else {
+                                    $subQ->orWhere('card_models.is_multi_player_dual', true);
+                                }
                                 break;
                             case 'triple':
-                                $subQ->orWhere('card_models.is_multi_player_triple', true);
+                                if ($first) {
+                                    $subQ->where('card_models.is_multi_player_triple', true);
+                                    $first = false;
+                                } else {
+                                    $subQ->orWhere('card_models.is_multi_player_triple', true);
+                                }
                                 break;
                             case 'quad':
-                                $subQ->orWhere('card_models.is_multi_player_quad', true);
+                                if ($first) {
+                                    $subQ->where('card_models.is_multi_player_quad', true);
+                                    $first = false;
+                                } else {
+                                    $subQ->orWhere('card_models.is_multi_player_quad', true);
+                                }
                                 break;
                         }
                     }
@@ -933,19 +954,40 @@ class BasketballFilterController extends Controller
             // Nota: multi autograph usa gli stessi campi di multi player
             if (isset($filters['multi_autograph']) && is_array($filters['multi_autograph']) && !empty($filters['multi_autograph'])) {
                 $query->where(function($subQ) use ($filters) {
+                    $first = true;
                     foreach ($filters['multi_autograph'] as $multiAutographType) {
                         switch ($multiAutographType) {
                             case 'booklet':
-                                $subQ->orWhere('card_models.is_booklet', true);
+                                if ($first) {
+                                    $subQ->where('card_models.is_booklet', true);
+                                    $first = false;
+                                } else {
+                                    $subQ->orWhere('card_models.is_booklet', true);
+                                }
                                 break;
                             case 'dual':
-                                $subQ->orWhere('card_models.is_multi_player_dual', true);
+                                if ($first) {
+                                    $subQ->where('card_models.is_multi_player_dual', true);
+                                    $first = false;
+                                } else {
+                                    $subQ->orWhere('card_models.is_multi_player_dual', true);
+                                }
                                 break;
                             case 'triple':
-                                $subQ->orWhere('card_models.is_multi_player_triple', true);
+                                if ($first) {
+                                    $subQ->where('card_models.is_multi_player_triple', true);
+                                    $first = false;
+                                } else {
+                                    $subQ->orWhere('card_models.is_multi_player_triple', true);
+                                }
                                 break;
                             case 'quad':
-                                $subQ->orWhere('card_models.is_multi_player_quad', true);
+                                if ($first) {
+                                    $subQ->where('card_models.is_multi_player_quad', true);
+                                    $first = false;
+                                } else {
+                                    $subQ->orWhere('card_models.is_multi_player_quad', true);
+                                }
                                 break;
                         }
                     }
