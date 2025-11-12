@@ -1057,7 +1057,7 @@ const removeTeam = () => {
   onFiltersChanged()
 }
 
-const selectCardSet = (set) => {
+const selectCardSet = async (set) => {
   // IMPORTANTE: Preserva l'anno selezionato manualmente dall'utente PRIMA di qualsiasi operazione
   // Questo deve essere fatto PRIMA di impostare selectedCardSet per evitare che venga sovrascritto
   const userSelectedYear = localFilters.value.year
