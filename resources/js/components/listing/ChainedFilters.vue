@@ -1088,18 +1088,29 @@ const selectCardSet = (set) => {
   
   // IMPORTANTE: Carica le opzioni disponibili per l'anno quando viene selezionato un set
   // Questo aggiorna il dropdown Year con le annate disponibili per il set selezionato
-  loadChainedData()
+  await loadChainedData()
+  
+  // Se il set ha un anno ma non è nelle opzioni disponibili, aggiungilo comunque
+  if (set.year && !availableYears.value.includes(set.year)) {
+    availableYears.value.push(set.year)
+    availableYears.value.sort((a, b) => String(b).localeCompare(String(a), undefined, { numeric: true }))
+    console.log('✅ Anno del set aggiunto alle opzioni disponibili:', set.year)
+  }
   
   // Assicurati che l'anno selezionato venga preservato anche dopo il caricamento delle opzioni
   if (localFilters.value.year) {
     const yearToPreserve = localFilters.value.year
-    nextTick(() => {
-      // Verifica che l'anno sia ancora valido tra le opzioni disponibili
-      if (availableYears.value.includes(yearToPreserve)) {
-        localFilters.value.year = yearToPreserve
-        console.log('✅ Anno preservato dopo caricamento opzioni:', yearToPreserve)
-      }
-    })
+    await nextTick()
+    // Se l'anno non è nelle opzioni disponibili ma è quello del set, aggiungilo
+    if (!availableYears.value.includes(yearToPreserve) && set.year === yearToPreserve) {
+      availableYears.value.push(yearToPreserve)
+      availableYears.value.sort((a, b) => String(b).localeCompare(String(a), undefined, { numeric: true }))
+    }
+    // Verifica che l'anno sia ancora valido tra le opzioni disponibili
+    if (availableYears.value.includes(yearToPreserve)) {
+      localFilters.value.year = yearToPreserve
+      console.log('✅ Anno preservato dopo caricamento opzioni:', yearToPreserve)
+    }
   }
   
   onFiltersChanged()
