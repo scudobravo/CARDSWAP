@@ -1215,6 +1215,55 @@ class FootballFilterController extends Controller
                 });
             }
 
+            // Filtri multi player (booklet, dual, triple, quad)
+            if (isset($filters['multi_player']) && is_array($filters['multi_player']) && !empty($filters['multi_player'])) {
+                $query->whereHas('cardModel', function($q) use ($filters) {
+                    $q->where(function($subQ) use ($filters) {
+                        foreach ($filters['multi_player'] as $multiPlayerType) {
+                            switch ($multiPlayerType) {
+                                case 'booklet':
+                                    $subQ->orWhere('is_booklet', true);
+                                    break;
+                                case 'dual':
+                                    $subQ->orWhere('is_multi_player_dual', true);
+                                    break;
+                                case 'triple':
+                                    $subQ->orWhere('is_multi_player_triple', true);
+                                    break;
+                                case 'quad':
+                                    $subQ->orWhere('is_multi_player_quad', true);
+                                    break;
+                            }
+                        }
+                    });
+                });
+            }
+
+            // Filtri multi autograph (booklet, dual, triple, quad)
+            // Nota: multi autograph usa gli stessi campi di multi player
+            if (isset($filters['multi_autograph']) && is_array($filters['multi_autograph']) && !empty($filters['multi_autograph'])) {
+                $query->whereHas('cardModel', function($q) use ($filters) {
+                    $q->where(function($subQ) use ($filters) {
+                        foreach ($filters['multi_autograph'] as $multiAutographType) {
+                            switch ($multiAutographType) {
+                                case 'booklet':
+                                    $subQ->orWhere('is_booklet', true);
+                                    break;
+                                case 'dual':
+                                    $subQ->orWhere('is_multi_player_dual', true);
+                                    break;
+                                case 'triple':
+                                    $subQ->orWhere('is_multi_player_triple', true);
+                                    break;
+                                case 'quad':
+                                    $subQ->orWhere('is_multi_player_quad', true);
+                                    break;
+                            }
+                        }
+                    });
+                });
+            }
+
             // Filtri grading
             if (isset($filters['grading']) && $filters['grading'] !== '') {
                 $query->whereHas('cardModel', function($q) use ($filters) {

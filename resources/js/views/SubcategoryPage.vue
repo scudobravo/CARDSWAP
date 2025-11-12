@@ -809,6 +809,19 @@ const loadProducts = async (reset = false) => {
       params.append('rookie', filters.value.rookie)
     }
 
+    // Filtri multi player/autograph
+    if (filters.value.multiPlayer && filters.value.multiPlayer.length > 0) {
+      filters.value.multiPlayer.forEach(value => {
+        params.append('multi_player[]', value)
+      })
+    }
+
+    if (filters.value.multiAutograph && filters.value.multiAutograph.length > 0) {
+      filters.value.multiAutograph.forEach(value => {
+        params.append('multi_autograph[]', value)
+      })
+    }
+
     // Filtri grading
     if (filters.value.grading && filters.value.grading !== '') {
       params.append('grading', filters.value.grading)
