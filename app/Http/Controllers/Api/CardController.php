@@ -21,6 +21,11 @@ class CardController extends Controller
         $limit = $request->get('limit', 8);
 
         try {
+            // For "new" and "most_expensive" sections, use CardListing instead of CardModel
+            if ($section === 'new' || $section === 'most_expensive') {
+                return $this->getCardsFromListings($category, $section, $limit);
+            }
+
             // Base query for card models with category relationship
             $query = CardModel::with('category');
 
@@ -61,22 +66,6 @@ class CardController extends Controller
                 case 'top_trend':
                     // Get recently added cards
                     $query->where('created_at', '>=', now()->subDays(30))
-                          ->orderBy('created_at', 'desc');
-                    break;
-                
-                case 'new':
-                    // Get newest cards
-                    $query->orderBy('created_at', 'desc');
-                    break;
-                
-                case 'most_expensive':
-                    // Get cards ordered by rarity (since price doesn't exist)
-                    $query->orderByRaw("CASE rarity 
-                        WHEN 'mythic' THEN 1 
-                        WHEN 'rare' THEN 2 
-                        WHEN 'uncommon' THEN 3 
-                        WHEN 'common' THEN 4 
-                        ELSE 5 END")
                           ->orderBy('created_at', 'desc');
                     break;
                 
@@ -124,6 +113,139 @@ class CardController extends Controller
         } catch (\Exception $e) {
             // Log error for internal tracking
             Log::error('Error fetching cards', [
+                'category' => $category,
+                'section' => $section,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Errore nel recupero delle carte: ' . $e->getMessage(),
+                'data' => []
+            ], 500);
+        }
+    }
+
+    /**
+     * Get cards from active listings for "new" and "most_expensive" sections
+     */
+    private function getCardsFromListings(?string $category, string $section, int $limit): JsonResponse
+    {
+        try {
+            // Base query for active listings with card model and category relationships
+            $query = CardListing::with([
+                'cardModel.category',
+                'cardModel.player',
+                'cardModel.team',
+                'cardModel.cardSet'
+            ])->where('status', 'active');
+
+            // Filter by category using the relationship
+            if ($category) {
+                switch ($category) {
+                    case 'football':
+                        $query->whereHas('cardModel.category', function($q) {
+                            $q->where('name', 'Calcio')
+                              ->orWhere('slug', 'calcio')
+                              ->orWhere('slug', 'football');
+                        });
+                        break;
+                    case 'basketball':
+                        $query->whereHas('cardModel.category', function($q) {
+                            $q->where('name', 'Basketball')
+                              ->orWhere('slug', 'basketball')
+                              ->orWhere('slug', 'basket');
+                        });
+                        break;
+                    case 'pokemon':
+                        $query->whereHas('cardModel.category', function($q) {
+                            $q->where('name', 'Pokemon')
+                              ->orWhere('slug', 'pokemon')
+                              ->orWhere('slug', 'tcg');
+                        });
+                        break;
+                }
+            }
+
+            // Apply section-specific ordering
+            switch ($section) {
+                case 'new':
+                    // Get newest listings (most recently created)
+                    $query->orderBy('created_at', 'desc');
+                    break;
+                
+                case 'most_expensive':
+                    // Get most expensive listings (highest price first)
+                    $query->orderBy('price', 'desc');
+                    break;
+                
+                default:
+                    $query->orderBy('created_at', 'desc');
+            }
+
+            $listings = $query->limit($limit)->get();
+
+            // Transform data for frontend
+            $transformedCards = $listings->map(function ($listing) {
+                $cardModel = $listing->cardModel;
+                
+                // Skip if cardModel is missing (shouldn't happen, but safety check)
+                if (!$cardModel) {
+                    return null;
+                }
+                
+                // Get image from listing (priority) or fallback to card model
+                $imageUrl = null;
+                if ($listing->images && is_array($listing->images) && count($listing->images) > 0) {
+                    $firstImage = $listing->images[0];
+                    if (!str_starts_with($firstImage, '/storage/') && !str_starts_with($firstImage, 'http')) {
+                        $imageUrl = '/storage/' . $firstImage;
+                    } else {
+                        $imageUrl = $firstImage;
+                    }
+                } elseif ($cardModel->image_url) {
+                    $imageUrl = $cardModel->image_url;
+                }
+
+                // Get player name
+                $playerName = $cardModel->player->name ?? $cardModel->player_name ?? $cardModel->name ?? 'Nome non disponibile';
+                
+                // Get team name
+                $teamName = 'Team non disponibile';
+                if ($cardModel->team) {
+                    $teamName = $cardModel->team->name;
+                } elseif ($cardModel->set_name) {
+                    $teamName = $cardModel->set_name;
+                }
+
+                return [
+                    'id' => $cardModel->id,
+                    'listing_id' => $listing->id,
+                    'name' => $playerName,
+                    'team' => $teamName,
+                    'type' => $this->getCategoryType($cardModel->category->name ?? ''),
+                    'description' => $listing->description ?? $cardModel->description ?? 'Descrizione non disponibile',
+                    'price' => '€' . number_format($listing->price, 2, ',', '.'), // Formato italiano
+                    'rating' => $this->getEstimatedRating($cardModel),
+                    'image_url' => $imageUrl,
+                    'images' => $listing->images ?? [],
+                    'created_at' => $listing->created_at,
+                    'rarity' => $cardModel->rarity ?? null,
+                    'set_name' => $cardModel->cardSet->name ?? $cardModel->set_name ?? null,
+                ];
+            })->filter(); // Remove null entries
+
+            return response()->json([
+                'success' => true,
+                'data' => $transformedCards,
+                'category' => $category,
+                'section' => $section,
+                'count' => $transformedCards->count()
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching cards from listings', [
                 'category' => $category,
                 'section' => $section,
                 'error' => $e->getMessage(),
@@ -251,9 +373,13 @@ class CardController extends Controller
      */
     private function getEstimatedRating($card): string
     {
+        if (!$card) {
+            return number_format(4.0, 1);
+        }
+        
         $baseRating = 4.0;
         
-        switch ($card->rarity) {
+        switch ($card->rarity ?? null) {
             case 'mythic':
                 $rating = 4.8;
                 break;
@@ -271,19 +397,19 @@ class CardController extends Controller
         }
         
         // Add bonus for special cards
-        if ($card->is_rookie) {
+        if ($card->is_rookie ?? false) {
             $rating += 0.2;
         }
-        if ($card->is_star) {
+        if ($card->is_star ?? false) {
             $rating += 0.3;
         }
-        if ($card->is_legend) {
+        if ($card->is_legend ?? false) {
             $rating += 0.4;
         }
-        if ($card->is_autograph) {
+        if ($card->is_autograph ?? false) {
             $rating += 0.5;
         }
-        if ($card->is_relic) {
+        if ($card->is_relic ?? false) {
             $rating += 0.3;
         }
         
