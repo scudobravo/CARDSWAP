@@ -63,6 +63,8 @@ import SearchResults from './views/SearchResults.vue';
 
 // Import Top Player Page
 import TopPlayerPage from './views/TopPlayerPage.vue';
+// Import Seller Page (pagina pubblica venditore)
+import SellerPage from './views/SellerPage.vue';
 
 // Import dei file di traduzione
 import it from './locales/it.json';
@@ -128,6 +130,9 @@ const routes = [
     
     // Top Player/Pokemon Routes - must be before category routes to avoid conflicts
     { path: '/top/:category/:name', component: TopPlayerPage, name: 'top.player' },
+
+    // Seller public page
+    { path: '/seller/:id', component: SellerPage, name: 'seller.page' },
     
     // Listing detail route with category, listing ID and slug (SEO-friendly and unique)
     { path: '/:category/:listingId/:slug', component: ProductDetail, name: 'listing.detail' },
