@@ -268,10 +268,13 @@ class HomeController extends Controller
         try {
             $suggestions = [];
 
-            // Suggerimenti da modelli di carte
+            // Suggerimenti da modelli di carte - solo quelle con listings attivi (in vendita)
             $cardSuggestions = CardModel::with('category')
                 ->select('id', 'name', 'slug', 'set_name', 'year', 'category_id')
                 ->where('is_active', true)
+                ->whereHas('cardListings', function($q) {
+                    $q->where('status', 'active');
+                })
                 ->where(function ($q) use ($query) {
                     $q->where('name', 'LIKE', "%{$query}%")
                       ->orWhere('set_name', 'LIKE', "%{$query}%");
@@ -410,10 +413,13 @@ class HomeController extends Controller
         try {
             $suggestions = [];
 
-            // Carte più popolari o recenti
+            // Carte più popolari o recenti - solo quelle con listings attivi (in vendita)
             $popularCards = CardModel::with('category')
                 ->select('id', 'name', 'slug', 'set_name', 'year', 'category_id')
                 ->where('is_active', true)
+                ->whereHas('cardListings', function($q) {
+                    $q->where('status', 'active');
+                })
                 ->orderBy('created_at', 'desc')
                 ->limit(8)
                 ->get();

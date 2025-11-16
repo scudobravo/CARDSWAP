@@ -23,7 +23,11 @@ class CardSearchController extends Controller
             'cardListings' => function($q) {
                 $q->where('status', 'active');
             }
-        ])->active();
+        ])
+        ->active()
+        ->whereHas('cardListings', function($q) {
+            $q->where('status', 'active');
+        });
 
         // Filtri per categoria
         if ($request->filled('category_id')) {
@@ -232,7 +236,8 @@ class CardSearchController extends Controller
 
         // Paginazione
         $perPage = $request->get('per_page', 20);
-        $cards = $query->paginate($perPage);
+        $page = $request->get('page', 1);
+        $cards = $query->paginate($perPage, ['*'], 'page', $page);
 
         // Aggiungo statistiche per i filtri
         $stats = [
@@ -248,8 +253,14 @@ class CardSearchController extends Controller
                 ->values(),
         ];
 
+        // Formato compatibile con SearchResults.vue
         return response()->json([
-            'cards' => $cards->items(),
+            'data' => $cards->items(),
+            'total' => $cards->total(),
+            'current_page' => $cards->currentPage(),
+            'last_page' => $cards->lastPage(),
+            'per_page' => $cards->perPage(),
+            'cards' => $cards->items(), // Mantenuto per retrocompatibilità
             'pagination' => [
                 'current_page' => $cards->currentPage(),
                 'last_page' => $cards->lastPage(),
