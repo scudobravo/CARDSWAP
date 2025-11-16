@@ -46,11 +46,11 @@
                     <div 
                       v-for="(product, index) in displayProducts" 
                       :key="product.id"
-                      class="flex-shrink-0 w-72 group cursor-pointer"
+                      class="flex-shrink-0 w-40 sm:w-60 lg:w-72 group cursor-pointer"
                       @click="goToProduct(product)"
                     >
                       <!-- Product Card -->
-                      <div class="h-96 rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 relative">
+                      <div class="h-60 sm:h-80 lg:h-96 rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 relative">
                         <!-- NEW tag -->
                         <div v-if="index < 2" class="absolute top-3 right-3 z-10 bg-primary text-white text-xs font-futura-bold px-2 py-1 rounded">
                           NEW
