@@ -239,6 +239,45 @@ class CardSearchController extends Controller
         $page = $request->get('page', 1);
         $cards = $query->paginate($perPage, ['*'], 'page', $page);
 
+        // Trasforma i dati per includere le immagini formattate
+        $transformedCards = $cards->getCollection()->map(function($cardModel) {
+            // Priorità alle immagini dai listings, poi fallback al card model
+            $imageUrl = null;
+            if ($cardModel->cardListings && $cardModel->cardListings->count() > 0) {
+                $firstListing = $cardModel->cardListings->first();
+                if ($firstListing->images && is_array($firstListing->images) && count($firstListing->images) > 0) {
+                    $firstImage = $firstListing->images[0];
+                    if (!str_starts_with($firstImage, '/storage/') && !str_starts_with($firstImage, 'http')) {
+                        $imageUrl = '/storage/' . $firstImage;
+                    } else {
+                        $imageUrl = $firstImage;
+                    }
+                }
+            }
+            
+            // Fallback all'immagine del card model
+            if (!$imageUrl && $cardModel->image_url) {
+                $imageUrl = $cardModel->image_url;
+            }
+
+            return [
+                'id' => $cardModel->id,
+                'name' => $cardModel->name,
+                'set_name' => $cardModel->set_name ?? $cardModel->cardSet->name ?? null,
+                'year' => $cardModel->year,
+                'image_url' => $imageUrl,
+                'imageUrl' => $imageUrl, // Alias per compatibilità
+                'category' => $cardModel->category,
+                'card_listings' => $cardModel->cardListings,
+                'cardSet' => $cardModel->cardSet,
+                'player' => $cardModel->player,
+                'team' => $cardModel->team,
+                'league' => $cardModel->league,
+                'rarity' => $cardModel->rarity,
+                'card_number_in_set' => $cardModel->card_number_in_set,
+            ];
+        });
+
         // Aggiungo statistiche per i filtri
         $stats = [
             'total_cards' => $cards->total(),
@@ -255,12 +294,12 @@ class CardSearchController extends Controller
 
         // Formato compatibile con SearchResults.vue
         return response()->json([
-            'data' => $cards->items(),
+            'data' => $transformedCards->values()->all(),
             'total' => $cards->total(),
             'current_page' => $cards->currentPage(),
             'last_page' => $cards->lastPage(),
             'per_page' => $cards->perPage(),
-            'cards' => $cards->items(), // Mantenuto per retrocompatibilità
+            'cards' => $transformedCards->values()->all(), // Mantenuto per retrocompatibilità
             'pagination' => [
                 'current_page' => $cards->currentPage(),
                 'last_page' => $cards->lastPage(),

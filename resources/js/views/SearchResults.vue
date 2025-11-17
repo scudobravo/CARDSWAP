@@ -49,11 +49,20 @@
             class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
             @click="goToCardDetail(card)"
           >
-            <!-- Card Image Placeholder -->
-            <div class="aspect-square bg-gray-100 rounded-t-lg flex items-center justify-center">
-              <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
+            <!-- Card Image -->
+            <div class="aspect-square bg-gray-100 rounded-t-lg overflow-hidden">
+              <img 
+                v-if="card.imageUrl || card.image_url" 
+                :src="card.imageUrl || card.image_url" 
+                :alt="card.name || 'Carta'"
+                class="w-full h-full object-cover"
+                @error="handleImageError"
+              />
+              <div v-else class="w-full h-full flex items-center justify-center bg-gray-200">
+                <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </div>
             </div>
             
             <!-- Card Info -->
@@ -160,6 +169,12 @@ const loadMore = () => {
 // Funzione per andare al dettaglio della carta
 const goToCardDetail = (card) => {
   router.push(`/product/${card.id}`)
+}
+
+// Funzione per gestire errori di caricamento immagini
+const handleImageError = (event) => {
+  // Nasconde l'immagine e mostra il placeholder
+  event.target.style.display = 'none'
 }
 
 // Watch per la query di ricerca
