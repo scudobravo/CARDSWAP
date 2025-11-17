@@ -274,7 +274,15 @@ class CardSearchController extends Controller
                 'team' => $cardModel->team,
                 'league' => $cardModel->league,
                 'rarity' => $cardModel->rarity,
+                'rarity_variation' => $cardModel->rarity_variation,
+                'card_number' => $cardModel->card_number,
                 'card_number_in_set' => $cardModel->card_number_in_set,
+                'is_autograph' => $cardModel->is_autograph ?? false,
+                'is_relic' => $cardModel->is_relic ?? false,
+                'is_rookie' => $cardModel->is_rookie ?? false,
+                'is_star' => $cardModel->is_star ?? false,
+                'is_legend' => $cardModel->is_legend ?? false,
+                'price' => $cardModel->price,
             ];
         });
 

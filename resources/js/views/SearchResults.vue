@@ -41,48 +41,15 @@
           </router-link>
         </div>
 
-        <!-- Results Grid -->
+        <!-- Results Grid - 2 per riga su mobile/tablet, 3-4 su desktop -->
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          <div 
+          <ProductCard 
             v-for="card in cards" 
             :key="card.id"
-            class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+            :product="transformCardToProduct(card)"
+            class="cursor-pointer"
             @click="goToCardDetail(card)"
-          >
-            <!-- Card Image -->
-            <div class="aspect-square bg-gray-100 rounded-t-lg overflow-hidden">
-              <img 
-                v-if="card.imageUrl || card.image_url" 
-                :src="card.imageUrl || card.image_url" 
-                :alt="card.name || 'Carta'"
-                class="w-full h-full object-cover"
-                @error="handleImageError"
-              />
-              <div v-else class="w-full h-full flex items-center justify-center bg-gray-200">
-                <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-              </div>
-            </div>
-            
-            <!-- Card Info -->
-            <div class="p-4">
-              <h3 class="font-gill-sans-semibold text-gray-900 text-sm mb-1 line-clamp-2">
-                {{ card.name }}
-              </h3>
-              <p class="text-xs text-gray-600 mb-2">
-                {{ card.set_name }} ({{ card.year }})
-              </p>
-              <div class="flex items-center justify-between">
-                <span class="text-xs text-gray-500">
-                  {{ card.category?.name || 'N/A' }}
-                </span>
-                <span v-if="card.card_listings && card.card_listings.length > 0" class="text-xs font-gill-sans-semibold text-secondary">
-                  {{ card.card_listings.length }} in vendita
-                </span>
-              </div>
-            </div>
-          </div>
+          />
         </div>
 
         <!-- Load More Button -->
@@ -107,6 +74,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Header from '../components/Header.vue'
 import Footer from '../components/Footer.vue'
+import ProductCard from '../components/ProductCard.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -171,10 +139,32 @@ const goToCardDetail = (card) => {
   router.push(`/product/${card.id}`)
 }
 
-// Funzione per gestire errori di caricamento immagini
-const handleImageError = (event) => {
-  // Nasconde l'immagine e mostra il placeholder
-  event.target.style.display = 'none'
+// Funzione per trasformare i dati della carta nel formato ProductCard
+const transformCardToProduct = (card) => {
+  // Prendi il prezzo dal primo listing attivo, se disponibile
+  const firstListing = card.card_listings && card.card_listings.length > 0 
+    ? card.card_listings[0] 
+    : null
+  
+  return {
+    id: card.id,
+    name: card.name,
+    imageUrl: card.imageUrl || card.image_url,
+    team: card.team?.name || card.team || 'N/A',
+    set: card.set_name || card.cardSet?.name || 'N/A',
+    year: card.year,
+    rarity: card.rarity,
+    rarity_variation: card.rarity_variation,
+    condition: firstListing?.condition || 'excellent',
+    price: firstListing?.price || card.price || 0,
+    card_number: card.card_number,
+    card_number_in_set: card.card_number_in_set,
+    is_autograph: card.is_autograph || false,
+    is_relic: card.is_relic || false,
+    is_rookie: card.is_rookie || false,
+    is_star: card.is_star || false,
+    is_legend: card.is_legend || false,
+  }
 }
 
 // Watch per la query di ricerca
