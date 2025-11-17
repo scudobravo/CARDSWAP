@@ -42,7 +42,7 @@
         </div>
 
         <!-- Results Grid - 2 per riga su mobile/tablet, 3-4 su desktop -->
-        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div v-else class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           <ProductCard 
             v-for="card in cards" 
             :key="card.id"
