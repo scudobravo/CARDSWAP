@@ -141,7 +141,7 @@
                     €{{ formatPriceItaliana(listing.price) }}
                   </p>
                   <p class="text-xs text-gray-500 capitalize">
-                    {{ listing.condition }} - Qty: {{ listing.quantity }}
+                    {{ formatCondition(listing) }} - Qty: {{ listing.quantity }}
                   </p>
                 </div>
                 <div class="flex space-x-2">
@@ -201,6 +201,7 @@ import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import CreateListingModal from '@/components/listing/CreateListingModal.vue'
 import { PlusIcon, FolderIcon, ExclamationTriangleIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
 import { formatPriceItaliana } from '../utils/priceFormatter'
+import { formatCondition } from '@/utils/conditionFormatter'
 
 const authStore = useAuthStore()
 const kycCompleted = computed(() => authStore.user?.kyc_status === 'approved')

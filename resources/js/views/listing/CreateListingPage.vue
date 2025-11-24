@@ -159,7 +159,7 @@
                   </p>
                   <div class="flex flex-wrap items-center gap-2">
                     <p class="text-xs md:text-sm text-gray-500">
-                      {{ listing.condition }}
+                      {{ formatCondition(listing) }}
                     </p>
                     <span class="text-gray-300">•</span>
                     <p class="text-xs md:text-sm font-medium text-gray-900">
@@ -268,6 +268,7 @@ import { ref, onMounted } from 'vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import CreateListingModal from '../../components/listing/CreateListingModal.vue'
 import { PlusIcon, ExclamationTriangleIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import { formatCondition } from '@/utils/conditionFormatter'
 
 // State
 const showCreateModal = ref(false)

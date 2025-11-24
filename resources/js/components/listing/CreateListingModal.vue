@@ -1933,16 +1933,6 @@ const createNewSingleListing = async () => {
     : 1
   formData.append('quantity', quantity.toString())
   
-  // Add condition (required) - from additionalDetails or default
-  const condition = additionalDetails.value.condition || 'mint'
-  formData.append('condition', condition)
-  
-  // Add autograph_condition (optional) - from additionalDetails, defaults to condition if not set
-  const autographCondition = additionalDetails.value.autographCondition || condition
-  if (autographCondition) {
-    formData.append('autograph_condition', autographCondition)
-  }
-  
   // Add language (required) - default to italian
   formData.append('language', 'italian')
   
@@ -1963,23 +1953,26 @@ const createNewSingleListing = async () => {
     formData.append('number', filters.value.number)
   }
   
-  // Add grading info
+  // Add grading info - IMPORTANTE: gestisce condition vs grading
   if (additionalDetails.value.gradingCompany) {
-    formData.append('grading_company_id', additionalDetails.value.gradingCompany)
     // Se c'è grading company, invia i score numerici
+    formData.append('grading_company_id', additionalDetails.value.gradingCompany)
     if (additionalDetails.value.cardConditionScore) {
       formData.append('card_condition_score', additionalDetails.value.cardConditionScore)
     }
     if (additionalDetails.value.autographConditionScore) {
       formData.append('autograph_condition_score', additionalDetails.value.autographConditionScore)
     }
+    // NON inviare condition quando c'è grading
   } else {
-    // Se NON c'è grading company, invia le condizioni testuali
-    if (additionalDetails.value.condition) {
-      formData.append('condition', additionalDetails.value.condition)
-    }
-    if (additionalDetails.value.autographCondition) {
-      formData.append('autograph_condition', additionalDetails.value.autographCondition)
+    // Se NON c'è grading company, invia le condizioni testuali (required)
+    const condition = additionalDetails.value.condition || 'mint'
+    formData.append('condition', condition)
+    
+    // Add autograph_condition (optional) - from additionalDetails, defaults to condition if not set
+    const autographCondition = additionalDetails.value.autographCondition || condition
+    if (autographCondition) {
+      formData.append('autograph_condition', autographCondition)
     }
   }
   
@@ -3108,17 +3101,35 @@ const updateSingleListing = async () => {
     // Aggiungi i dati dell'inserzione (assicurati che tutti i campi necessari siano presenti)
     if (listingData.value.price !== undefined && listingData.value.price !== null) {
       // Normalizza il prezzo prima di inviarlo
-  const normalizedPrice = normalizePrice(listingData.value.price)
-  formData.append('price', normalizedPrice.toString())
+      const normalizedPrice = normalizePrice(listingData.value.price)
+      formData.append('price', normalizedPrice.toString())
     }
-    if (listingData.value.condition) {
-      formData.append('condition', listingData.value.condition)
-    }
-    // Add autograph_condition if available
-    if (listingData.value.autograph_condition) {
-      formData.append('autograph_condition', listingData.value.autograph_condition)
-    } else if (listingData.value.condition) {
-      formData.append('autograph_condition', listingData.value.condition)
+    
+    // Gestione grading vs condition - IMPORTANTE: gestisce condition vs grading
+    if (listingData.value.grading_company_id || additionalDetails.value.gradingCompany) {
+      // Se c'è grading company, invia i score numerici
+      const gradingCompanyId = listingData.value.grading_company_id || additionalDetails.value.gradingCompany
+      if (gradingCompanyId) {
+        formData.append('grading_company_id', gradingCompanyId)
+      }
+      if (listingData.value.card_condition_score || additionalDetails.value.cardConditionScore) {
+        formData.append('card_condition_score', listingData.value.card_condition_score || additionalDetails.value.cardConditionScore)
+      }
+      if (listingData.value.autograph_condition_score || additionalDetails.value.autographConditionScore) {
+        formData.append('autograph_condition_score', listingData.value.autograph_condition_score || additionalDetails.value.autographConditionScore)
+      }
+      // NON inviare condition quando c'è grading
+    } else {
+      // Se NON c'è grading company, invia le condizioni testuali
+      if (listingData.value.condition || additionalDetails.value.condition) {
+        formData.append('condition', listingData.value.condition || additionalDetails.value.condition)
+      }
+      // Add autograph_condition if available
+      if (listingData.value.autograph_condition || additionalDetails.value.autographCondition) {
+        formData.append('autograph_condition', listingData.value.autograph_condition || additionalDetails.value.autographCondition)
+      } else if (listingData.value.condition || additionalDetails.value.condition) {
+        formData.append('autograph_condition', listingData.value.condition || additionalDetails.value.condition)
+      }
     }
     if (listingData.value.quantity !== undefined && listingData.value.quantity !== null) {
       formData.append('quantity', listingData.value.quantity)

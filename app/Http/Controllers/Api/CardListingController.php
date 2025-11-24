@@ -78,6 +78,7 @@ class CardListingController extends Controller
             'cardModel.player',
             'cardModel.team',
             'cardModel.league',
+            'gradingCompany',
             'seller'
         ])->where('status', 'active');
 
@@ -193,9 +194,9 @@ class CardListingController extends Controller
             // Gestione grading: se c'è grading_company_id, pulisci le condizioni testuali
             // Se non c'è grading_company_id, pulisci i campi numerici
             if (isset($listingData['grading_company_id']) && !empty($listingData['grading_company_id'])) {
-                // C'è grading: pulisci condizioni testuali
-                unset($listingData['condition']);
-                unset($listingData['autograph_condition']);
+                // C'è grading: imposta esplicitamente condition a NULL per evitare il default del database
+                $listingData['condition'] = null;
+                $listingData['autograph_condition'] = null;
             } else {
                 // Non c'è grading: pulisci campi numerici
                 unset($listingData['card_condition_score']);
@@ -633,7 +634,8 @@ class CardListingController extends Controller
             'year' => $cardModel->year ?? date('Y'),
             'rarity' => $cardModel->rarity ?? 'Rare',
             'price' => floatval($cardListing->price), // Restituisce il prezzo come numero, non formattato
-            'condition' => $cardListing->condition ?? 'excellent',
+            // Se c'è grading, condition dovrebbe essere null, altrimenti usa il valore o 'excellent' come default
+            'condition' => $cardListing->grading_company_id ? null : ($cardListing->condition ?? 'excellent'),
             'grading_company_id' => $cardListing->grading_company_id,
             'grading_company' => $cardListing->gradingCompany ? [
                 'id' => $cardListing->gradingCompany->id,
@@ -754,9 +756,9 @@ class CardListingController extends Controller
             // Gestione grading: se c'è grading_company_id, pulisci le condizioni testuali
             // Se non c'è grading_company_id, pulisci i campi numerici
             if (isset($updateData['grading_company_id']) && !empty($updateData['grading_company_id'])) {
-                // C'è grading: pulisci condizioni testuali
-                unset($updateData['condition']);
-                unset($updateData['autograph_condition']);
+                // C'è grading: imposta esplicitamente condition a NULL per evitare il default del database
+                $updateData['condition'] = null;
+                $updateData['autograph_condition'] = null;
             } else {
                 // Non c'è grading: pulisci campi numerici
                 unset($updateData['card_condition_score']);
@@ -895,6 +897,7 @@ class CardListingController extends Controller
             'cardModel.player',
             'cardModel.team',
             'cardModel.league',
+            'gradingCompany',
             'shippingZones'
         ])->where('seller_id', Auth::id());
 
@@ -1029,6 +1032,7 @@ class CardListingController extends Controller
             'cardModel.player',
             'cardModel.team',
             'cardModel.league',
+            'gradingCompany',
             'seller'
         ])->where('status', 'active');
 

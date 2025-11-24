@@ -15,18 +15,29 @@ export function formatCondition(listing) {
     const cardScore = listing.card_condition_score;
     const autographScore = listing.autograph_condition_score;
     
-    if (cardScore !== null && cardScore !== undefined && cardScore !== '') {
+    // Se c'è almeno un score (carta o autografo), formatta
+    if ((cardScore !== null && cardScore !== undefined && cardScore !== '') ||
+        (autographScore !== null && autographScore !== undefined && autographScore !== '')) {
       // Formato: "PSA 10 – Carta: 10 – Autografo: 10" oppure "PSA AUTH – Carta: AUTH – Autografo: AUTH"
-      let formatted = `${companyName} ${cardScore}`;
+      const displayCardScore = cardScore || (autographScore ? 'N/A' : '');
       
-      if (autographScore !== null && autographScore !== undefined && autographScore !== '') {
-        formatted += ` – Carta: ${cardScore} – Autografo: ${autographScore}`;
-      } else {
-        // Se non c'è autograph score, mostra solo il card score
-        formatted += ` – Carta: ${cardScore}`;
+      if (displayCardScore) {
+        let formatted = `${companyName} ${displayCardScore}`;
+        
+        if (autographScore !== null && autographScore !== undefined && autographScore !== '') {
+          formatted += ` – Carta: ${displayCardScore} – Autografo: ${autographScore}`;
+        } else if (cardScore) {
+          // Se non c'è autograph score ma c'è card score, mostra solo il card score
+          formatted += ` – Carta: ${displayCardScore}`;
+        }
+        
+        return formatted;
       }
-      
-      return formatted;
+    }
+    
+    // Se c'è grading company ma non ci sono score, mostra solo il nome della company
+    if (companyName) {
+      return companyName;
     }
   }
   
