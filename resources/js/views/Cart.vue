@@ -206,9 +206,9 @@ const totalShippingCost = computed(() => {
   return normalizePrice(cartStore.totalShippingCost)
 })
 const taxAmount = computed(() => {
-  // Calcola il costo di gestione (3.5% del subtotale)
+  // Calcola la commissione acquirente (1.5% del subtotale)
   const subtotalValue = normalizePrice(subtotal.value)
-  return subtotalValue * 0.035 // 3.5% Costo di gestione (copre i costi Stripe)
+  return subtotalValue * 0.015 // 1.5% Commissione acquirente (copre parzialmente i costi Stripe)
 })
 const grandTotal = computed(() => {
   // Assicurati che tutti i valori siano numeri normalizzati

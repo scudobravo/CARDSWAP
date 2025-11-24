@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\GradingCompany;
 
 class CardListing extends Model
 {
@@ -19,6 +20,9 @@ class CardListing extends Model
         'price',
         'condition',
         'autograph_condition',
+        'grading_company_id',
+        'card_condition_score',
+        'autograph_condition_score',
         'quantity',
         'language',
         'is_foil',
@@ -36,6 +40,7 @@ class CardListing extends Model
     protected $casts = [
         'price' => 'decimal:2',
         'quantity' => 'integer',
+        // card_condition_score e autograph_condition_score sono stringhe per supportare "AUTH"
         'is_foil' => 'boolean',
         'is_signed' => 'boolean',
         'is_altered' => 'boolean',
@@ -58,6 +63,14 @@ class CardListing extends Model
     public function seller(): BelongsTo
     {
         return $this->belongsTo(User::class, 'seller_id');
+    }
+
+    /**
+     * Relazione con la grading company
+     */
+    public function gradingCompany(): BelongsTo
+    {
+        return $this->belongsTo(GradingCompany::class);
     }
 
     /**

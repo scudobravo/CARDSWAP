@@ -14,6 +14,9 @@ import Categories from './views/Categories.vue';
 import FootballCategory from './views/FootballCategory.vue';
 import BasketballCategory from './views/BasketballCategory.vue';
 import PokemonCategory from './views/PokemonCategory.vue';
+import DisneyCategory from './views/DisneyCategory.vue';
+import SpongeBobCategory from './views/SpongeBobCategory.vue';
+import LabubuCategory from './views/LabubuCategory.vue';
 import SubcategoryPage from './views/SubcategoryPage.vue';
 import ProductDetail from './views/ProductDetail.vue';
 import Dashboard from './views/Dashboard.vue';
@@ -79,6 +82,9 @@ const routes = [
     { path: '/category/football', component: FootballCategory, name: 'football.category' },
     { path: '/category/basketball', component: BasketballCategory, name: 'basketball.category' },
     { path: '/category/pokemon', component: PokemonCategory, name: 'pokemon.category' },
+    { path: '/category/disney', component: DisneyCategory, name: 'disney.category' },
+    { path: '/category/spongebob', component: SpongeBobCategory, name: 'spongebob.category' },
+    { path: '/category/labubu', component: LabubuCategory, name: 'labubu.category' },
     { path: '/categories/:category/:subcategory', component: SubcategoryPage, name: 'subcategory' },
     { path: '/product/:id', component: ProductDetail, name: 'product.detail' },
     { path: '/dashboard', component: Dashboard, name: 'dashboard' },
@@ -170,7 +176,7 @@ const authStore = useAuthStore();
 // Navigation guard per verificare l'autenticazione solo sulle pagine protette
 router.beforeEach(async (to, from, next) => {
   // Pagine pubbliche che non richiedono autenticazione
-  const publicPages = ['/', '/login', '/register', '/categories', '/category/football', '/category/basketball', '/category/pokemon', '/terms-and-conditions', '/privacy-policy', '/cookie-policy', '/contact', '/search']
+  const publicPages = ['/', '/login', '/register', '/categories', '/category/football', '/category/basketball', '/category/pokemon', '/category/disney', '/category/spongebob', '/category/labubu', '/terms-and-conditions', '/privacy-policy', '/cookie-policy', '/contact', '/search']
   const isPublicPage = publicPages.includes(to.path) || to.path.startsWith('/category/') || to.path.startsWith('/categories/') || to.path.startsWith('/top/') || to.path.match(/^\/[^\/]+\/[^\/]+$/)
   
   // Se è una pagina pubblica, lascia passare senza controlli

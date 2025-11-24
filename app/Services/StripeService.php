@@ -512,9 +512,12 @@ class StripeService
             ]);
 
             // Crea i trasferimenti per ogni venditore
+            // Il venditore riceve solo il 94% del subtotale (senza spedizione)
+            // La spedizione viene gestita tramite Shippo e non viene data al venditore
             $transfers = [];
             foreach ($orderData['sellers'] as $seller) {
-                $sellerAmount = $seller['amount'] * 100; // Converti in centesimi
+                $sellerSubtotal = $seller['amount'] * 100; // Subtotale in centesimi (senza spedizione)
+                $sellerAmount = (int) round($sellerSubtotal * 0.94); // 94% del subtotale
                 
                 $transfer = $this->stripe->transfers->create([
                     'amount' => $sellerAmount,
@@ -585,9 +588,9 @@ class StripeService
     /**
      * Calcola la commissione piattaforma
      */
-    public function calculateApplicationFee(float $amount, float $commissionRate = 0.05): float
+    public function calculateApplicationFee(float $amount, float $commissionRate = 0.06): float
     {
-        return $amount * $commissionRate; // 5% di default
+        return $amount * $commissionRate; // 6% Commissione venditore CardSwap
     }
 
     /**

@@ -10,7 +10,7 @@
       </div>
 
       <!-- Lista categorie principali -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8 mb-16">
         <CategoryCard 
           v-for="category in categories" 
           :key="category.id" 
@@ -42,17 +42,31 @@ const categories = ref([
   },
   {
     id: 2,
-    name: "Pokemon",
-    description: "Colleziona le tue carte Pokemon preferite",
-    type: "pokemon",
-    icon: "/images/icons/pokemon.png"
-  },
-  {
-    id: 3,
     name: "Basket",
     description: "Carte da basket NBA e internazionali",
     type: "basketball",
     icon: "/images/icons/basket.png"
+  },
+  {
+    id: 3,
+    name: "Disney",
+    description: "Colleziona le tue carte Disney preferite",
+    type: "disney",
+    icon: "/images/icons/Disney.svg"
+  },
+  {
+    id: 4,
+    name: "SpongeBob",
+    description: "Colleziona le tue carte SpongeBob preferite",
+    type: "spongebob",
+    icon: "/images/icons/SpongeBob.svg"
+  },
+  {
+    id: 5,
+    name: "Labubu",
+    description: "Colleziona le tue carte Labubu preferite",
+    type: "labubu",
+    icon: "/images/icons/Labubu.svg"
   }
 ])
 

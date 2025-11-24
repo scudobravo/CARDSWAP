@@ -16,7 +16,7 @@
           <h2 class="text-3xl font-futura-bold text-primary mb-4">Categorie</h2>
           <p class="text-lg text-gray-600 font-gill-sans">Scegli la tua categoria preferita</p>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8">
           <CategoryCard 
             v-for="category in categories" 
             :key="category.id" 
@@ -38,8 +38,8 @@
       </div>
     </section>
     
-    <!-- Pokemon Section -->
-    <section class="py-16 bg-gray-light">
+    <!-- Pokemon Section - Temporaneamente nascosta -->
+    <!-- <section class="py-16 bg-gray-light">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <ProductCarousel 
           title="Top Pokemon" 
@@ -48,7 +48,7 @@
           see-all-url="/category/pokemon"
         />
       </div>
-    </section>
+    </section> -->
     
     <!-- Referral Banner -->
     <ReferralBanner />
@@ -122,17 +122,31 @@ const categories = ref([
   },
   {
     id: 2,
-    name: "Pokemon",
-    description: "Colleziona le tue carte Pokemon preferite",
-    type: "pokemon",
-    icon: "/images/icons/pokemon.png"
-  },
-  {
-    id: 3,
     name: "Basket",
     description: "Carte da basket NBA e internazionali",
     type: "basketball",
     icon: "/images/icons/basket.png"
+  },
+  {
+    id: 3,
+    name: "Disney",
+    description: "Colleziona le tue carte Disney preferite",
+    type: "disney",
+    icon: "/images/icons/Disney.svg"
+  },
+  {
+    id: 4,
+    name: "SpongeBob",
+    description: "Colleziona le tue carte SpongeBob preferite",
+    type: "spongebob",
+    icon: "/images/icons/SpongeBob.svg"
+  },
+  {
+    id: 5,
+    name: "Labubu",
+    description: "Colleziona le tue carte Labubu preferite",
+    type: "labubu",
+    icon: "/images/icons/Labubu.svg"
   }
 ])
 

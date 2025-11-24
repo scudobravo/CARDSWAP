@@ -318,8 +318,8 @@ class PaymentController extends Controller
      */
     private function prepareStripeData(array $orderData, Order $order): array
     {
-        $applicationFee = $this->stripeService->calculateApplicationFee($orderData['total_amount']);
         $sellers = [];
+        $totalSellerAmount = 0;
 
         foreach ($orderData['sellers'] as $sellerData) {
             $seller = User::find($sellerData['seller_id']);
@@ -334,16 +334,31 @@ class PaymentController extends Controller
                 $sellerAmount += $listing->price * $itemData['quantity'];
             }
 
-            // Aggiungi costo spedizione
-            $shippingCost = $listing->getShippingCostForZone($sellerData['shipping_zone_id']);
-            $sellerAmount += $shippingCost;
+            // La spedizione viene gestita tramite Shippo e non viene data al venditore
+            // Il venditore riceve solo il 94% del subtotale
+            $totalSellerAmount += $sellerAmount; // Solo subtotale, senza spedizione
 
             $sellers[] = [
                 'seller_id' => $seller->id,
                 'stripe_account_id' => $seller->stripe_account_id,
-                'amount' => $sellerAmount
+                'amount' => $sellerAmount // Solo subtotale per il calcolo della commissione
             ];
         }
+
+        // Calcola la commissione venditore solo sul subtotale (senza spedizione), non sul totale che include spedizione e tassa acquirente
+        // La spedizione viene gestita tramite Shippo e non viene data al venditore
+        // Con Stripe Connect, il venditore riceve: amount - application_fee_amount
+        // Per far ricevere al venditore esattamente il 94% del subtotale:
+        // application_fee = amount - (subtotale * 0.94)
+        // = (subtotale + spedizione + buyer_tax) - (subtotale * 0.94)
+        // = subtotale * 0.06 + spedizione + buyer_tax
+        $buyerTax = $orderData['total_amount'] - $totalSellerAmount; // Spedizione + Tassa acquirente (1.5%)
+        $applicationFee = ($totalSellerAmount * 0.06) + $buyerTax;
+        
+        // NOTA: Oltre a queste commissioni, ci saranno anche:
+        // - Trattenuta Stripe: ~3,5% + 0,30€ (dedotta automaticamente da Stripe sul totale pagato)
+        // - Trattenuta Shippo: costo spedizione (dedotta quando viene creato il label di spedizione)
+        // Il netto per CardSwap sarà: 6% + 1,5% + spedizione - costi Stripe - costi Shippo
 
         return [
             'order_id' => $order->id,

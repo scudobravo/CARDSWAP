@@ -506,8 +506,8 @@ const orderSummary = computed(() => {
     return sum + normalizePrice(shippingCost)
   }, 0)
   
-  // Calcola il costo di gestione (3.5% del subtotale)
-  const tax = subtotal * 0.035 // 3.5% Costo di gestione (copre i costi Stripe)
+  // Calcola la commissione acquirente (1.5% del subtotale)
+  const tax = subtotal * 0.015 // 1.5% Commissione acquirente (copre parzialmente i costi Stripe)
   const total = subtotal + shipping + tax
   
   return {

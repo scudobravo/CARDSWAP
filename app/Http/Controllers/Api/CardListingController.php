@@ -127,8 +127,11 @@ class CardListingController extends Controller
         $rules = [
             'listing_type' => 'required|in:single,bulk,sealed-pack,sealed-box,lot',
             'price' => 'required|numeric|min:0.01|max:999999.99',
-            'condition' => 'required|in:mint,near_mint,excellent,good,light_played,played,poor,fair,very_good',
+            'condition' => 'required_without:grading_company_id|in:mint,near_mint,excellent,good,light_played,played,poor,fair,very_good',
             'autograph_condition' => 'nullable|in:mint,near_mint,excellent,good,light_played,played,poor,fair,very_good',
+            'grading_company_id' => 'nullable|exists:grading_companies,id',
+            'card_condition_score' => 'nullable|string|in:0.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5,7.0,7.5,8.0,8.5,9.0,9.5,10.0,AUTH',
+            'autograph_condition_score' => 'nullable|string|in:0.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5,7.0,7.5,8.0,8.5,9.0,9.5,10.0,AUTH',
             'language' => 'required|in:italian,english,spanish,french,german,portuguese',
             'is_foil' => 'boolean',
             'is_signed' => 'boolean',
@@ -185,6 +188,19 @@ class CardListingController extends Controller
             // Rimuovi autograph_condition se la colonna non esiste nel database
             if (!Schema::hasColumn('card_listings', 'autograph_condition')) {
                 unset($listingData['autograph_condition']);
+            }
+            
+            // Gestione grading: se c'è grading_company_id, pulisci le condizioni testuali
+            // Se non c'è grading_company_id, pulisci i campi numerici
+            if (isset($listingData['grading_company_id']) && !empty($listingData['grading_company_id'])) {
+                // C'è grading: pulisci condizioni testuali
+                unset($listingData['condition']);
+                unset($listingData['autograph_condition']);
+            } else {
+                // Non c'è grading: pulisci campi numerici
+                unset($listingData['card_condition_score']);
+                unset($listingData['autograph_condition_score']);
+                unset($listingData['grading_company_id']);
             }
             
             // Normalizza il prezzo da formato italiano (15.000,00) a formato database (15000.00)
@@ -575,6 +591,7 @@ class CardListingController extends Controller
             'cardModel.team',
             'cardModel.league',
             'cardModel.gradingCompany',
+            'gradingCompany',
             'seller',
             'shippingZones'
         ]);
@@ -617,6 +634,14 @@ class CardListingController extends Controller
             'rarity' => $cardModel->rarity ?? 'Rare',
             'price' => floatval($cardListing->price), // Restituisce il prezzo come numero, non formattato
             'condition' => $cardListing->condition ?? 'excellent',
+            'grading_company_id' => $cardListing->grading_company_id,
+            'grading_company' => $cardListing->gradingCompany ? [
+                'id' => $cardListing->gradingCompany->id,
+                'name' => $cardListing->gradingCompany->name,
+                'slug' => $cardListing->gradingCompany->slug,
+            ] : null,
+            'card_condition_score' => $cardListing->card_condition_score,
+            'autograph_condition_score' => $cardListing->autograph_condition_score,
             'quantity' => $cardListing->quantity ?? 1,
             'description' => $cardListing->description ?? $cardModel->description ?? '',
             'images' => $images,
@@ -688,6 +713,9 @@ class CardListingController extends Controller
             'price' => 'sometimes|numeric|min:0.01|max:999999.99',
             'condition' => 'sometimes|in:mint,near_mint,excellent,good,light_played,played,poor,fair,very_good',
             'autograph_condition' => 'sometimes|nullable|in:mint,near_mint,excellent,good,light_played,played,poor,fair,very_good',
+            'grading_company_id' => 'sometimes|nullable|exists:grading_companies,id',
+            'card_condition_score' => 'sometimes|nullable|string|in:0.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5,7.0,7.5,8.0,8.5,9.0,9.5,10.0,AUTH',
+            'autograph_condition_score' => 'sometimes|nullable|string|in:0.0,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5,7.0,7.5,8.0,8.5,9.0,9.5,10.0,AUTH',
             'quantity' => 'sometimes|integer|min:1|max:1000',
             'language' => 'sometimes|in:italian,english,spanish,french,german,portuguese',
             'is_foil' => 'boolean',
@@ -721,6 +749,19 @@ class CardListingController extends Controller
             // Rimuovi autograph_condition se la colonna non esiste nel database
             if (!Schema::hasColumn('card_listings', 'autograph_condition')) {
                 unset($updateData['autograph_condition']);
+            }
+            
+            // Gestione grading: se c'è grading_company_id, pulisci le condizioni testuali
+            // Se non c'è grading_company_id, pulisci i campi numerici
+            if (isset($updateData['grading_company_id']) && !empty($updateData['grading_company_id'])) {
+                // C'è grading: pulisci condizioni testuali
+                unset($updateData['condition']);
+                unset($updateData['autograph_condition']);
+            } else {
+                // Non c'è grading: pulisci campi numerici
+                unset($updateData['card_condition_score']);
+                unset($updateData['autograph_condition_score']);
+                unset($updateData['grading_company_id']);
             }
             
             // Gestione immagini

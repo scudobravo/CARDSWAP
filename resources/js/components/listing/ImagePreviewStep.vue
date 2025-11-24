@@ -91,46 +91,63 @@
                 </select>
               </div>
 
-              <!-- Condition (Condizione carta) -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Condizione carta</label>
-                <select v-model="additionalDetails.condition" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm">
-                  <option value="">Seleziona condizione</option>
-                  <option value="mint">Mint</option>
-                  <option value="near_mint">Near Mint</option>
-                  <option value="excellent">Excellent</option>
-                  <option value="very_good">Very Good</option>
-                  <option value="good">Good</option>
-                  <option value="fair">Fair</option>
-                  <option value="poor">Poor</option>
-                </select>
-              </div>
+              <!-- Condizioni testuali (solo quando NON c'è grading company) -->
+              <template v-if="!additionalDetails.gradingCompany">
+                <!-- Condition (Condizione carta) -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Condizione carta</label>
+                  <select v-model="additionalDetails.condition" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm">
+                    <option value="">Seleziona condizione</option>
+                    <option value="mint">Mint</option>
+                    <option value="near_mint">Near Mint</option>
+                    <option value="excellent">Excellent</option>
+                    <option value="very_good">Very Good</option>
+                    <option value="good">Good</option>
+                    <option value="fair">Fair</option>
+                    <option value="light_played">Light Played</option>
+                    <option value="played">Played</option>
+                    <option value="poor">Poor</option>
+                  </select>
+                </div>
 
-              <!-- Autograph Condition (Condizione autografo) -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Condizione autografo</label>
-                <select v-model="additionalDetails.autographCondition" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm">
-                  <option value="">Seleziona condizione</option>
-                  <option value="mint">Mint</option>
-                  <option value="near_mint">Near Mint</option>
-                  <option value="excellent">Excellent</option>
-                  <option value="very_good">Very Good</option>
-                  <option value="good">Good</option>
-                  <option value="fair">Fair</option>
-                  <option value="poor">Poor</option>
-                </select>
-              </div>
+                <!-- Autograph Condition (Condizione autografo) -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Condizione autografo</label>
+                  <select v-model="additionalDetails.autographCondition" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm">
+                    <option value="">Seleziona condizione</option>
+                    <option value="mint">Mint</option>
+                    <option value="near_mint">Near Mint</option>
+                    <option value="excellent">Excellent</option>
+                    <option value="very_good">Very Good</option>
+                    <option value="good">Good</option>
+                    <option value="fair">Fair</option>
+                    <option value="light_played">Light Played</option>
+                    <option value="played">Played</option>
+                    <option value="poor">Poor</option>
+                  </select>
+                </div>
+              </template>
 
-              <!-- Grading Score -->
-              <div v-if="additionalDetails.gradingCompany">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Grading Score</label>
-                <input
-                  v-model="additionalDetails.gradingScore"
-                  type="text"
-                  placeholder="Es. 10, 9.5, 9"
-                  class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm"
-                />
-              </div>
+              <!-- Campi numerici (solo quando C'È grading company) -->
+              <template v-if="additionalDetails.gradingCompany">
+                <!-- Card Condition Score (0-10 con incrementi 0.5) -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Condizione carta (0-10)</label>
+                  <select v-model="additionalDetails.cardConditionScore" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm">
+                    <option value="">Seleziona condizione</option>
+                    <option v-for="score in cardConditionScores" :key="score" :value="score">{{ score }}</option>
+                  </select>
+                </div>
+
+                <!-- Autograph Condition Score (0-10 con incrementi 0.5) -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Condizione autografo (0-10)</label>
+                  <select v-model="additionalDetails.autographConditionScore" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm">
+                    <option value="">Seleziona condizione</option>
+                    <option v-for="score in autographConditionScores" :key="score" :value="score">{{ score }}</option>
+                  </select>
+                </div>
+              </template>
 
               <!-- Separatore Filtri Extra -->
               <div class="border-t border-gray-200 pt-4 mt-4">
@@ -368,6 +385,8 @@ const additionalDetails = ref({
   autographCondition: '',
   gradingCompany: '',
   gradingScore: '',
+  cardConditionScore: '',
+  autographConditionScore: '',
   // Filtri Extra
   autograph: '',
   relic: '',
@@ -377,6 +396,29 @@ const additionalDetails = ref({
   multiAutograph: '',
   description: '',
   notes: ''
+})
+
+// Genera array di score da 0 a 10 con incrementi di 0.5 + "AUTH"
+const cardConditionScores = computed(() => {
+  const scores = []
+  // Aggiungi i voti numerici da 0 a 10 con incrementi di 0.5
+  for (let i = 0; i <= 20; i++) {
+    scores.push((i * 0.5).toFixed(1))
+  }
+  // Aggiungi "AUTH" alla fine
+  scores.push('AUTH')
+  return scores
+})
+
+const autographConditionScores = computed(() => {
+  const scores = []
+  // Aggiungi i voti numerici da 0 a 10 con incrementi di 0.5
+  for (let i = 0; i <= 20; i++) {
+    scores.push((i * 0.5).toFixed(1))
+  }
+  // Aggiungi "AUTH" alla fine
+  scores.push('AUTH')
+  return scores
 })
 
 // Flag per evitare loop infiniti
@@ -459,6 +501,8 @@ watch(() => props.cardData, (newCardData) => {
         autographCondition: newCardData.autographCondition || '',
         gradingCompany: newCardData.gradingCompany || '',
         gradingScore: newCardData.gradingScore || '',
+        cardConditionScore: newCardData.cardConditionScore || '',
+        autographConditionScore: newCardData.autographConditionScore || '',
         // Filtri Extra - pre-popola dalla carta selezionata se non già impostati
         autograph: newCardData.autograph || '',
         relic: newCardData.relic || '',

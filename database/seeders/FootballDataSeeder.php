@@ -17,19 +17,8 @@ class FootballDataSeeder extends Seeder
      */
     public function run(): void
     {
-        // Creo le aziende di grading dal CSV di Alessia
-        $gradingCompanies = [
-            ['name' => 'PSA', 'slug' => 'psa', 'description' => 'Professional Sports Authenticator'],
-            ['name' => 'BGS', 'slug' => 'bgs', 'description' => 'Beckett Grading Services'],
-            ['name' => 'AIGRADING', 'slug' => 'aigrading', 'description' => 'AI Grading Services'],
-            ['name' => 'GRAAD', 'slug' => 'graad', 'description' => 'GRAAD Grading Services'],
-            ['name' => 'CGC', 'slug' => 'cgc', 'description' => 'Certified Guaranty Company'],
-        ];
-
-        foreach ($gradingCompanies as $company) {
-            GradingCompany::updateOrCreate(['slug' => $company['slug']], $company);
-        }
-
+        // Le grading companies sono ora gestite da GradingCompanySeeder
+        
         // Creo le leghe
         $leagues = [
             ['name' => 'Serie A', 'slug' => 'serie-a', 'country' => 'Italia', 'sort_order' => 1],

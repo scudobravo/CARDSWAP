@@ -1965,10 +1965,22 @@ const createNewSingleListing = async () => {
   
   // Add grading info
   if (additionalDetails.value.gradingCompany) {
-    formData.append('grading_company', additionalDetails.value.gradingCompany)
-  }
-  if (additionalDetails.value.gradingScore) {
-    formData.append('grading_score', additionalDetails.value.gradingScore)
+    formData.append('grading_company_id', additionalDetails.value.gradingCompany)
+    // Se c'è grading company, invia i score numerici
+    if (additionalDetails.value.cardConditionScore) {
+      formData.append('card_condition_score', additionalDetails.value.cardConditionScore)
+    }
+    if (additionalDetails.value.autographConditionScore) {
+      formData.append('autograph_condition_score', additionalDetails.value.autographConditionScore)
+    }
+  } else {
+    // Se NON c'è grading company, invia le condizioni testuali
+    if (additionalDetails.value.condition) {
+      formData.append('condition', additionalDetails.value.condition)
+    }
+    if (additionalDetails.value.autographCondition) {
+      formData.append('autograph_condition', additionalDetails.value.autographCondition)
+    }
   }
   
   // Add 4 images - comprimi SEMPRE se > 500KB per evitare 413 su mobile
@@ -2536,10 +2548,23 @@ const handleImageUploaded = (imagesArray) => {
 const handleAdditionalDetailsChanged = (details) => {
   additionalDetails.value = details
   // Update listing data with additional details
-  listingData.value.condition = details.condition
-  listingData.value.autograph_condition = details.autographCondition || ''
-  listingData.value.grading_company = details.gradingCompany
-  listingData.value.grading_score = details.gradingScore
+  if (details.gradingCompany) {
+    // Se c'è grading company, usa i campi numerici
+    listingData.value.grading_company_id = details.gradingCompany
+    listingData.value.card_condition_score = details.cardConditionScore || null
+    listingData.value.autograph_condition_score = details.autographConditionScore || null
+    // Pulisci le condizioni testuali quando c'è grading
+    listingData.value.condition = null
+    listingData.value.autograph_condition = null
+  } else {
+    // Se NON c'è grading company, usa le condizioni testuali
+    listingData.value.condition = details.condition
+    listingData.value.autograph_condition = details.autographCondition || ''
+    // Pulisci i campi numerici quando non c'è grading
+    listingData.value.grading_company_id = null
+    listingData.value.card_condition_score = null
+    listingData.value.autograph_condition_score = null
+  }
   listingData.value.description = details.notes || details.description
   
   // Update special characteristics
@@ -2964,10 +2989,12 @@ const initializeEditMode = async (listing) => {
     
     // Imposta additionalDetails con i dati dell'inserzione
     additionalDetails.value = {
-      condition: listing.condition,
-      autographCondition: listing.autograph_condition || listing.condition,
-      gradingCompany: listing.grading_company || '',
+      condition: listing.condition || '',
+      autographCondition: listing.autograph_condition || listing.condition || '',
+      gradingCompany: listing.grading_company_id || listing.grading_company || '',
       gradingScore: listing.grading_score || '',
+      cardConditionScore: listing.card_condition_score || '',
+      autographConditionScore: listing.autograph_condition_score || '',
       notes: listing.description || listing.notes || '', // Popola notes da description se notes non esiste
       // Caratteristiche speciali
       autograph: listing.is_signed ? 'yes' : 'no',

@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             CategorySeeder::class,
             UserSeeder::class,
+            GradingCompanySeeder::class, // Seeder dedicato per grading companies
             FootballDataSeeder::class, // Aggiungo il seeder per i dati calcio
             GradingScoreSeeder::class, // Aggiungo il seeder per i voti grading
         ]);
