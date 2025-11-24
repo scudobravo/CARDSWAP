@@ -564,14 +564,8 @@ const multiPlayerOptions = [
 // Multi autograph usa le stesse opzioni di multi player
 const multiAutographOptions = multiPlayerOptions
 
-// Grading companies
-const gradingCompanies = ref([
-  { id: 1, name: 'PSA' },
-  { id: 2, name: 'BGS' },
-  { id: 3, name: 'CGC' },
-  { id: 4, name: 'GRAAD' },
-  { id: 5, name: 'AIGRADING' }
-])
+// Grading companies - caricati dall'API
+const gradingCompanies = ref([])
 
 // Condition options based on CSV data
 const conditionOptions = [
@@ -1034,9 +1028,30 @@ const connectObserver = () => {
   }
 }
 
+// Carica i grading companies dall'API
+const loadGradingCompanies = async () => {
+  try {
+    const response = await fetch(`/api/${category.value}/filters/options`)
+    const data = await response.json()
+    
+    if (data.grading_companies && Array.isArray(data.grading_companies)) {
+      gradingCompanies.value = data.grading_companies.map(company => ({
+        id: company.id,
+        name: company.name,
+        slug: company.slug
+      }))
+    }
+  } catch (error) {
+    console.error('Errore nel caricamento grading companies:', error)
+    // Fallback ai valori di default se l'API fallisce
+    gradingCompanies.value = []
+  }
+}
+
 // Carica i dati quando il componente viene montato
 onMounted(() => {
   loadProducts(true)
+  loadGradingCompanies()
   // REMOVED: loadFilterData() - now handled by AdvancedFilters component
   // Initial observer connection will be handled after products are loaded
 })

@@ -266,7 +266,7 @@
       <DisclosurePanel class="pt-6">
         <div class="space-y-4">
           <!-- Grading Yes/No -->
-          <div v-if="gradingAvailable" class="space-y-2">
+          <div class="space-y-2">
             <select v-model="localFilters.grading" class="col-start-1 row-start-1 w-full appearance-none rounded-md border border-gray-300 bg-white py-2 pr-8 pl-3 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm/6" @change="handleGradingChange">
               <option value="">Grading</option>
               <option value="yes">Sì</option>
@@ -275,7 +275,7 @@
           </div>
 
           <!-- Vote Grading (only if grading = yes) -->
-          <div v-if="localFilters.grading === 'yes' && gradingAvailable" class="space-y-3">
+          <div v-if="localFilters.grading === 'yes'" class="space-y-3">
             <div class="space-y-2">
               <div class="flex items-center space-x-4">
                 <input 
@@ -304,7 +304,8 @@
             </div>
 
             <!-- Grading Company -->
-            <div class="space-y-2">
+            <div v-if="gradingCompanies && gradingCompanies.length > 0" class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Casa di Gradazione</label>
               <div class="space-y-2">
                 <label v-for="company in gradingCompanies" :key="company.id" class="flex items-center">
                   <input 
@@ -317,10 +318,13 @@
                 </label>
               </div>
             </div>
+            <div v-else class="text-sm text-gray-500">
+              Nessuna casa di gradazione disponibile
+            </div>
           </div>
 
           <!-- Condition (only if grading = no) -->
-          <div v-if="localFilters.grading === 'no' && conditionAvailable" class="space-y-2">
+          <div v-if="localFilters.grading === 'no'" class="space-y-2">
             <div class="space-y-2">
               <label v-for="condition in conditionOptions" :key="condition.value" class="flex items-center">
                 <input 
