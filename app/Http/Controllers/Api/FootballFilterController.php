@@ -847,6 +847,7 @@ class FootballFilterController extends Controller
         $brandsQuery = $cardModelsQuery->clone();
         $response['brands'] = $brandsQuery->join('card_sets', 'card_models.card_set_id', '=', 'card_sets.id')
             ->select('card_sets.brand')
+            ->where('card_models.is_active', true) // Specifica esplicitamente la tabella per evitare ambiguità
             ->distinct()
             ->pluck('card_sets.brand')
             ->filter()
