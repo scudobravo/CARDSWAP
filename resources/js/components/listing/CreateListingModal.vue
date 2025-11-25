@@ -2081,11 +2081,19 @@ const createNewSingleListing = async () => {
     formData.append('shipping_zones[]', zoneId)
   })
   
+  // Prepara i dati per il log (condition potrebbe non essere definito se c'è grading)
+  const logCondition = additionalDetails.value.gradingCompany 
+    ? `Graded (${additionalDetails.value.gradingCompany})` 
+    : (additionalDetails.value.condition || 'mint')
+  
   console.log('Creating single listing with data:', {
     card_model_id: selectedCardModel.value.id,
     price: listingData.value.price,
     quantity: quantity,
-    condition,
+    condition: logCondition,
+    grading_company_id: additionalDetails.value.gradingCompany || null,
+    card_condition_score: additionalDetails.value.cardConditionScore || null,
+    autograph_condition_score: additionalDetails.value.autographConditionScore || null,
     language: 'italian',
     images: cardImages.value.filter(img => img).length,
     shipping_zones: selectedShippingZones.value.length
