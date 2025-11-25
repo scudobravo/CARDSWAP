@@ -844,7 +844,40 @@ class FootballFilterController extends Controller
             ->toArray();
 
         // 5. BRANDS - Dipende da Player, Team, Set, Year
-        $brandsQuery = $cardModelsQuery->clone();
+        // IMPORTANTE: Crea una nuova query base senza il filtro is_active per evitare ambiguità dopo il join
+        // Ricostruisci la query base con tutti i filtri tranne is_active, poi aggiungilo esplicitamente con prefisso tabella
+        $brandsQuery = \App\Models\CardModel::query()
+            ->whereHas('category', function($catQuery) {
+                $catQuery->where('slug', 'calcio');
+            });
+        
+        // Applica tutti i filtri dalla query originale (tranne is_active che aggiungeremo dopo)
+        if (!$isCreatingNewListing) {
+            $brandsQuery->whereHas('cardListings', function($listingQuery) {
+                $listingQuery->where('status', 'active');
+            });
+        }
+        
+        // Applica i filtri a catena
+        if (isset($filters['player_id']) && !empty($filters['player_id'])) {
+            $brandsQuery->where('player_id', $filters['player_id']);
+        }
+        if (isset($filters['team_id']) && !empty($filters['team_id'])) {
+            $brandsQuery->where('team_id', $filters['team_id']);
+        }
+        if (isset($filters['set_id']) && !empty($filters['set_id'])) {
+            $brandsQuery->where('card_set_id', $filters['set_id']);
+        }
+        if (isset($filters['year']) && !empty($filters['year'])) {
+            $brandsQuery->where('year', $filters['year']);
+        }
+        if (isset($filters['brand']) && !empty($filters['brand'])) {
+            $brandsQuery->whereHas('cardSet', function($query) use ($filters) {
+                $query->where('brand', $filters['brand']);
+            });
+        }
+        
+        // Ora fai il join e aggiungi is_active esplicitamente con prefisso tabella
         $response['brands'] = $brandsQuery->join('card_sets', 'card_models.card_set_id', '=', 'card_sets.id')
             ->select('card_sets.brand')
             ->where('card_models.is_active', true) // Specifica esplicitamente la tabella per evitare ambiguità
