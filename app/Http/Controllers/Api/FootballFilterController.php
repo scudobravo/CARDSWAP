@@ -993,6 +993,7 @@ class FootballFilterController extends Controller
                 'cardModel.category',
                 'cardModel.player',
                 'cardModel.team',
+                'gradingCompany',
                 'cardModel.cardSet',
                 'cardModel.gradingCompany',
                 'seller'
@@ -1301,26 +1302,26 @@ class FootballFilterController extends Controller
                 });
             }
 
-            // Filtri grading
+            // Filtri grading - dalla CardListing (non dal CardModel!)
             if (isset($filters['grading']) && $filters['grading'] !== '') {
-                $query->whereHas('cardModel', function($q) use ($filters) {
-                    if ($filters['grading'] === 'yes') {
-                        $q->whereNotNull('grading_company_id');
-                    } elseif ($filters['grading'] === 'no') {
-                        $q->whereNull('grading_company_id');
-                    }
-                });
+                if ($filters['grading'] === 'yes') {
+                    $query->whereNotNull('grading_company_id');
+                } elseif ($filters['grading'] === 'no') {
+                    $query->whereNull('grading_company_id');
+                }
             }
 
             if (isset($filters['grading_score_min']) && !empty($filters['grading_score_min'])) {
-                $query->whereHas('cardModel', function($q) use ($filters) {
-                    $q->where('grading_score', '>=', $filters['grading_score_min']);
+                $query->where(function($q) use ($filters) {
+                    $q->where('card_condition_score', '>=', $filters['grading_score_min'])
+                      ->orWhere('autograph_condition_score', '>=', $filters['grading_score_min']);
                 });
             }
 
             if (isset($filters['grading_score_max']) && !empty($filters['grading_score_max'])) {
-                $query->whereHas('cardModel', function($q) use ($filters) {
-                    $q->where('grading_score', '<=', $filters['grading_score_max']);
+                $query->where(function($q) use ($filters) {
+                    $q->where('card_condition_score', '<=', $filters['grading_score_max'])
+                      ->orWhere('autograph_condition_score', '<=', $filters['grading_score_max']);
                 });
             }
         }
@@ -1376,9 +1377,8 @@ class FootballFilterController extends Controller
         }
 
         if (isset($filters['grading_companies']) && is_array($filters['grading_companies']) && !empty($filters['grading_companies'])) {
-            $query->whereHas('cardModel', function($q) use ($filters) {
-                $q->whereIn('grading_company_id', $filters['grading_companies']);
-            });
+            // Filtro grading companies dalla CardListing (non dal CardModel!)
+            $query->whereIn('grading_company_id', $filters['grading_companies']);
         }
 
         // Filtri condition - dalla tabella card_listings
@@ -1467,6 +1467,16 @@ class FootballFilterController extends Controller
                 'brand' => $cardModel->cardSet->brand ?? null,
                 'hasAutograph' => $cardModel->is_autograph ?? false,
                 'hasRelic' => $cardModel->is_relic ?? false,
+                // Dati di grading dalla CardListing (non dal CardModel!)
+                'grading_company_id' => $listing->grading_company_id ?? null,
+                'grading_company' => $listing->gradingCompany ? [
+                    'id' => $listing->gradingCompany->id,
+                    'name' => $listing->gradingCompany->name,
+                    'slug' => $listing->gradingCompany->slug,
+                ] : null,
+                'card_condition_score' => $listing->card_condition_score ?? null,
+                'autograph_condition_score' => $listing->autograph_condition_score ?? null,
+                // Manteniamo per retrocompatibilità (ma questi sono del CardModel, non della CardListing)
                 'gradingScore' => $cardModel->grading_score,
                 'gradingCompany' => $cardModel->gradingCompany->name ?? null
             ];

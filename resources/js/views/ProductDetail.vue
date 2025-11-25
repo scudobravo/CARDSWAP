@@ -834,6 +834,15 @@ const loadProductDetails = async () => {
           category: cardModel?.category?.slug === 'calcio' ? 'football' : (cardModel?.category?.slug === 'basketball' ? 'basketball' : 'pokemon'),
           description: listing.description || cardModel?.description,
           condition: listing.condition || 'LIGHT PLAYED',
+          // Dati di grading dalla CardListing
+          grading_company_id: listing.grading_company_id ?? null,
+          grading_company: listing.grading_company ? {
+            id: listing.grading_company.id,
+            name: listing.grading_company.name,
+            slug: listing.grading_company.slug
+          } : null,
+          card_condition_score: listing.card_condition_score ?? null,
+          autograph_condition_score: listing.autograph_condition_score ?? null,
           card_number_in_set: cardModel?.card_number_in_set,
           is_autograph: cardModel?.is_autograph ?? false,
           is_relic: cardModel?.is_relic ?? false,
