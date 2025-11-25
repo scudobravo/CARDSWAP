@@ -1025,9 +1025,9 @@ const canProceed = computed(() => {
       if (selectedMode.value === 'single') {
         return !!(listingData.value)
       } else if (selectedMode.value === 'bulk') {
-        // In modalità bulk, verifica che ci siano listings con card_model_id, price e condition
+        // In modalità bulk, verifica che ci siano listings con card_model_id, price e condition (o grading)
         const hasListings = bulkListings.value.length > 0 && bulkListings.value.every(listing => 
-          (listing.cardModel || listing.card_model_id) && listing.price && listing.condition
+          (listing.cardModel || listing.card_model_id) && listing.price && (listing.condition || listing.grading_company_id)
         )
         const hasSelectedCards = selectedCardsForBulkEdit.value.length > 0
         return hasListings || hasSelectedCards
@@ -1896,18 +1896,24 @@ const createListing = async () => {
       const errorData = error.response.data || {}
       if (errorData.errors) {
         const errorDetails = Object.entries(errorData.errors)
-          .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+          .map(([field, messages]) => {
+            // Escape del messaggio per evitare che venga interpretato come codice
+            const messageStr = Array.isArray(messages) ? messages.join(', ') : String(messages)
+            return `${field}: ${messageStr}`
+          })
           .join('\n')
         errorMessage = `Errore nella creazione inserzioni:\n\n${errorDetails}`
       } else if (errorData.message) {
-        errorMessage = `Errore nella creazione inserzioni:\n\n${errorData.message}`
+        // Escape del messaggio per evitare che venga interpretato come codice
+        errorMessage = `Errore nella creazione inserzioni:\n\n${String(errorData.message)}`
       } else {
         errorMessage = `Errore HTTP ${error.response.status}: ${error.response.statusText}`
       }
     } else if (error.message) {
-      errorMessage = `Errore nella creazione inserzioni:\n\n${error.message}`
+      // Escape del messaggio per evitare che venga interpretato come codice
+      errorMessage = `Errore nella creazione inserzioni:\n\n${String(error.message)}`
     } else if (typeof error === 'string') {
-      errorMessage = `Errore nella creazione inserzioni:\n\n${error}`
+      errorMessage = `Errore nella creazione inserzioni:\n\n${String(error)}`
     }
     
     alert(errorMessage)
@@ -2131,17 +2137,22 @@ const createNewSingleListing = async () => {
     
     if (errorData.errors) {
       const errorDetails = Object.entries(errorData.errors)
-        .map(([field, messages]) => `• ${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+        .map(([field, messages]) => {
+          // Escape del messaggio per evitare che venga interpretato come codice
+          const messageStr = Array.isArray(messages) ? messages.join(', ') : String(messages)
+          return `• ${field}: ${messageStr}`
+        })
         .join('\n')
       errorMessage += errorDetails
     } else if (errorData.message) {
-      errorMessage += errorData.message
+      // Escape del messaggio per evitare che venga interpretato come codice
+      errorMessage += String(errorData.message)
     } else {
-      errorMessage += errorData.error || 'Errore sconosciuto'
+      errorMessage += String(errorData.error || 'Errore sconosciuto')
     }
     
     alert(errorMessage)
-    throw new Error(errorMessage)
+    throw new Error(String(errorMessage))
   }
 }
 
