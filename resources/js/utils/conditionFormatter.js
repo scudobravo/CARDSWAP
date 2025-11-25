@@ -4,7 +4,10 @@
  * @param {Object} listing - L'oggetto listing con i dati della carta
  * @returns {string} - La condizione formattata
  * 
- * Formato per carte graduate: "PSA 10 – Carta: 10 – Autografo: 10"
+ * Formato per carte graduate: 
+ * - Con entrambi i voti: "PSA 8 – Autografo: 10"
+ * - Solo carta: "PSA 8"
+ * - Solo autografo: "PSA – Autografo: 10"
  * Formato per carte non graduate: "Mint", "Near Mint", ecc.
  */
 export function formatCondition(listing) {
@@ -15,23 +18,24 @@ export function formatCondition(listing) {
     const cardScore = listing.card_condition_score;
     const autographScore = listing.autograph_condition_score;
     
-    // Se c'è almeno un score (carta o autografo), formatta
-    if ((cardScore !== null && cardScore !== undefined && cardScore !== '') ||
-        (autographScore !== null && autographScore !== undefined && autographScore !== '')) {
-      // Formato: "PSA 10 – Carta: 10 – Autografo: 10" oppure "PSA AUTH – Carta: AUTH – Autografo: AUTH"
-      const displayCardScore = cardScore || (autographScore ? 'N/A' : '');
+    // Verifica se ci sono score validi
+    const hasCardScore = cardScore !== null && cardScore !== undefined && cardScore !== '';
+    const hasAutographScore = autographScore !== null && autographScore !== undefined && autographScore !== '';
+    
+    if (hasCardScore || hasAutographScore) {
+      // Se ci sono entrambi i voti: "PSA 8 – Autografo: 10"
+      if (hasCardScore && hasAutographScore) {
+        return `${companyName} ${cardScore} – Autografo: ${autographScore}`;
+      }
       
-      if (displayCardScore) {
-        let formatted = `${companyName} ${displayCardScore}`;
-        
-        if (autographScore !== null && autographScore !== undefined && autographScore !== '') {
-          formatted += ` – Carta: ${displayCardScore} – Autografo: ${autographScore}`;
-        } else if (cardScore) {
-          // Se non c'è autograph score ma c'è card score, mostra solo il card score
-          formatted += ` – Carta: ${displayCardScore}`;
-        }
-        
-        return formatted;
+      // Se c'è solo il voto carta: "PSA 8"
+      if (hasCardScore) {
+        return `${companyName} ${cardScore}`;
+      }
+      
+      // Se c'è solo il voto autografo: "PSA – Autografo: 10"
+      if (hasAutographScore) {
+        return `${companyName} – Autografo: ${autographScore}`;
       }
     }
     
