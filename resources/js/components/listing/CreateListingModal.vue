@@ -750,7 +750,7 @@
                   <div class="flex-1">
                     <h5 class="font-semibold text-gray-900">{{ selectedCardModel?.name }}</h5>
                     <p class="text-sm text-gray-600">{{ selectedCardModel?.set_name }} {{ selectedCardModel?.year }}</p>
-                    <p class="text-sm text-gray-500">{{ additionalDetails.condition || 'mint' }}</p>
+                    <p class="text-sm text-gray-500">{{ previewCondition }}</p>
                     <div v-if="additionalDetails.notes" class="mt-2 text-sm text-gray-600">
                       {{ additionalDetails.notes }}
                     </div>
@@ -852,6 +852,7 @@ import BulkCardSelectionTable from './BulkCardSelectionTable.vue'
 import BulkEditForm from './BulkEditForm.vue'
 import ImagePreviewStep from './ImagePreviewStep.vue'
 import { normalizePrice } from '../../utils/priceFormatter'
+import { formatCondition } from '../../utils/conditionFormatter'
 
 // Props
 const props = defineProps({
@@ -971,6 +972,34 @@ const previewImageSrc = computed(() => {
   const uploaded = getFirstUploadedImage()
   if (uploaded) return uploaded
   return selectedCardModel.value?.image_url || null
+})
+
+// Computed per formattare la condizione nella preview
+const previewCondition = computed(() => {
+  // Crea un oggetto con i dati necessari per formatCondition
+  const gradingCompanyId = additionalDetails.value.gradingCompany || listingData.value.grading_company_id || null
+  let gradingCompany = null
+  
+  // Cerca la grading company solo se c'è un ID e gradingCompanies è caricato
+  if (gradingCompanyId && gradingCompanies.value && gradingCompanies.value.length > 0) {
+    gradingCompany = gradingCompanies.value.find(gc => gc.id === gradingCompanyId || gc.id === parseInt(gradingCompanyId))
+  }
+  
+  const previewData = {
+    condition: additionalDetails.value.condition || listingData.value.condition || null,
+    grading_company_id: gradingCompanyId,
+    grading_company: gradingCompany,
+    card_condition_score: additionalDetails.value.cardConditionScore || listingData.value.card_condition_score || null,
+    autograph_condition_score: additionalDetails.value.autographConditionScore || listingData.value.autograph_condition_score || null
+  }
+  
+  try {
+    return formatCondition(previewData)
+  } catch (error) {
+    console.error('Errore nel formattare la condizione:', error)
+    // Fallback: mostra la condizione testuale o un default
+    return previewData.condition || 'Excellent'
+  }
 })
 
 const canProceed = computed(() => {

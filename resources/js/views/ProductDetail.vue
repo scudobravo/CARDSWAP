@@ -285,7 +285,7 @@
             
             <!-- Condition -->
             <div class="bg-gray-100 px-4 py-2 rounded-lg">
-              <span class="text-primary font-futura-bold">{{ product.condition || 'LIGHT PLAYED' }}</span>
+              <span class="text-primary font-futura-bold">{{ formatCondition(product) }}</span>
             </div>
             
             <!-- Notes -->
@@ -456,6 +456,7 @@ import BarChart from '../components/BarChart.vue'
 import CreateListingModal from '../components/listing/CreateListingModal.vue'
 import cardService from '../services/cardService.js'
 import { formatPriceItaliana } from '../utils/priceFormatter'
+import { formatCondition } from '../utils/conditionFormatter'
 
 const route = useRoute()
 const cartStore = useCartStore()

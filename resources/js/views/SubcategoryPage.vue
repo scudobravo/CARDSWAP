@@ -222,7 +222,7 @@
                         </div>
                         <!-- Condition -->
                         <div class="bg-gray-100 px-2 py-1 rounded text-xs font-bold text-primary">
-                          {{ product.condition || 'NM' }}
+                          {{ formatCondition(product) }}
                         </div>
                       </div>
                       
@@ -373,11 +373,11 @@
                         <!-- Condition -->
                         <div class="relative group">
                           <div class="bg-gray-100 p-2 rounded-lg flex items-center justify-center min-w-[40px] min-h-[40px]">
-                            <span class="text-primary font-futura-bold text-sm">{{ product.condition || 'NM' }}</span>
+                            <span class="text-primary font-futura-bold text-sm">{{ formatCondition(product) }}</span>
                           </div>
                           <!-- Tooltip -->
                           <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-primary text-white text-sm font-futura-bold rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                            {{ product.condition || 'NEAR MINT' }}
+                            {{ formatCondition(product) }}
                             <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-primary"></div>
                           </div>
                         </div>
@@ -436,6 +436,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { formatPriceItaliana } from '../utils/priceFormatter'
+import { formatCondition } from '../utils/conditionFormatter'
 import {
   Disclosure,
   DisclosureButton,
@@ -921,7 +922,7 @@ const handleAddToCart = async (product, event) => {
     card_model_id: product.id,
     seller_id: product.seller_id || 1, // Fallback temporaneo, il backend dovrebbe fornirlo
     price: parseFloat(String(product.price || 0).replace(/€/g, '').replace(/,/g, '')) || 0,
-    condition: product.condition || 'NM',
+    condition: formatCondition(product),
     description: product.description || '',
     images: product.images || (product.imageUrl ? [product.imageUrl] : []),
     seller: product.seller || null,

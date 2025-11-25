@@ -75,6 +75,7 @@ import { useRoute, useRouter } from 'vue-router'
 import Header from '../components/Header.vue'
 import Footer from '../components/Footer.vue'
 import ProductCard from '../components/ProductCard.vue'
+import { formatCondition } from '../utils/conditionFormatter'
 
 const route = useRoute()
 const router = useRouter()
@@ -146,6 +147,21 @@ const transformCardToProduct = (card) => {
     ? card.card_listings[0] 
     : null
   
+  // Crea un oggetto con tutti i dati necessari per formatCondition
+  const listingData = firstListing ? {
+    condition: firstListing.condition,
+    grading_company_id: firstListing.grading_company_id,
+    grading_company: firstListing.grading_company,
+    card_condition_score: firstListing.card_condition_score,
+    autograph_condition_score: firstListing.autograph_condition_score
+  } : {
+    condition: null,
+    grading_company_id: null,
+    grading_company: null,
+    card_condition_score: null,
+    autograph_condition_score: null
+  }
+  
   return {
     id: card.id,
     name: card.name,
@@ -155,7 +171,9 @@ const transformCardToProduct = (card) => {
     year: card.year,
     rarity: card.rarity,
     rarity_variation: card.rarity_variation,
-    condition: firstListing?.condition || 'excellent',
+    condition: formatCondition(listingData),
+    // Passa anche i dati raw per eventuali usi futuri
+    ...listingData,
     price: firstListing?.price || card.price || 0,
     card_number: card.card_number,
     card_number_in_set: card.card_number_in_set,
