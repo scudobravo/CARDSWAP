@@ -133,7 +133,7 @@
     <!-- Condition Indicator -->
     <div class="px-2 sm:px-4 pb-2 sm:pb-4 flex justify-center flex-shrink-0">
       <div class="bg-white border border-gray-200 rounded-md px-2 sm:px-3 py-0.5 sm:py-1">
-        <span class="text-xs sm:text-sm font-medium text-gray-700">{{ product.condition || 'NEAR MINT' }}</span>
+        <span class="text-xs sm:text-sm font-medium text-gray-700">{{ displayCondition }}</span>
       </div>
     </div>
 
@@ -158,8 +158,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { formatPriceItaliana } from '../utils/priceFormatter'
+import { formatCondition } from '../utils/conditionFormatter'
 
 // Props
 const props = defineProps({
@@ -196,6 +197,11 @@ const loading = ref(false)
 const formatPrice = (price) => {
   return formatPriceItaliana(price, false)
 }
+
+// Computed per la condizione formattata
+const displayCondition = computed(() => {
+  return formatCondition(props.product)
+})
 
 const handleImageError = (event) => {
   // Gestisci errori di caricamento immagini in modo sicuro
