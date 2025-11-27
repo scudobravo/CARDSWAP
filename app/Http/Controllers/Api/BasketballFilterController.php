@@ -111,20 +111,18 @@ class BasketballFilterController extends Controller
             'q' => 'nullable|string|max:100',
             'team_id' => 'nullable|integer',
             'set_id' => 'nullable|integer',
-            'year' => 'nullable|integer',
+            'year' => 'nullable|string',
             'brand' => 'nullable|string'
         ]);
-        
-        $query = $request->get('q', '');
+
+        $query = $request->get('q');
         
         // Filtra solo i player che hanno carte Basketball
-        // NON carichiamo la relazione 'team' per rendere il giocatore indipendente
         $playersQuery = Player::whereHas('cardModels', function($q) use ($request) {
                 $q->whereHas('category', function($catQuery) {
                     $catQuery->where('slug', 'basketball');
                 });
                 
-                // Applica filtri aggiuntivi per limitare i risultati
                 if ($request->filled('team_id')) {
                     $q->where('team_id', $request->team_id);
                 }
@@ -143,30 +141,112 @@ class BasketballFilterController extends Controller
             ->active()
             ->orderBy('name');
         
-        // Se c'è una query di ricerca, filtra i risultati
         if (!empty($query)) {
             $playersQuery->where('name', 'LIKE', "%{$query}%");
         }
         
-        $players = $playersQuery->limit(50)->get(['id', 'name', 'slug', 'position', 'nationality']);
+        $players = $playersQuery->with(['team', 'cardModels' => function($query) {
+                $query->whereHas('category', function($catQuery) {
+                    $catQuery->where('slug', 'basketball');
+                })->select('id', 'player_id', 'card_number', 'card_number_in_set', 'name', 'year', 'rarity', 'rarity_variation', 'is_rookie', 'is_autograph', 'is_relic', 'is_on_card_auto', 'is_jewel', 'is_booklet', 'is_multi_player_dual', 'is_multi_player_triple', 'is_multi_player_quad', 'card_set_id', 'team_id')
+                ->with(['cardSet:id,name,brand', 'team:id,name']);
+            }])
+            ->limit(100)
+            ->get(['id', 'name', 'slug', 'position', 'nationality', 'team_id']);
 
-        // Raggruppa i giocatori per nome per evitare duplicati
         $groupedPlayers = $players->groupBy('name');
         
-        // Trasforma i dati per includere informazioni delle carte e squadra
         $transformedPlayers = $groupedPlayers->map(function($playerGroup, $playerName) {
-            // Prendi il primo giocatore del gruppo come rappresentante
             $representativePlayer = $playerGroup->first();
             
+            $allCards = collect();
+            $allCardNumbers = collect();
+            $allCardNumbersInSet = collect();
+            $allTeams = collect();
+            
+            foreach ($playerGroup as $player) {
+                $allCards = $allCards->merge($player->cardModels);
+                $allCardNumbers = $allCardNumbers->merge($player->cardModels->pluck('card_number')->filter());
+                $allCardNumbersInSet = $allCardNumbersInSet->merge($player->cardModels->pluck('card_number_in_set')->filter());
+                if ($player->team) {
+                    $allTeams->push($player->team);
+                }
+            }
+            
+            $allPlayerIdsWithSameName = Player::where('name', $playerName)->pluck('id')->toArray();
+            
+            $allTeamsFromCards = CardModel::whereIn('player_id', $allPlayerIdsWithSameName)
+                ->whereHas('category', function($catQuery) {
+                    $catQuery->where('slug', 'basketball');
+                })
+                ->with('team:id,name,slug')
+                ->get()
+                ->pluck('team')
+                ->filter()
+                ->unique('id');
+            
+            if ($allTeamsFromCards->count() > 0) {
+                $allTeams = $allTeamsFromCards;
+            }
+            
+            $uniqueCardNumbers = $allCardNumbers->unique()->values();
+            $uniqueCardNumbersInSet = $allCardNumbersInSet->unique()->values();
+            $uniqueTeams = $allTeams->unique('id')->values();
+            $effectiveCardNumbers = $uniqueCardNumbersInSet;
+            
             return [
-                'id' => $representativePlayer->id, // Usa l'ID del primo giocatore come rappresentante
+                'id' => $representativePlayer->id,
                 'name' => $playerName,
                 'slug' => $representativePlayer->slug,
                 'position' => $representativePlayer->position,
                 'nationality' => $representativePlayer->nationality,
+                'team' => $uniqueTeams->first() ? [
+                    'id' => $uniqueTeams->first()->id,
+                    'name' => $uniqueTeams->first()->name,
+                    'slug' => $uniqueTeams->first()->slug
+                ] : null,
                 'display_name' => $playerName,
+                'card_numbers' => $effectiveCardNumbers,
+                'card_numbers_in_set' => $uniqueCardNumbersInSet,
+                'has_cards' => $allCards->count() > 0,
+                'cards' => $allCards->map(function($card) {
+                    return [
+                        'id' => $card->id,
+                        'name' => $card->name,
+                        'year' => $card->year,
+                        'rarity' => $card->rarity,
+                        'rarity_variation' => $card->rarity_variation,
+                        'card_number' => $card->card_number,
+                        'card_number_in_set' => $card->card_number_in_set,
+                        'is_rookie' => $card->is_rookie ?? false,
+                        'is_autograph' => $card->is_autograph ?? false,
+                        'is_relic' => $card->is_relic ?? false,
+                        'is_on_card_auto' => $card->is_on_card_auto ?? false,
+                        'is_jewel' => $card->is_jewel ?? false,
+                        'is_booklet' => $card->is_booklet ?? false,
+                        'is_multi_player_dual' => $card->is_multi_player_dual ?? false,
+                        'is_multi_player_triple' => $card->is_multi_player_triple ?? false,
+                        'is_multi_player_quad' => $card->is_multi_player_quad ?? false,
+                        'card_set' => $card->cardSet ? [
+                            'id' => $card->cardSet->id,
+                            'name' => $card->cardSet->name,
+                            'brand' => $card->cardSet->brand
+                        ] : null,
+                        'team' => $card->team ? [
+                            'id' => $card->team->id,
+                            'name' => $card->team->name
+                        ] : null
+                    ];
+                })->toArray(),
+                'all_teams' => $uniqueTeams->map(function($team) {
+                    return [
+                        'id' => $team->id,
+                        'name' => $team->name,
+                        'slug' => $team->slug
+                    ];
+                })->values()->toArray()
             ];
-        })->values(); // Converte la Collection in array
+        })->values();
 
         return response()->json(['players' => $transformedPlayers]);
     }

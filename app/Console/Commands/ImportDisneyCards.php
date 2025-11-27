@@ -1,0 +1,221 @@
+<?php
+
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+use App\Models\Category;
+use App\Models\CardSet;
+use App\Models\CardModel;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+
+class ImportDisneyCards extends Command
+{
+    protected $signature = 'import:disney-cards 
+                            {--file= : Path al file CSV}
+                            {--limit= : Limite di righe da processare}
+                            {--chunk=1000 : Dimensione del chunk}';
+
+    protected $description = 'Importa le carte Disney dal file CSV';
+
+    private $chunkSize = 1000;
+    private $cache = ['card_sets' => []];
+
+    public function handle()
+    {
+        $filePath = $this->option('file') ?: base_path('TOIMPORT/Lista Carte Disney - Foglio1.csv');
+        $limit = $this->option('limit') ? (int) $this->option('limit') : null;
+        $this->chunkSize = (int) $this->option('chunk');
+
+        if (!file_exists($filePath)) {
+            $this->error("File non trovato: {$filePath}");
+            return 1;
+        }
+
+        $this->info("🚀 Inizio importazione carte Disney...");
+
+        $category = Category::where('slug', 'disney')->first();
+        if (!$category) {
+            $category = Category::create([
+                'name' => 'Disney',
+                'slug' => 'disney',
+                'description' => 'Carte da collezione Disney',
+                'is_active' => true,
+                'sort_order' => 4,
+            ]);
+            $this->info("✅ Creata categoria Disney");
+        }
+
+        $this->processFile($filePath, $category, $limit);
+
+        $this->info("✅ Importazione completata!");
+        return 0;
+    }
+
+    private function processFile($filePath, $category, $limit = null)
+    {
+        $handle = fopen($filePath, 'r');
+        $header = fgetcsv($handle);
+        
+        $this->info("📊 Header CSV: " . implode(', ', $header));
+
+        $totalProcessed = 0;
+        $totalSkipped = 0;
+        $chunkCount = 0;
+        $chunk = [];
+
+        while (($row = fgetcsv($handle)) !== false && ($limit === null || $totalProcessed < $limit)) {
+            if (count($row) >= 9) {
+                $chunk[] = array_combine($header, $row);
+                
+                if (count($chunk) >= $this->chunkSize) {
+                    $result = $this->processChunk($chunk, $category);
+                    $totalProcessed += $result['processed'];
+                    $totalSkipped += $result['skipped'];
+                    $chunkCount++;
+                    $this->info("📦 Chunk {$chunkCount}: {$result['processed']} processate, {$result['skipped']} saltate");
+                    $chunk = [];
+                }
+            }
+        }
+
+        if (!empty($chunk)) {
+            $result = $this->processChunk($chunk, $category);
+            $totalProcessed += $result['processed'];
+            $totalSkipped += $result['skipped'];
+            $chunkCount++;
+            $this->info("📦 Chunk finale {$chunkCount}: {$result['processed']} processate, {$result['skipped']} saltate");
+        }
+
+        fclose($handle);
+        $this->info("📈 Totale: {$totalProcessed} carte, {$totalSkipped} saltate");
+    }
+
+    private function processChunk($chunk, $category)
+    {
+        $processed = 0;
+        $skipped = 0;
+
+        DB::beginTransaction();
+        try {
+            foreach ($chunk as $row) {
+                try {
+                    $this->processRow($row, $category);
+                    $processed++;
+                } catch (\Exception $e) {
+                    $this->warn("⚠️  Errore: " . $e->getMessage());
+                    $skipped++;
+                }
+            }
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollback();
+            throw $e;
+        }
+
+        return ['processed' => $processed, 'skipped' => $skipped];
+    }
+
+    private function processRow($row, $category)
+    {
+        $cardNumber = trim($row['Number'] ?? '');
+        $name = trim($row['Name'] ?? '');
+        $numbered = trim($row['Numbered'] ?? '');
+        // Nota: ci sono due colonne "Rarity" nel CSV, prendiamo la prima
+        $rarity = trim($row['Rarity'] ?? 'Base');
+        $rarityVariation = trim($row['Rarity Variation'] ?? '');
+        $brand = strtoupper(trim($row['BRAND'] ?? ''));
+        $setName = trim($row['SET'] ?? '');
+        $year = trim($row['YEAR'] ?? '');
+
+        $cardSet = $this->getOrCreateCardSet($brand, $setName, $year, $category);
+
+        $cardName = "{$name} - {$cardSet->name}";
+        if (!empty($rarityVariation)) {
+            $cardName .= " ({$rarityVariation})";
+        }
+
+        $attributes = [];
+        if (!empty(trim($row['AUTOGRAPH'] ?? ''))) $attributes[] = 'autograph';
+        if (!empty(trim($row['RELIC'] ?? ''))) $attributes[] = 'relic';
+        if (!empty(trim($row['ON CARD AUTO'] ?? ''))) $attributes[] = 'on_card_auto';
+        if (!empty(trim($row['SKETCH'] ?? ''))) $attributes[] = 'sketch';
+        if (!empty(trim($row['BOOKLET'] ?? ''))) $attributes[] = 'booklet';
+        if (!empty(trim($row['DUAL'] ?? ''))) $attributes[] = 'dual';
+        if (!empty(trim($row['TRIPLE'] ?? ''))) $attributes[] = 'triple';
+        if (!empty(trim($row['QUAD'] ?? ''))) $attributes[] = 'quad';
+        if (!empty($numbered)) $attributes[] = 'numbered';
+
+        CardModel::create([
+            'category_id' => $category->id,
+            'card_set_id' => $cardSet->id,
+            'player_id' => null,
+            'team_id' => null,
+            'league_id' => null,
+            'name' => $cardName,
+            'slug' => Str::slug($cardName) . '-' . uniqid(),
+            'set_name' => $cardSet->name,
+            'year' => $this->extractYear($year),
+            'rarity' => $this->mapRarity($rarity),
+            'card_number' => $cardNumber,
+            'card_number_in_set' => $cardNumber,
+            'is_rookie' => false,
+            'is_star' => false,
+            'is_legend' => false,
+            'is_autograph' => !empty(trim($row['AUTOGRAPH'] ?? '')),
+            'is_relic' => !empty(trim($row['RELIC'] ?? '')),
+            'attributes' => $attributes,
+            'is_active' => true,
+        ]);
+    }
+
+    private function getOrCreateCardSet($brand, $setName, $year, $category)
+    {
+        $fullSetName = "{$brand} {$setName}";
+        
+        if (isset($this->cache['card_sets'][$fullSetName])) {
+            return $this->cache['card_sets'][$fullSetName];
+        }
+        
+        $cardSet = CardSet::where('name', $fullSetName)->first();
+        
+        if (!$cardSet) {
+            $cardSet = CardSet::create([
+                'category_id' => $category->id,
+                'name' => $fullSetName,
+                'slug' => Str::slug($fullSetName),
+                'brand' => $brand,
+                'year' => $this->extractYear($year),
+                'season' => $year,
+                'is_official' => true,
+                'is_active' => true,
+                'sort_order' => 1,
+            ]);
+        }
+
+        $this->cache['card_sets'][$fullSetName] = $cardSet;
+        return $cardSet;
+    }
+
+    private function mapRarity($rarity)
+    {
+        $rarityLower = strtolower($rarity);
+        if (str_contains($rarityLower, 'base')) return 'common';
+        if (str_contains($rarityLower, 'insert')) return 'uncommon';
+        if (str_contains($rarityLower, 'parallel')) return 'rare';
+        if (str_contains($rarityLower, 'auto')) return 'epic';
+        if (str_contains($rarityLower, 'relic')) return 'epic';
+        if (str_contains($rarityLower, 'sketch')) return 'legendary';
+        if (str_contains($rarityLower, 'booklet')) return 'mythic';
+        return 'common';
+    }
+
+    private function extractYear($year)
+    {
+        if (preg_match('/(\d{4})/', $year, $matches)) {
+            return (int) $matches[1];
+        }
+        return 2025;
+    }
+}
+
