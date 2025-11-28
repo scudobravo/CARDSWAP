@@ -637,7 +637,7 @@ class BasketballFilterController extends Controller
         }
 
         if (isset($filters['year']) && !empty($filters['year'])) {
-            $query->where('year', $filters['year']);
+            $this->applyYearFilter($query, $filters['year']);
         }
 
         if (isset($filters['brand']) && !empty($filters['brand'])) {
@@ -803,7 +803,7 @@ class BasketballFilterController extends Controller
         }
 
         if (isset($filters['year']) && !empty($filters['year'])) {
-            $query->where('year', $filters['year']);
+            $this->applyYearFilter($query, $filters['year']);
         }
 
         if (isset($filters['brand']) && !empty($filters['brand'])) {
@@ -1164,7 +1164,7 @@ class BasketballFilterController extends Controller
         }
 
         if (isset($filters['year']) && !empty($filters['year'])) {
-            $query->where('card_models.year', $filters['year']);
+            $this->applyYearFilter($query, $filters['year'], 'card_models.year');
         }
 
         if (isset($filters['brand']) && !empty($filters['brand'])) {
@@ -1364,5 +1364,28 @@ class BasketballFilterController extends Controller
                 'error' => config('app.debug') ? $e->getMessage() : 'Errore nel caricamento prodotti'
             ], 500);
         }
+    }
+
+    /**
+     * Helper method to apply year filter with support for partial year matching
+     * (e.g., "2024" matches "2024/25")
+     */
+    private function applyYearFilter($query, $year, $field = 'year')
+    {
+        if (empty($year)) {
+            return $query;
+        }
+
+        // Se l'anno è solo un numero (es. "2024"), cerca anche anni con formato "2024/25"
+        if (preg_match('/^\d{4}$/', $year)) {
+            $query->where(function($q) use ($year, $field) {
+                $q->where($field, $year)
+                  ->orWhere($field, 'LIKE', $year . '/%');
+            });
+        } else {
+            $query->where($field, $year);
+        }
+
+        return $query;
     }
 }
