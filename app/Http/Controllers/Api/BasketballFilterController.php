@@ -145,10 +145,29 @@ class BasketballFilterController extends Controller
             $playersQuery->where('name', 'LIKE', "%{$query}%");
         }
         
-        $players = $playersQuery->with(['team', 'cardModels' => function($query) {
+        $players = $playersQuery->with(['team', 'cardModels' => function($query) use ($request) {
                 $query->whereHas('category', function($catQuery) {
                     $catQuery->where('slug', 'basketball');
-                })->select('id', 'player_id', 'card_number', 'card_number_in_set', 'name', 'year', 'rarity', 'rarity_variation', 'is_rookie', 'is_autograph', 'is_relic', 'is_on_card_auto', 'is_jewel', 'is_booklet', 'is_multi_player_dual', 'is_multi_player_triple', 'is_multi_player_quad', 'card_set_id', 'team_id')
+                });
+                
+                // Applica gli stessi filtri anche alle carte caricate
+                if ($request->filled('team_id')) {
+                    $query->where('team_id', $request->team_id);
+                }
+                if ($request->filled('set_id')) {
+                    $query->where('card_set_id', $request->set_id);
+                }
+                if ($request->filled('year')) {
+                    // Usa il metodo helper per il filtro year
+                    $this->applyYearFilter($query, $request->year);
+                }
+                if ($request->filled('brand')) {
+                    $query->whereHas('cardSet', function($setQuery) use ($request) {
+                        $setQuery->where('brand', $request->brand);
+                    });
+                }
+                
+                $query->select('id', 'player_id', 'card_number', 'card_number_in_set', 'name', 'year', 'rarity', 'rarity_variation', 'is_rookie', 'is_autograph', 'is_relic', 'is_on_card_auto', 'is_jewel', 'is_booklet', 'is_multi_player_dual', 'is_multi_player_triple', 'is_multi_player_quad', 'card_set_id', 'team_id')
                 ->with(['cardSet:id,name,brand', 'team:id,name']);
             }])
             ->limit(100)

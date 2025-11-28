@@ -949,7 +949,16 @@ const recomputeFilteredCards = () => {
       const cy = card?.year != null ? String(card.year) : null
       const sy = card?.card_set?.year != null ? String(card.card_set.year) : null
       const fy = String(localFilters.value.year)
-      return cy === fy || sy === fy
+      
+      // Match esatto
+      if (cy === fy || sy === fy) return true
+      
+      // Se l'anno selezionato è solo un numero (es. "2024"), matcha anche anni con formato "2024/25"
+      if (/^\d{4}$/.test(fy)) {
+        return (cy && cy.startsWith(fy + '/')) || (sy && sy.startsWith(fy + '/'))
+      }
+      
+      return false
     })
   }
   if (localFilters.value.rarity) {
