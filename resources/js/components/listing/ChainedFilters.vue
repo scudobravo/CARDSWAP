@@ -222,14 +222,14 @@
           <!-- Header con nome e numero -->
           <div class="flex justify-between items-start mb-2">
             <div class="text-sm font-medium text-gray-900 truncate flex-1 mr-2">{{ formatCardName(card.name) }}</div>
-          <div v-if="card.card_number" class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
-            /{{ card.card_number }}
-            </div>
+          <div v-if="card.card_number_in_set" class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+            /{{ card.card_number_in_set }}
+          </div>
           </div>
           
           <!-- Numbered field -->
-          <div v-if="card.card_number" class="text-xs text-gray-600 mb-1">
-            <span class="font-medium text-gray-700">Numbered:</span> {{ card.card_number }}
+          <div v-if="card.card_number_in_set" class="text-xs text-gray-600 mb-1">
+            <span class="font-medium text-gray-700">Numbered:</span> {{ card.card_number_in_set }}
           </div>
           
           <!-- Squadra -->
@@ -435,8 +435,8 @@ const searchRarities = async () => {
   searchTimeout = setTimeout(async () => {
     const query = localFilters.value.raritySearch || ''
     
-    // Skip search if query is too short
-    if (query.length < 2) {
+    // Skip search if query is empty
+    if (query.length < 1) {
       filteredRarities.value = []
       return
     }
@@ -497,7 +497,7 @@ const onRarityFocus = async () => {
   }
   
   // Se c'è una query, esegui la ricerca
-  if (localFilters.value.raritySearch && localFilters.value.raritySearch.length >= 2) {
+  if (localFilters.value.raritySearch && localFilters.value.raritySearch.length >= 1) {
     await searchRarities()
   }
 }
@@ -1020,15 +1020,18 @@ const selectCard = (card) => {
   }
   
   // Aggiorna il campo Numbered con il numero della carta selezionata
-  // Usa SOLO card_number (NUMBERED /) - NON usare card_number_in_set come fallback
-  // Se card_number è vuoto, il campo Numbered deve rimanere vuoto
-  if (card.card_number) {
+  // Usa card_number_in_set (NUMBERED /) che contiene il valore corretto
+  if (card.card_number_in_set) {
+    localFilters.value.number = card.card_number_in_set
+    console.log('✅ Campo Numbered aggiornato con:', card.card_number_in_set)
+  } else if (card.card_number) {
+    // Fallback a card_number se card_number_in_set non è disponibile
     localFilters.value.number = card.card_number
-    console.log('✅ Campo Numbered aggiornato con:', card.card_number)
+    console.log('✅ Campo Numbered aggiornato con card_number (fallback):', card.card_number)
   } else {
-    // Se card_number è vuoto/null, resetta il campo Numbered
+    // Se entrambi sono vuoti, resetta il campo Numbered
     localFilters.value.number = null
-    console.log('✅ Campo Numbered resettato (card_number vuoto)')
+    console.log('✅ Campo Numbered resettato (entrambi i campi vuoti)')
   }
   
   // Notifica al parent la carta selezionata

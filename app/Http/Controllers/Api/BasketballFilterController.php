@@ -571,7 +571,7 @@ class BasketballFilterController extends Controller
         }
         
         if ($request->filled('year')) {
-            $raritiesQuery->where('year', $request->year);
+            $this->applyYearFilter($raritiesQuery, $request->year);
         }
         
         if ($request->filled('brand')) {
@@ -582,7 +582,7 @@ class BasketballFilterController extends Controller
         
         // Se c'è una query di ricerca, filtra i risultati SOLO sulla colonna rarity
         // NON includere rarity_variation nella ricerca
-        if (!empty($query) && strlen($query) >= 2) {
+        if (!empty($query) && strlen($query) >= 1) {
             $raritiesQuery->where('rarity', 'LIKE', "%{$query}%");
         }
         
@@ -598,7 +598,7 @@ class BasketballFilterController extends Controller
             ->toArray();
         
         // Applica il filtro di ricerca anche sui risultati finali per sicurezza
-        if (!empty($query) && strlen($query) >= 2) {
+        if (!empty($query) && strlen($query) >= 1) {
             $rarities = array_filter($rarities, function($rarity) use ($query) {
                 return stripos($rarity, $query) !== false;
             });
