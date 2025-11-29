@@ -158,7 +158,7 @@ class ImportDisneyCards extends Command
             'year' => $this->extractYear($year),
             'rarity' => $this->mapRarity($rarity),
             'card_number' => $cardNumber,
-            'card_number_in_set' => $cardNumber,
+            'card_number_in_set' => !empty($numbered) ? $numbered : null,
             'is_rookie' => false,
             'is_star' => false,
             'is_legend' => false,

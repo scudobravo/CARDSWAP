@@ -664,8 +664,8 @@ class ImportFootballExcelCards extends Command
                     'year' => $this->sanitizeText($year), // Ora è stringa per supportare "1967/68"
                     'rarity' => $this->preserveRarity($rarity),
                     'rarity_variation' => $this->sanitizeText($rarityVariation),
-                    'card_number' => $this->sanitizeText($numberedValue), // Usa il valore da NUMBERED /
-                    'card_number_in_set' => $this->sanitizeText($cardNumber),
+                    'card_number' => $this->sanitizeText($cardNumber), // Usa Numero (prima colonna)
+                    'card_number_in_set' => !empty($numberedValue) ? $this->sanitizeText($numberedValue) : null, // Usa NUMBERED / se presente
                     'is_rookie' => $isRookie,
                     'is_autograph' => $isAutograph,
                     'is_relic' => $isRelic,
