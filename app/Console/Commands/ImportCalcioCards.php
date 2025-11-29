@@ -510,6 +510,7 @@ class ImportCalcioCards extends Command
     {
         $cardNumber = trim($row['Numero'] ?? '');
         $playerName = trim($row['Player'] ?? '');
+        $numbered = trim($row['NUMBERED /'] ?? '');
         $isRookie = !empty(trim($row['ROOKIE'] ?? ''));
         $rarity = trim($row['Rarity'] ?? 'Base card');
         $year = trim($row['YEAR'] ?? '');
@@ -552,7 +553,7 @@ class ImportCalcioCards extends Command
                 'year' => $this->extractYear($year),
                 'rarity' => $mappedRarity,
                 'card_number' => $cardNumber,
-                'card_number_in_set' => $cardNumber,
+                'card_number_in_set' => !empty($numbered) ? $numbered : null,
                 'is_rookie' => $isRookie,
                 'is_star' => str_contains($rarity, 'Star'),
                 'is_legend' => str_contains($rarity, 'Legend'),
