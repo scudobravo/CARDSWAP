@@ -224,7 +224,7 @@
             <div class="text-sm font-medium text-gray-900 truncate flex-1 mr-2">{{ formatCardName(card.name) }}</div>
           <div v-if="card.card_number_in_set" class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
             /{{ card.card_number_in_set }}
-          </div>
+            </div>
           </div>
           
           <!-- Numbered field -->
@@ -1020,18 +1020,14 @@ const selectCard = (card) => {
   }
   
   // Aggiorna il campo Numbered con il numero della carta selezionata
-  // Usa card_number_in_set (NUMBERED /) che contiene il valore corretto
+  // Usa SOLO card_number_in_set (NUMBERED /) - se non c'è, non mostrare nulla
   if (card.card_number_in_set) {
     localFilters.value.number = card.card_number_in_set
     console.log('✅ Campo Numbered aggiornato con:', card.card_number_in_set)
-  } else if (card.card_number) {
-    // Fallback a card_number se card_number_in_set non è disponibile
-    localFilters.value.number = card.card_number
-    console.log('✅ Campo Numbered aggiornato con card_number (fallback):', card.card_number)
   } else {
-    // Se entrambi sono vuoti, resetta il campo Numbered
+    // Se card_number_in_set è vuoto, resetta il campo Numbered
     localFilters.value.number = null
-    console.log('✅ Campo Numbered resettato (entrambi i campi vuoti)')
+    console.log('✅ Campo Numbered resettato (card_number_in_set vuoto)')
   }
   
   // Notifica al parent la carta selezionata
