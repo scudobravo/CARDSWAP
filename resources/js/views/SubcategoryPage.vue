@@ -204,9 +204,9 @@
                       
                       <!-- Compact Badges Row -->
                       <div class="flex flex-wrap gap-1 mt-2">
-                        <!-- Numbered (preferisci card_number, fallback a card_number_in_set) -->
-                        <div v-if="product.card_number || product.card_number_in_set" class="bg-gray-100 px-2 py-1 rounded text-xs font-bold text-primary">
-                          /{{ product.card_number || product.card_number_in_set }}
+                        <!-- Numbered (preferisci card_number_in_set, fallback a card_number) -->
+                        <div v-if="product.card_number_in_set || product.card_number" class="bg-gray-100 px-2 py-1 rounded text-xs font-bold text-primary">
+                          /{{ product.card_number_in_set || product.card_number }}
                         </div>
                         <!-- Autograph -->
                         <div v-if="product.is_autograph" class="bg-gray-100 px-2 py-1 rounded text-xs font-bold text-primary">
@@ -290,10 +290,10 @@
                       
                       <!-- Badges Row -->
                       <div class="flex flex-wrap gap-2 mt-2">
-                        <!-- Numbered - Mostra solo se presente (card_number preferito) -->
-                        <div v-if="product.card_number || product.card_number_in_set" class="relative group">
+                        <!-- Numbered - Mostra solo se presente (card_number_in_set preferito) -->
+                        <div v-if="product.card_number_in_set || product.card_number" class="relative group">
                           <div class="bg-gray-100 p-2 rounded-lg flex items-center justify-center min-w-[40px] min-h-[40px]">
-                            <span class="text-primary font-futura-bold text-sm">{{ product.card_number || product.card_number_in_set }}</span>
+                            <span class="text-primary font-futura-bold text-sm">{{ product.card_number_in_set || product.card_number }}</span>
                           </div>
                           <!-- Tooltip -->
                           <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-primary text-white text-sm font-futura-bold rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">

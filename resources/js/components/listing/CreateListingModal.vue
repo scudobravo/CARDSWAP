@@ -1357,7 +1357,7 @@ const selectCardModel = (card) => {
       rarity: card.rarity,
       year: card.year,
       brand: card.card_set?.brand,
-      number: card.card_number
+      number: card.card_number_in_set || card.card_number
     })
     console.log('✅ Campi del form NON popolati automaticamente - l\'utente deve selezionarli manualmente')
   }
@@ -2732,7 +2732,7 @@ watch(() => props.editingListing, (newListing) => {
               rarity: selectedCardModel.value.rarity,
               year: selectedCardModel.value.year,
               brand: selectedCardModel.value.brand,
-              number: selectedCardModel.value.card_number || selectedCardModel.value.number // Solo card_number, NON card_number_in_set
+              number: selectedCardModel.value.card_number_in_set || selectedCardModel.value.card_number || selectedCardModel.value.number
             }
           }))
         }
@@ -2888,7 +2888,7 @@ const initializePreselectedCard = async () => {
       brand: cardModelData.card_set?.brand || cardModelData.brand || '',
       rarity: cardModelData.rarity || '',
       year: cardModelData.year || cardModelData.card_set?.year || '',
-      number: cardModelData.card_number || '', // Solo card_number, NON card_number_in_set
+      number: cardModelData.card_number_in_set || cardModelData.card_number || '',
       player: cardModelData.player?.id || '',
       playerSearch: cardModelData.player?.display_name || cardModelData.player?.name || '',
       selectedPlayers: cardModelData.player ? [cardModelData.player] : [],
@@ -3020,8 +3020,8 @@ const initializeEditMode = async (listing) => {
       brand: selectedCardModel.value?.card_set?.brand || selectedCardModel.value?.brand || '',
       rarity: selectedCardModel.value?.rarity || '',
       year: selectedCardModel.value?.year || selectedCardModel.value?.card_set?.year || '',
-      number: selectedCardModel.value?.card_number || '', // Solo card_number, NON card_number_in_set
-      player: selectedCardModel.value?.player?.id || '',
+        number: selectedCardModel.value?.card_number_in_set || selectedCardModel.value?.card_number || '',
+        player: selectedCardModel.value?.player?.id || '',
       playerSearch: selectedCardModel.value?.player?.display_name || selectedCardModel.value?.player?.name || '',
       team: selectedCardModel.value?.team?.id || '',
       set: selectedCardModel.value?.card_set?.id || ''

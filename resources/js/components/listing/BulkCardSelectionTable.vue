@@ -83,7 +83,7 @@
               {{ card.rarity || '-' }}{{ card.rarity_variation ? ` (${card.rarity_variation})` : '' }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ card.card_number || card.card_number_in_set || '-' }}
+              {{ card.card_number_in_set || card.card_number || '-' }}
             </td>
           </tr>
         </tbody>

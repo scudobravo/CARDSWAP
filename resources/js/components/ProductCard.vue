@@ -33,10 +33,10 @@
 
     <!-- Informational Badges -->
     <div class="px-2 sm:px-4 pb-2 sm:pb-3 flex flex-wrap gap-1.5 sm:gap-3 justify-center flex-shrink-0">
-      <!-- Numbered - Mostra solo se presente (card_number preferito) -->
-      <div v-if="product.card_number || product.card_number_in_set" class="relative group">
+      <!-- Numbered - Mostra solo se presente (card_number_in_set preferito) -->
+      <div v-if="product.card_number_in_set || product.card_number" class="relative group">
         <div class="bg-gray-100 p-1.5 sm:p-3 rounded-lg flex items-center justify-center min-w-[36px] min-h-[36px] sm:min-w-[48px] sm:min-h-[48px]">
-          <span class="text-primary font-futura-bold text-xs sm:text-lg">{{ product.card_number || product.card_number_in_set }}</span>
+          <span class="text-primary font-futura-bold text-xs sm:text-lg">{{ product.card_number_in_set || product.card_number }}</span>
         </div>
         <!-- Tooltip -->
         <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-primary text-white text-sm font-futura-bold rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
