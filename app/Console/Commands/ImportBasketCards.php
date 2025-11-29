@@ -380,7 +380,7 @@ class ImportBasketCards extends Command
                 'year' => $year ?: '2024',
                 'rarity' => $rarity ?: 'Base',
                 'card_number' => $cardNumber,
-                'card_number_in_set' => $numbered ?: $cardNumber,
+                'card_number_in_set' => !empty($numbered) ? $numbered : null,
                 'is_rookie' => $isRookie,
                 'is_star' => false,
                 'is_legend' => false,
