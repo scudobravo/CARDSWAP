@@ -205,7 +205,7 @@
                       <!-- Compact Badges Row -->
                       <div class="flex flex-wrap gap-1 mt-2">
                         <!-- Numbered (solo card_number_in_set, nessun fallback) -->
-                        <div v-if="product.card_number_in_set" class="bg-gray-100 px-2 py-1 rounded text-xs font-bold text-primary">
+                        <div v-if="isValidNumbered(product)" class="bg-gray-100 px-2 py-1 rounded text-xs font-bold text-primary">
                           /{{ product.card_number_in_set }}
                         </div>
                         <!-- Autograph -->
@@ -290,8 +290,8 @@
                       
                       <!-- Badges Row -->
                       <div class="flex flex-wrap gap-2 mt-2">
-                        <!-- Numbered - Mostra solo se presente (solo card_number_in_set) -->
-                        <div v-if="product.card_number_in_set" class="relative group">
+                        <!-- Numbered - Mostra solo se presente e valido (solo card_number_in_set) -->
+                        <div v-if="isValidNumbered(product)" class="relative group">
                           <div class="bg-gray-100 p-2 rounded-lg flex items-center justify-center min-w-[40px] min-h-[40px]">
                             <span class="text-primary font-futura-bold text-sm">{{ product.card_number_in_set }}</span>
                           </div>
@@ -599,6 +599,25 @@ const displayedProducts = computed(() => {
 })
 
 // Functions
+
+// Verifica se card_number_in_set è valido (non è un identificatore errato)
+const isValidNumbered = (product) => {
+  if (!product?.card_number_in_set) return false
+  
+  const numbered = product.card_number_in_set.toString().trim()
+  
+  // Se è uguale a card_number, è un errore di importazione
+  if (product.card_number && numbered === product.card_number.toString().trim()) {
+    return false
+  }
+  
+  // Se contiene solo lettere e trattini (senza numeri), probabilmente è un identificatore errato
+  if (!/\d/.test(numbered)) {
+    return false
+  }
+  
+  return true
+}
 
 const getApiEndpoint = (category) => {
   switch (category) {

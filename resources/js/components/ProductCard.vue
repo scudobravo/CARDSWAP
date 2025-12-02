@@ -33,8 +33,8 @@
 
     <!-- Informational Badges -->
     <div class="px-2 sm:px-4 pb-2 sm:pb-3 flex flex-wrap gap-1.5 sm:gap-3 justify-center flex-shrink-0">
-      <!-- Numbered - Mostra solo se presente (solo card_number_in_set) -->
-      <div v-if="product.card_number_in_set" class="relative group">
+      <!-- Numbered - Mostra solo se presente e valido (solo card_number_in_set) -->
+      <div v-if="isValidNumbered" class="relative group">
         <div class="bg-gray-100 p-1.5 sm:p-3 rounded-lg flex items-center justify-center min-w-[36px] min-h-[36px] sm:min-w-[48px] sm:min-h-[48px]">
           <span class="text-primary font-futura-bold text-xs sm:text-lg">{{ product.card_number_in_set }}</span>
         </div>
@@ -177,6 +177,7 @@ const props = defineProps({
       condition: 'NEAR MINT',
       price: 'Price',
       card_number_in_set: null,
+      card_number: null,
       is_autograph: false,
       is_relic: false,
       is_rookie: false,
@@ -185,6 +186,25 @@ const props = defineProps({
       imageUrl: null
     })
   }
+})
+
+// Verifica se card_number_in_set è valido (non è un identificatore errato)
+const isValidNumbered = computed(() => {
+  if (!props.product.card_number_in_set) return false
+  
+  const numbered = props.product.card_number_in_set.toString().trim()
+  
+  // Se è uguale a card_number, è un errore di importazione
+  if (props.product.card_number && numbered === props.product.card_number.toString().trim()) {
+    return false
+  }
+  
+  // Se contiene solo lettere e trattini (senza numeri), probabilmente è un identificatore errato
+  if (!/\d/.test(numbered)) {
+    return false
+  }
+  
+  return true
 })
 
 // Emits

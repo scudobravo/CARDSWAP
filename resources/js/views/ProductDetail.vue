@@ -182,8 +182,8 @@
             
             <!-- Card Attributes -->
             <div class="flex flex-wrap gap-3">
-              <!-- Numbered - Mostra solo se presente (solo card_number_in_set) -->
-              <div v-if="product.card_number_in_set" class="relative group">
+              <!-- Numbered - Mostra solo se presente e valido (solo card_number_in_set) -->
+              <div v-if="isValidNumbered" class="relative group">
                 <div class="bg-gray-100 p-3 rounded-lg flex items-center justify-center min-w-[48px] min-h-[48px]">
                   <span class="text-primary font-futura-bold text-lg">{{ product.card_number_in_set }}</span>
                 </div>
@@ -518,6 +518,25 @@ const isTogglingWishlist = ref(false)
 const isInWishlist = computed(() => {
   if (!product.value?.id) return false
   return wishlistStore.isInWishlist(product.value.id)
+})
+
+// Verifica se card_number_in_set è valido (non è un identificatore errato)
+const isValidNumbered = computed(() => {
+  if (!product.value?.card_number_in_set) return false
+  
+  const numbered = product.value.card_number_in_set.toString().trim()
+  
+  // Se è uguale a card_number, è un errore di importazione
+  if (product.value.card_number && numbered === product.value.card_number.toString().trim()) {
+    return false
+  }
+  
+  // Se contiene solo lettere e trattini (senza numeri), probabilmente è un identificatore errato
+  if (!/\d/.test(numbered)) {
+    return false
+  }
+  
+  return true
 })
 
 // Chat modal
