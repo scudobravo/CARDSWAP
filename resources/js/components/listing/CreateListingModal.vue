@@ -2916,7 +2916,7 @@ const initializePreselectedCard = async () => {
         rarity: cardModelData.rarity || 'MISSING',
         year: cardModelData.year || cardModelData.card_set?.year || 'MISSING',
         brand: brandFromSet || 'MISSING',
-        number: cardModelData.card_number || 'MISSING' // Solo card_number, NON card_number_in_set
+        number: cardModelData.card_number_in_set || '' // Usa card_number_in_set
       })
       
       // Verifica che tutti i dati necessari siano presenti
@@ -2940,7 +2940,7 @@ const initializePreselectedCard = async () => {
         rarity: cardModelData.rarity,
         year: cardModelData.year || cardModelData.card_set?.year,
         brand: brandFromSet,
-        number: cardModelData.card_number || '' // Solo card_number, NON card_number_in_set
+        number: cardModelData.card_number_in_set || '' // Usa card_number_in_set
       }
       
       console.log('📤 Dispatching event con dati:', JSON.stringify(eventData, null, 2))
