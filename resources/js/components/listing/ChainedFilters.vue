@@ -1932,9 +1932,10 @@ const handleFiltersPopulated = async (event) => {
     localFilters.value.year = data.year
     console.log('✅ Year popolato tramite filters-populated (nessun anno esistente):', data.year)
   }
-  if (data.number) {
-    localFilters.value.number = data.number
-    console.log('✅ Number popolato tramite filters-populated:', data.number)
+  // Popola Numbered (card_number_in_set) - anche se è stringa vuota, resetta il campo
+  if (data.number !== undefined && data.number !== null) {
+    localFilters.value.number = data.number || ''
+    console.log('✅ Number popolato tramite filters-populated:', data.number || '(vuoto)')
   }
   
   // Forza un re-render per assicurarsi che i tag vengano mostrati
