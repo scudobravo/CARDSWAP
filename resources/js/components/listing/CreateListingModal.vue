@@ -3236,13 +3236,10 @@ const initializeEditMode = async (listing) => {
       console.log('📸 Immagini esistenti caricate:', cardImages.value)
     }
     
-    // Vai direttamente al primo step (selezione carta per single/bulk, filtri per sealed-pack/box/lot)
+    // Vai sempre al primo step per mostrare i dati pre-popolati
+    // Per sealed-pack/box/lot, il Passo 1 mostra i filtri (Set, Year, Brand) già popolati
+    // Per single/bulk, il Passo 1 mostra la selezione carta
     currentStep.value = 1
-    
-    // Per sealed-pack/box/lot, vai direttamente allo step 2 (immagini e dettagli)
-    if (listingType === 'sealed-pack' || listingType === 'sealed-box' || listingType === 'lot') {
-      currentStep.value = 2
-    }
     
     // Dispatch event per popolare i filtri nel componente ChainedFilters (solo per single/bulk)
     if (selectedCardModel.value) {
