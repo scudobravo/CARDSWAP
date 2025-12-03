@@ -1751,6 +1751,13 @@ const restoreSelectedEntities = async () => {
 // Lifecycle
 onMounted(async () => {
   await loadInitialData()
+  
+  // Aggiorna localFilters con i filtri iniziali se presenti
+  if (props.initialFilters && Object.keys(props.initialFilters).length > 0) {
+    console.log('🔄 Filtri iniziali trovati in onMounted:', props.initialFilters)
+    localFilters.value = { ...localFilters.value, ...props.initialFilters }
+  }
+  
   await restoreSelectedEntities()
   
   // Ascolta l'evento per popolare i filtri quando viene selezionata una carta
@@ -1758,6 +1765,15 @@ onMounted(async () => {
   
   // Ascolta l'evento per aggiornare i filtri quando viene selezionata una carta in modalità edit
   window.addEventListener('card-selected', handleCardSelected)
+  
+  // Se ci sono filtri iniziali con set/year/brand ma le entità non sono ancora popolate,
+  // aspetta un po' e ripristina di nuovo
+  if ((localFilters.value.set || localFilters.value.year || localFilters.value.brand) && !selectedCardSet.value) {
+    setTimeout(async () => {
+      console.log('🔄 Ripristino entità per filtri iniziali (set/year/brand)')
+      await restoreSelectedEntities()
+    }, 300)
+  }
   
   // Se ci sono filtri iniziali con playerSearch ma selectedPlayer non è ancora popolato,
   // aspetta un po' per permettere agli eventi di essere emessi
