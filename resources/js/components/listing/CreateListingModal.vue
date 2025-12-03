@@ -1135,6 +1135,13 @@ const nextStep = () => {
     }
   }
   
+  // Log per debug quando si passa al passo 2 per pack/box/lotti
+  if (currentStep.value === 1 && (selectedMode.value === 'sealed-pack' || selectedMode.value === 'sealed-box' || selectedMode.value === 'lot')) {
+    console.log('🔄 Passaggio al passo 2 - Filtri attuali:', JSON.stringify(filters.value))
+    console.log('🔄 Categoria selezionata:', selectedCategory.value)
+    console.log('🔄 Immagini attuali:', cardImages.value.filter(img => img !== null).length)
+  }
+  
   if (canProceed.value && currentStep.value < totalSteps.value - 1) {
     currentStep.value++
   }
@@ -1545,7 +1552,13 @@ const handleImageUpload = (event) => {
 }
 
 const handleSealedImageUpload = (event, type) => {
+  console.log('📸 handleSealedImageUpload chiamato per tipo:', type)
   const files = Array.from(event.target.files)
+  console.log('📸 File selezionati:', files.length)
+  if (files.length === 0) {
+    console.warn('⚠️ Nessun file selezionato')
+    return
+  }
   processImageFiles(files)
 }
 
@@ -1577,16 +1590,22 @@ const handleDrop = (event) => {
 
 // Processa i file immagine (usato sia per click che drag & drop)
 const processImageFiles = (files) => {
+  console.log('📸 processImageFiles chiamato con', files.length, 'file')
   const maxFiles = 4
   const maxSize = 10 * 1024 * 1024 // 10MB (aumentato per permettere immagini più grandi)
   
+  const currentImageCount = cardImages.value.filter(img => img).length
+  console.log('📸 Immagini attuali:', currentImageCount)
+  
   // Controlla se superiamo il limite di file
-  if (cardImages.value.filter(img => img).length + files.length > maxFiles) {
-    alert(`Massimo ${maxFiles} immagini per inserzione. Hai già ${cardImages.value.filter(img => img).length} immagini.`)
+  if (currentImageCount + files.length > maxFiles) {
+    alert(`Massimo ${maxFiles} immagini per inserzione. Hai già ${currentImageCount} immagini.`)
     return
   }
   
-  files.forEach(file => {
+  files.forEach((file, fileIndex) => {
+    console.log(`📸 Processando file ${fileIndex + 1}/${files.length}:`, file.name, file.type, (file.size / 1024 / 1024).toFixed(2) + 'MB')
+    
     if (file.type.startsWith('image/')) {
       // Controllo dimensione
       if (file.size > maxSize) {
@@ -1602,11 +1621,16 @@ const processImageFiles = (files) => {
       
       // Trova il primo slot vuoto
       const emptyIndex = cardImages.value.findIndex(img => !img)
+      console.log('📸 Slot vuoto trovato all\'indice:', emptyIndex)
+      
       if (emptyIndex !== -1) {
+        const preview = URL.createObjectURL(file)
+        console.log('📸 Creata preview URL per file:', file.name)
         cardImages.value[emptyIndex] = {
           file: file,
-          preview: URL.createObjectURL(file)
+          preview: preview
         }
+        console.log('📸 Immagine aggiunta all\'indice', emptyIndex, '- Totale immagini:', cardImages.value.filter(img => img).length)
       } else {
         alert(`Massimo ${maxFiles} immagini per inserzione`)
       }
@@ -1614,6 +1638,8 @@ const processImageFiles = (files) => {
       alert(`Il file "${file.name}" non è un'immagine valida`)
     }
   })
+  
+  console.log('📸 processImageFiles completato - Immagini totali:', cardImages.value.filter(img => img).length)
 }
 
 const removeImage = (index) => {
