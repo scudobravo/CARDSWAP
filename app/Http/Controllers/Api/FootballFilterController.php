@@ -1473,9 +1473,58 @@ class FootballFilterController extends Controller
         $transformedProducts = $listings->map(function($listing) {
             $cardModel = $listing->cardModel;
             
-            // Se cardModel è null, salta questa listing
+            // Per sealed-pack, sealed-box e lot, cardModel è NULL
             if (!$cardModel) {
-                return null;
+                // Gestisci sealed-pack, sealed-box e lot
+                $imageUrl = null;
+                if ($listing->images && is_array($listing->images) && count($listing->images) > 0) {
+                    $firstImage = $listing->images[0];
+                    if (!str_starts_with($firstImage, '/storage/') && !str_starts_with($firstImage, 'http')) {
+                        $imageUrl = '/storage/' . $firstImage;
+                    } else {
+                        $imageUrl = $firstImage;
+                    }
+                }
+                
+                return [
+                    'id' => $listing->id,
+                    'listing_id' => $listing->id,
+                    'name' => $listing->title ?? ($listing->listing_type === 'sealed-pack' ? 'Sealed Pack' : ($listing->listing_type === 'sealed-box' ? 'Sealed Box' : 'Lot')),
+                    'team' => null,
+                    'set' => null,
+                    'year' => null,
+                    'rarity' => null,
+                    'condition' => $listing->condition ?? 'mint',
+                    'price' => number_format($listing->price ?? 0, 2, ',', '.'),
+                    'quantity' => $listing->quantity ?? 1,
+                    'card_number_in_set' => null,
+                    'card_number' => null,
+                    'is_rookie' => false,
+                    'is_autograph' => false,
+                    'is_relic' => false,
+                    'is_star' => false,
+                    'is_legend' => false,
+                    'imageUrl' => $imageUrl,
+                    'images' => $listing->images ?? [],
+                    'playerId' => null,
+                    'teamId' => null,
+                    'setId' => null,
+                    'brand' => null,
+                    'hasAutograph' => false,
+                    'hasRelic' => false,
+                    'grading_company_id' => $listing->grading_company_id ?? null,
+                    'grading_company' => $listing->gradingCompany ? [
+                        'id' => $listing->gradingCompany->id,
+                        'name' => $listing->gradingCompany->name,
+                        'slug' => $listing->gradingCompany->slug,
+                    ] : null,
+                    'card_condition_score' => $listing->card_condition_score ?? null,
+                    'autograph_condition_score' => $listing->autograph_condition_score ?? null,
+                    'gradingScore' => null,
+                    'gradingCompany' => null,
+                    'listing_type' => $listing->listing_type,
+                    'description' => $listing->description ?? null
+                ];
             }
             
             // Priorità alle immagini reali dalle CardListing (caricate dai giocatori)

@@ -939,14 +939,35 @@ class BasketballFilterController extends Controller
         $isSealed = isset($filters['subcategory']) && 
                     in_array($filters['subcategory'], ['sealed-packs', 'sealed-boxes']);
         
-        // Base query per card_models con join per ordinamento
-        $query = CardModel::with(['player', 'team', 'cardSet', 'gradingCompany'])
-            ->leftJoin('players', 'card_models.player_id', '=', 'players.id')
-            ->leftJoin('teams', 'card_models.team_id', '=', 'teams.id')
-            ->select('card_models.*')
-            ->where('card_models.is_active', true)
-            ->whereHas('category', function($query) {
-                $query->where('slug', 'basketball');
+        // IMPORTANTE: Partiamo da CardListing attive (non CardModel)
+        // Così mostriamo solo le carte effettivamente in vendita dai venditori
+        $query = \App\Models\CardListing::with([
+                'cardModel.category',
+                'cardModel.player',
+                'cardModel.team',
+                'gradingCompany',
+                'cardModel.cardSet',
+                'cardModel.gradingCompany',
+                'seller'
+            ])
+            ->where('status', 'active')
+            ->where(function($q) {
+                // Per inserzioni con cardModel (singles, bulk)
+                $q->whereHas('cardModel', function($cardModelQ) {
+                    $cardModelQ->where('is_active', true)
+                      ->whereHas('category', function($catQ) {
+                          $catQ->where('slug', 'basketball');
+                      });
+                })
+                // Per sealed-pack, sealed-box e lotti (che non hanno cardModel), includili sempre
+                ->orWhere(function($sealedQ) {
+                    $sealedQ->where(function($subQ) {
+                        $subQ->where('listing_type', 'sealed-pack')
+                             ->orWhere('listing_type', 'sealed-box')
+                             ->orWhere('listing_type', 'lot');
+                    })
+                    ->whereNull('card_model_id');
+                });
             });
 
         // Per sealed packs/boxes, applica solo Set, Year e Brand
@@ -954,26 +975,43 @@ class BasketballFilterController extends Controller
         if (!$isSealed) {
             // Applica filtri a catena: Player → Team → Set → Year → Brand → Rarity
             if (isset($filters['player_id']) && !empty($filters['player_id'])) {
+                // Gestisci sia array che singolo valore (Laravel converte player_id[] in array)
+                $playerIds = [];
                 if (is_array($filters['player_id'])) {
-                    $query->whereIn('card_models.player_id', $filters['player_id']);
+                    $playerIds = $filters['player_id'];
                 } else {
-                    // Se è un singolo player_id, cerca tutti i giocatori con lo stesso nome
-                    $player = Player::find($filters['player_id']);
+                    $playerIds = [$filters['player_id']];
+                }
+                
+                // Per ogni player_id, cerca tutti i giocatori con lo stesso nome
+                $allPlayerIds = [];
+                foreach ($playerIds as $playerId) {
+                    $player = \App\Models\Player::find($playerId);
                     if ($player) {
-                        $playerIds = Player::where('name', $player->name)->pluck('id')->toArray();
-                        $query->whereIn('card_models.player_id', $playerIds);
+                        $sameNamePlayers = \App\Models\Player::where('name', $player->name)->pluck('id')->toArray();
+                        $allPlayerIds = array_merge($allPlayerIds, $sameNamePlayers);
                     } else {
-                        $query->where('card_models.player_id', $filters['player_id']);
+                        $allPlayerIds[] = $playerId;
                     }
+                }
+                
+                if (!empty($allPlayerIds)) {
+                    $query->whereHas('cardModel', function($q) use ($allPlayerIds) {
+                        $q->whereIn('player_id', array_unique($allPlayerIds));
+                    });
                 }
             }
 
             if (isset($filters['team_id']) && !empty($filters['team_id'])) {
-                $query->where('card_models.team_id', $filters['team_id']);
+                $query->whereHas('cardModel', function($q) use ($filters) {
+                    $q->where('team_id', $filters['team_id']);
+                });
             }
 
             if (isset($filters['rarity']) && !empty($filters['rarity'])) {
-                $query->where('card_models.rarity', $filters['rarity']);
+                $query->whereHas('cardModel', function($q) use ($filters) {
+                    $q->where('rarity', $filters['rarity']);
+                });
             }
 
             // Filtri per grading
@@ -1178,66 +1216,66 @@ class BasketballFilterController extends Controller
         }
         
         // Filtri comuni a tutte le sottocategorie: Set, Year, Brand
+        // Per sealed-pack, sealed-box e lot, questi filtri vengono applicati solo se hanno un cardModel
         if (isset($filters['set_id']) && !empty($filters['set_id'])) {
-            $query->where('card_models.card_set_id', $filters['set_id']);
+            $query->whereHas('cardModel', function($q) use ($filters) {
+                $q->where('card_set_id', $filters['set_id']);
+            });
         }
 
         if (isset($filters['year']) && !empty($filters['year'])) {
-            $this->applyYearFilter($query, $filters['year'], 'card_models.year');
+            $query->whereHas('cardModel', function($q) use ($filters) {
+                $this->applyYearFilter($q, $filters['year'], 'year');
+            });
         }
 
         if (isset($filters['brand']) && !empty($filters['brand'])) {
-            $query->whereHas('cardSet', function($q) use ($filters) {
+            $query->whereHas('cardModel.cardSet', function($q) use ($filters) {
                 $q->where('brand', $filters['brand']);
             });
         }
 
         // Filtro per sottocategoria (singles, sealed-packs, sealed-boxes, lot)
-        // NOTA: Questo filtro è basato su card_listings. Se non ci sono listings, il filtro viene ignorato
         if (isset($filters['subcategory']) && !empty($filters['subcategory'])) {
             $subcategory = $filters['subcategory'];
             
-            // Verifica se esistono card_listings nel database
-            $hasListings = \App\Models\CardModel::whereHas('cardListings')->exists();
-            
-            // Applica il filtro solo se ci sono listings
-            if ($hasListings) {
-                switch ($subcategory) {
-                    case 'singles':
-                        // Carte singole: listing_type = 'single' o 'bulk' (per retrocompatibilità)
-                        $query->whereHas('cardListings', function($q) {
-                            $q->where(function($subQ) {
-                                $subQ->where('listing_type', 'single')
-                                     ->orWhere('listing_type', 'bulk')
-                                     ->orWhereNull('listing_type'); // Retrocompatibilità
-                            });
+            switch ($subcategory) {
+                case 'singles':
+                    // Carte singole: listing_type = 'single' o 'bulk' (per retrocompatibilità)
+                    // Escludi sealed-pack, sealed-box e lot
+                    $query->where(function($q) {
+                        $q->where(function($subQ) {
+                            $subQ->where('listing_type', 'single')
+                                 ->orWhere('listing_type', 'bulk')
+                                 ->orWhereNull('listing_type'); // Retrocompatibilità con inserzioni esistenti
+                        })
+                        ->where(function($notSealedQ) {
+                            $notSealedQ->where('listing_type', '!=', 'sealed-pack')
+                                       ->where('listing_type', '!=', 'sealed-box')
+                                       ->where('listing_type', '!=', 'lot')
+                                       ->orWhereNull('listing_type');
                         });
-                        break;
-                        
-                    case 'sealed-packs':
-                        // Buste sigillate: listing_type = 'sealed-pack'
-                        $query->whereHas('cardListings', function($q) {
-                            $q->where('listing_type', 'sealed-pack');
-                        });
-                        break;
-                        
-                    case 'sealed-boxes':
-                        // Scatole sigillate: listing_type = 'sealed-box'
-                        $query->whereHas('cardListings', function($q) {
-                            $q->where('listing_type', 'sealed-box');
-                        });
-                        break;
-                        
-                    case 'lot':
-                        // Lotti: listing_type = 'lot'
-                        $query->whereHas('cardListings', function($q) {
-                            $q->where('listing_type', 'lot');
-                        });
-                        break;
-                }
+                    });
+                    break;
+                    
+                case 'sealed-packs':
+                    // Buste sigillate: listing_type = 'sealed-pack' e card_model_id è NULL
+                    $query->where('listing_type', 'sealed-pack')
+                          ->whereNull('card_model_id');
+                    break;
+                    
+                case 'sealed-boxes':
+                    // Scatole sigillate: listing_type = 'sealed-box' e card_model_id è NULL
+                    $query->where('listing_type', 'sealed-box')
+                          ->whereNull('card_model_id');
+                    break;
+                    
+                case 'lot':
+                    // Lotti: listing_type = 'lot' e card_model_id è NULL
+                    $query->where('listing_type', 'lot')
+                          ->whereNull('card_model_id');
+                    break;
             }
-            // Se non ci sono listings, il filtro subcategory viene ignorato
-            // e vengono restituiti tutti i card_models che matchano gli altri filtri
         }
 
         // Ordinamento
@@ -1256,68 +1294,135 @@ class BasketballFilterController extends Controller
             $sortOrder = 'desc';
         }
         
-        // Applica l'ordinamento con mapping dei campi
-        switch ($sortBy) {
-            case 'price':
-                $query->orderBy('card_models.price', $sortOrder);
-                break;
-            case 'player_name':
-                $query->orderBy('players.name', $sortOrder);
-                break;
-            case 'team_name':
-                $query->orderBy('teams.name', $sortOrder);
-                break;
-            default:
-                $query->orderBy('card_models.' . $sortBy, $sortOrder);
-                break;
+        // Applica l'ordinamento
+        // Validazione dell'ordinamento
+        $allowedSortFields = ['price', 'condition', 'quantity', 'created_at', 'updated_at'];
+        $allowedSortOrders = ['asc', 'desc'];
+        
+        if (!in_array($sortBy, $allowedSortFields)) {
+            $sortBy = 'created_at';
         }
+        
+        if (!in_array($sortOrder, $allowedSortOrders)) {
+            $sortOrder = 'desc';
+        }
+        
+        $query->orderBy($sortBy, $sortOrder);
         
         // Ordinamento secondario per garantire consistenza
         if ($sortBy !== 'id') {
-            $query->orderBy('card_models.id', 'desc');
+            $query->orderBy('id', 'desc');
         }
 
         // Paginazione
         $page = $filters['page'] ?? 1;
         $perPage = $filters['per_page'] ?? 20;
         
-        $products = $query->paginate($perPage, ['*'], 'page', $page);
+        $listings = $query->paginate($perPage, ['*'], 'page', $page);
 
-        // Trasforma i dati per il frontend
-        $transformedProducts = $products->map(function($cardModel) {
+        // Trasforma i dati per il frontend usando le CardListing
+        $transformedProducts = $listings->map(function($listing) {
+            $cardModel = $listing->cardModel;
+            
+            // Per sealed-pack, sealed-box e lot, cardModel è NULL
+            if (!$cardModel) {
+                // Gestisci sealed-pack, sealed-box e lot
+                return [
+                    'id' => $listing->id,
+                    'listing_id' => $listing->id,
+                    'name' => $listing->title ?? 'Sealed Product',
+                    'team' => null,
+                    'set' => null,
+                    'year' => null,
+                    'rarity' => null,
+                    'condition' => $listing->condition ?? 'mint',
+                    'price' => number_format($listing->price ?? 0, 2, ',', '.'),
+                    'card_number_in_set' => null,
+                    'is_rookie' => false,
+                    'is_autograph' => false,
+                    'is_relic' => false,
+                    'is_star' => false,
+                    'is_legend' => false,
+                    'imageUrl' => $listing->images[0] ?? null,
+                    'images' => $listing->images ?? [],
+                    'playerId' => null,
+                    'teamId' => null,
+                    'setId' => null,
+                    'brand' => null,
+                    'hasAutograph' => false,
+                    'hasRelic' => false,
+                    'gradingScore' => null,
+                    'gradingCompany' => null,
+                    'listing_type' => $listing->listing_type,
+                    'quantity' => $listing->quantity ?? 1,
+                    'description' => $listing->description ?? null
+                ];
+            }
+            
+            // Per inserzioni con cardModel (singles, bulk)
+            // Priorità alle immagini reali dalle CardListing (caricate dai giocatori)
+            $imageUrl = null;
+            if ($listing->images && is_array($listing->images) && count($listing->images) > 0) {
+                // Prendi la prima immagine dalla CardListing
+                $firstImage = $listing->images[0];
+                // Se l'immagine non ha già il prefisso /storage/, aggiungilo
+                if (!str_starts_with($firstImage, '/storage/') && !str_starts_with($firstImage, 'http')) {
+                    $imageUrl = '/storage/' . $firstImage;
+                } else {
+                    $imageUrl = $firstImage;
+                }
+            } elseif ($cardModel->image_url) {
+                // Fallback all'immagine del CardModel solo se non ci sono immagini nella CardListing
+                $imageUrl = $cardModel->image_url;
+            }
+            
             return [
-                'id' => $cardModel->id,
+                'id' => $cardModel->id, // ID del CardModel per compatibilità con il frontend
+                'listing_id' => $listing->id, // ID della CardListing
                 'name' => $cardModel->player->name ?? 'Unknown Player',
                 'team' => $cardModel->team->name ?? 'Unknown Team',
                 'set' => $cardModel->cardSet->name ?? 'Unknown Set',
                 'year' => $cardModel->year,
                 'rarity' => $cardModel->rarity,
-                'condition' => 'excellent', // Default condition since we don't have card_listings yet
-                'price' => number_format($cardModel->price ?? 0, 2, ',', '.'), // Formato italiano: punto per migliaia, virgola per decimali
+                'condition' => $listing->condition ?? 'excellent',
+                'price' => number_format($listing->price ?? 0, 2, ',', '.'), // Formato italiano: punto per migliaia, virgola per decimali
+                'quantity' => $listing->quantity ?? 1,
                 'card_number_in_set' => $cardModel->card_number_in_set,
+                'card_number' => $cardModel->card_number,
                 'is_rookie' => $cardModel->is_rookie ?? false,
                 'is_autograph' => $cardModel->is_autograph ?? false,
                 'is_relic' => $cardModel->is_relic ?? false,
                 'is_star' => $cardModel->is_star ?? false,
                 'is_legend' => $cardModel->is_legend ?? false,
-                'imageUrl' => $cardModel->image_url,
+                'imageUrl' => $imageUrl,
+                'images' => $listing->images ?? [], // Array completo delle immagini dalla CardListing
                 'playerId' => $cardModel->player_id,
                 'teamId' => $cardModel->team_id,
                 'setId' => $cardModel->card_set_id,
                 'brand' => $cardModel->cardSet->brand ?? null,
                 'hasAutograph' => $cardModel->is_autograph ?? false,
                 'hasRelic' => $cardModel->is_relic ?? false,
+                // Dati di grading dalla CardListing (non dal CardModel!)
+                'grading_company_id' => $listing->grading_company_id ?? null,
+                'grading_company' => $listing->gradingCompany ? [
+                    'id' => $listing->gradingCompany->id,
+                    'name' => $listing->gradingCompany->name,
+                    'slug' => $listing->gradingCompany->slug,
+                ] : null,
+                'card_condition_score' => $listing->card_condition_score ?? null,
+                'autograph_condition_score' => $listing->autograph_condition_score ?? null,
+                // Manteniamo per retrocompatibilità (ma questi sono del CardModel, non della CardListing)
                 'gradingScore' => $cardModel->grading_score,
                 'gradingCompany' => $cardModel->gradingCompany->name ?? null
             ];
-        });
+        })->filter(); // Rimuove valori null
 
         return response()->json([
             'data' => $transformedProducts,
-            'current_page' => $products->currentPage(),
-            'last_page' => $products->lastPage(),
-            'per_page' => $products->perPage(),
-            'total' => $products->total(),
+            'current_page' => $listings->currentPage(),
+            'last_page' => $listings->lastPage(),
+            'per_page' => $listings->perPage(),
+            'total' => $listings->total(),
             'has_more_pages' => $products->hasMorePages()
         ]);
     }
