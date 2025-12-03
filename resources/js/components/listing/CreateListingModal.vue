@@ -3086,6 +3086,22 @@ const initializeEditMode = async (listing) => {
   try {
     console.log('🔄 Inizializzazione modalità edit con listing:', listing)
     
+    // Determina il tipo di listing (sealed-pack, sealed-box, lot, single, bulk)
+    const listingType = listing.listing_type || 'single'
+    
+    // Imposta la modalità corretta
+    if (listingType === 'sealed-pack') {
+      selectedMode.value = 'sealed-pack'
+    } else if (listingType === 'sealed-box') {
+      selectedMode.value = 'sealed-box'
+    } else if (listingType === 'lot') {
+      selectedMode.value = 'lot'
+    } else if (listingType === 'bulk') {
+      selectedMode.value = 'bulk'
+    } else {
+      selectedMode.value = 'single'
+    }
+    
     // Imposta i dati dell'inserzione
     listingData.value = {
       card_model_id: listing.card_model_id,
@@ -3102,47 +3118,78 @@ const initializeEditMode = async (listing) => {
       is_negotiable: listing.is_negotiable
     }
     
-    // Imposta la carta selezionata con fallback a fetch dettagli
-    selectedCardModel.value = listing.card_model
-    if (!selectedCardModel.value || !selectedCardModel.value.player || !selectedCardModel.value.card_set) {
-      try {
-        const cmId = listing.card_model_id || listing.card_model?.id
-        if (cmId) {
-          const resp = await fetch(`/api/card-models/${cmId}`)
-          if (resp.ok) {
-            const cmData = await resp.json()
-            selectedCardModel.value = cmData.data || cmData
-          }
-        }
-      } catch (e) {
-        console.error('❌ Errore caricamento dettagli card model:', e)
-      }
-    }
-    
-    // Imposta la categoria basata sulla carta
-    if (listing.card_model?.category?.name) {
-      const categoryName = listing.card_model.category.name.toLowerCase()
-      if (categoryName.includes('calcio') || categoryName.includes('football')) {
+    // Per sealed-pack, sealed-box e lot, non c'è cardModel
+    if (listingType === 'sealed-pack' || listingType === 'sealed-box' || listingType === 'lot') {
+      // Imposta i dati specifici per sealed-pack/box/lot
+      listingData.value.title = listing.title || listing.name || (listingType === 'sealed-pack' ? 'Sealed Pack' : (listingType === 'sealed-box' ? 'Sealed Box' : 'Lot'))
+      
+      // Imposta la categoria dalla route o dal listing
+      // Per sealed-pack/box/lot, la categoria potrebbe essere determinata dalla route o dal listing
+      if (listing.category) {
+        selectedCategory.value = listing.category === 'calcio' ? 'football' : (listing.category === 'basketball' ? 'basketball' : 'pokemon')
+      } else {
+        // Default a football se non specificato
         selectedCategory.value = 'football'
-      } else if (categoryName.includes('basketball') || categoryName.includes('basket')) {
-        selectedCategory.value = 'basketball'
-      } else if (categoryName.includes('pokemon')) {
-        selectedCategory.value = 'pokemon'
       }
-    }
-    
-    // Imposta i filtri con i dati della carta per compatibilità
-    filters.value = {
-      ...filters.value,
-      condition: listing.condition,
-      brand: selectedCardModel.value?.card_set?.brand || selectedCardModel.value?.brand || '',
-      rarity: selectedCardModel.value?.rarity || '',
-      year: selectedCardModel.value?.year || selectedCardModel.value?.card_set?.year || '',
-        number: selectedCardModel.value?.card_number_in_set || '',
-        player: selectedCardModel.value?.player?.id || '',
-      playerSearch: selectedCardModel.value?.player?.display_name || selectedCardModel.value?.player?.name || '',
-      team: selectedCardModel.value?.team?.id || '',
-      set: selectedCardModel.value?.card_set?.id || ''
+      
+      // Imposta i filtri per sealed-pack/box/lot (Set, Year, Brand)
+      // Questi vengono popolati dal form quando l'utente li ha inseriti
+      // Prova a recuperare set_id, year e brand dal listing o dal card_set se presente
+      filters.value = {
+        ...filters.value,
+        set: listing.card_set_id || listing.set_id || listing.card_set?.id || '',
+        year: listing.year || listing.card_set?.year || '',
+        brand: listing.brand || listing.card_set?.brand || ''
+      }
+      
+      // Non c'è cardModel per sealed-pack/box/lot
+      selectedCardModel.value = null
+    } else {
+      // Per inserzioni con cardModel (singles, bulk)
+      // Imposta la carta selezionata con fallback a fetch dettagli
+      selectedCardModel.value = listing.card_model
+      if (!selectedCardModel.value || !selectedCardModel.value.player || !selectedCardModel.value.card_set) {
+        try {
+          const cmId = listing.card_model_id || listing.card_model?.id
+          if (cmId) {
+            const resp = await fetch(`/api/card-models/${cmId}`)
+            if (resp.ok) {
+              const cmData = await resp.json()
+              selectedCardModel.value = cmData.data || cmData
+            }
+          }
+        } catch (e) {
+          console.error('❌ Errore caricamento dettagli card model:', e)
+        }
+      }
+      
+      // Imposta la categoria basata sulla carta
+      if (listing.card_model?.category?.name) {
+        const categoryName = listing.card_model.category.name.toLowerCase()
+        if (categoryName.includes('calcio') || categoryName.includes('football')) {
+          selectedCategory.value = 'football'
+        } else if (categoryName.includes('basketball') || categoryName.includes('basket')) {
+          selectedCategory.value = 'basketball'
+        } else if (categoryName.includes('pokemon')) {
+          selectedCategory.value = 'pokemon'
+        }
+      }
+      
+      // Imposta i filtri con i dati della carta per compatibilità (solo per singles/bulk)
+      if (selectedCardModel.value) {
+        filters.value = {
+          ...filters.value,
+          condition: listing.condition,
+          brand: selectedCardModel.value?.card_set?.brand || selectedCardModel.value?.brand || '',
+          rarity: selectedCardModel.value?.rarity || '',
+          year: selectedCardModel.value?.year || selectedCardModel.value?.card_set?.year || '',
+          number: selectedCardModel.value?.card_number_in_set || '',
+          player: selectedCardModel.value?.player?.id || '',
+          playerSearch: selectedCardModel.value?.player?.display_name || selectedCardModel.value?.player?.name || '',
+          team: selectedCardModel.value?.team?.id || '',
+          set: selectedCardModel.value?.card_set?.id || ''
+        }
+      }
     }
     
     
@@ -3189,12 +3236,15 @@ const initializeEditMode = async (listing) => {
       console.log('📸 Immagini esistenti caricate:', cardImages.value)
     }
     
-    // Vai direttamente al primo step (selezione carta)
+    // Vai direttamente al primo step (selezione carta per single/bulk, filtri per sealed-pack/box/lot)
     currentStep.value = 1
-    selectedMode.value = 'single'
     
+    // Per sealed-pack/box/lot, vai direttamente allo step 2 (immagini e dettagli)
+    if (listingType === 'sealed-pack' || listingType === 'sealed-box' || listingType === 'lot') {
+      currentStep.value = 2
+    }
     
-    // Dispatch event per popolare i filtri nel componente ChainedFilters
+    // Dispatch event per popolare i filtri nel componente ChainedFilters (solo per single/bulk)
     if (selectedCardModel.value) {
       const brandFromSet = selectedCardModel.value.card_set?.brand
       
@@ -3255,12 +3305,264 @@ const initializeEditMode = async (listing) => {
   }
 }
 
+// Aggiorna sealed-pack listing
+const updateSealedPackListing = async () => {
+  try {
+    isSubmitting.value = true
+    console.log('💾 Aggiornamento sealed-pack listing:', props.editingListing.id)
+    
+    const formData = new FormData()
+    
+    // Tipo di inserzione
+    formData.append('listing_type', 'sealed-pack')
+    
+    // Categoria
+    formData.append('category', selectedCategory.value)
+    
+    // Filtri selezionati
+    if (filters.value.set) {
+      formData.append('card_set_id', filters.value.set)
+    }
+    if (filters.value.year) {
+      formData.append('year', filters.value.year)
+    }
+    if (filters.value.brand) {
+      formData.append('brand', filters.value.brand)
+    }
+    
+    // Prezzo e quantità
+    const normalizedPrice = normalizePrice(listingData.value.price)
+    formData.append('price', normalizedPrice.toString())
+    formData.append('quantity', listingData.value.quantity.toString())
+    
+    // Condizione
+    formData.append('condition', listingData.value.condition || 'mint')
+    formData.append('language', listingData.value.language || 'italian')
+    
+    // Immagini - aggiungi solo le nuove immagini
+    const newImages = cardImages.value.filter(image => image && image.file && !image.isExisting)
+    newImages.forEach((img) => {
+      if (img && img.file) {
+        formData.append('images[]', img.file)
+      }
+    })
+    
+    // Zone di spedizione
+    selectedShippingZones.value.forEach(zoneId => {
+      const numericId = parseInt(zoneId, 10)
+      if (!isNaN(numericId)) {
+        formData.append('shipping_zones[]', numericId.toString())
+      }
+    })
+    
+    formData.append('_method', 'PUT')
+    
+    const token = localStorage.getItem('token')
+    const response = await axios.post(`/api/listings/${props.editingListing.id}`, formData, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    
+    if (response.data.success) {
+      emit('updated', response.data.data)
+      closeModal()
+    } else {
+      throw new Error(response.data.message || 'Errore nell\'aggiornamento dell\'inserzione')
+    }
+  } catch (error) {
+    console.error('❌ Errore aggiornamento sealed-pack:', error)
+    if (error.response?.data?.errors) {
+      const errorMessages = Object.entries(error.response.data.errors)
+        .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+        .join('\n')
+      alert(`Errore di validazione:\n\n${errorMessages}`)
+    } else {
+      alert(`Errore: ${error.response?.data?.message || error.message || 'Errore nell\'aggiornamento dell\'inserzione'}`)
+    }
+    throw error
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+// Aggiorna sealed-box listing
+const updateSealedBoxListing = async () => {
+  try {
+    isSubmitting.value = true
+    console.log('💾 Aggiornamento sealed-box listing:', props.editingListing.id)
+    
+    const formData = new FormData()
+    
+    // Tipo di inserzione
+    formData.append('listing_type', 'sealed-box')
+    
+    // Categoria
+    formData.append('category', selectedCategory.value)
+    
+    // Filtri selezionati
+    if (filters.value.set) {
+      formData.append('card_set_id', filters.value.set)
+    }
+    if (filters.value.year) {
+      formData.append('year', filters.value.year)
+    }
+    if (filters.value.brand) {
+      formData.append('brand', filters.value.brand)
+    }
+    
+    // Prezzo e quantità
+    const normalizedPrice = normalizePrice(listingData.value.price)
+    formData.append('price', normalizedPrice.toString())
+    formData.append('quantity', listingData.value.quantity.toString())
+    
+    // Condizione
+    formData.append('condition', listingData.value.condition || 'mint')
+    formData.append('language', listingData.value.language || 'italian')
+    
+    // Immagini - aggiungi solo le nuove immagini
+    const newImages = cardImages.value.filter(image => image && image.file && !image.isExisting)
+    newImages.forEach((img) => {
+      if (img && img.file) {
+        formData.append('images[]', img.file)
+      }
+    })
+    
+    // Zone di spedizione
+    selectedShippingZones.value.forEach(zoneId => {
+      const numericId = parseInt(zoneId, 10)
+      if (!isNaN(numericId)) {
+        formData.append('shipping_zones[]', numericId.toString())
+      }
+    })
+    
+    formData.append('_method', 'PUT')
+    
+    const token = localStorage.getItem('token')
+    const response = await axios.post(`/api/listings/${props.editingListing.id}`, formData, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    
+    if (response.data.success) {
+      emit('updated', response.data.data)
+      closeModal()
+    } else {
+      throw new Error(response.data.message || 'Errore nell\'aggiornamento dell\'inserzione')
+    }
+  } catch (error) {
+    console.error('❌ Errore aggiornamento sealed-box:', error)
+    if (error.response?.data?.errors) {
+      const errorMessages = Object.entries(error.response.data.errors)
+        .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+        .join('\n')
+      alert(`Errore di validazione:\n\n${errorMessages}`)
+    } else {
+      alert(`Errore: ${error.response?.data?.message || error.message || 'Errore nell\'aggiornamento dell\'inserzione'}`)
+    }
+    throw error
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+// Aggiorna lot listing
+const updateLotListing = async () => {
+  try {
+    isSubmitting.value = true
+    console.log('💾 Aggiornamento lot listing:', props.editingListing.id)
+    
+    const formData = new FormData()
+    
+    // Tipo di inserzione
+    formData.append('listing_type', 'lot')
+    
+    // Categoria
+    formData.append('category', selectedCategory.value)
+    
+    // Titolo e descrizione
+    formData.append('title', listingData.value.title || 'Lot')
+    formData.append('description', listingData.value.description || '')
+    
+    // Prezzo
+    const normalizedPrice = normalizePrice(listingData.value.price)
+    formData.append('price', normalizedPrice.toString())
+    formData.append('quantity', listingData.value.quantity?.toString() || '1')
+    
+    // Condizione
+    formData.append('condition', listingData.value.condition || 'mint')
+    formData.append('language', listingData.value.language || 'italian')
+    
+    // Immagini - aggiungi solo le nuove immagini
+    const newImages = cardImages.value.filter(image => image && image.file && !image.isExisting)
+    newImages.forEach((img) => {
+      if (img && img.file) {
+        formData.append('images[]', img.file)
+      }
+    })
+    
+    // Zone di spedizione
+    selectedShippingZones.value.forEach(zoneId => {
+      const numericId = parseInt(zoneId, 10)
+      if (!isNaN(numericId)) {
+        formData.append('shipping_zones[]', numericId.toString())
+      }
+    })
+    
+    formData.append('_method', 'PUT')
+    
+    const token = localStorage.getItem('token')
+    const response = await axios.post(`/api/listings/${props.editingListing.id}`, formData, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    
+    if (response.data.success) {
+      emit('updated', response.data.data)
+      closeModal()
+    } else {
+      throw new Error(response.data.message || 'Errore nell\'aggiornamento dell\'inserzione')
+    }
+  } catch (error) {
+    console.error('❌ Errore aggiornamento lot:', error)
+    if (error.response?.data?.errors) {
+      const errorMessages = Object.entries(error.response.data.errors)
+        .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+        .join('\n')
+      alert(`Errore di validazione:\n\n${errorMessages}`)
+    } else {
+      alert(`Errore: ${error.response?.data?.message || error.message || 'Errore nell\'aggiornamento dell\'inserzione'}`)
+    }
+    throw error
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
 // Aggiorna inserzione esistente
 const updateSingleListing = async () => {
   try {
     isSubmitting.value = true
     console.log('💾 Aggiornamento inserzione:', props.editingListing.id)
     
+    // Per sealed-pack, sealed-box e lot, usa metodi specifici
+    if (selectedMode.value === 'sealed-pack') {
+      await updateSealedPackListing()
+      return
+    } else if (selectedMode.value === 'sealed-box') {
+      await updateSealedBoxListing()
+      return
+    } else if (selectedMode.value === 'lot') {
+      await updateLotListing()
+      return
+    }
+    
+    // Per single e bulk, usa il metodo standard
     // Usa FormData per supportare le immagini
     const formData = new FormData()
     
