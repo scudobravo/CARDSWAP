@@ -49,8 +49,24 @@ if [ "$ACTIVE_CARDS" -gt 0 ]; then
     echo ""
 fi
 
-# 3. Elimina solo le carte senza inserzioni attive
-echo -e "${YELLOW}🗑️  Step 3: Eliminazione carte senza inserzioni attive...${NC}"
+# 3. Salva gli ID delle carte con inserzioni attive prima dell'eliminazione
+echo -e "${YELLOW}💾 Step 3a: Salvataggio ID carte con inserzioni attive...${NC}"
+SAVED_IDS=$(php artisan tinker --execute="
+\$ids = \App\Models\CardModel::whereHas('cardListings', function(\$q) {
+    \$q->where('status', 'active');
+})->pluck('id')->toArray();
+echo implode(',', \$ids);
+" 2>/dev/null | grep -E '^[0-9,]*$' || echo "")
+
+if [ -n "$SAVED_IDS" ]; then
+    echo -e "${GREEN}✅ ID carte salvati: $SAVED_IDS${NC}"
+else
+    echo -e "${YELLOW}⚠️  Nessuna carta con inserzioni attive trovata${NC}"
+fi
+echo ""
+
+# 3b. Elimina solo le carte senza inserzioni attive
+echo -e "${YELLOW}🗑️  Step 3b: Eliminazione carte senza inserzioni attive...${NC}"
 php artisan tinker --execute="
 DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 \$deleted = \App\Models\CardModel::whereDoesntHave('cardListings', function(\$q) {
@@ -96,7 +112,7 @@ fi
 
 # Aggiungi altri CSV qui se necessario
 
-# 5. Verifica risultati
+# 5. Verifica risultati e preservazione carte utenti
 echo -e "${YELLOW}📊 Step 5: Verifica risultati...${NC}"
 php artisan tinker --execute="
 \$total = \App\Models\CardModel::count();
@@ -113,6 +129,31 @@ echo 'Carte con card_number_in_set: ' . \$withNumbered . PHP_EOL;
 echo 'Carte senza nome: ' . \$withoutName . PHP_EOL;
 echo 'Carte con inserzioni attive: ' . \$withActiveListings . PHP_EOL;
 " 2>/dev/null
+
+echo ""
+
+# 5b. Verifica che le carte degli utenti siano ancora presenti
+if [ -n "$SAVED_IDS" ]; then
+    echo -e "${YELLOW}🔍 Step 5b: Verifica preservazione carte utenti...${NC}"
+    PRESERVED=$(php artisan tinker --execute="
+    \$ids = explode(',', '$SAVED_IDS');
+    \$preserved = 0;
+    foreach (\$ids as \$id) {
+        if (\App\Models\CardModel::find(\$id)) {
+            \$preserved++;
+        }
+    }
+    echo \$preserved . '/' . count(\$ids);
+    " 2>/dev/null | grep -E '^[0-9]+/[0-9]+$' || echo "0/0")
+    
+    if [ "$PRESERVED" != "0/0" ]; then
+        echo -e "${GREEN}✅ Carte utenti preservate: $PRESERVED${NC}"
+    else
+        echo -e "${RED}❌ ERRORE: Carte utenti non trovate!${NC}"
+        exit 1
+    fi
+    echo ""
+fi
 
 echo ""
 echo -e "${GREEN}✅ Re-importazione completata!${NC}"

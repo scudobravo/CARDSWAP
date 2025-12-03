@@ -785,8 +785,22 @@ class ImportFootballExcelCards extends Command
             $uniqueHash = substr(md5($uniqueData), 0, 8);
             $uniqueSlug = $shortSlug . '-' . $uniqueHash;
             
+            // Verifica se esiste già una carta con questo slug che ha inserzioni attive
+            $existingCard = CardModel::where('slug', $uniqueSlug)
+                ->whereHas('cardListings', function ($q) {
+                    $q->where('status', 'active');
+                })
+                ->first();
+            
+            // Se la carta esiste e ha inserzioni attive, NON la aggiorniamo per preservare i dati dell'utente
+            if ($existingCard) {
+                // Salta questa carta per preservare i dati dell'utente
+                return;
+            }
+            
             // Usa updateOrCreate invece di firstOrCreate per aggiornare le carte esistenti
             // Questo assicura che i dati vengano sempre aggiornati con i valori corretti dal CSV
+            // MA solo se la carta non ha inserzioni attive (controllato sopra)
             CardModel::updateOrCreate(
                 ['slug' => $uniqueSlug],
                 [
