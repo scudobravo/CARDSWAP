@@ -1838,8 +1838,15 @@ watch(() => localFilters.value.team, () => {
 })
 
 // Watch for set filter changes to update cards
-watch(() => localFilters.value.set, () => {
-  console.log('🔄 Set filter cambiato:', localFilters.value.set)
+watch(() => localFilters.value.set, async (newSetId) => {
+  console.log('🔄 Set filter cambiato:', newSetId)
+  
+  // Se abbiamo un set ID ma non l'oggetto completo, ripristina l'entità
+  if (newSetId && !selectedCardSet.value) {
+    console.log('🔄 Set ID presente ma oggetto non popolato, ripristino...')
+    await restoreSelectedEntities()
+  }
+  
   filterCardsBySet()
   // IMPORTANTE: Carica le opzioni disponibili per l'anno quando viene selezionato un set
   // Questo aggiorna il dropdown Year con le annate disponibili per il set selezionato
