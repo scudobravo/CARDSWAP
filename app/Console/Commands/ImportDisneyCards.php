@@ -103,7 +103,15 @@ class ImportDisneyCards extends Command
                     $this->processRow($row, $category);
                     $processed++;
                 } catch (\Exception $e) {
-                    $this->warn("⚠️  Errore: " . $e->getMessage());
+                    $cardName = $row['Name'] ?? 'Unknown';
+                    $cardNumber = $row['Number'] ?? 'Unknown';
+                    $this->error("❌ Errore processando riga (Name: {$cardName}, Number: {$cardNumber}): " . $e->getMessage());
+                    \Log::error("ImportDisneyCards - Errore riga", [
+                        'name' => $cardName,
+                        'number' => $cardNumber,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
                     $skipped++;
                 }
             }
@@ -146,27 +154,41 @@ class ImportDisneyCards extends Command
         if (!empty(trim($row['QUAD'] ?? ''))) $attributes[] = 'quad';
         if (!empty($numbered)) $attributes[] = 'numbered';
 
-        CardModel::create([
-            'category_id' => $category->id,
-            'card_set_id' => $cardSet->id,
-            'player_id' => null,
-            'team_id' => null,
-            'league_id' => null,
+        // Crea uno slug univoco basato sui dati della carta
+        $uniqueData = json_encode([
             'name' => $cardName,
-            'slug' => Str::slug($cardName) . '-' . uniqid(),
-            'set_name' => $cardSet->name,
-            'year' => $this->extractYear($year),
-            'rarity' => $this->mapRarity($rarity),
-            'card_number' => $cardNumber,
-            'card_number_in_set' => !empty($numbered) ? $numbered : null,
-            'is_rookie' => false,
-            'is_star' => false,
-            'is_legend' => false,
-            'is_autograph' => !empty(trim($row['AUTOGRAPH'] ?? '')),
-            'is_relic' => !empty(trim($row['RELIC'] ?? '')),
-            'attributes' => $attributes,
-            'is_active' => true,
+            'set' => $cardSet->name,
+            'number' => $cardNumber,
+            'rarity' => $rarity,
+            'numbered' => $numbered,
         ]);
+        $uniqueHash = substr(md5($uniqueData), 0, 8);
+        $uniqueSlug = Str::slug($cardName) . '-' . $uniqueHash;
+        
+        // Usa updateOrCreate invece di create per aggiornare le carte esistenti
+        CardModel::updateOrCreate(
+            ['slug' => $uniqueSlug],
+            [
+                'category_id' => $category->id,
+                'card_set_id' => $cardSet->id,
+                'player_id' => null,
+                'team_id' => null,
+                'league_id' => null,
+                'name' => $cardName,
+                'set_name' => $cardSet->name,
+                'year' => $this->extractYear($year),
+                'rarity' => $this->mapRarity($rarity),
+                'card_number' => $cardNumber,
+                'card_number_in_set' => !empty($numbered) ? $numbered : null,
+                'is_rookie' => false,
+                'is_star' => false,
+                'is_legend' => false,
+                'is_autograph' => !empty(trim($row['AUTOGRAPH'] ?? '')),
+                'is_relic' => !empty(trim($row['RELIC'] ?? '')),
+                'attributes' => $attributes,
+                'is_active' => true,
+            ]
+        );
     }
 
     private function getOrCreateCardSet($brand, $setName, $year, $category)

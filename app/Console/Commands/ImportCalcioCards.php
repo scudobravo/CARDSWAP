@@ -267,7 +267,15 @@ class ImportCalcioCards extends Command
                     $this->processCardRow($row, $category, $dryRun);
                     $processed++;
                 } catch (\Exception $e) {
-                    $this->warn("⚠️  Errore processando riga: " . $e->getMessage());
+                    $playerName = $row['Player'] ?? 'Unknown';
+                    $cardNumber = $row['Numero'] ?? 'Unknown';
+                    $this->error("❌ Errore processando riga (Player: {$playerName}, Numero: {$cardNumber}): " . $e->getMessage());
+                    \Log::error("ImportCalcioCards - Errore riga", [
+                        'player' => $playerName,
+                        'numero' => $cardNumber,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
                     $skipped++;
                 }
             }
@@ -541,27 +549,42 @@ class ImportCalcioCards extends Command
         if (!empty(trim($row['MULTI AUTOGRAPH QUAD'] ?? ''))) $attributes[] = 'multi_autograph_quad';
         
         if (!$dryRun) {
-            CardModel::create([
-                'category_id' => $category->id,
-                'card_set_id' => $cardSet->id,
-                'player_id' => $player->id,
-                'team_id' => $team->id,
-                'league_id' => $league->id,
-                'name' => $cardName,
-                'slug' => Str::slug($cardName),
-                'set_name' => $cardSet->name,
-                'year' => $this->extractYear($year),
-                'rarity' => $mappedRarity,
-                'card_number' => $cardNumber,
-                'card_number_in_set' => !empty($numbered) ? $numbered : null,
-                'is_rookie' => $isRookie,
-                'is_star' => str_contains($rarity, 'Star'),
-                'is_legend' => str_contains($rarity, 'Legend'),
-                'is_autograph' => str_contains($rarity, 'Autograph') || str_contains($rarity, 'Auto'),
-                'is_relic' => str_contains($rarity, 'Relic') || str_contains($rarity, 'Patch'),
-                'attributes' => $attributes,
-                'is_active' => true,
+            // Crea uno slug univoco basato sui dati della carta
+            $uniqueData = json_encode([
+                'player' => $playerName,
+                'team' => $team->name,
+                'set' => $cardSet->name,
+                'number' => $cardNumber,
+                'rarity' => $rarity,
+                'numbered' => $numbered,
             ]);
+            $uniqueHash = substr(md5($uniqueData), 0, 8);
+            $uniqueSlug = Str::slug($cardName) . '-' . $uniqueHash;
+            
+            // Usa updateOrCreate invece di create per aggiornare le carte esistenti
+            CardModel::updateOrCreate(
+                ['slug' => $uniqueSlug],
+                [
+                    'category_id' => $category->id,
+                    'card_set_id' => $cardSet->id,
+                    'player_id' => $player->id,
+                    'team_id' => $team->id,
+                    'league_id' => $league->id,
+                    'name' => $cardName,
+                    'set_name' => $cardSet->name,
+                    'year' => $this->extractYear($year),
+                    'rarity' => $mappedRarity,
+                    'card_number' => $cardNumber,
+                    'card_number_in_set' => !empty($numbered) ? $numbered : null,
+                    'is_rookie' => $isRookie,
+                    'is_star' => str_contains($rarity, 'Star'),
+                    'is_legend' => str_contains($rarity, 'Legend'),
+                    'is_autograph' => str_contains($rarity, 'Autograph') || str_contains($rarity, 'Auto'),
+                    'is_relic' => str_contains($rarity, 'Relic') || str_contains($rarity, 'Patch'),
+                    'attributes' => $attributes,
+                    'is_active' => true,
+                ]
+            );
         }
     }
 

@@ -317,12 +317,35 @@ class ImportFootballExcelCards extends Command
             return;
         }
 
-        DB::transaction(function () use ($chunk, $category, $startRowNumber) {
-            foreach ($chunk as $index => $row) {
-                $rowNumber = $startRowNumber + $index + 1;
+        $successCount = 0;
+        $errorCount = 0;
+        $skippedCount = 0;
+
+        foreach ($chunk as $index => $row) {
+            $rowNumber = $startRowNumber + $index + 1;
+            try {
+                DB::beginTransaction();
                 $this->processCardRow($row, $category, false, $rowNumber);
+                DB::commit();
+                $successCount++;
+            } catch (\Exception $e) {
+                DB::rollBack();
+                $errorCount++;
+                $playerName = $row['Player'] ?? 'Unknown';
+                $cardNumber = $row['Numero'] ?? 'Unknown';
+                $this->error("❌ Errore alla riga {$rowNumber} (Player: {$playerName}, Numero: {$cardNumber}): " . $e->getMessage());
+                \Log::error("ImportFootballExcelCards - Errore riga {$rowNumber}", [
+                    'player' => $playerName,
+                    'numero' => $cardNumber,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
             }
-        });
+        }
+
+        if ($errorCount > 0 || $skippedCount > 0) {
+            $this->warn("⚠️  Chunk completato: {$successCount} successi, {$errorCount} errori, {$skippedCount} saltati");
+        }
     }
 
     /**
@@ -651,7 +674,9 @@ class ImportFootballExcelCards extends Command
             $uniqueHash = substr(md5($uniqueData), 0, 8);
             $uniqueSlug = $shortSlug . '-' . $uniqueHash;
             
-            CardModel::firstOrCreate(
+            // Usa updateOrCreate invece di firstOrCreate per aggiornare le carte esistenti
+            // Questo assicura che i dati vengano sempre aggiornati con i valori corretti dal CSV
+            CardModel::updateOrCreate(
                 ['slug' => $uniqueSlug],
                 [
                     'category_id' => $category->id,
