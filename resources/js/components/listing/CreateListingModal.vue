@@ -2329,7 +2329,14 @@ const createSealedPackListing = async () => {
   // Categoria
   formData.append('category', selectedCategory.value)
   
-  // Filtri selezionati
+  // Filtri selezionati - log per debug
+  console.log('📋 Filtri al momento della creazione sealed-pack:', {
+    set: filters.value.set,
+    year: filters.value.year,
+    brand: filters.value.brand,
+    category: selectedCategory.value
+  })
+  
   if (filters.value.set) {
     formData.append('card_set_id', filters.value.set)
   }
@@ -2418,7 +2425,14 @@ const createSealedBoxListing = async () => {
   // Categoria
   formData.append('category', selectedCategory.value)
   
-  // Filtri selezionati
+  // Filtri selezionati - log per debug
+  console.log('📋 Filtri al momento della creazione sealed-pack:', {
+    set: filters.value.set,
+    year: filters.value.year,
+    brand: filters.value.brand,
+    category: selectedCategory.value
+  })
+  
   if (filters.value.set) {
     formData.append('card_set_id', filters.value.set)
   }
