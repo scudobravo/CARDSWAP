@@ -1036,11 +1036,20 @@ class FootballFilterController extends Controller
                 'seller'
             ])
             ->where('status', 'active')
-            ->whereHas('cardModel', function($q) {
-                $q->where('is_active', true)
-                  ->whereHas('category', function($catQ) {
-                      $catQ->where('slug', 'calcio');
-                  });
+            ->where(function($q) {
+                // Per inserzioni con cardModel (singles, bulk, sealed-pack, sealed-box)
+                $q->whereHas('cardModel', function($cardModelQ) {
+                    $cardModelQ->where('is_active', true)
+                      ->whereHas('category', function($catQ) {
+                          $catQ->where('slug', 'calcio');
+                      });
+                })
+                // Per lotti (che non hanno cardModel), includili sempre
+                // La categoria verrà filtrata più avanti se necessario
+                ->orWhere(function($lotQ) {
+                    $lotQ->where('listing_type', 'lot')
+                         ->whereNull('card_model_id');
+                });
             });
 
         // Per sealed packs/boxes, applica solo Set, Year e Brand
