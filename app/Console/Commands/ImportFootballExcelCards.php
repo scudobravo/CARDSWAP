@@ -11,6 +11,7 @@ use App\Models\CardSet;
 use App\Models\CardModel;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ImportFootballExcelCards extends Command
 {
@@ -275,7 +276,7 @@ class ImportFootballExcelCards extends Command
         $processedCount = 0;
         $chunk = [];
 
-        while (($row = fgetcsv($handle)) !== false) {
+        while (($row = fgetcsv($handle, 0, ',', '"', '\\')) !== false) {
             $rowCount++;
             
             if ($limit && $rowCount > $limit) {
@@ -286,6 +287,15 @@ class ImportFootballExcelCards extends Command
             // Assicurati che il numero di valori corrisponda al numero di colonne
             $row = array_pad($row, count($header), '');
             $rowData = array_combine($header, $row);
+            
+            // Valida e correggi i dati della riga
+            $rowData = $this->validateAndFixRowData($rowData, $rowCount);
+            
+            // Salta la riga se non è valida
+            if ($rowData === null) {
+                continue;
+            }
+            
             $chunk[] = $rowData;
 
             // Processa il chunk quando raggiunge la dimensione
@@ -305,6 +315,90 @@ class ImportFootballExcelCards extends Command
 
         fclose($handle);
         $this->info("📊 Totale righe processate: {$processedCount}");
+    }
+
+    /**
+     * Valida e corregge i dati di una riga CSV
+     * Restituisce null se la riga non è valida e deve essere saltata
+     */
+    private function validateAndFixRowData($rowData, $rowNumber)
+    {
+        // Verifica che i campi obbligatori esistano
+        $requiredFields = ['Player', 'Numero', 'BRAND', 'SET'];
+        foreach ($requiredFields as $field) {
+            if (!isset($rowData[$field])) {
+                $this->warn("⚠️  Riga {$rowNumber}: Campo obbligatorio '{$field}' mancante - riga saltata");
+                Log::warning("ImportFootballExcelCards - Campo mancante", [
+                    'row' => $rowNumber,
+                    'field' => $field,
+                    'data' => $rowData
+                ]);
+                return null;
+            }
+        }
+        
+        // Verifica che il campo "Numero" non contenga l'intera riga CSV (problema di parsing)
+        $cardNumber = trim($rowData['Numero'] ?? '');
+        $playerName = trim($rowData['Player'] ?? '');
+        
+        // Se card_number contiene virgole e sembra essere l'intera riga CSV, prova a correggere
+        if (strlen($cardNumber) > 100 && strpos($cardNumber, ',') !== false && empty($playerName)) {
+            // Prova a parsare manualmente la riga
+            $parts = str_getcsv($cardNumber, ',', '"', '\\');
+            if (count($parts) >= count($rowData)) {
+                // Ricostruisci i dati dalla riga parsata
+                $header = array_keys($rowData);
+                $correctedData = [];
+                foreach ($header as $index => $field) {
+                    $correctedData[$field] = $parts[$index] ?? '';
+                }
+                
+                // Verifica che ora abbiamo un player name valido
+                if (!empty(trim($correctedData['Player'] ?? ''))) {
+                    $this->warn("🔧 Riga {$rowNumber}: Corretto parsing CSV malformato");
+                    Log::info("ImportFootballExcelCards - Riga corretta", [
+                        'row' => $rowNumber,
+                        'original_card_number' => substr($cardNumber, 0, 100),
+                        'corrected_player' => $correctedData['Player'] ?? ''
+                    ]);
+                    return $correctedData;
+                }
+            }
+            
+            // Se non riusciamo a correggere, salta la riga
+            $this->warn("⚠️  Riga {$rowNumber}: Impossibile correggere riga CSV malformata - riga saltata");
+            Log::warning("ImportFootballExcelCards - Riga non correggibile", [
+                'row' => $rowNumber,
+                'card_number_preview' => substr($cardNumber, 0, 200)
+            ]);
+            return null;
+        }
+        
+        // Verifica che il player name non sia vuoto
+        if (empty($playerName)) {
+            $this->warn("⚠️  Riga {$rowNumber}: Player name vuoto - riga saltata");
+            Log::warning("ImportFootballExcelCards - Player name vuoto", [
+                'row' => $rowNumber,
+                'data' => $rowData
+            ]);
+            return null;
+        }
+        
+        // Verifica che il card_number non sia troppo lungo (probabilmente contiene l'intera riga)
+        if (strlen($cardNumber) > 50) {
+            // Estrai solo la prima parte prima della virgola come card_number
+            $cardNumberParts = explode(',', $cardNumber);
+            $rowData['Numero'] = trim($cardNumberParts[0]);
+            
+            $this->warn("🔧 Riga {$rowNumber}: Card number troppo lungo, estratto solo la prima parte");
+            Log::info("ImportFootballExcelCards - Card number corretto", [
+                'row' => $rowNumber,
+                'original' => substr($cardNumber, 0, 100),
+                'corrected' => $rowData['Numero']
+            ]);
+        }
+        
+        return $rowData;
     }
 
     /**
@@ -334,7 +428,7 @@ class ImportFootballExcelCards extends Command
                 $playerName = $row['Player'] ?? 'Unknown';
                 $cardNumber = $row['Numero'] ?? 'Unknown';
                 $this->error("❌ Errore alla riga {$rowNumber} (Player: {$playerName}, Numero: {$cardNumber}): " . $e->getMessage());
-                \Log::error("ImportFootballExcelCards - Errore riga {$rowNumber}", [
+                Log::error("ImportFootballExcelCards - Errore riga {$rowNumber}", [
                     'player' => $playerName,
                     'numero' => $cardNumber,
                     'error' => $e->getMessage(),
@@ -394,6 +488,23 @@ class ImportFootballExcelCards extends Command
         $brand = strtoupper(trim($row['BRAND'] ?? ''));
         $setName = trim($row['SET'] ?? '');
         $year = trim($row['YEAR'] ?? '');
+        
+        // Validazione aggiuntiva: verifica che i dati essenziali siano presenti
+        if (empty($playerName)) {
+            throw new \Exception("Player name vuoto alla riga {$rowNumber}");
+        }
+        
+        if (empty($brand) || empty($setName)) {
+            throw new \Exception("BRAND o SET vuoti alla riga {$rowNumber}");
+        }
+        
+        // Verifica che card_number non contenga l'intera riga CSV
+        if (strlen($cardNumber) > 100 && strpos($cardNumber, ',') !== false) {
+            // Se card_number contiene virgole e sembra essere l'intera riga, estrai solo la prima parte
+            $cardNumberParts = explode(',', $cardNumber);
+            $cardNumber = trim($cardNumberParts[0]);
+            $this->warn("🔧 Riga {$rowNumber}: Card number corretto (era troppo lungo)");
+        }
         
         // Campi boolean per le nuove caratteristiche
         $isAutograph = !empty(trim($row['AUTOGRAPH'] ?? ''));
