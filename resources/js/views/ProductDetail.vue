@@ -264,22 +264,36 @@
             </div>
             
             <!-- Key Information -->
-            <div class="space-y-3">
+            <!-- Per sealed-pack, sealed-box e lot, mostra informazioni diverse -->
+            <div v-if="product.listing_type && ['sealed-pack', 'sealed-box', 'lot'].includes(product.listing_type)" class="space-y-3">
               <div class="flex justify-between">
+                <span class="text-gray-600 font-gill-sans">Tipo:</span>
+                <span class="font-futura-bold text-primary">
+                  {{ product.listing_type === 'sealed-pack' ? 'Busta Sigillata' : (product.listing_type === 'sealed-box' ? 'Scatola Sigillata' : 'Lotto') }}
+                </span>
+              </div>
+              <div v-if="product.quantity" class="flex justify-between">
+                <span class="text-gray-600 font-gill-sans">Quantità:</span>
+                <span class="font-futura-bold text-primary">{{ product.quantity }}</span>
+              </div>
+            </div>
+            <!-- Per carte normali (singles, bulk) -->
+            <div v-else class="space-y-3">
+              <div v-if="product.team && product.team !== 'Team Name' && product.team !== 'Unknown Team'" class="flex justify-between">
                 <span class="text-gray-600 font-gill-sans">Team:</span>
-                <span class="font-futura-bold text-primary">{{ product.team || 'Team Name' }}</span>
+                <span class="font-futura-bold text-primary">{{ product.team }}</span>
               </div>
-              <div class="flex justify-between">
+              <div v-if="product.set_name && product.set_name !== 'Set Name'" class="flex justify-between">
                 <span class="text-gray-600 font-gill-sans">Set:</span>
-                <span class="font-futura-bold text-primary">{{ product.set_name || 'Set Name' }}</span>
+                <span class="font-futura-bold text-primary">{{ product.set_name }}</span>
               </div>
-              <div class="flex justify-between">
+              <div v-if="product.year" class="flex justify-between">
                 <span class="text-gray-600 font-gill-sans">Year:</span>
-                <span class="font-futura-bold text-primary">{{ product.year || '2024' }}</span>
+                <span class="font-futura-bold text-primary">{{ product.year }}</span>
               </div>
-              <div class="flex justify-between">
+              <div v-if="product.rarity && product.rarity !== 'Rare'" class="flex justify-between">
                 <span class="text-gray-600 font-gill-sans">Rarity:</span>
-                <span class="font-futura-bold text-primary">{{ product.rarity || 'Rare' }}{{ product.rarity_variation ? ` (${product.rarity_variation})` : '' }}</span>
+                <span class="font-futura-bold text-primary">{{ product.rarity }}{{ product.rarity_variation ? ` (${product.rarity_variation})` : '' }}</span>
               </div>
             </div>
             
@@ -842,7 +856,7 @@ const loadProductDetails = async () => {
           product.value = {
             id: listing.id,
             listing_id: listing.id,
-            name: listing.name || (listing.listing_type === 'sealed-pack' ? 'Sealed Pack' : (listing.listing_type === 'sealed-box' ? 'Sealed Box' : 'Lot')),
+            name: listing.name || listing.title || (listing.listing_type === 'sealed-pack' ? 'Sealed Pack' : (listing.listing_type === 'sealed-box' ? 'Sealed Box' : 'Lot')),
             slug: listing.slug || product.value.name?.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-'),
             team: null,
             set_name: null,
