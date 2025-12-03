@@ -632,60 +632,127 @@ class CardListingController extends Controller
         // Formatta i dati per il frontend
         $cardModel = $cardListing->cardModel;
         
-        // Genera lo slug dal nome del giocatore per URL SEO-friendly
-        $playerName = $cardModel->player->name ?? $cardModel->player_name ?? $cardModel->name ?? 'player';
-        $slug = \Illuminate\Support\Str::slug($playerName);
-        
-        $transformedData = [
-            'id' => $cardListing->id,
-            'listing_id' => $cardListing->id,
-            'card_model_id' => $cardModel->id ?? null,
-            'name' => $playerName,
-            'slug' => $slug,
-            'team' => $cardModel->team->name ?? 'Unknown Team',
-            'set_name' => $cardModel->cardSet->name ?? 'Set Name',
-            'year' => $cardModel->year ?? date('Y'),
-            'rarity' => $cardModel->rarity ?? 'Rare',
-            'price' => floatval($cardListing->price), // Restituisce il prezzo come numero, non formattato
-            // Se c'è grading, condition dovrebbe essere null, altrimenti usa il valore o 'excellent' come default
-            'condition' => $cardListing->grading_company_id ? null : ($cardListing->condition ?? 'excellent'),
-            'grading_company_id' => $cardListing->grading_company_id,
-            'grading_company' => $cardListing->gradingCompany ? [
-                'id' => $cardListing->gradingCompany->id,
-                'name' => $cardListing->gradingCompany->name,
-                'slug' => $cardListing->gradingCompany->slug,
-            ] : null,
-            'card_condition_score' => $cardListing->card_condition_score,
-            'autograph_condition_score' => $cardListing->autograph_condition_score,
-            'quantity' => $cardListing->quantity ?? 1,
-            'description' => $cardListing->description ?? $cardModel->description ?? '',
-            'images' => $images,
-            'image_url' => count($images) > 0 ? $images[0] : ($cardModel->image_url ?? null),
-            'is_autograph' => $cardModel->is_autograph ?? false,
-            'is_relic' => $cardModel->is_relic ?? false,
-            'is_rookie' => $cardModel->is_rookie ?? false,
-            'is_star' => $cardModel->is_star ?? false,
-            'is_legend' => $cardModel->is_legend ?? false,
-            'card_number' => $cardModel->card_number,
-            'card_number_in_set' => $cardModel->card_number_in_set,
-            'category' => $cardModel->category ? match($cardModel->category->slug) {
-                'calcio' => 'football',
-                'basketball' => 'basketball',
-                'pokemon' => 'pokemon',
-                default => 'football'
-            } : 'football',
-            'seller' => $cardListing->seller ? [
-                'id' => $cardListing->seller->id,
-                'name' => $cardListing->seller->name,
-                'email' => $cardListing->seller->email,
-                'total_sales' => $cardListing->seller->total_sales ?? 0,
-                'rating' => $cardListing->seller->rating ?? 0,
-            ] : null,
-            'card_model' => $cardModel,
-            'status' => $cardListing->status,
-            'created_at' => $cardListing->created_at,
-            'updated_at' => $cardListing->updated_at
-        ];
+        // Per sealed-pack, sealed-box e lot, cardModel è NULL
+        if (!$cardModel) {
+            // Genera lo slug dal titolo o dal tipo di listing
+            $title = $cardListing->title ?? ($cardListing->listing_type === 'sealed-pack' ? 'Sealed Pack' : ($cardListing->listing_type === 'sealed-box' ? 'Sealed Box' : 'Lot'));
+            $slug = \Illuminate\Support\Str::slug($title);
+            
+            $transformedData = [
+                'id' => $cardListing->id,
+                'listing_id' => $cardListing->id,
+                'card_model_id' => null,
+                'name' => $title,
+                'slug' => $slug,
+                'team' => null,
+                'set_name' => null,
+                'year' => null,
+                'rarity' => null,
+                'price' => floatval($cardListing->price),
+                'condition' => $cardListing->grading_company_id ? null : ($cardListing->condition ?? 'mint'),
+                'grading_company_id' => $cardListing->grading_company_id,
+                'grading_company' => $cardListing->gradingCompany ? [
+                    'id' => $cardListing->gradingCompany->id,
+                    'name' => $cardListing->gradingCompany->name,
+                    'slug' => $cardListing->gradingCompany->slug,
+                ] : null,
+                'autograph_condition_score' => $cardListing->autograph_condition_score,
+                'quantity' => $cardListing->quantity ?? 1,
+                'description' => $cardListing->description ?? '',
+                'images' => $images,
+                'image_url' => count($images) > 0 ? $images[0] : null,
+                'is_autograph' => false,
+                'is_relic' => false,
+                'is_rookie' => false,
+                'is_star' => false,
+                'is_legend' => false,
+                'card_number' => null,
+                'card_number_in_set' => null,
+                'category' => 'football', // Default, potrebbe essere determinato dalla categoria selezionata
+                'listing_type' => $cardListing->listing_type,
+                'seller' => $cardListing->seller ? [
+                    'id' => $cardListing->seller->id,
+                    'name' => $cardListing->seller->name,
+                    'email' => $cardListing->seller->email,
+                    'total_sales' => $cardListing->seller->total_sales ?? 0,
+                    'rating' => $cardListing->seller->rating ?? 0,
+                ] : null,
+                'card_model' => null,
+                'status' => $cardListing->status,
+                'created_at' => $cardListing->created_at,
+                'updated_at' => $cardListing->updated_at,
+                'shipping_zones' => $cardListing->shippingZones->map(function($zone) {
+                    return [
+                        'id' => $zone->id,
+                        'name' => $zone->name,
+                        'price' => $zone->price,
+                    ];
+                })->toArray()
+            ];
+        } else {
+            // Per inserzioni con cardModel (singles, bulk)
+            // Genera lo slug dal nome del giocatore per URL SEO-friendly
+            $playerName = $cardModel->player->name ?? $cardModel->player_name ?? $cardModel->name ?? 'player';
+            $slug = \Illuminate\Support\Str::slug($playerName);
+            
+            $transformedData = [
+                'id' => $cardListing->id,
+                'listing_id' => $cardListing->id,
+                'card_model_id' => $cardModel->id ?? null,
+                'name' => $playerName,
+                'slug' => $slug,
+                'team' => $cardModel->team->name ?? 'Unknown Team',
+                'set_name' => $cardModel->cardSet->name ?? 'Set Name',
+                'year' => $cardModel->year ?? date('Y'),
+                'rarity' => $cardModel->rarity ?? 'Rare',
+                'price' => floatval($cardListing->price), // Restituisce il prezzo come numero, non formattato
+                // Se c'è grading, condition dovrebbe essere null, altrimenti usa il valore o 'excellent' come default
+                'condition' => $cardListing->grading_company_id ? null : ($cardListing->condition ?? 'excellent'),
+                'grading_company_id' => $cardListing->grading_company_id,
+                'grading_company' => $cardListing->gradingCompany ? [
+                    'id' => $cardListing->gradingCompany->id,
+                    'name' => $cardListing->gradingCompany->name,
+                    'slug' => $cardListing->gradingCompany->slug,
+                ] : null,
+                'card_condition_score' => $cardListing->card_condition_score,
+                'autograph_condition_score' => $cardListing->autograph_condition_score,
+                'quantity' => $cardListing->quantity ?? 1,
+                'description' => $cardListing->description ?? $cardModel->description ?? '',
+                'images' => $images,
+                'image_url' => count($images) > 0 ? $images[0] : ($cardModel->image_url ?? null),
+                'is_autograph' => $cardModel->is_autograph ?? false,
+                'is_relic' => $cardModel->is_relic ?? false,
+                'is_rookie' => $cardModel->is_rookie ?? false,
+                'is_star' => $cardModel->is_star ?? false,
+                'is_legend' => $cardModel->is_legend ?? false,
+                'card_number' => $cardModel->card_number,
+                'card_number_in_set' => $cardModel->card_number_in_set,
+                'category' => $cardModel->category ? match($cardModel->category->slug) {
+                    'calcio' => 'football',
+                    'basketball' => 'basketball',
+                    'pokemon' => 'pokemon',
+                    default => 'football'
+                } : 'football',
+                'seller' => $cardListing->seller ? [
+                    'id' => $cardListing->seller->id,
+                    'name' => $cardListing->seller->name,
+                    'email' => $cardListing->seller->email,
+                    'total_sales' => $cardListing->seller->total_sales ?? 0,
+                    'rating' => $cardListing->seller->rating ?? 0,
+                ] : null,
+                'card_model' => $cardModel,
+                'status' => $cardListing->status,
+                'created_at' => $cardListing->created_at,
+                'updated_at' => $cardListing->updated_at,
+                'shipping_zones' => $cardListing->shippingZones->map(function($zone) {
+                    return [
+                        'id' => $zone->id,
+                        'name' => $zone->name,
+                        'price' => $zone->price,
+                    ];
+                })->toArray()
+            ];
+        }
 
         return response()->json([
             'success' => true,

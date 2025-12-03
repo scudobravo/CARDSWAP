@@ -837,41 +837,82 @@ const loadProductDetails = async () => {
           imageUrl = cardModel.image_url
         }
         
-        product.value = {
-          id: cardModel?.id,
-          listing_id: listing.id,
-          name: cardModel?.player?.name || cardModel?.player_name || cardModel?.name || 'Player',
-          slug: listing.slug || product.value.name?.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-'),
-          team: cardModel?.team?.name || 'Unknown Team',
-          set_name: cardModel?.card_set?.name || cardModel?.cardSet?.name || 'Set Name',
-          year: cardModel?.year || new Date().getFullYear(),
-          rarity: cardModel?.rarity || 'Rare',
-          price: parseFloat(listing.price) || 0, // Il prezzo viene già come numero dal backend
-          rating: '4.5',
-          image_url: imageUrl,
-          images: images,
-          category: cardModel?.category?.slug === 'calcio' ? 'football' : (cardModel?.category?.slug === 'basketball' ? 'basketball' : 'pokemon'),
-          description: listing.description || cardModel?.description,
-          condition: listing.condition || 'LIGHT PLAYED',
-          // Dati di grading dalla CardListing
-          grading_company_id: listing.grading_company_id ?? null,
-          grading_company: listing.grading_company ? {
-            id: listing.grading_company.id,
-            name: listing.grading_company.name,
-            slug: listing.grading_company.slug
-          } : null,
-          card_condition_score: listing.card_condition_score ?? null,
-          autograph_condition_score: listing.autograph_condition_score ?? null,
-          card_number_in_set: cardModel?.card_number_in_set,
-          is_autograph: cardModel?.is_autograph ?? false,
-          is_relic: cardModel?.is_relic ?? false,
-          is_rookie: cardModel?.is_rookie ?? false,
-          is_star: cardModel?.is_star ?? false,
-          is_legend: cardModel?.is_legend ?? false,
-          card_number: cardModel?.card_number,
-          quantity: listing.quantity || 1,
-          created_at: listing.created_at,
-          updated_at: listing.updated_at
+        // Per sealed-pack, sealed-box e lot, cardModel è NULL
+        if (!cardModel) {
+          product.value = {
+            id: listing.id,
+            listing_id: listing.id,
+            name: listing.name || (listing.listing_type === 'sealed-pack' ? 'Sealed Pack' : (listing.listing_type === 'sealed-box' ? 'Sealed Box' : 'Lot')),
+            slug: listing.slug || product.value.name?.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-'),
+            team: null,
+            set_name: null,
+            year: null,
+            rarity: null,
+            price: parseFloat(listing.price) || 0,
+            rating: '4.5',
+            image_url: imageUrl,
+            images: images,
+            category: listing.category || 'football',
+            description: listing.description || '',
+            condition: listing.condition || 'mint',
+            grading_company_id: listing.grading_company_id ?? null,
+            grading_company: listing.grading_company ? {
+              id: listing.grading_company.id,
+              name: listing.grading_company.name,
+              slug: listing.grading_company.slug
+            } : null,
+            card_condition_score: listing.card_condition_score ?? null,
+            autograph_condition_score: listing.autograph_condition_score ?? null,
+            card_number_in_set: null,
+            is_autograph: false,
+            is_relic: false,
+            is_rookie: false,
+            is_star: false,
+            is_legend: false,
+            card_number: null,
+            quantity: listing.quantity || 1,
+            listing_type: listing.listing_type,
+            created_at: listing.created_at,
+            updated_at: listing.updated_at
+          }
+        } else {
+          // Per inserzioni con cardModel (singles, bulk)
+          product.value = {
+            id: cardModel?.id,
+            listing_id: listing.id,
+            name: cardModel?.player?.name || cardModel?.player_name || cardModel?.name || 'Player',
+            slug: listing.slug || product.value.name?.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-'),
+            team: cardModel?.team?.name || 'Unknown Team',
+            set_name: cardModel?.card_set?.name || cardModel?.cardSet?.name || 'Set Name',
+            year: cardModel?.year || new Date().getFullYear(),
+            rarity: cardModel?.rarity || 'Rare',
+            price: parseFloat(listing.price) || 0, // Il prezzo viene già come numero dal backend
+            rating: '4.5',
+            image_url: imageUrl,
+            images: images,
+            category: cardModel?.category?.slug === 'calcio' ? 'football' : (cardModel?.category?.slug === 'basketball' ? 'basketball' : 'pokemon'),
+            description: listing.description || cardModel?.description,
+            condition: listing.condition || 'LIGHT PLAYED',
+            // Dati di grading dalla CardListing
+            grading_company_id: listing.grading_company_id ?? null,
+            grading_company: listing.grading_company ? {
+              id: listing.grading_company.id,
+              name: listing.grading_company.name,
+              slug: listing.grading_company.slug
+            } : null,
+            card_condition_score: listing.card_condition_score ?? null,
+            autograph_condition_score: listing.autograph_condition_score ?? null,
+            card_number_in_set: cardModel?.card_number_in_set,
+            is_autograph: cardModel?.is_autograph ?? false,
+            is_relic: cardModel?.is_relic ?? false,
+            is_rookie: cardModel?.is_rookie ?? false,
+            is_star: cardModel?.is_star ?? false,
+            is_legend: cardModel?.is_legend ?? false,
+            card_number: cardModel?.card_number,
+            quantity: listing.quantity || 1,
+            created_at: listing.created_at,
+            updated_at: listing.updated_at
+          }
         }
         
         // Reset selected image index quando cambia il prodotto
@@ -885,13 +926,13 @@ const loadProductDetails = async () => {
         // Crea l'oggetto listing per il carrello
         listing.value = {
           id: listing.id,
-          card_model_id: cardModel?.id,
+          card_model_id: cardModel?.id || null,
           seller_id: seller?.id,
           price: parseFloat(listing.price),
           quantity: listing.quantity || 1,
           available_quantity: listing.quantity || 1, // Quantità disponibile totale del venditore
-          condition: listing.condition || 'LIGHT PLAYED',
-          description: listing.description || 'Carta in ottime condizioni',
+          condition: listing.condition || (cardModel ? 'LIGHT PLAYED' : 'mint'),
+          description: listing.description || (cardModel ? 'Carta in ottime condizioni' : ''),
           images: images,
           available: listing.status === 'active',
           seller: seller ? {
@@ -901,11 +942,12 @@ const loadProductDetails = async () => {
             total_sales: seller.total_sales ?? 0,
             rating: seller.rating ?? 0
           } : null,
-          card_model: {
-            id: cardModel?.id,
-            name: cardModel?.player?.name || cardModel?.name,
+          card_model: cardModel ? {
+            id: cardModel.id,
+            name: cardModel.player?.name || cardModel.name,
             category: product.value.category
-          },
+          } : null,
+          listing_type: listing.listing_type,
           shipping_zones: listing.shipping_zones || listing.shippingZones || []
         }
         
