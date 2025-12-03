@@ -974,10 +974,14 @@ const loadProductDetails = async () => {
         
         // Load related products
         // Per listing route, usa l'endpoint delle listing correlate invece di CardModel
+        // Questo funziona sia per sealed-pack/box/lot che per carte normali
         if (isListingRoute.value && listing.id) {
-          await loadRelatedProducts(null) // Passiamo null perché useremo la route
+          await loadRelatedProducts(null) // Passiamo null perché useremo la route (listingId)
         } else if (cardModel?.id) {
           await loadRelatedProducts(cardModel.id)
+        } else if (!cardModel && listing.id) {
+          // Per sealed-pack/box/lot senza cardModel, usa comunque l'endpoint delle listing correlate
+          await loadRelatedProducts(null) // Passiamo null perché useremo la route (listingId)
         }
         
         return
