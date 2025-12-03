@@ -3135,12 +3135,23 @@ const initializeEditMode = async (listing) => {
       // Imposta i filtri per sealed-pack/box/lot (Set, Year, Brand)
       // Questi vengono popolati dal form quando l'utente li ha inseriti
       // Prova a recuperare set_id, year e brand dal listing o dal card_set se presente
+      const setId = listing.card_set_id || listing.set_id || listing.card_set?.id || ''
+      const year = listing.year || listing.card_set?.year || ''
+      const brand = listing.brand || listing.card_set?.brand || ''
+      
       filters.value = {
         ...filters.value,
-        set: listing.card_set_id || listing.set_id || listing.card_set?.id || '',
-        year: listing.year || listing.card_set?.year || '',
-        brand: listing.brand || listing.card_set?.brand || ''
+        set: setId,
+        year: year,
+        brand: brand
       }
+      
+      console.log('✅ Filtri impostati per sealed-pack/box/lot:', {
+        set: setId,
+        year: year,
+        brand: brand,
+        filters: filters.value
+      })
       
       // Non c'è cardModel per sealed-pack/box/lot
       selectedCardModel.value = null
@@ -3243,6 +3254,10 @@ const initializeEditMode = async (listing) => {
     
     // Per sealed-pack/box/lot, dispatcha un evento per popolare i filtri nel componente ChainedFilters
     if (listingType === 'sealed-pack' || listingType === 'sealed-box' || listingType === 'lot') {
+      // Forza un aggiornamento immediato della prop initial-filters
+      // Questo assicura che i filtri vengano passati al componente anche se viene montato prima
+      await nextTick()
+      
       // Usa setTimeout per assicurarsi che il componente ChainedFilters sia montato
       setTimeout(async () => {
         console.log('🎯 Dispatching filters-populated per sealed-pack/box/lot con filtri:', filters.value)
@@ -3262,6 +3277,7 @@ const initializeEditMode = async (listing) => {
           }
         }
         
+        // Dispatcha l'evento filters-populated
         window.dispatchEvent(new CustomEvent('filters-populated', { 
           detail: {
             card_set: cardSetObject || (filters.value.set ? { id: filters.value.set } : null),
@@ -3270,13 +3286,17 @@ const initializeEditMode = async (listing) => {
           }
         }))
         
+        // Forza anche un aggiornamento diretto dei filtri locali
+        // Questo è importante perché il componente potrebbe non aver ancora processato l'evento
+        await nextTick()
+        
         console.log('✅ Filtri impostati per sealed-pack/box/lot:', {
           set: filters.value.set,
           year: filters.value.year,
           brand: filters.value.brand,
           cardSetObject: cardSetObject
         })
-      }, 500) // Aumentato timeout per dare più tempo al componente di montarsi
+      }, 800) // Aumentato timeout per dare più tempo al componente di montarsi e processare i filtri iniziali
     }
     
     // Dispatch event per popolare i filtri nel componente ChainedFilters (solo per single/bulk)
