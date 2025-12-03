@@ -1037,18 +1037,22 @@ class FootballFilterController extends Controller
             ])
             ->where('status', 'active')
             ->where(function($q) {
-                // Per inserzioni con cardModel (singles, bulk, sealed-pack, sealed-box)
+                // Per inserzioni con cardModel (singles, bulk)
                 $q->whereHas('cardModel', function($cardModelQ) {
                     $cardModelQ->where('is_active', true)
                       ->whereHas('category', function($catQ) {
                           $catQ->where('slug', 'calcio');
                       });
                 })
-                // Per lotti (che non hanno cardModel), includili sempre
+                // Per sealed-pack, sealed-box e lotti (che non hanno cardModel), includili sempre
                 // La categoria verrà filtrata più avanti se necessario
-                ->orWhere(function($lotQ) {
-                    $lotQ->where('listing_type', 'lot')
-                         ->whereNull('card_model_id');
+                ->orWhere(function($sealedQ) {
+                    $sealedQ->where(function($subQ) {
+                        $subQ->where('listing_type', 'sealed-pack')
+                             ->orWhere('listing_type', 'sealed-box')
+                             ->orWhere('listing_type', 'lot');
+                    })
+                    ->whereNull('card_model_id');
                 });
             });
 
@@ -1406,13 +1410,15 @@ class FootballFilterController extends Controller
                     break;
                     
                 case 'sealed-packs':
-                    // Buste sigillate: listing_type = 'sealed-pack'
-                    $query->where('listing_type', 'sealed-pack');
+                    // Buste sigillate: listing_type = 'sealed-pack' e card_model_id è NULL
+                    $query->where('listing_type', 'sealed-pack')
+                          ->whereNull('card_model_id');
                     break;
                     
                 case 'sealed-boxes':
-                    // Scatole sigillate: listing_type = 'sealed-box'
-                    $query->where('listing_type', 'sealed-box');
+                    // Scatole sigillate: listing_type = 'sealed-box' e card_model_id è NULL
+                    $query->where('listing_type', 'sealed-box')
+                          ->whereNull('card_model_id');
                     break;
                     
                 case 'lot':
