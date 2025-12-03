@@ -1705,7 +1705,13 @@ const loadShippingZones = async () => {
       const normalized = rawZones.map((z) => {
         const source = z || {}
         const attrs = source.attributes || {}
-        const id = source.id ?? attrs.id ?? source.zone_id
+        // Assicurati che l'ID sia sempre un numero intero
+        const rawId = source.id ?? attrs.id ?? source.zone_id
+        const id = parseInt(rawId, 10)
+        if (isNaN(id)) {
+          console.warn('⚠️ ID zona non valido:', rawId, source)
+          return null
+        }
         const name = source.name || attrs.name || source.title || source.label || (source.country_code ? `Spedizione ${source.country_code}` : 'Zona')
         // Gestisci null/undefined per i giorni di consegna
         const deliveryMin = source.delivery_days_min ?? attrs.delivery_days_min ?? source.min_days ?? null
@@ -1721,7 +1727,7 @@ const loadShippingZones = async () => {
           delivery_days_max: deliveryMax, 
           description 
         }
-      })
+      }).filter(z => z !== null) // Rimuovi zone con ID non validi
       
       console.log('✅ Zone normalizzate:', normalized.length, normalized)
       shippingZones.value = normalized
@@ -2325,9 +2331,12 @@ const createSealedPackListing = async () => {
     }
   })
   
-  // Zone di spedizione
+  // Zone di spedizione - assicurati che gli ID siano numeri interi
   selectedShippingZones.value.forEach(zoneId => {
-    formData.append('shipping_zones[]', zoneId)
+    const numericId = parseInt(zoneId, 10)
+    if (!isNaN(numericId)) {
+      formData.append('shipping_zones[]', numericId.toString())
+    }
   })
   
   try {
@@ -2390,9 +2399,12 @@ const createSealedBoxListing = async () => {
     }
   })
   
-  // Zone di spedizione
+  // Zone di spedizione - assicurati che gli ID siano numeri interi
   selectedShippingZones.value.forEach(zoneId => {
-    formData.append('shipping_zones[]', zoneId)
+    const numericId = parseInt(zoneId, 10)
+    if (!isNaN(numericId)) {
+      formData.append('shipping_zones[]', numericId.toString())
+    }
   })
   
   try {
@@ -2448,9 +2460,12 @@ const createLotListing = async () => {
     }
   })
   
-  // Zone di spedizione
+  // Zone di spedizione - assicurati che gli ID siano numeri interi
   selectedShippingZones.value.forEach(zoneId => {
-    formData.append('shipping_zones[]', zoneId)
+    const numericId = parseInt(zoneId, 10)
+    if (!isNaN(numericId)) {
+      formData.append('shipping_zones[]', numericId.toString())
+    }
   })
   
   try {

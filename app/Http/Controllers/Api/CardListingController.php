@@ -143,7 +143,7 @@ class CardListingController extends Controller
             'images' => 'nullable|array',
             'images.*' => 'nullable|file|image|max:10240',
             'shipping_zones' => 'required|array|min:1',
-            'shipping_zones.*' => 'exists:shipping_zones,id',
+            'shipping_zones.*' => 'required|integer|exists:shipping_zones,id',
             'status' => 'in:draft,active,paused,inactive',
         ];
         
