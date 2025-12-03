@@ -343,10 +343,15 @@ const availableYears = ref([])
 // Dropdown visibility state
 const showPlayerDropdown = ref(false)
 
-// Format card name: replace # with /
+// Format card name: replace # with / and remove numbered suffix (e.g., "/199", "/50")
 const formatCardName = (name) => {
   if (!name) return ''
-  return name.replace(/#/g, '/')
+  // Sostituisci # con /
+  let formatted = name.replace(/#/g, '/')
+  // Rimuovi il numero alla fine del nome (es. " /199", " /50", " /1/100")
+  // Il numero verrà mostrato solo nel badge blu in alto a destra
+  formatted = formatted.replace(/\s*\/\d+(\/\d+)?\s*$/, '')
+  return formatted.trim()
 }
 const showTeamDropdown = ref(false)
 const showSetDropdown = ref(false)
