@@ -3132,10 +3132,23 @@ const initializeEditMode = async (listing) => {
         selectedCategory.value = 'football'
       }
       
+      // Log completo del listing per debug
+      console.log('🔍 Listing completo per sealed-pack/box/lot:', {
+        id: listing.id,
+        listing_type: listing.listing_type,
+        card_set_id: listing.card_set_id,
+        set_id: listing.set_id,
+        year: listing.year,
+        brand: listing.brand,
+        card_set: listing.card_set,
+        allKeys: Object.keys(listing)
+      })
+      
       // Imposta i filtri per sealed-pack/box/lot (Set, Year, Brand)
       // Questi vengono popolati dal form quando l'utente li ha inseriti
       // Prova a recuperare set_id, year e brand dal listing o dal card_set se presente
-      const setId = listing.card_set_id || listing.set_id || listing.card_set?.id || ''
+      // IMPORTANTE: I dati potrebbero essere in campi diversi o potrebbero non essere stati salvati
+      const setId = listing.card_set_id || listing.set_id || listing.card_set?.id || listing.card_set_id || ''
       const year = listing.year || listing.card_set?.year || ''
       const brand = listing.brand || listing.card_set?.brand || ''
       
@@ -3150,8 +3163,54 @@ const initializeEditMode = async (listing) => {
         set: setId,
         year: year,
         brand: brand,
-        filters: filters.value
+        filters: filters.value,
+        listingHasCardSetId: !!listing.card_set_id,
+        listingHasYear: !!listing.year,
+        listingHasBrand: !!listing.brand
       })
+      
+      // Se i filtri sono vuoti, potrebbe essere necessario caricare i dettagli completi del listing
+      if (!setId && !year && !brand) {
+        console.warn('⚠️ Nessun filtro trovato nel listing, potrebbe essere necessario caricare i dettagli completi')
+        // Prova a caricare i dettagli completi del listing dall'API
+        try {
+          const response = await fetch(`/api/listings/${listing.id}`, {
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          })
+          if (response.ok) {
+            const data = await response.json()
+            if (data.success && data.data) {
+              const fullListing = data.data
+              console.log('✅ Listing completo caricato:', {
+                card_set_id: fullListing.card_set_id,
+                year: fullListing.year,
+                brand: fullListing.brand,
+                allKeys: Object.keys(fullListing)
+              })
+              
+              // Aggiorna i filtri con i dati completi
+              const fullSetId = fullListing.card_set_id || fullListing.set_id || fullListing.card_set?.id || ''
+              const fullYear = fullListing.year || fullListing.card_set?.year || ''
+              const fullBrand = fullListing.brand || fullListing.card_set?.brand || ''
+              
+              if (fullSetId || fullYear || fullBrand) {
+                filters.value = {
+                  ...filters.value,
+                  set: fullSetId,
+                  year: fullYear,
+                  brand: fullBrand
+                }
+                console.log('✅ Filtri aggiornati con dati completi:', filters.value)
+              }
+            }
+          }
+        } catch (error) {
+          console.error('❌ Errore nel caricamento dettagli listing:', error)
+        }
+      }
       
       // Non c'è cardModel per sealed-pack/box/lot
       selectedCardModel.value = null
