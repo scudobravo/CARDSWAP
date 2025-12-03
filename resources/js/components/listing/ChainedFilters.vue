@@ -222,14 +222,9 @@
           <!-- Header con nome e numero -->
           <div class="flex justify-between items-start mb-2">
             <div class="text-sm font-medium text-gray-900 truncate flex-1 mr-2">{{ formatCardName(card.name) }}</div>
-          <div v-if="card.card_number_in_set" class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+          <div v-if="card.card_number_in_set && /^\d+(\/\d+)?$/.test(card.card_number_in_set)" class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
             /{{ card.card_number_in_set }}
             </div>
-          </div>
-          
-          <!-- Numbered field -->
-          <div v-if="card.card_number_in_set" class="text-xs text-gray-600 mb-1">
-            <span class="font-medium text-gray-700">Numbered:</span> {{ card.card_number_in_set }}
           </div>
           
           <!-- Squadra -->
