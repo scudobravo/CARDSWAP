@@ -2344,13 +2344,28 @@ const createSealedPackListing = async () => {
       method: 'POST',
       body: formData,
       headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        'Accept': 'application/json'
       }
     })
     
     if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.message || 'Errore nella creazione inserzione')
+      // Verifica se la risposta è JSON
+      const contentType = response.headers.get('content-type')
+      let errorData = {}
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          errorData = await response.json()
+        } catch (e) {
+          errorData = { message: `Errore HTTP ${response.status}: ${response.statusText}` }
+        }
+      } else {
+        // Se non è JSON, probabilmente è una pagina HTML di errore
+        const text = await response.text()
+        console.error('Risposta non JSON ricevuta:', text.substring(0, 200))
+        errorData = { message: `Errore del server (HTTP ${response.status}). Controlla i log per dettagli.` }
+      }
+      throw new Error(errorData.message || errorData.error || 'Errore nella creazione inserzione')
     }
     
     const data = await response.json()
@@ -2412,13 +2427,28 @@ const createSealedBoxListing = async () => {
       method: 'POST',
       body: formData,
       headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        'Accept': 'application/json'
       }
     })
     
     if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.message || 'Errore nella creazione inserzione')
+      // Verifica se la risposta è JSON
+      const contentType = response.headers.get('content-type')
+      let errorData = {}
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          errorData = await response.json()
+        } catch (e) {
+          errorData = { message: `Errore HTTP ${response.status}: ${response.statusText}` }
+        }
+      } else {
+        // Se non è JSON, probabilmente è una pagina HTML di errore
+        const text = await response.text()
+        console.error('Risposta non JSON ricevuta:', text.substring(0, 200))
+        errorData = { message: `Errore del server (HTTP ${response.status}). Controlla i log per dettagli.` }
+      }
+      throw new Error(errorData.message || errorData.error || 'Errore nella creazione inserzione')
     }
     
     const data = await response.json()
@@ -2473,13 +2503,28 @@ const createLotListing = async () => {
       method: 'POST',
       body: formData,
       headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        'Accept': 'application/json'
       }
     })
     
     if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.message || 'Errore nella creazione inserzione')
+      // Verifica se la risposta è JSON
+      const contentType = response.headers.get('content-type')
+      let errorData = {}
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          errorData = await response.json()
+        } catch (e) {
+          errorData = { message: `Errore HTTP ${response.status}: ${response.statusText}` }
+        }
+      } else {
+        // Se non è JSON, probabilmente è una pagina HTML di errore
+        const text = await response.text()
+        console.error('Risposta non JSON ricevuta:', text.substring(0, 200))
+        errorData = { message: `Errore del server (HTTP ${response.status}). Controlla i log per dettagli.` }
+      }
+      throw new Error(errorData.message || errorData.error || 'Errore nella creazione inserzione')
     }
     
     const data = await response.json()
