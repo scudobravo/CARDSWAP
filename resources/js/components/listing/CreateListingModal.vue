@@ -3241,6 +3241,21 @@ const initializeEditMode = async (listing) => {
     // Per single/bulk, il Passo 1 mostra la selezione carta
     currentStep.value = 1
     
+    // Per sealed-pack/box/lot, dispatcha un evento per popolare i filtri nel componente ChainedFilters
+    if (listingType === 'sealed-pack' || listingType === 'sealed-box' || listingType === 'lot') {
+      // Usa setTimeout per assicurarsi che il componente ChainedFilters sia montato
+      setTimeout(() => {
+        console.log('🎯 Dispatching filters-populated per sealed-pack/box/lot con filtri:', filters.value)
+        window.dispatchEvent(new CustomEvent('filters-populated', { 
+          detail: {
+            card_set: filters.value.set ? { id: filters.value.set } : null,
+            year: filters.value.year || '',
+            brand: filters.value.brand || ''
+          }
+        }))
+      }, 300)
+    }
+    
     // Dispatch event per popolare i filtri nel componente ChainedFilters (solo per single/bulk)
     if (selectedCardModel.value) {
       const brandFromSet = selectedCardModel.value.card_set?.brand
