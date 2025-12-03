@@ -120,6 +120,19 @@ class CardListingController extends Controller
             }
         }
         
+        // Normalizza gli ID delle zone di spedizione per assicurarsi che siano numeri interi
+        if (isset($data['shipping_zones']) && is_array($data['shipping_zones'])) {
+            $data['shipping_zones'] = array_map(function($zoneId) {
+                return is_numeric($zoneId) ? (int) $zoneId : null;
+            }, $data['shipping_zones']);
+            // Rimuovi valori null
+            $data['shipping_zones'] = array_filter($data['shipping_zones'], function($zoneId) {
+                return $zoneId !== null;
+            });
+            // Re-indicizza l'array
+            $data['shipping_zones'] = array_values($data['shipping_zones']);
+        }
+        
         // Create a new request with converted data
         $request->merge($data);
         
