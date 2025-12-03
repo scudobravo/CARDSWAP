@@ -2340,13 +2340,19 @@ const createSealedPackListing = async () => {
   })
   
   try {
+    const token = localStorage.getItem('token')
+    const headers = {
+      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+      'Accept': 'application/json'
+    }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+    
     const response = await fetch('/api/listings', {
       method: 'POST',
       body: formData,
-      headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-        'Accept': 'application/json'
-      }
+      headers
     })
     
     if (!response.ok) {
@@ -2423,13 +2429,19 @@ const createSealedBoxListing = async () => {
   })
   
   try {
+    const token = localStorage.getItem('token')
+    const headers = {
+      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+      'Accept': 'application/json'
+    }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+    
     const response = await fetch('/api/listings', {
       method: 'POST',
       body: formData,
-      headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-        'Accept': 'application/json'
-      }
+      headers
     })
     
     if (!response.ok) {
@@ -2499,13 +2511,19 @@ const createLotListing = async () => {
   })
   
   try {
+    const token = localStorage.getItem('token')
+    const headers = {
+      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+      'Accept': 'application/json'
+    }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+    
     const response = await fetch('/api/listings', {
       method: 'POST',
       body: formData,
-      headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-        'Accept': 'application/json'
-      }
+      headers
     })
     
     if (!response.ok) {
