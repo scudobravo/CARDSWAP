@@ -34,7 +34,10 @@ class CardListing extends Model
         'status',
         'published_at',
         'rejection_reason',
-        'images'
+        'images',
+        'card_set_id', // Per sealed-pack/box/lot
+        'year', // Per sealed-pack/box/lot
+        'brand' // Per sealed-pack/box/lot
     ];
 
     protected $casts = [
@@ -55,6 +58,14 @@ class CardListing extends Model
     public function cardModel(): BelongsTo
     {
         return $this->belongsTo(CardModel::class);
+    }
+
+    /**
+     * Relazione con il card set (per sealed-pack/box/lot)
+     */
+    public function cardSet(): BelongsTo
+    {
+        return $this->belongsTo(CardSet::class, 'card_set_id');
     }
 
     /**

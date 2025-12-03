@@ -647,6 +647,7 @@ class CardListingController extends Controller
             'cardModel.team',
             'cardModel.league',
             'cardModel.gradingCompany',
+            'cardSet', // Per sealed-pack/box/lot
             'gradingCompany',
             'seller',
             'shippingZones'
@@ -687,7 +688,17 @@ class CardListingController extends Controller
                 'name' => $title,
                 'slug' => $slug,
                 'team' => null,
-                'set_name' => null,
+                'set_name' => $cardListing->cardSet->name ?? null,
+                'card_set_id' => $cardListing->card_set_id,
+                'set_id' => $cardListing->card_set_id,
+                'year' => $cardListing->year,
+                'brand' => $cardListing->brand,
+                'card_set' => $cardListing->cardSet ? [
+                    'id' => $cardListing->cardSet->id,
+                    'name' => $cardListing->cardSet->name,
+                    'brand' => $cardListing->cardSet->brand,
+                    'year' => $cardListing->cardSet->year
+                ] : null,
                 'year' => null,
                 'rarity' => null,
                 'price' => floatval($cardListing->price),
@@ -1019,6 +1030,7 @@ class CardListingController extends Controller
             'cardModel.player',
             'cardModel.team',
             'cardModel.league',
+            'cardSet', // Per sealed-pack/box/lot
             'gradingCompany',
             'shippingZones'
         ])->where('seller_id', Auth::id());
