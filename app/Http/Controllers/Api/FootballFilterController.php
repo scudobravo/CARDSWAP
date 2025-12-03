@@ -1416,8 +1416,9 @@ class FootballFilterController extends Controller
                     break;
                     
                 case 'lot':
-                    // Lotti: listing_type = 'lot'
-                    $query->where('listing_type', 'lot');
+                    // Lotti: listing_type = 'lot' e card_model_id è NULL
+                    $query->where('listing_type', 'lot')
+                          ->whereNull('card_model_id');
                     break;
             }
         }
