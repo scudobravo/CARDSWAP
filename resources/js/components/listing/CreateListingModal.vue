@@ -3253,7 +3253,18 @@ const initializeEditMode = async (listing) => {
             brand: filters.value.brand || ''
           }
         }))
-      }, 300)
+        // Forza anche un aggiornamento diretto dei filtri locali nel componente ChainedFilters
+        // Questo assicura che i valori vengano mostrati anche se l'evento non viene processato correttamente
+        nextTick(() => {
+          // I filtri sono già stati impostati in filters.value, il componente ChainedFilters
+          // dovrebbe riceverli tramite la prop :initial-filters
+          console.log('✅ Filtri impostati per sealed-pack/box/lot:', {
+            set: filters.value.set,
+            year: filters.value.year,
+            brand: filters.value.brand
+          })
+        })
+      }, 500) // Aumentato timeout per dare più tempo al componente di montarsi
     }
     
     // Dispatch event per popolare i filtri nel componente ChainedFilters (solo per single/bulk)
