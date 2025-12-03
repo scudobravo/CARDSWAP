@@ -24,12 +24,28 @@ cd "$(dirname "$0")"
 
 # 1. Backup del database
 echo -e "${YELLOW}📦 Step 1: Backup del database...${NC}"
-BACKUP_FILE="backup_before_reimport_$(date +%Y%m%d_%H%M%S).sql"
-php artisan db:backup --database=mysql --destination=local --destinationPath="$BACKUP_FILE" 2>/dev/null || {
-    echo -e "${YELLOW}⚠️  Backup automatico non disponibile, crea manualmente un backup!${NC}"
-    read -p "Premi ENTER dopo aver creato il backup manualmente..."
-}
-echo -e "${GREEN}✅ Backup completato: $BACKUP_FILE${NC}"
+BACKUP_FILE="/home/forge/backup_before_reimport_$(date +%Y%m%d_%H%M%S).sql"
+DB_USER=$(php artisan tinker --execute="echo config('database.connections.mysql.username');" 2>/dev/null | grep -v "Warning" | tail -1)
+DB_PASS=$(php artisan tinker --execute="echo config('database.connections.mysql.password');" 2>/dev/null | grep -v "Warning" | tail -1)
+DB_NAME=$(php artisan tinker --execute="echo config('database.connections.mysql.database');" 2>/dev/null | grep -v "Warning" | tail -1)
+
+if [ -n "$DB_USER" ] && [ -n "$DB_NAME" ]; then
+    if [ -n "$DB_PASS" ]; then
+        mysqldump -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" > "$BACKUP_FILE" 2>/dev/null && {
+            echo -e "${GREEN}✅ Backup completato: $BACKUP_FILE${NC}"
+        } || {
+            echo -e "${YELLOW}⚠️  Backup automatico fallito, continua senza backup...${NC}"
+        }
+    else
+        mysqldump -u "$DB_USER" "$DB_NAME" > "$BACKUP_FILE" 2>/dev/null && {
+            echo -e "${GREEN}✅ Backup completato: $BACKUP_FILE${NC}"
+        } || {
+            echo -e "${YELLOW}⚠️  Backup automatico fallito, continua senza backup...${NC}"
+        }
+    fi
+else
+    echo -e "${YELLOW}⚠️  Impossibile recuperare credenziali DB, continua senza backup...${NC}"
+fi
 echo ""
 
 # 2. Conta carte con inserzioni attive
