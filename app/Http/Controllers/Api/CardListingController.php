@@ -408,47 +408,62 @@ class CardListingController extends Controller
         try {
             $limit = request()->get('limit', 8);
             
-            // Cerca altre CardListing attive dello stesso CardModel (stesso giocatore)
-            // escludendo quella corrente
-            $relatedListings = CardListing::with([
-                'cardModel.category',
-                'cardModel.player',
-                'cardModel.team',
-                'cardModel.cardSet',
-                'seller'
-            ])
-                ->where('card_model_id', $cardListing->card_model_id)
-                ->where('id', '!=', $cardListing->id) // Esclude la listing corrente
-                ->where('status', 'active') // Solo listing attive
-                ->orderBy('created_at', 'desc')
-                ->limit($limit)
-                ->get();
-            
-            // Se non ci sono abbastanza listing dello stesso giocatore, cerca altre listing nella stessa categoria
-            if ($relatedListings->count() < $limit) {
-                $remainingLimit = $limit - $relatedListings->count();
-                $cardModel = $cardListing->cardModel;
+            // Per sealed-pack, sealed-box e lot (card_model_id è NULL), cerca altre listing dello stesso tipo
+            if (!$cardListing->card_model_id) {
+                $relatedListings = CardListing::with([
+                    'gradingCompany',
+                    'seller',
+                    'shippingZones'
+                ])
+                    ->where('listing_type', $cardListing->listing_type)
+                    ->whereNull('card_model_id')
+                    ->where('id', '!=', $cardListing->id) // Esclude la listing corrente
+                    ->where('status', 'active') // Solo listing attive
+                    ->orderBy('created_at', 'desc')
+                    ->limit($limit)
+                    ->get();
+            } else {
+                // Per inserzioni con cardModel (singles, bulk), cerca altre CardListing attive dello stesso CardModel (stesso giocatore)
+                $relatedListings = CardListing::with([
+                    'cardModel.category',
+                    'cardModel.player',
+                    'cardModel.team',
+                    'cardModel.cardSet',
+                    'seller'
+                ])
+                    ->where('card_model_id', $cardListing->card_model_id)
+                    ->where('id', '!=', $cardListing->id) // Esclude la listing corrente
+                    ->where('status', 'active') // Solo listing attive
+                    ->orderBy('created_at', 'desc')
+                    ->limit($limit)
+                    ->get();
                 
-                if ($cardModel && $cardModel->category_id) {
-                    $fallbackListings = CardListing::with([
-                        'cardModel.category',
-                        'cardModel.player',
-                        'cardModel.team',
-                        'cardModel.cardSet',
-                        'seller'
-                    ])
-                        ->whereHas('cardModel', function($q) use ($cardModel) {
-                            $q->where('category_id', $cardModel->category_id)
-                              ->where('player_id', '!=', $cardModel->player_id); // Altri giocatori nella stessa categoria
-                        })
-                        ->where('id', '!=', $cardListing->id)
-                        ->where('status', 'active')
-                        ->whereNotIn('id', $relatedListings->pluck('id'))
-                        ->orderBy('created_at', 'desc')
-                        ->limit($remainingLimit)
-                        ->get();
+                // Se non ci sono abbastanza listing dello stesso giocatore, cerca altre listing nella stessa categoria
+                if ($relatedListings->count() < $limit) {
+                    $remainingLimit = $limit - $relatedListings->count();
+                    $cardModel = $cardListing->cardModel;
                     
-                    $relatedListings = $relatedListings->merge($fallbackListings);
+                    if ($cardModel && $cardModel->category_id) {
+                        $fallbackListings = CardListing::with([
+                            'cardModel.category',
+                            'cardModel.player',
+                            'cardModel.team',
+                            'cardModel.cardSet',
+                            'seller'
+                        ])
+                            ->whereHas('cardModel', function($q) use ($cardModel) {
+                                $q->where('category_id', $cardModel->category_id)
+                                  ->where('player_id', '!=', $cardModel->player_id); // Altri giocatori nella stessa categoria
+                            })
+                            ->where('id', '!=', $cardListing->id)
+                            ->where('status', 'active')
+                            ->whereNotIn('id', $relatedListings->pluck('id'))
+                            ->orderBy('created_at', 'desc')
+                            ->limit($remainingLimit)
+                            ->get();
+                        
+                        $relatedListings = $relatedListings->merge($fallbackListings);
+                    }
                 }
             }
             
@@ -469,6 +484,33 @@ class CardListingController extends Controller
                     $imageUrl = $cardModel->image_url;
                 }
                 
+                // Per sealed-pack, sealed-box e lot, cardModel è NULL
+                if (!$cardModel) {
+                    $title = $listing->title ?? ($listing->listing_type === 'sealed-pack' ? 'Sealed Pack' : ($listing->listing_type === 'sealed-box' ? 'Sealed Box' : 'Lot'));
+                    $slug = \Illuminate\Support\Str::slug($title);
+                    
+                    return [
+                        'id' => $listing->id,
+                        'listing_id' => $listing->id,
+                        'name' => $title,
+                        'team' => null,
+                        'type' => 'football', // Default, potrebbe essere determinato dalla categoria
+                        'listing_type' => $listing->listing_type,
+                        'price' => '€' . number_format($listing->price, 2, ',', '.'),
+                        'rating' => '4.5',
+                        'image_url' => $imageUrl,
+                        'images' => $listing->images ?? [],
+                        'set_name' => null,
+                        'year' => null,
+                        'rarity' => null,
+                        'slug' => $slug,
+                        'category_slug' => 'football', // Default
+                        'condition' => $listing->condition ?? 'mint',
+                        'quantity' => $listing->quantity ?? 1,
+                    ];
+                }
+                
+                // Per inserzioni con cardModel (singles, bulk)
                 // Genera lo slug dal nome del giocatore
                 $playerName = $cardModel->player->name ?? $cardModel->player_name ?? $cardModel->name ?? 'carta';
                 $slug = \Illuminate\Support\Str::slug($playerName);
