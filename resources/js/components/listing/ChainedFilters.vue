@@ -1941,6 +1941,9 @@ const handleFiltersPopulated = async (event) => {
   // Forza un re-render per assicurarsi che i tag vengano mostrati
   await nextTick()
   
+  // Ripristina le entità se abbiamo solo ID (importante per sealed-pack/box/lot)
+  await restoreSelectedEntities()
+  
   // Aggiorna i filtri
   onFiltersChanged()
 }

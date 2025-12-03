@@ -3244,25 +3244,37 @@ const initializeEditMode = async (listing) => {
     // Per sealed-pack/box/lot, dispatcha un evento per popolare i filtri nel componente ChainedFilters
     if (listingType === 'sealed-pack' || listingType === 'sealed-box' || listingType === 'lot') {
       // Usa setTimeout per assicurarsi che il componente ChainedFilters sia montato
-      setTimeout(() => {
+      setTimeout(async () => {
         console.log('🎯 Dispatching filters-populated per sealed-pack/box/lot con filtri:', filters.value)
+        
+        // Se abbiamo un set_id, carica prima l'oggetto completo del set
+        let cardSetObject = null
+        if (filters.value.set) {
+          try {
+            const response = await fetch(`/api/${selectedCategory.value}/filters/card-sets/${filters.value.set}`)
+            if (response.ok) {
+              const data = await response.json()
+              cardSetObject = data.card_set
+              console.log('✅ Set caricato per sealed-pack/box/lot:', cardSetObject)
+            }
+          } catch (error) {
+            console.error('❌ Errore nel caricamento set:', error)
+          }
+        }
+        
         window.dispatchEvent(new CustomEvent('filters-populated', { 
           detail: {
-            card_set: filters.value.set ? { id: filters.value.set } : null,
+            card_set: cardSetObject || (filters.value.set ? { id: filters.value.set } : null),
             year: filters.value.year || '',
             brand: filters.value.brand || ''
           }
         }))
-        // Forza anche un aggiornamento diretto dei filtri locali nel componente ChainedFilters
-        // Questo assicura che i valori vengano mostrati anche se l'evento non viene processato correttamente
-        nextTick(() => {
-          // I filtri sono già stati impostati in filters.value, il componente ChainedFilters
-          // dovrebbe riceverli tramite la prop :initial-filters
-          console.log('✅ Filtri impostati per sealed-pack/box/lot:', {
-            set: filters.value.set,
-            year: filters.value.year,
-            brand: filters.value.brand
-          })
+        
+        console.log('✅ Filtri impostati per sealed-pack/box/lot:', {
+          set: filters.value.set,
+          year: filters.value.year,
+          brand: filters.value.brand,
+          cardSetObject: cardSetObject
         })
       }, 500) // Aumentato timeout per dare più tempo al componente di montarsi
     }
