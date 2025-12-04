@@ -1451,7 +1451,7 @@ class BasketballFilterController extends Controller
             'last_page' => $listings->lastPage(),
             'per_page' => $listings->perPage(),
             'total' => $listings->total(),
-            'has_more_pages' => $products->hasMorePages()
+            'has_more_pages' => $listings->hasMorePages()
         ]);
     }
 
