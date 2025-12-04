@@ -972,6 +972,10 @@ class BasketballFilterController extends Controller
 
         // Per sealed packs/boxes, applica solo Set, Year e Brand
         // Per altri, applica tutti i filtri disponibili
+        // IMPORTANTE: I filtri per numerazione, RC, on card, ecc. devono essere applicati SOLO per singles
+        // perché usano whereHas('cardModel', ...) che escluderebbe le sealed-pack/box/lot
+        $isSingles = !isset($filters['subcategory']) || $filters['subcategory'] === 'singles' || empty($filters['subcategory']);
+        
         if (!$isSealed) {
             // Applica filtri a catena: Player → Team → Set → Year → Brand → Rarity
             if (isset($filters['player_id']) && !empty($filters['player_id'])) {
@@ -1327,13 +1331,36 @@ class BasketballFilterController extends Controller
             // Per sealed-pack, sealed-box e lot, cardModel è NULL
             if (!$cardModel) {
                 // Gestisci sealed-pack, sealed-box e lot
+                $imageUrl = null;
+                if ($listing->images && is_array($listing->images) && count($listing->images) > 0) {
+                    $firstImage = $listing->images[0];
+                    if (!str_starts_with($firstImage, '/storage/') && !str_starts_with($firstImage, 'http')) {
+                        $imageUrl = '/storage/' . $firstImage;
+                    } else {
+                        $imageUrl = $firstImage;
+                    }
+                }
+                
+                // Carica il cardSet se presente
+                $cardSet = $listing->cardSet;
+                
+                // Per sealed-pack/box/lot, usa il set come nome se disponibile
+                $displayName = null;
+                if ($cardSet && $cardSet->name) {
+                    $displayName = $cardSet->name;
+                } elseif ($listing->title && $listing->title !== 'Carta') {
+                    $displayName = $listing->title;
+                } else {
+                    $displayName = $listing->listing_type === 'sealed-pack' ? 'Sealed Pack' : ($listing->listing_type === 'sealed-box' ? 'Sealed Box' : 'Lot');
+                }
+                
                 return [
                     'id' => $listing->id,
                     'listing_id' => $listing->id,
-                    'name' => $listing->title ?? 'Sealed Product',
+                    'name' => $displayName,
                     'team' => null,
-                    'set' => null,
-                    'year' => null,
+                    'set' => $cardSet->name ?? null,
+                    'year' => $listing->year ?? ($cardSet->year ?? null),
                     'rarity' => null,
                     'condition' => $listing->condition ?? 'mint',
                     'price' => number_format($listing->price ?? 0, 2, ',', '.'),
@@ -1343,12 +1370,12 @@ class BasketballFilterController extends Controller
                     'is_relic' => false,
                     'is_star' => false,
                     'is_legend' => false,
-                    'imageUrl' => $listing->images[0] ?? null,
+                    'imageUrl' => $imageUrl,
                     'images' => $listing->images ?? [],
                     'playerId' => null,
                     'teamId' => null,
-                    'setId' => null,
-                    'brand' => null,
+                    'setId' => $listing->card_set_id,
+                    'brand' => $listing->brand ?? ($cardSet->brand ?? null),
                     'hasAutograph' => false,
                     'hasRelic' => false,
                     'gradingScore' => null,
