@@ -234,7 +234,7 @@
                         </div>
                         <div class="flex justify-between">
                           <span>Set:</span>
-                          <span class="font-medium truncate ml-2">{{ product.set || 'Set' }}</span>
+                          <span class="font-medium truncate ml-2">{{ product.set && product.set !== 'Set' && product.set !== 'Set Name' && product.set !== 'Unknown Set' ? product.set : '-' }}</span>
                         </div>
                         <div class="flex justify-between">
                           <span>Rarity:</span>
@@ -391,7 +391,7 @@
                         </div>
                         <div class="flex justify-between">
                           <span>Set:</span>
-                          <span class="font-medium">{{ product.set || 'Set' }}</span>
+                          <span class="font-medium">{{ product.set && product.set !== 'Set' && product.set !== 'Set Name' && product.set !== 'Unknown Set' ? product.set : '-' }}</span>
                         </div>
                         <div class="flex justify-between">
                           <span>Rarity:</span>
