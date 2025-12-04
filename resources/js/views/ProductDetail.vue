@@ -853,10 +853,12 @@ const loadProductDetails = async () => {
         
         // Per sealed-pack, sealed-box e lot, cardModel è NULL
         if (!cardModel) {
+          // Il backend ora restituisce già il nome corretto in listing.name
+          // Usa sempre listing.name che viene dal backend con la logica corretta
           product.value = {
             id: listing.id,
             listing_id: listing.id,
-            name: listing.name || listing.title || (listing.listing_type === 'sealed-pack' ? 'Sealed Pack' : (listing.listing_type === 'sealed-box' ? 'Sealed Box' : 'Lot')),
+            name: listing.name || (listing.listing_type === 'sealed-pack' ? 'Sealed Pack' : (listing.listing_type === 'sealed-box' ? 'Sealed Box' : 'Lot')),
             slug: listing.slug || product.value.name?.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-'),
             team: null,
             set_name: null,

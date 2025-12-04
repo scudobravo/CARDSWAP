@@ -677,29 +677,47 @@ class CardListingController extends Controller
         
         // Per sealed-pack, sealed-box e lot, cardModel è NULL
         if (!$cardModel) {
-            // Genera lo slug dal titolo o dal tipo di listing
-            $title = $cardListing->title ?? ($cardListing->listing_type === 'sealed-pack' ? 'Sealed Pack' : ($cardListing->listing_type === 'sealed-box' ? 'Sealed Box' : 'Lot'));
-            $slug = \Illuminate\Support\Str::slug($title);
+            // Carica il cardSet se presente
+            $cardSet = $cardListing->cardSet;
+            
+            // Per Lot: usa sempre il title inserito dall'utente se presente, altrimenti default
+            // Per sealed-pack/box: usa il nome del set se disponibile, altrimenti il title, altrimenti default
+            $displayName = null;
+            if ($cardListing->listing_type === 'lot') {
+                // Per Lot, priorità al title inserito dall'utente
+                $displayName = $cardListing->title && $cardListing->title !== 'Carta' ? $cardListing->title : 'Lot';
+            } else {
+                // Per sealed-pack/box, priorità al nome del set
+                if ($cardSet && $cardSet->name) {
+                    $displayName = $cardSet->name;
+                } elseif ($cardListing->title && $cardListing->title !== 'Carta') {
+                    $displayName = $cardListing->title;
+                } else {
+                    $displayName = $cardListing->listing_type === 'sealed-pack' ? 'Sealed Pack' : 'Sealed Box';
+                }
+            }
+            
+            $slug = \Illuminate\Support\Str::slug($displayName);
             
             $transformedData = [
                 'id' => $cardListing->id,
                 'listing_id' => $cardListing->id,
                 'card_model_id' => null,
-                'name' => $title,
+                'name' => $displayName,
                 'slug' => $slug,
                 'team' => null,
-                'set_name' => $cardListing->cardSet->name ?? null,
+                'set_name' => $cardSet->name ?? null,
                 'card_set_id' => $cardListing->card_set_id,
                 'set_id' => $cardListing->card_set_id,
-                'year' => $cardListing->year,
-                'brand' => $cardListing->brand,
-                'card_set' => $cardListing->cardSet ? [
-                    'id' => $cardListing->cardSet->id,
-                    'name' => $cardListing->cardSet->name,
-                    'brand' => $cardListing->cardSet->brand,
-                    'year' => $cardListing->cardSet->year
+                'year' => $cardListing->year ?? ($cardSet->year ?? null),
+                'brand' => $cardListing->brand ?? ($cardSet->brand ?? null),
+                'card_set' => $cardSet ? [
+                    'id' => $cardSet->id,
+                    'name' => $cardSet->name,
+                    'brand' => $cardSet->brand,
+                    'year' => $cardSet->year
                 ] : null,
-                'year' => null,
+                'year' => $cardListing->year ?? ($cardSet->year ?? null),
                 'rarity' => null,
                 'price' => floatval($cardListing->price),
                 'condition' => $cardListing->grading_company_id ? null : ($cardListing->condition ?? 'mint'),
