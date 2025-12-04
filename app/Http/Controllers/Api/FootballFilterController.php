@@ -1059,6 +1059,10 @@ class FootballFilterController extends Controller
 
         // Per sealed packs/boxes, applica solo Set, Year e Brand
         // Per altri, applica tutti i filtri disponibili
+        // IMPORTANTE: I filtri per numerazione, RC, on card, ecc. devono essere applicati SOLO per singles
+        // perché usano whereHas('cardModel', ...) che escluderebbe le sealed-pack/box/lot
+        $isSingles = !isset($filters['subcategory']) || $filters['subcategory'] === 'singles' || empty($filters['subcategory']);
+        
         if (!$isSealed) {
             // Applica filtri a catena: Player → Team → Set → Year → Brand → Rarity
             if (isset($filters['player_id']) && !empty($filters['player_id'])) {
@@ -1105,7 +1109,8 @@ class FootballFilterController extends Controller
             // IMPORTANTE: Il frontend mostra card_number se presente, altrimenti card_number_in_set
             // Quindi dobbiamo filtrare su entrambi i campi, preferendo card_number
             // Gestisce formati come: "1", "5/100", "01-gen", "1-AU", "A-01" (estrae solo il numero iniziale)
-            if (isset($filters['numbered_min']) && !empty($filters['numbered_min']) || isset($filters['numbered_max']) && !empty($filters['numbered_max'])) {
+            // IMPORTANTE: Applica questo filtro SOLO per singles (non per sealed-pack/box/lot)
+            if ($isSingles && (isset($filters['numbered_min']) && !empty($filters['numbered_min']) || isset($filters['numbered_max']) && !empty($filters['numbered_max']))) {
                 $query->whereHas('cardModel', function($q) use ($filters) {
                     // Filtra su card_number se presente, altrimenti su card_number_in_set
                     // Usa COALESCE per preferire card_number
@@ -1216,8 +1221,8 @@ class FootballFilterController extends Controller
                 });
             }
 
-            // Filtri extra
-            if (isset($filters['autograph']) && $filters['autograph'] !== '') {
+            // Filtri extra - Applica SOLO per singles (non per sealed-pack/box/lot)
+            if ($isSingles && isset($filters['autograph']) && $filters['autograph'] !== '') {
                 $query->whereHas('cardModel', function($q) use ($filters) {
                     if ($filters['autograph'] === 'yes') {
                         $q->where('is_autograph', true);
@@ -1227,7 +1232,7 @@ class FootballFilterController extends Controller
                 });
             }
 
-            if (isset($filters['relic']) && $filters['relic'] !== '') {
+            if ($isSingles && isset($filters['relic']) && $filters['relic'] !== '') {
                 $query->whereHas('cardModel', function($q) use ($filters) {
                     if ($filters['relic'] === 'yes') {
                         $q->where('is_relic', true);
@@ -1237,7 +1242,7 @@ class FootballFilterController extends Controller
                 });
             }
 
-            if (isset($filters['rookie']) && $filters['rookie'] !== '') {
+            if ($isSingles && isset($filters['rookie']) && $filters['rookie'] !== '') {
                 $query->whereHas('cardModel', function($q) use ($filters) {
                     if ($filters['rookie'] === 'yes') {
                         $q->where('is_rookie', true);
@@ -1247,7 +1252,7 @@ class FootballFilterController extends Controller
                 });
             }
 
-            if (isset($filters['onCardAuto']) && $filters['onCardAuto'] !== '') {
+            if ($isSingles && isset($filters['onCardAuto']) && $filters['onCardAuto'] !== '') {
                 $query->whereHas('cardModel', function($q) use ($filters) {
                     if ($filters['onCardAuto'] === 'yes') {
                         $q->where('is_on_card_auto', true);
@@ -1257,7 +1262,7 @@ class FootballFilterController extends Controller
                 });
             }
 
-            if (isset($filters['jewel']) && $filters['jewel'] !== '') {
+            if ($isSingles && isset($filters['jewel']) && $filters['jewel'] !== '') {
                 $query->whereHas('cardModel', function($q) use ($filters) {
                     if ($filters['jewel'] === 'yes') {
                         $q->where('is_jewel', true);
@@ -1268,7 +1273,7 @@ class FootballFilterController extends Controller
             }
 
             // Filtro booklet (yes/no) - separato da multi player
-            if (isset($filters['booklet']) && $filters['booklet'] !== '') {
+            if ($isSingles && isset($filters['booklet']) && $filters['booklet'] !== '') {
                 $query->whereHas('cardModel', function($q) use ($filters) {
                     if ($filters['booklet'] === 'yes') {
                         $q->where('is_booklet', true);
@@ -1279,7 +1284,7 @@ class FootballFilterController extends Controller
             }
 
             // Filtri multi player (dual, triple, quad) - booklet rimosso perché è un filtro separato
-            if (isset($filters['multi_player']) && is_array($filters['multi_player']) && !empty($filters['multi_player'])) {
+            if ($isSingles && isset($filters['multi_player']) && is_array($filters['multi_player']) && !empty($filters['multi_player'])) {
                 $query->whereHas('cardModel', function($q) use ($filters) {
                     $q->where(function($subQ) use ($filters) {
                         $first = true;
@@ -1317,7 +1322,7 @@ class FootballFilterController extends Controller
 
             // Filtri multi autograph (dual, triple, quad) - booklet rimosso perché è un filtro separato
             // Nota: multi autograph usa gli stessi campi di multi player
-            if (isset($filters['multi_autograph']) && is_array($filters['multi_autograph']) && !empty($filters['multi_autograph'])) {
+            if ($isSingles && isset($filters['multi_autograph']) && is_array($filters['multi_autograph']) && !empty($filters['multi_autograph'])) {
                 $query->whereHas('cardModel', function($q) use ($filters) {
                     $q->where(function($subQ) use ($filters) {
                         $first = true;
