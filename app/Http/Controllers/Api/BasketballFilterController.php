@@ -948,6 +948,7 @@ class BasketballFilterController extends Controller
                 'gradingCompany',
                 'cardModel.cardSet',
                 'cardModel.gradingCompany',
+                'cardSet', // Per sealed-pack/box/lot
                 'seller'
             ])
             ->where('status', 'active')
