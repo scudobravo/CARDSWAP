@@ -124,7 +124,7 @@
       </div>
       <div class="flex justify-between text-xs sm:text-sm text-gray-600">
         <span class="truncate">Set:</span>
-        <span class="font-medium truncate ml-2 line-clamp-1">{{ product.set || 'Set' }}</span>
+        <span class="font-medium truncate ml-2 line-clamp-1">{{ product.set && product.set !== 'Set' && product.set !== 'Set Name' && product.set !== 'Unknown Set' ? product.set : '-' }}</span>
       </div>
       <div class="flex justify-between text-xs sm:text-sm text-gray-600">
         <span class="truncate">Rarity:</span>

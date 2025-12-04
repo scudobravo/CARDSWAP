@@ -283,9 +283,9 @@
                 <span class="text-gray-600 font-gill-sans">Team:</span>
                 <span class="font-futura-bold text-primary">{{ product.team && product.team !== 'Team Name' && product.team !== 'Unknown Team' && product.team !== 'Team' ? product.team : '-' }}</span>
               </div>
-              <div v-if="product.set_name && product.set_name !== 'Set Name'" class="flex justify-between">
+              <div class="flex justify-between">
                 <span class="text-gray-600 font-gill-sans">Set:</span>
-                <span class="font-futura-bold text-primary">{{ product.set_name }}</span>
+                <span class="font-futura-bold text-primary">{{ product.set_name && product.set_name !== 'Set Name' && product.set_name !== 'Set' && product.set_name !== 'Unknown Set' ? product.set_name : '-' }}</span>
               </div>
               <div v-if="product.year" class="flex justify-between">
                 <span class="text-gray-600 font-gill-sans">Year:</span>
