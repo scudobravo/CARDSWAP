@@ -1495,18 +1495,21 @@ class FootballFilterController extends Controller
                 // Carica il cardSet se presente
                 $cardSet = $listing->cardSet;
                 
-                // Per sealed-pack/box/lot, usa il team come nome se disponibile, altrimenti il title
-                // Se non c'è team, usa il title o un default
+                // Per Lot: usa sempre il title inserito dall'utente se presente, altrimenti default
+                // Per sealed-pack/box: usa il nome del set se disponibile, altrimenti il title, altrimenti default
                 $displayName = null;
-                if ($cardSet && $cardSet->name) {
-                    // Se c'è un set, usa il nome del set come display name
-                    $displayName = $cardSet->name;
-                } elseif ($listing->title && $listing->title !== 'Carta') {
-                    // Se c'è un title valido (non "Carta"), usalo
-                    $displayName = $listing->title;
+                if ($listing->listing_type === 'lot') {
+                    // Per Lot, priorità al title inserito dall'utente
+                    $displayName = $listing->title && $listing->title !== 'Carta' ? $listing->title : 'Lot';
                 } else {
-                    // Default basato sul tipo
-                    $displayName = $listing->listing_type === 'sealed-pack' ? 'Sealed Pack' : ($listing->listing_type === 'sealed-box' ? 'Sealed Box' : 'Lot');
+                    // Per sealed-pack/box, priorità al nome del set
+                    if ($cardSet && $cardSet->name) {
+                        $displayName = $cardSet->name;
+                    } elseif ($listing->title && $listing->title !== 'Carta') {
+                        $displayName = $listing->title;
+                    } else {
+                        $displayName = $listing->listing_type === 'sealed-pack' ? 'Sealed Pack' : 'Sealed Box';
+                    }
                 }
                 
                 return [

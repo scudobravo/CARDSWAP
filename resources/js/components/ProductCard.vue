@@ -29,9 +29,7 @@
     <!-- Player Name / Product Title -->
     <div class="px-2 sm:px-4 pt-2 sm:pt-4 pb-1 sm:pb-2 flex-shrink-0">
       <h3 class="text-sm sm:text-lg font-bold text-gray-900 text-center line-clamp-2">
-        {{ product.listing_type && ['sealed-pack', 'sealed-box', 'lot'].includes(product.listing_type) 
-          ? (product.team || product.set || product.name || 'Carta')
-          : (product.name || 'Player') }}
+        {{ product.name || (product.listing_type && ['sealed-pack', 'sealed-box', 'lot'].includes(product.listing_type) ? 'Carta' : 'Player') }}
       </h3>
     </div>
 
@@ -130,7 +128,7 @@
       </div>
       <div class="flex justify-between text-xs sm:text-sm text-gray-600">
         <span class="truncate">Rarity:</span>
-        <span class="font-medium truncate ml-2 line-clamp-1">{{ product.rarity || 'Rarity' }}{{ product.rarity_variation ? ` (${product.rarity_variation})` : '' }}</span>
+        <span class="font-medium truncate ml-2 line-clamp-1">{{ product.rarity ? (product.rarity + (product.rarity_variation ? ` (${product.rarity_variation})` : '')) : '-' }}</span>
       </div>
     </div>
 

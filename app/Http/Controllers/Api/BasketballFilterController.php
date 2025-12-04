@@ -114,7 +114,7 @@ class BasketballFilterController extends Controller
             'year' => 'nullable|string',
             'brand' => 'nullable|string'
         ]);
-
+        
         $query = $request->get('q');
         
         // Filtra solo i player che hanno carte Basketball
@@ -1244,14 +1244,14 @@ class BasketballFilterController extends Controller
         if (isset($filters['subcategory']) && !empty($filters['subcategory'])) {
             $subcategory = $filters['subcategory'];
             
-            switch ($subcategory) {
-                case 'singles':
-                    // Carte singole: listing_type = 'single' o 'bulk' (per retrocompatibilità)
+                switch ($subcategory) {
+                    case 'singles':
+                        // Carte singole: listing_type = 'single' o 'bulk' (per retrocompatibilità)
                     // Escludi sealed-pack, sealed-box e lot
                     $query->where(function($q) {
-                        $q->where(function($subQ) {
-                            $subQ->where('listing_type', 'single')
-                                 ->orWhere('listing_type', 'bulk')
+                            $q->where(function($subQ) {
+                                $subQ->where('listing_type', 'single')
+                                     ->orWhere('listing_type', 'bulk')
                                  ->orWhereNull('listing_type'); // Retrocompatibilità con inserzioni esistenti
                         })
                         ->where(function($notSealedQ) {
@@ -1259,28 +1259,28 @@ class BasketballFilterController extends Controller
                                        ->where('listing_type', '!=', 'sealed-box')
                                        ->where('listing_type', '!=', 'lot')
                                        ->orWhereNull('listing_type');
+                            });
                         });
-                    });
-                    break;
-                    
-                case 'sealed-packs':
+                        break;
+                        
+                    case 'sealed-packs':
                     // Buste sigillate: listing_type = 'sealed-pack' e card_model_id è NULL
                     $query->where('listing_type', 'sealed-pack')
                           ->whereNull('card_model_id');
-                    break;
-                    
-                case 'sealed-boxes':
+                        break;
+                        
+                    case 'sealed-boxes':
                     // Scatole sigillate: listing_type = 'sealed-box' e card_model_id è NULL
                     $query->where('listing_type', 'sealed-box')
                           ->whereNull('card_model_id');
-                    break;
-                    
-                case 'lot':
+                        break;
+                        
+                    case 'lot':
                     // Lotti: listing_type = 'lot' e card_model_id è NULL
                     $query->where('listing_type', 'lot')
                           ->whereNull('card_model_id');
-                    break;
-            }
+                        break;
+                }
         }
 
         // Ordinamento
@@ -1345,17 +1345,24 @@ class BasketballFilterController extends Controller
                 // Carica il cardSet se presente
                 $cardSet = $listing->cardSet;
                 
-                // Per sealed-pack/box/lot, usa il set come nome se disponibile
+                // Per Lot: usa sempre il title inserito dall'utente se presente, altrimenti default
+                // Per sealed-pack/box: usa il nome del set se disponibile, altrimenti il title, altrimenti default
                 $displayName = null;
-                if ($cardSet && $cardSet->name) {
-                    $displayName = $cardSet->name;
-                } elseif ($listing->title && $listing->title !== 'Carta') {
-                    $displayName = $listing->title;
+                if ($listing->listing_type === 'lot') {
+                    // Per Lot, priorità al title inserito dall'utente
+                    $displayName = $listing->title && $listing->title !== 'Carta' ? $listing->title : 'Lot';
                 } else {
-                    $displayName = $listing->listing_type === 'sealed-pack' ? 'Sealed Pack' : ($listing->listing_type === 'sealed-box' ? 'Sealed Box' : 'Lot');
+                    // Per sealed-pack/box, priorità al nome del set
+                    if ($cardSet && $cardSet->name) {
+                        $displayName = $cardSet->name;
+                    } elseif ($listing->title && $listing->title !== 'Carta') {
+                        $displayName = $listing->title;
+                    } else {
+                        $displayName = $listing->listing_type === 'sealed-pack' ? 'Sealed Pack' : 'Sealed Box';
+                    }
                 }
                 
-                return [
+            return [
                     'id' => $listing->id,
                     'listing_id' => $listing->id,
                     'name' => $displayName,
