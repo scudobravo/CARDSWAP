@@ -120,7 +120,7 @@
     <div class="px-2 sm:px-4 pb-2 sm:pb-3 space-y-0.5 sm:space-y-1 flex-grow">
       <div class="flex justify-between text-xs sm:text-sm text-gray-600">
         <span class="truncate">Team:</span>
-        <span class="font-medium truncate ml-2">{{ product.team || 'Team' }}</span>
+        <span class="font-medium truncate ml-2">{{ product.team && product.team !== 'Team' && product.team !== 'Team Name' && product.team !== 'Unknown Team' ? product.team : '-' }}</span>
       </div>
       <div class="flex justify-between text-xs sm:text-sm text-gray-600">
         <span class="truncate">Set:</span>

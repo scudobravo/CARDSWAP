@@ -230,7 +230,7 @@
                       <div class="mt-2 text-xs text-gray-600 space-y-1">
                         <div class="flex justify-between">
                           <span>Team:</span>
-                          <span class="font-medium truncate ml-2">{{ product.team || 'Team' }}</span>
+                          <span class="font-medium truncate ml-2">{{ product.team && product.team !== 'Team' && product.team !== 'Team Name' && product.team !== 'Unknown Team' ? product.team : '-' }}</span>
                         </div>
                         <div class="flex justify-between">
                           <span>Set:</span>
