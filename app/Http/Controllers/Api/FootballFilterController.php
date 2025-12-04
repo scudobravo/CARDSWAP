@@ -1033,6 +1033,7 @@ class FootballFilterController extends Controller
                 'gradingCompany',
                 'cardModel.cardSet',
                 'cardModel.gradingCompany',
+                'cardSet', // Per sealed-pack/box/lot
                 'seller'
             ])
             ->where('status', 'active')
@@ -1486,14 +1487,31 @@ class FootballFilterController extends Controller
                     }
                 }
                 
+                // Carica il cardSet se presente
+                $cardSet = $listing->cardSet;
+                
+                // Per sealed-pack/box/lot, usa il team come nome se disponibile, altrimenti il title
+                // Se non c'è team, usa il title o un default
+                $displayName = null;
+                if ($cardSet && $cardSet->name) {
+                    // Se c'è un set, usa il nome del set come display name
+                    $displayName = $cardSet->name;
+                } elseif ($listing->title && $listing->title !== 'Carta') {
+                    // Se c'è un title valido (non "Carta"), usalo
+                    $displayName = $listing->title;
+                } else {
+                    // Default basato sul tipo
+                    $displayName = $listing->listing_type === 'sealed-pack' ? 'Sealed Pack' : ($listing->listing_type === 'sealed-box' ? 'Sealed Box' : 'Lot');
+                }
+                
                 return [
                     'id' => $listing->id,
                     'listing_id' => $listing->id,
-                    'name' => $listing->title ?? ($listing->listing_type === 'sealed-pack' ? 'Sealed Pack' : ($listing->listing_type === 'sealed-box' ? 'Sealed Box' : 'Lot')),
-                    'team' => null,
-                    'set' => null,
-                    'year' => null,
-                    'rarity' => null,
+                    'name' => $displayName,
+                    'team' => null, // Per sealed-pack/box/lot non c'è team
+                    'set' => $cardSet->name ?? null,
+                    'year' => $listing->year ?? ($cardSet->year ?? null),
+                    'rarity' => null, // Per sealed-pack/box/lot non c'è rarity
                     'condition' => $listing->condition ?? 'mint',
                     'price' => number_format($listing->price ?? 0, 2, ',', '.'),
                     'quantity' => $listing->quantity ?? 1,
@@ -1508,8 +1526,8 @@ class FootballFilterController extends Controller
                     'images' => $listing->images ?? [],
                     'playerId' => null,
                     'teamId' => null,
-                    'setId' => null,
-                    'brand' => null,
+                    'setId' => $listing->card_set_id,
+                    'brand' => $listing->brand ?? ($cardSet->brand ?? null),
                     'hasAutograph' => false,
                     'hasRelic' => false,
                     'grading_company_id' => $listing->grading_company_id ?? null,

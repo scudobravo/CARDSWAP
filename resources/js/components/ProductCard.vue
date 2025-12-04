@@ -26,9 +26,13 @@
       </div> -->
     </div>
 
-    <!-- Player Name -->
+    <!-- Player Name / Product Title -->
     <div class="px-2 sm:px-4 pt-2 sm:pt-4 pb-1 sm:pb-2 flex-shrink-0">
-      <h3 class="text-sm sm:text-lg font-bold text-gray-900 text-center line-clamp-2">{{ product.name || 'Player' }}</h3>
+      <h3 class="text-sm sm:text-lg font-bold text-gray-900 text-center line-clamp-2">
+        {{ product.listing_type && ['sealed-pack', 'sealed-box', 'lot'].includes(product.listing_type) 
+          ? (product.team || product.set || product.name || 'Carta')
+          : (product.name || 'Player') }}
+      </h3>
     </div>
 
     <!-- Informational Badges -->
