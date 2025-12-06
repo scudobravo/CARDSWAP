@@ -443,6 +443,7 @@ const showSetDropdown = ref(false)
 const showRarityDropdown = ref(false)
 const showCardNameDropdown = ref(false)
 const filteredCardsByName = ref([])
+const hasSearchedCards = ref(false)
 let cardNameSearchTimeout = null
 
 // Computed
