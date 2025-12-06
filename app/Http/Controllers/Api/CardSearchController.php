@@ -24,10 +24,15 @@ class CardSearchController extends Controller
                 $q->where('status', 'active');
             }
         ])
-        ->active()
-        ->whereHas('cardListings', function($q) {
-            $q->where('status', 'active');
-        });
+        ->active();
+        
+        // Solo per la ricerca pubblica, filtra per listing attive
+        // Per la creazione di listing, mostriamo tutte le carte disponibili
+        if ($request->filled('only_with_listings') && $request->get('only_with_listings') === 'true') {
+            $query->whereHas('cardListings', function($q) {
+                $q->where('status', 'active');
+            });
+        }
 
         // Filtri per categoria (supporta sia ID che slug)
         if ($request->filled('category_id')) {
@@ -63,15 +68,16 @@ class CardSearchController extends Controller
             $query->where('year', $request->year);
         }
 
-        // Filtri per rarità: accetta sia categoria generale che variazione specifica
+        // Filtri per rarità
         if ($request->filled('rarity')) {
-            $rarity = $request->get('rarity');
-            $baseRarities = ['common', 'uncommon', 'rare', 'mythic', 'special'];
-            if (in_array(strtolower($rarity), $baseRarities, true)) {
-                $query->where('rarity', $rarity);
-            } else {
-                $query->where('rarity_variation', $rarity);
-            }
+            $query->where('rarity', $request->get('rarity'));
+        }
+        
+        // Filtri per brand (tramite set)
+        if ($request->filled('brand')) {
+            $query->whereHas('cardSet', function($q) use ($request) {
+                $q->where('brand', $request->brand);
+            });
         }
 
         // Filtro Numerazione (boolean): true = numerate (card_number valorizzato), false = non numerate
