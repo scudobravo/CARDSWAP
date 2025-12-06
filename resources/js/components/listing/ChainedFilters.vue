@@ -18,8 +18,8 @@
             <div class="flex flex-col">
               <span class="font-normal block truncate">{{ formatCardName(card.name) }}</span>
               <div class="flex items-center gap-2 mt-1">
-                <span v-if="card.card_set" class="text-xs text-gray-500">{{ card.card_set.name }}</span>
-                <span v-if="card.rarity" class="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full">{{ card.rarity }}{{ card.rarity_variation ? ` (${card.rarity_variation})` : '' }}</span>
+                <span v-if="card.card_set || card.cardSet" class="text-xs text-gray-500">{{ card.card_set?.name || card.cardSet?.name }}</span>
+                <span v-if="getDisplayRarity(card)" class="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full">{{ getDisplayRarity(card) }}</span>
               </div>
             </div>
           </div>
@@ -440,6 +440,34 @@ const formatCardName = (name) => {
   // Il numero verrà mostrato solo nel badge blu in alto a destra
   formatted = formatted.replace(/\s*\/\d+(\/\d+)?\s*$/, '')
   return formatted.trim()
+}
+
+// Get display rarity: per Disney/Spongebob mostra rarity_variation se presente, altrimenti rarity
+// Se rarity è "common" e c'è rarity_variation, mostra solo rarity_variation
+const getDisplayRarity = (card) => {
+  if (!card) return null
+  
+  // Per Disney/Spongebob, priorità a rarity_variation se presente
+  if (['disney', 'spongebob'].includes(props.category)) {
+    if (card.rarity_variation) {
+      return card.rarity_variation
+    }
+    // Se rarity è "common" e non c'è rarity_variation, prova a estrarre dal nome
+    if (card.rarity === 'common' || !card.rarity) {
+      // Estrai la rarità dal nome (parte tra parentesi)
+      const match = card.name?.match(/\(([^)]+)\)/)
+      if (match && match[1]) {
+        return match[1]
+      }
+    }
+    return card.rarity || null
+  }
+  
+  // Per altre categorie, mostra rarity con rarity_variation se presente
+  if (card.rarity_variation) {
+    return `${card.rarity || ''}${card.rarity ? ` (${card.rarity_variation})` : card.rarity_variation}`
+  }
+  return card.rarity || null
 }
 const showTeamDropdown = ref(false)
 const showSetDropdown = ref(false)
