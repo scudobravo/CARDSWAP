@@ -164,8 +164,8 @@
                 </select>
               </div>
 
-              <!-- Relic -->
-              <div>
+              <!-- Relic (solo per categorie sportive) -->
+              <div v-if="!['disney', 'spongebob'].includes(props.category)">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Relic</label>
                 <select v-model="additionalDetails.relic" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm">
                   <option value="">Non specificato</option>
@@ -184,10 +184,20 @@
                 </select>
               </div>
 
-              <!-- Rookie -->
-              <div>
+              <!-- Rookie (solo per categorie sportive) -->
+              <div v-if="!['disney', 'spongebob'].includes(props.category)">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Rookie</label>
                 <select v-model="additionalDetails.rookie" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm">
+                  <option value="">Non specificato</option>
+                  <option value="yes">Sì</option>
+                  <option value="no">No</option>
+                </select>
+              </div>
+
+              <!-- Sketch (solo per Disney e Spongebob) -->
+              <div v-if="['disney', 'spongebob'].includes(props.category)">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Sketch</label>
+                <select v-model="additionalDetails.sketch" class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm">
                   <option value="">Non specificato</option>
                   <option value="yes">Sì</option>
                   <option value="no">No</option>
@@ -356,6 +366,10 @@ const props = defineProps({
   gradingCompanies: {
     type: Array,
     default: () => []
+  },
+  category: {
+    type: String,
+    default: 'football'
   }
 })
 
@@ -393,6 +407,7 @@ const additionalDetails = ref({
   onCardAuto: '',
   rookie: '',
   jewel: '',
+  sketch: '',
   multiAutograph: '',
   description: '',
   notes: ''

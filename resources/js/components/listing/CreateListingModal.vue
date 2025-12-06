@@ -369,6 +369,7 @@
               :is-bulk-mode="false"
               :card-data="getSingleCardData"
               :grading-companies="gradingCompanies"
+              :category="selectedCategory"
               @image-uploaded="handleImageUploaded"
               @additional-details-changed="handleAdditionalDetailsChanged"
             />
@@ -1128,19 +1129,30 @@ const nextStep = () => {
       const isRelic = card.is_relic === true || card.is_relic === 1 || card.is_relic === '1'
       const isOnCardAuto = card.is_on_card_auto === true || card.is_on_card_auto === 1 || card.is_on_card_auto === '1'
       const isJewel = card.is_jewel === true || card.is_jewel === 1 || card.is_jewel === '1'
+      // Sketch per Disney/Spongebob (dall'attributo SKETCH o is_sketch)
+      const isSketch = card.is_sketch === true || card.is_sketch === 1 || card.is_sketch === '1' || 
+                       (card.attributes && (card.attributes.sketch === true || card.attributes.sketch === 1 || card.attributes.sketch === '1'))
       
-      console.log('🔄 Valori convertiti - isRookie:', isRookie, 'isAutograph:', isAutograph, 'isRelic:', isRelic)
+      console.log('🔄 Valori convertiti - isRookie:', isRookie, 'isAutograph:', isAutograph, 'isRelic:', isRelic, 'isSketch:', isSketch)
       
       // Aggiorna additionalDetails con i dati della carta
-      additionalDetails.value = {
+      const detailsUpdate = {
         ...additionalDetails.value,
         autograph: isAutograph ? 'yes' : 'no',
-        relic: isRelic ? 'yes' : 'no',
         onCardAuto: isOnCardAuto ? 'yes' : 'no',
-        rookie: isRookie ? 'yes' : 'no',
         jewel: isJewel ? 'yes' : 'no',
         multiAutograph: multiAutograph
       }
+      
+      // Aggiungi campi specifici per categoria
+      if (['disney', 'spongebob'].includes(selectedCategory.value)) {
+        detailsUpdate.sketch = isSketch ? 'yes' : 'no'
+      } else {
+        detailsUpdate.relic = isRelic ? 'yes' : 'no'
+        detailsUpdate.rookie = isRookie ? 'yes' : 'no'
+      }
+      
+      additionalDetails.value = detailsUpdate
       
       console.log('🔄 additionalDetails aggiornato:', additionalDetails.value)
     }
@@ -2672,16 +2684,29 @@ const getSingleCardData = computed(() => {
     const isRelic = card.is_relic === true || card.is_relic === 1 || card.is_relic === '1'
     const isOnCardAuto = card.is_on_card_auto === true || card.is_on_card_auto === 1 || card.is_on_card_auto === '1'
     const isJewel = card.is_jewel === true || card.is_jewel === 1 || card.is_jewel === '1'
+    // Sketch per Disney/Spongebob (dall'attributo SKETCH o is_sketch)
+    const isSketch = card.is_sketch === true || card.is_sketch === 1 || card.is_sketch === '1' || 
+                     (card.attributes && (card.attributes.sketch === true || card.attributes.sketch === 1 || card.attributes.sketch === '1'))
+    
+    const baseSpecialFeatures = {
+      autograph: isAutograph ? 'yes' : 'no',
+      onCardAuto: isOnCardAuto ? 'yes' : 'no',
+      jewel: isJewel ? 'yes' : 'no',
+      multiAutograph: multiAutograph
+    }
+    
+    // Aggiungi campi specifici per categoria
+    if (['disney', 'spongebob'].includes(selectedCategory.value)) {
+      baseSpecialFeatures.sketch = isSketch ? 'yes' : 'no'
+    } else {
+      baseSpecialFeatures.relic = isRelic ? 'yes' : 'no'
+      baseSpecialFeatures.rookie = isRookie ? 'yes' : 'no'
+    }
     
     return {
       ...baseData,
       // Pre-popola le caratteristiche speciali dalla carta selezionata
-      autograph: isAutograph ? 'yes' : 'no',
-      relic: isRelic ? 'yes' : 'no',
-      onCardAuto: isOnCardAuto ? 'yes' : 'no',
-      rookie: isRookie ? 'yes' : 'no',
-      jewel: isJewel ? 'yes' : 'no',
-      multiAutograph: multiAutograph
+      ...baseSpecialFeatures
     }
   }
   
