@@ -29,24 +29,13 @@
         </div>
       </div>
 
-      <!-- Coming Soon Message -->
-      <div class="bg-white rounded-lg shadow-lg p-12 text-center mb-12">
-        <div class="max-w-2xl mx-auto">
-          <h2 class="text-4xl md:text-5xl font-futura-bold text-primary mb-6">
-            Coming Soon
-          </h2>
-          <p class="text-xl text-gray-600 font-gill-sans mb-8">
-            Stiamo lavorando per portarti i migliori prodotti SpongeBob. Torna presto per scoprire la nostra collezione!
-          </p>
-        </div>
-      </div>
-
       <!-- Product Type Sections -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
         <div 
           v-for="productType in productTypes" 
           :key="productType.id"
-          class="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow duration-300 cursor-pointer group opacity-50"
+          class="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow duration-300 cursor-pointer group"
+          @click="goToProductType(productType)"
         >
           <!-- Product Type Icon -->
           <div class="mb-4">
@@ -72,31 +61,42 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import Header from '../components/Header.vue'
 import Footer from '../components/Footer.vue'
+
+const router = useRouter()
 
 // Product types data
 const productTypes = ref([
   {
     id: 1,
     name: "SINGLES",
+    slug: "singles",
     icon: "/images/icons/sottocategoria singles.png"
   },
   {
     id: 2,
     name: "SEALED PACKS",
+    slug: "sealed-packs",
     icon: "/images/icons/sottocategoria sealed packs.png"
   },
   {
     id: 3,
     name: "SEALED BOXES",
+    slug: "sealed-boxes",
     icon: "/images/icons/sottocategoria sealed boxes.png"
   },
   {
     id: 4,
     name: "LOT",
+    slug: "lot",
     icon: "/images/icons/sottocategoria lot.png"
   }
 ])
+
+const goToProductType = (productType) => {
+  router.push(`/categories/spongebob/${productType.slug}`)
+}
 </script>
 

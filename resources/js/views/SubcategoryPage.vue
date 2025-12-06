@@ -627,6 +627,10 @@ const getApiEndpoint = (category) => {
       return '/api/basketball/filters/products'
     case 'pokemon':
       return '/api/pokemon/filters/products'
+    case 'disney':
+      return '/api/disney/filters/products'
+    case 'spongebob':
+      return '/api/spongebob/filters/products'
     default:
       return '/api/football/filters/products' // Fallback
   }
@@ -666,7 +670,9 @@ const getCategoryDisplayName = () => {
   const categoryMap = {
     'football': 'Calcio',
     'basketball': 'Basketball',
-    'pokemon': 'Pokemon'
+    'pokemon': 'Pokemon',
+    'disney': 'Disney',
+    'spongebob': 'Spongebob'
   }
   return categoryMap[category.value] || 'Categoria'
 }
