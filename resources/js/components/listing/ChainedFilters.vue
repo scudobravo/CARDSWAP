@@ -17,7 +17,10 @@
           <div v-for="card in filteredCardsByName" :key="card.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectCard(card)">
             <div class="flex flex-col">
               <span class="font-normal block truncate">{{ formatCardName(card.name) }}</span>
-              <span v-if="card.card_set" class="text-xs text-gray-500">{{ card.card_set.name }}</span>
+              <div class="flex items-center gap-2 mt-1">
+                <span v-if="card.card_set" class="text-xs text-gray-500">{{ card.card_set.name }}</span>
+                <span v-if="card.rarity" class="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full">{{ card.rarity }}{{ card.rarity_variation ? ` (${card.rarity_variation})` : '' }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -2125,6 +2128,10 @@ watch(() => localFilters.value.year, () => {
 watch(() => localFilters.value.rarity, () => {
   console.log('🔄 Rarity filter cambiato:', localFilters.value.rarity)
   if (['disney', 'spongebob'].includes(props.category) && !props.showPlayer) {
+    // Se c'è una ricerca per nome attiva, aggiorna anche quella
+    if (localFilters.value.cardNameSearch && localFilters.value.cardNameSearch.length >= 2) {
+      searchCardsByName()
+    }
     searchCardsForCategory()
   } else {
     recomputeFilteredCards()
