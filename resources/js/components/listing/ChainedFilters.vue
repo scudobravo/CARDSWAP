@@ -1367,6 +1367,64 @@ const updateAvailableOptions = async () => {
 
 // (nessuna azione)
 
+// Cerca carte per categorie senza giocatori (Disney, Spongebob)
+let searchCardsTimeout = null
+const searchCardsForCategory = async () => {
+  // Debounce per evitare troppe chiamate
+  if (searchCardsTimeout) {
+    clearTimeout(searchCardsTimeout)
+  }
+  
+  searchCardsTimeout = setTimeout(async () => {
+    try {
+      // Costruisci i parametri di ricerca
+      const params = new URLSearchParams()
+      if (localFilters.value.set) params.append('card_set_id', localFilters.value.set)
+      if (localFilters.value.year) params.append('year', localFilters.value.year)
+      if (localFilters.value.brand) params.append('brand', localFilters.value.brand)
+      if (localFilters.value.rarity) params.append('rarity', localFilters.value.rarity)
+      
+      // Aggiungi filtro categoria
+      const categoryMap = {
+        'disney': 'disney',
+        'spongebob': 'spongebob'
+      }
+      const dbCategory = categoryMap[props.category]
+      if (dbCategory) {
+        params.append('category', dbCategory)
+      }
+      
+      // Se non ci sono filtri, non cercare
+      if (params.toString() === '') {
+        filteredCards.value = []
+        hasSearchedCards.value = false
+        return
+      }
+      
+      const url = `/api/cards/search?${params.toString()}`
+      console.log('🔍 Ricerca carte per categoria:', url)
+      
+      const response = await fetch(url)
+      if (!response.ok) {
+        console.error('❌ Errore nella ricerca carte:', response.status)
+        filteredCards.value = []
+        hasSearchedCards.value = true
+        return
+      }
+      
+      const data = await response.json()
+      console.log('🔍 Carte trovate:', data.cards?.length || 0)
+      
+      filteredCards.value = data.cards || []
+      hasSearchedCards.value = true
+    } catch (error) {
+      console.error('❌ Errore nella ricerca carte per categoria:', error)
+      filteredCards.value = []
+      hasSearchedCards.value = true
+    }
+  }, 500) // Debounce di 500ms
+}
+
 const searchCards = () => {
   // Convert to the format expected by the card-models/search API
   const searchFilters = {}
