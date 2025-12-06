@@ -1124,24 +1124,29 @@ const selectCard = (card) => {
   // Mostra subito la carta selezionata nella lista
   filteredCards.value = [card]
   
+  // Chiudi il dropdown di ricerca per nome
+  showCardNameDropdown.value = false
+  
   // Aggiorna i filtri con i dati della carta selezionata
-  if (card.card_set) {
-    localFilters.value.set = card.card_set.id
-    selectedCardSet.value = card.card_set
-    console.log('✅ Campo Set aggiornato con:', card.card_set.name)
+  if (card.card_set || card.cardSet) {
+    const cardSet = card.card_set || card.cardSet
+    localFilters.value.set = cardSet.id
+    selectedCardSet.value = cardSet
+    console.log('✅ Campo Set aggiornato con:', cardSet.name)
     // Popola anche Brand se disponibile
-    if (card.card_set.brand) {
-      localFilters.value.brand = card.card_set.brand
-      console.log('✅ Campo Brand aggiornato con:', card.card_set.brand)
+    if (cardSet.brand) {
+      localFilters.value.brand = cardSet.brand
+      console.log('✅ Campo Brand aggiornato con:', cardSet.brand)
     }
   }
   
   if (card.year) {
     localFilters.value.year = card.year
     console.log('✅ Campo Year aggiornato con:', card.year)
-  } else if (card.card_set && card.card_set.year) {
-    localFilters.value.year = card.card_set.year
-    console.log('✅ Campo Year aggiornato dal set con:', card.card_set.year)
+  } else if ((card.card_set || card.cardSet) && (card.card_set?.year || card.cardSet?.year)) {
+    const year = card.card_set?.year || card.cardSet?.year
+    localFilters.value.year = year
+    console.log('✅ Campo Year aggiornato dal set con:', year)
   }
   
   // Per Disney/Spongebob, usa rarity_variation se presente, altrimenti rarity
