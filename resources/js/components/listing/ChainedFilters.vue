@@ -403,6 +403,7 @@ const localFilters = ref({
   year: '',
   number: '',
   price: '',
+  cardNameSearch: '',
   ...props.initialFilters
 })
 
