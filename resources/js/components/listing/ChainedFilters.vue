@@ -192,6 +192,66 @@
       </button>
     </div>
 
+    <!-- Carte per categorie senza giocatori (Disney, Spongebob) -->
+    <div v-if="!showPlayer && ['disney', 'spongebob'].includes(props.category) && (localFilters.set || localFilters.year || localFilters.brand || localFilters.rarity)" class="mt-6">
+      <!-- Info empty state ABOVE header -->
+      <div v-if="filteredCards.length === 0 && hasSearchedCards" class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-800">
+        Nessuna carta disponibile con questi criteri
+      </div>
+      <div v-if="filteredCards.length > 0 || !hasSearchedCards" class="mb-4">
+        <label class="block text-lg font-medium text-gray-700">
+          Seleziona Carta ({{ filteredCards.length }} disponibili)
+        </label>
+        <p class="text-sm text-gray-600 mt-1">
+          Seleziona i filtri sopra per cercare le carte disponibili
+        </p>
+      </div>
+      <!-- Cards grid -->
+      <div v-if="filteredCards.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-80 overflow-y-auto">
+        <div 
+          v-for="card in filteredCards" 
+          :key="card.id"
+          @click="selectCard(card)"
+          :class="[
+            'p-4 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md',
+            selectedCard && selectedCard.id === card.id 
+              ? 'border-primary bg-primary/5 shadow-md ring-2 ring-primary/20' 
+              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+          ]"
+        >
+          <!-- Header con nome e numero -->
+          <div class="flex justify-between items-start mb-2">
+            <div class="text-sm font-medium text-gray-900 truncate flex-1 mr-2">{{ formatCardName(card.name) }}</div>
+          <div v-if="card.card_number_in_set && /^\d+(\/\d+)?$/.test(card.card_number_in_set)" class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+            /{{ card.card_number_in_set }}
+            </div>
+          </div>
+          
+          <!-- Set e Anno -->
+          <div class="text-xs text-gray-600 mb-1">
+            <div class="font-medium">{{ card.card_set?.name || 'N/A' }}</div>
+            <!-- Mostra l'anno solo se il set non contiene già l'anno nel nome -->
+            <div v-if="card.year && !card.card_set?.name?.includes(card.year)" class="text-gray-500">{{ card.year }}</div>
+          </div>
+          
+          <!-- Rarity e Brand -->
+          <div class="flex justify-between items-center text-xs">
+            <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded-full">
+              {{ card.rarity || 'N/A' }}{{ card.rarity_variation ? ` (${card.rarity_variation})` : '' }}
+            </span>
+            <span v-if="card.card_set?.brand" class="text-gray-500">
+              {{ card.card_set.brand }}
+            </span>
+          </div>
+          
+          <!-- Indicatore di selezione -->
+          <div v-if="selectedCard && selectedCard.id === card.id" class="mt-2 text-xs text-primary font-medium">
+            ✓ Selezionata
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Carte del giocatore selezionato (solo per Single Card) -->
     <div v-if="showPlayer && selectedPlayer && selectedPlayer.cards && selectedPlayer.cards.length > 0" class="mt-6">
       <!-- Info empty state ABOVE header -->
@@ -1870,24 +1930,40 @@ watch(() => localFilters.value.set, async (newSetId) => {
     await restoreSelectedEntities()
   }
   
-  filterCardsBySet()
-  // IMPORTANTE: Carica le opzioni disponibili per l'anno quando viene selezionato un set
-  // Questo aggiorna il dropdown Year con le annate disponibili per il set selezionato
-  if (localFilters.value.set) {
-    loadChainedData()
+  if (['disney', 'spongebob'].includes(props.category) && !props.showPlayer) {
+    searchCardsForCategory()
+  } else {
+    filterCardsBySet()
+    // IMPORTANTE: Carica le opzioni disponibili per l'anno quando viene selezionato un set
+    // Questo aggiorna il dropdown Year con le annate disponibili per il set selezionato
+    if (localFilters.value.set) {
+      loadChainedData()
+    }
   }
 })
 
 // Aggiorna lista carte quando cambiano brand/year/rarity
 watch(() => localFilters.value.brand, () => {
-  recomputeFilteredCards()
+  if (['disney', 'spongebob'].includes(props.category) && !props.showPlayer) {
+    searchCardsForCategory()
+  } else {
+    recomputeFilteredCards()
+  }
 })
 watch(() => localFilters.value.year, () => {
-  recomputeFilteredCards()
+  if (['disney', 'spongebob'].includes(props.category) && !props.showPlayer) {
+    searchCardsForCategory()
+  } else {
+    recomputeFilteredCards()
+  }
 })
 watch(() => localFilters.value.rarity, () => {
   console.log('🔄 Rarity filter cambiato:', localFilters.value.rarity)
-  recomputeFilteredCards()
+  if (['disney', 'spongebob'].includes(props.category) && !props.showPlayer) {
+    searchCardsForCategory()
+  } else {
+    recomputeFilteredCards()
+  }
 })
 // Watch per popolare selectedPlayer quando playerSearch cambia ma selectedPlayer è vuoto
 watch(() => localFilters.value.playerSearch, async (newSearch) => {

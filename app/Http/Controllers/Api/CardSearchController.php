@@ -29,9 +29,13 @@ class CardSearchController extends Controller
             $q->where('status', 'active');
         });
 
-        // Filtri per categoria
+        // Filtri per categoria (supporta sia ID che slug)
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
+        } elseif ($request->filled('category')) {
+            $query->whereHas('category', function($q) use ($request) {
+                $q->where('slug', $request->category);
+            });
         }
 
         // Filtri per set
