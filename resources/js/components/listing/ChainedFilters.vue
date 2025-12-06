@@ -234,9 +234,9 @@
         </p>
       </div>
       <!-- Cards grid -->
-      <div v-if="filteredCards.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-80 overflow-y-auto">
+      <div v-if="filteredCards.length > 0 || selectedCard" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-80 overflow-y-auto">
         <div 
-          v-for="card in filteredCards" 
+          v-for="card in (filteredCards.length > 0 ? filteredCards : (selectedCard ? [selectedCard] : []))" 
           :key="card.id"
           @click="selectCard(card)"
           :class="[
@@ -256,9 +256,9 @@
           
           <!-- Set e Anno -->
           <div class="text-xs text-gray-600 mb-1">
-            <div class="font-medium">{{ card.card_set?.name || 'N/A' }}</div>
+            <div class="font-medium">{{ card.card_set?.name || card.cardSet?.name || 'N/A' }}</div>
             <!-- Mostra l'anno solo se il set non contiene già l'anno nel nome -->
-            <div v-if="card.year && !card.card_set?.name?.includes(card.year)" class="text-gray-500">{{ card.year }}</div>
+            <div v-if="card.year && !(card.card_set?.name || card.cardSet?.name)?.includes(card.year)" class="text-gray-500">{{ card.year }}</div>
           </div>
           
           <!-- Rarity e Brand -->
@@ -266,8 +266,8 @@
             <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded-full">
               {{ getDisplayRarity(card) || 'N/A' }}
             </span>
-            <span v-if="card.card_set?.brand" class="text-gray-500">
-              {{ card.card_set.brand }}
+            <span v-if="card.card_set?.brand || card.cardSet?.brand" class="text-gray-500">
+              {{ card.card_set?.brand || card.cardSet?.brand }}
             </span>
           </div>
           
