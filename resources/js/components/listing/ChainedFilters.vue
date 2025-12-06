@@ -1144,11 +1144,23 @@ const selectCard = (card) => {
     console.log('✅ Campo Year aggiornato dal set con:', card.card_set.year)
   }
   
-  if (card.rarity) {
-    localFilters.value.rarity = card.rarity
-    selectedRarity.value = card.rarity
-    localFilters.value.raritySearch = card.rarity
-    console.log('✅ Campo Rarity aggiornato con:', card.rarity)
+  // Per Disney/Spongebob, usa rarity_variation se presente, altrimenti rarity
+  if (['disney', 'spongebob'].includes(props.category)) {
+    const displayRarity = card.rarity_variation || card.rarity
+    if (displayRarity) {
+      localFilters.value.rarity = displayRarity
+      selectedRarity.value = displayRarity
+      localFilters.value.raritySearch = displayRarity
+      console.log('✅ Campo Rarity aggiornato con (Disney/Spongebob):', displayRarity)
+    }
+  } else {
+    // Per altre categorie, usa rarity normale
+    if (card.rarity) {
+      localFilters.value.rarity = card.rarity
+      selectedRarity.value = card.rarity
+      localFilters.value.raritySearch = card.rarity
+      console.log('✅ Campo Rarity aggiornato con:', card.rarity)
+    }
   }
   
   // Aggiorna il campo Numbered con il numero della carta selezionata
