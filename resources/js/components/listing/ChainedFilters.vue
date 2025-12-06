@@ -1394,7 +1394,80 @@ const updateAvailableOptions = async () => {
 
 // (nessuna azione)
 
-// Cerca carte per categorie senza giocatori (Disney, Spongebob)
+// Cerca carte per nome (Disney, Spongebob)
+const searchCardsByName = async () => {
+  // Clear previous timeout
+  if (cardNameSearchTimeout) {
+    clearTimeout(cardNameSearchTimeout)
+  }
+  
+  const query = localFilters.value.cardNameSearch || ''
+  
+  // Skip search if query is too short
+  if (query.length < 2) {
+    filteredCardsByName.value = []
+    showCardNameDropdown.value = false
+    return
+  }
+  
+  // Debounce di 300ms
+  cardNameSearchTimeout = setTimeout(async () => {
+    try {
+      const params = new URLSearchParams()
+      params.append('name', query)
+      
+      // Aggiungi filtro categoria
+      const categoryMap = {
+        'disney': 'disney',
+        'spongebob': 'spongebob'
+      }
+      const dbCategory = categoryMap[props.category]
+      if (dbCategory) {
+        params.append('category', dbCategory)
+      }
+      
+      // Aggiungi altri filtri se presenti
+      if (localFilters.value.set) params.append('card_set_id', localFilters.value.set)
+      if (localFilters.value.year) params.append('year', localFilters.value.year)
+      if (localFilters.value.brand) params.append('brand', localFilters.value.brand)
+      if (localFilters.value.rarity) params.append('rarity', localFilters.value.rarity)
+      
+      const url = `/api/cards/search?${params.toString()}`
+      console.log('🔍 Ricerca carte per nome:', url)
+      
+      const response = await fetch(url)
+      if (!response.ok) {
+        console.error('❌ Errore nella ricerca carte per nome:', response.status)
+        filteredCardsByName.value = []
+        return
+      }
+      
+      const data = await response.json()
+      console.log('🔍 Carte trovate per nome:', data.cards?.length || 0)
+      
+      filteredCardsByName.value = data.cards || []
+      showCardNameDropdown.value = true
+    } catch (error) {
+      console.error('❌ Errore nella ricerca carte per nome:', error)
+      filteredCardsByName.value = []
+    }
+  }, 300)
+}
+
+const onCardNameFocus = () => {
+  if (filteredCardsByName.value.length > 0) {
+    showCardNameDropdown.value = true
+  }
+}
+
+const onCardNameBlur = () => {
+  // Delay per permettere il click sulla carta
+  setTimeout(() => {
+    showCardNameDropdown.value = false
+  }, 200)
+}
+
+// Cerca carte per categorie senza giocatori (Disney, Spongebob) quando cambiano i filtri
 let searchCardsTimeout = null
 const searchCardsForCategory = async () => {
   // Debounce per evitare troppe chiamate
@@ -1410,6 +1483,11 @@ const searchCardsForCategory = async () => {
       if (localFilters.value.year) params.append('year', localFilters.value.year)
       if (localFilters.value.brand) params.append('brand', localFilters.value.brand)
       if (localFilters.value.rarity) params.append('rarity', localFilters.value.rarity)
+      
+      // Se c'è una ricerca per nome, aggiungila
+      if (localFilters.value.cardNameSearch && localFilters.value.cardNameSearch.length >= 2) {
+        params.append('name', localFilters.value.cardNameSearch)
+      }
       
       // Aggiungi filtro categoria
       const categoryMap = {
