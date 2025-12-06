@@ -1,5 +1,29 @@
 <template>
   <div class="space-y-4">
+      <!-- Card Name Search (Solo per categorie senza giocatori: Disney, Spongebob) -->
+    <div v-if="!showPlayer && ['disney', 'spongebob'].includes(props.category)" class="mb-4">
+      <label class="block text-sm font-medium text-gray-700 mb-2">Nome Carta</label>
+      <div class="relative">
+        <input 
+          v-model="localFilters.cardNameSearch"
+          type="text" 
+          placeholder="Cerca carta per nome..."
+          class="block w-full h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
+          @input="searchCardsByName"
+          @focus="onCardNameFocus"
+          @blur="onCardNameBlur"
+        />
+        <div v-if="filteredCardsByName.length > 0 && showCardNameDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+          <div v-for="card in filteredCardsByName" :key="card.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectCard(card)">
+            <div class="flex flex-col">
+              <span class="font-normal block truncate">{{ formatCardName(card.name) }}</span>
+              <span v-if="card.card_set" class="text-xs text-gray-500">{{ card.card_set.name }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
       <!-- Player Selection (Solo per Single Card) -->
     <div v-if="showPlayer" class="mb-4">
       <label class="block text-sm font-medium text-gray-700 mb-2">Player *</label>
@@ -416,6 +440,9 @@ const formatCardName = (name) => {
 const showTeamDropdown = ref(false)
 const showSetDropdown = ref(false)
 const showRarityDropdown = ref(false)
+const showCardNameDropdown = ref(false)
+const filteredCardsByName = ref([])
+let cardNameSearchTimeout = null
 
 // Computed
 const canSearch = computed(() => {

@@ -42,6 +42,12 @@ class CardSearchController extends Controller
                 $q->where('slug', $request->category);
             });
         }
+        
+        // Filtro per nome carta
+        if ($request->filled('name')) {
+            $name = $request->get('name');
+            $query->where('name', 'LIKE', "%{$name}%");
+        }
 
         // Filtri per set
         if ($request->filled('card_set_id')) {
