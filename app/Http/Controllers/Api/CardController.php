@@ -53,6 +53,24 @@ class CardController extends Controller
                               ->orWhere('slug', 'tcg');
                         });
                         break;
+                    case 'disney':
+                        $query->whereHas('category', function($q) {
+                            $q->where('name', 'Disney')
+                              ->orWhere('slug', 'disney');
+                        });
+                        break;
+                    case 'spongebob':
+                        $query->whereHas('category', function($q) {
+                            $q->where('name', 'Spongebob')
+                              ->orWhere('slug', 'spongebob');
+                        });
+                        break;
+                    default:
+                        // Per altre categorie, usa lo slug direttamente
+                        $query->whereHas('category', function($q) use ($category) {
+                            $q->where('slug', $category);
+                        });
+                        break;
                 }
             }
 
@@ -163,6 +181,24 @@ class CardController extends Controller
                             $q->where('name', 'Pokemon')
                               ->orWhere('slug', 'pokemon')
                               ->orWhere('slug', 'tcg');
+                        });
+                        break;
+                    case 'disney':
+                        $query->whereHas('cardModel.category', function($q) {
+                            $q->where('name', 'Disney')
+                              ->orWhere('slug', 'disney');
+                        });
+                        break;
+                    case 'spongebob':
+                        $query->whereHas('cardModel.category', function($q) {
+                            $q->where('name', 'Spongebob')
+                              ->orWhere('slug', 'spongebob');
+                        });
+                        break;
+                    default:
+                        // Per altre categorie, usa lo slug direttamente
+                        $query->whereHas('cardModel.category', function($q) use ($category) {
+                            $q->where('slug', $category);
                         });
                         break;
                 }
@@ -548,7 +584,9 @@ class CardController extends Controller
             $categoryMap = [
                 'football' => 'calcio',
                 'basketball' => 'basketball', 
-                'pokemon' => 'pokemon'
+                'pokemon' => 'pokemon',
+                'disney' => 'disney',
+                'spongebob' => 'spongebob'
             ];
 
             $dbCategory = $categoryMap[$category] ?? $category;
@@ -844,7 +882,9 @@ class CardController extends Controller
         $categoryMap = [
             'calcio' => 'football',
             'basketball' => 'basketball',
-            'pokemon' => 'pokemon'
+            'pokemon' => 'pokemon',
+            'disney' => 'disney',
+            'spongebob' => 'spongebob'
         ];
         
         return $categoryMap[$categorySlug] ?? $categorySlug;
@@ -862,7 +902,9 @@ class CardController extends Controller
             $categoryMap = [
                 'football' => 'calcio',
                 'basketball' => 'basketball', 
-                'pokemon' => 'pokemon'
+                'pokemon' => 'pokemon',
+                'disney' => 'disney',
+                'spongebob' => 'spongebob'
             ];
 
             $dbCategory = $categoryMap[$category] ?? $category;

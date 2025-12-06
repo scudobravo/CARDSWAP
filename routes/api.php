@@ -12,6 +12,8 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\FootballFilterController;
 use App\Http\Controllers\Api\BasketballFilterController;
 use App\Http\Controllers\Api\PokemonFilterController;
+use App\Http\Controllers\Api\DisneyFilterController;
+use App\Http\Controllers\Api\SpongebobFilterController;
 use App\Http\Controllers\Api\CardSearchController;
 use App\Http\Controllers\Api\CardModelController;
 use App\Http\Controllers\Api\CardListingController;
@@ -317,6 +319,20 @@ Route::prefix('pokemon/filters')->group(function () {
     Route::get('/chained', [PokemonFilterController::class, 'getChainedFilters']);
     Route::get('/advanced', [PokemonFilterController::class, 'getAdvancedFilters']);
     Route::get('/products', [PokemonFilterController::class, 'getFilteredProducts']);
+});
+
+// Rotte per filtri Disney (pubbliche)
+Route::prefix('disney/filters')->group(function () {
+    Route::get('/options', [DisneyFilterController::class, 'getFilterOptions']);
+    Route::get('/card-sets/search', [DisneyFilterController::class, 'searchCardSets']);
+    Route::get('/products', [DisneyFilterController::class, 'getFilteredProducts']);
+});
+
+// Rotte per filtri Spongebob (pubbliche)
+Route::prefix('spongebob/filters')->group(function () {
+    Route::get('/options', [SpongebobFilterController::class, 'getFilterOptions']);
+    Route::get('/card-sets/search', [SpongebobFilterController::class, 'searchCardSets']);
+    Route::get('/products', [SpongebobFilterController::class, 'getFilteredProducts']);
 });
 
 // Rotte per ricerca carte (pubbliche)
