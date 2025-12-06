@@ -1488,6 +1488,12 @@ const loadCardSetsForPlayer = async () => {
 
 const loadChainedData = async () => {
   try {
+    // Skip chained data for categories that don't support it (Disney, Spongebob)
+    if (['disney', 'spongebob'].includes(props.category)) {
+      console.log('🔄 Categoria non supporta filtri a catena, skip')
+      return
+    }
+    
     // Controlla se ci sono troppi filtri selezionati per evitare errori 500
     const activeFiltersCount = [
       localFilters.value.player,
