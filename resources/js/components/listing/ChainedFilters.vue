@@ -1154,12 +1154,16 @@ const selectCard = (card) => {
       console.log('✅ Campo Rarity aggiornato con (Disney/Spongebob):', displayRarity)
     }
   } else {
-    // Per altre categorie, usa rarity normale
-    if (card.rarity) {
-      localFilters.value.rarity = card.rarity
-      selectedRarity.value = card.rarity
-      localFilters.value.raritySearch = card.rarity
-      console.log('✅ Campo Rarity aggiornato con:', card.rarity)
+    // Per altre categorie (football, basketball, pokemon), usa rarity con rarity_variation se presente
+    let displayRarity = card.rarity || ''
+    if (card.rarity_variation) {
+      displayRarity = displayRarity ? `${displayRarity} (${card.rarity_variation})` : card.rarity_variation
+    }
+    if (displayRarity) {
+      localFilters.value.rarity = displayRarity
+      selectedRarity.value = displayRarity
+      localFilters.value.raritySearch = displayRarity
+      console.log('✅ Campo Rarity aggiornato con:', displayRarity)
     }
   }
   
