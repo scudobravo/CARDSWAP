@@ -188,7 +188,8 @@
             <!-- Chained Filters per Single Card -->
             <ChainedFilters 
               :category="selectedCategory"
-              :show-player="true"
+              :show-player="!['disney', 'spongebob'].includes(selectedCategory)"
+              :show-team="!['disney', 'spongebob'].includes(selectedCategory)"
               :show-number="true"
               :show-price="false"
               :show-search-button="false"

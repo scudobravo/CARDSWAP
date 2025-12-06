@@ -529,6 +529,12 @@ const removeRarity = () => {
 }
 
 const searchPlayers = async () => {
+  // Skip search for categories that don't support players
+  if (!props.showPlayer || ['disney', 'spongebob'].includes(props.category)) {
+    filteredPlayers.value = []
+    return
+  }
+  
   // Clear previous timeout
   if (searchTimeout) {
     clearTimeout(searchTimeout)
@@ -631,6 +637,12 @@ const searchTeams = async () => {
   console.log('🔍 Player ID:', localFilters.value.player)
   
   // Se non c'è query ma c'è un giocatore selezionato, carica le squadre del giocatore
+  // Skip search for categories that don't support teams
+  if (!props.showTeam || ['disney', 'spongebob'].includes(props.category)) {
+    filteredTeams.value = []
+    return
+  }
+  
   if (query.length < 2 && localFilters.value.player) {
     console.log('🔍 Nessuna query, carico squadre per giocatore selezionato')
     await loadTeamsForPlayer()
@@ -1339,6 +1351,11 @@ const searchCards = () => {
 }
 
 const loadTeamsForPlayer = async () => {
+  // Skip for categories that don't support teams
+  if (!props.showTeam || ['disney', 'spongebob'].includes(props.category)) {
+    return
+  }
+  
   if (!localFilters.value.player) {
     console.log('⚠️ Nessun player ID per caricare squadre')
     return
