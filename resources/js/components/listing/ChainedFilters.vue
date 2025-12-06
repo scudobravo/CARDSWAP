@@ -329,7 +329,7 @@
           <!-- Rarity e Brand -->
           <div class="flex justify-between items-center text-xs">
             <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded-full">
-              {{ card.rarity || 'N/A' }}{{ card.rarity_variation ? ` (${card.rarity_variation})` : '' }}
+              {{ getDisplayRarity(card) || 'N/A' }}
             </span>
             <span v-if="card.card_set?.brand" class="text-gray-500">
               {{ card.card_set.brand }}
