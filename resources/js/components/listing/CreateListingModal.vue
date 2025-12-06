@@ -180,6 +180,8 @@
                 <option value="football">Calcio</option>
                 <option value="basketball">Basketball</option>
                 <option value="pokemon">Pokemon</option>
+                <option value="disney">Disney</option>
+                <option value="spongebob">Spongebob</option>
               </select>
             </div>
 
@@ -212,6 +214,8 @@
                 <option value="football">Calcio</option>
                 <option value="basketball">Basketball</option>
                 <option value="pokemon">Pokemon</option>
+                <option value="disney">Disney</option>
+                <option value="spongebob">Spongebob</option>
               </select>
             </div>
 
@@ -263,6 +267,8 @@
                 <option value="football">Calcio</option>
                 <option value="basketball">Basketball</option>
                 <option value="pokemon">Pokemon</option>
+                <option value="disney">Disney</option>
+                <option value="spongebob">Spongebob</option>
               </select>
             </div>
 
@@ -295,6 +301,8 @@
                 <option value="football">Calcio</option>
                 <option value="basketball">Basketball</option>
                 <option value="pokemon">Pokemon</option>
+                <option value="disney">Disney</option>
+                <option value="spongebob">Spongebob</option>
               </select>
             </div>
 
@@ -326,6 +334,8 @@
                 <option value="football">Calcio</option>
                 <option value="basketball">Basketball</option>
                 <option value="pokemon">Pokemon</option>
+                <option value="disney">Disney</option>
+                <option value="spongebob">Spongebob</option>
               </select>
             </div>
 
@@ -3242,6 +3252,10 @@ const initializeEditMode = async (listing) => {
           selectedCategory.value = 'basketball'
         } else if (categoryName.includes('pokemon')) {
           selectedCategory.value = 'pokemon'
+        } else if (categoryName.includes('disney')) {
+          selectedCategory.value = 'disney'
+        } else if (categoryName.includes('spongebob')) {
+          selectedCategory.value = 'spongebob'
         }
       }
       
