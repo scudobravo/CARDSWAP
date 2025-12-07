@@ -342,8 +342,35 @@ class DisneyFilterController extends Controller
             ->pluck('rarity_variation')
             ->toArray();
         
+        // Estrai anche dal nome della carta (parte tra parentesi) se rarity_variation è vuoto
+        // Es: "Caterpillar - TOPPS DISNEY WONDER (Orange Foil)" -> "Orange Foil"
+        $raritiesFromName = [];
+        $cardsForNameExtraction = $baseQuery->clone()
+            ->when(!empty($query) && strlen($query) >= 1, function($q) use ($query) {
+                $q->where('name', 'LIKE', "%{$query}%");
+            })
+            ->where(function($q) {
+                $q->whereNull('rarity_variation')
+                  ->orWhere('rarity_variation', '=', '');
+            })
+            ->select('name')
+            ->get();
+        
+        foreach ($cardsForNameExtraction as $card) {
+            // Estrai la parte tra parentesi dal nome
+            if (preg_match('/\(([^)]+)\)/', $card->name, $matches)) {
+                $extractedRarity = trim($matches[1]);
+                if (!empty($extractedRarity)) {
+                    // Se c'è una query, verifica che corrisponda
+                    if (empty($query) || stripos($extractedRarity, $query) !== false) {
+                        $raritiesFromName[] = $extractedRarity;
+                    }
+                }
+            }
+        }
+        
         // Combina e rimuovi duplicati
-        $rarities = array_unique(array_merge($raritiesFromRarity, $raritiesFromVariation));
+        $rarities = array_unique(array_merge($raritiesFromRarity, $raritiesFromVariation, $raritiesFromName));
         
         // Applica il filtro di ricerca anche sui risultati finali per sicurezza (case-insensitive)
         if (!empty($query) && strlen($query) >= 1) {
