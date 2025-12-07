@@ -177,6 +177,7 @@ class ImportSpongebobCards extends Command
                 'set_name' => $cardSet->name,
                 'year' => $this->extractYear($year),
                 'rarity' => $this->mapRarity($rarity),
+                'rarity_variation' => !empty($rarityVariation) ? $rarityVariation : null,
                 'card_number' => $cardNumber,
                 'card_number_in_set' => !empty($numbered) ? $numbered : null,
                 'is_rookie' => false,
