@@ -26,6 +26,10 @@ class DisneyFilterController extends Controller
             ->distinct()
             ->orderBy('rarity')
             ->pluck('rarity')
+            ->map(function($rarity) {
+                // Mappa "common" a "Base Card" per la visualizzazione
+                return $rarity === 'common' ? 'Base Card' : $rarity;
+            })
             ->toArray();
 
         // Card sets con conteggio carte
@@ -169,9 +173,16 @@ class DisneyFilterController extends Controller
         }
 
         // Filtri per rarity (solo per singles)
+        // IMPORTANTE: Il filtro Rarity deve filtrare solo su rarity, non su rarity_variation
         if (!$isSealed && isset($filters['rarity']) && !empty($filters['rarity'])) {
-            $query->whereHas('cardModel', function($q) use ($filters) {
-                $q->where('rarity', $filters['rarity']);
+            // Mappa "Base Card" a "common" per il filtro (nel DB è salvato come "common")
+            $rarityFilter = $filters['rarity'];
+            if ($rarityFilter === 'Base Card') {
+                $rarityFilter = 'common';
+            }
+            
+            $query->whereHas('cardModel', function($q) use ($rarityFilter) {
+                $q->where('rarity', $rarityFilter);
             });
         }
 
