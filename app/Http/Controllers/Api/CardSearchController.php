@@ -280,7 +280,8 @@ class CardSearchController extends Controller
                 $imageUrl = $cardModel->image_url;
             }
 
-            // Mappa "common" a "Base Card" per Disney/Spongebob nella visualizzazione
+            // Mappa SOLO "common" a "Base Card" per Disney/Spongebob nella visualizzazione
+            // Non mappare altre rarity come "Base Tier 2" o "Cinderella 75th Story"
             $displayRarity = $cardModel->rarity;
             $categorySlug = $cardModel->category->slug ?? null;
             if (in_array($categorySlug, ['disney', 'spongebob']) && $displayRarity === 'common') {

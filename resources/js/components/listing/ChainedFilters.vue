@@ -474,6 +474,7 @@ const getDisplayRarity = (card) => {
   let displayRarity = card.rarity
   
   // Se per qualche motivo il backend non ha mappato, fallback alla mappatura frontend
+  // IMPORTANTE: Mappa SOLO "common" a "Base Card", non altre rarity come "Base Tier 2"
   if (['disney', 'spongebob'].includes(props.category)) {
     if (displayRarity === 'common') {
       displayRarity = 'Base Card'

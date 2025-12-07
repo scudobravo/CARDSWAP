@@ -176,7 +176,9 @@ class ImportSpongebobCards extends Command
                 'name' => $cardName,
                 'set_name' => $cardSet->name,
                 'year' => $this->extractYear($year),
-                'rarity' => $this->mapRarity($rarity),
+                // Per Spongebob, salva il valore originale della rarity dal CSV invece di mapparlo
+                // Es: "Cinderella 75th Story", "Base Tier 2", "Sketch", ecc.
+                'rarity' => !empty($rarity) ? $rarity : 'common',
                 'rarity_variation' => !empty($rarityVariation) ? $rarityVariation : null,
                 'card_number' => $cardNumber,
                 'card_number_in_set' => !empty($numbered) ? $numbered : null,
