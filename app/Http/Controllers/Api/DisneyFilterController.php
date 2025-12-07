@@ -346,13 +346,11 @@ class DisneyFilterController extends Controller
         // Es: "Caterpillar - TOPPS DISNEY WONDER (Orange Foil)" -> "Orange Foil"
         $raritiesFromName = [];
         $cardsForNameExtraction = $baseQuery->clone()
-            ->when(!empty($query) && strlen($query) >= 1, function($q) use ($query) {
-                $q->where('name', 'LIKE', "%{$query}%");
-            })
             ->where(function($q) {
                 $q->whereNull('rarity_variation')
                   ->orWhere('rarity_variation', '=', '');
             })
+            ->where('name', 'LIKE', '%(%)%') // Solo carte con parentesi nel nome
             ->select('name')
             ->get();
         
@@ -361,8 +359,8 @@ class DisneyFilterController extends Controller
             if (preg_match('/\(([^)]+)\)/', $card->name, $matches)) {
                 $extractedRarity = trim($matches[1]);
                 if (!empty($extractedRarity)) {
-                    // Se c'è una query, verifica che corrisponda
-                    if (empty($query) || stripos($extractedRarity, $query) !== false) {
+                    // Se c'è una query, verifica che corrisponda (cerca sia nel nome che nella parte estratta)
+                    if (empty($query) || stripos($extractedRarity, $query) !== false || stripos($card->name, $query) !== false) {
                         $raritiesFromName[] = $extractedRarity;
                     }
                 }
