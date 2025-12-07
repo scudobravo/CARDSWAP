@@ -328,7 +328,13 @@ class SpongebobFilterController extends Controller
 
         $query = $request->get('q', '');
         
-        // Query base per le rarità: cerca sia in rarity che in rarity_variation
+        // IMPORTANTE: Mappa "Base Card" a "common" per la ricerca (nel DB è salvato come "common")
+        $searchQuery = $query;
+        if (stripos($query, 'Base Card') !== false || $query === 'Base Card') {
+            $searchQuery = 'common';
+        }
+        
+        // Query base per le rarità: cerca SOLO in rarity (non in rarity_variation per il filtro)
         $baseQuery = CardModel::whereHas('category', function($catQuery) {
                 $catQuery->where('slug', 'spongebob');
             })
@@ -349,60 +355,34 @@ class SpongebobFilterController extends Controller
             });
         }
         
-        // Estrai le rarità uniche: da rarity e rarity_variation
+        // Estrai le rarità uniche: SOLO da rarity (non da rarity_variation per il filtro)
         $raritiesFromRarity = $baseQuery->clone()
             ->whereNotNull('rarity')
             ->where('rarity', '!=', '')
-            ->when(!empty($query) && strlen($query) >= 1, function($q) use ($query) {
-                $q->where('rarity', 'LIKE', "%{$query}%");
+            ->when(!empty($searchQuery) && strlen($searchQuery) >= 1, function($q) use ($searchQuery) {
+                $q->where('rarity', 'LIKE', "%{$searchQuery}%");
             })
             ->select('rarity')
             ->distinct()
             ->pluck('rarity')
+            ->map(function($rarity) {
+                // Mappa "common" a "Base Card" per la visualizzazione
+                return $rarity === 'common' ? 'Base Card' : $rarity;
+            })
             ->toArray();
         
-        $raritiesFromVariation = $baseQuery->clone()
-            ->whereNotNull('rarity_variation')
-            ->where('rarity_variation', '!=', '')
-            ->when(!empty($query) && strlen($query) >= 1, function($q) use ($query) {
-                $q->where('rarity_variation', 'LIKE', "%{$query}%");
-            })
-            ->select('rarity_variation')
-            ->distinct()
-            ->pluck('rarity_variation')
-            ->toArray();
-        
-        // Estrai anche dal nome della carta (parte tra parentesi) se rarity_variation è vuoto
-        // Es: "Caterpillar - TOPPS DISNEY WONDER (Orange Foil)" -> "Orange Foil"
-        $raritiesFromName = [];
-        $cardsForNameExtraction = $baseQuery->clone()
-            ->where(function($q) {
-                $q->whereNull('rarity_variation')
-                  ->orWhere('rarity_variation', '=', '');
-            })
-            ->where('name', 'LIKE', '%(%)%') // Solo carte con parentesi nel nome
-            ->select('name')
-            ->get();
-        
-        foreach ($cardsForNameExtraction as $card) {
-            // Estrai la parte tra parentesi dal nome
-            if (preg_match('/\(([^)]+)\)/', $card->name, $matches)) {
-                $extractedRarity = trim($matches[1]);
-                if (!empty($extractedRarity)) {
-                    // Se c'è una query, verifica che corrisponda (cerca sia nel nome che nella parte estratta)
-                    if (empty($query) || stripos($extractedRarity, $query) !== false || stripos($card->name, $query) !== false) {
-                        $raritiesFromName[] = $extractedRarity;
-                    }
-                }
-            }
-        }
-        
-        // Combina e rimuovi duplicati
-        $rarities = array_unique(array_merge($raritiesFromRarity, $raritiesFromVariation, $raritiesFromName));
+        // IMPORTANTE: Il filtro Rarity deve restituire SOLO i valori di rarity, non rarity_variation
+        // Non cerchiamo più in rarity_variation per il filtro Rarity
+        $rarities = $raritiesFromRarity;
         
         // Applica il filtro di ricerca anche sui risultati finali per sicurezza (case-insensitive)
+        // Cerca sia in "Base Card" che in "common" se la query è "Base Card"
         if (!empty($query) && strlen($query) >= 1) {
             $rarities = array_filter($rarities, function($rarity) use ($query) {
+                // Se la query è "Base Card", accetta anche "common" mappato a "Base Card"
+                if (stripos($query, 'Base Card') !== false || $query === 'Base Card') {
+                    return stripos($rarity, 'Base Card') !== false || stripos($rarity, 'common') !== false;
+                }
                 return stripos($rarity, $query) !== false;
             });
         }

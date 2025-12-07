@@ -1163,26 +1163,19 @@ const selectCard = (card) => {
     console.log('✅ Campo Year aggiornato dal set con:', year)
   }
   
-  // Per Disney/Spongebob, usa rarity_variation se presente, altrimenti rarity
+  // IMPORTANTE: Per Disney/Spongebob, usa SOLO rarity (non rarity_variation) per il filtro
+  // Mappa "common" a "Base Card" per la visualizzazione
   if (['disney', 'spongebob'].includes(props.category)) {
-    // Priorità a rarity_variation se presente, altrimenti prova a estrarre dal nome
-    let displayRarity = card.rarity_variation
-    if (!displayRarity && card.rarity === 'common') {
-      // Se rarity è "common" e non c'è rarity_variation, prova a estrarre dal nome
-      const match = card.name?.match(/\(([^)]+)\)/)
-      if (match && match[1]) {
-        displayRarity = match[1]
-      }
+    // Usa SOLO rarity, mappando "common" a "Base Card"
+    let rarityValue = card.rarity
+    if (rarityValue === 'common') {
+      rarityValue = 'Base Card'
     }
-    // Se ancora non c'è, usa rarity
-    if (!displayRarity) {
-      displayRarity = card.rarity
-    }
-    if (displayRarity) {
-      localFilters.value.rarity = displayRarity
-      selectedRarity.value = displayRarity
-      localFilters.value.raritySearch = displayRarity
-      console.log('✅ Campo Rarity aggiornato con (Disney/Spongebob):', displayRarity, 'da rarity_variation:', card.rarity_variation, 'rarity:', card.rarity)
+    if (rarityValue) {
+      localFilters.value.rarity = rarityValue
+      selectedRarity.value = rarityValue
+      localFilters.value.raritySearch = rarityValue
+      console.log('✅ Campo Rarity aggiornato con (Disney/Spongebob):', rarityValue, 'da rarity:', card.rarity)
     }
   } else {
     // Per altre categorie (football, basketball, pokemon), usa rarity con rarity_variation se presente
