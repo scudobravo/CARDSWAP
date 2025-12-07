@@ -15,13 +15,7 @@
         />
         <div v-if="filteredCardsByName.length > 0 && showCardNameDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
           <div v-for="card in filteredCardsByName" :key="card.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectCard(card)">
-            <div class="flex flex-col">
-              <span class="font-normal block truncate">{{ formatCardName(card.name) }}</span>
-              <div class="flex items-center gap-2 mt-1">
-                <span v-if="card.card_set || card.cardSet" class="text-xs text-gray-500">{{ card.card_set?.name || card.cardSet?.name }}</span>
-                <span v-if="getDisplayRarity(card)" class="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full">{{ getDisplayRarity(card) }}</span>
-              </div>
-            </div>
+            <span class="font-normal block truncate">{{ getBaseCardName(card.name) }}</span>
           </div>
         </div>
       </div>
@@ -450,6 +444,17 @@ const formatCardName = (name) => {
   // Il numero verrà mostrato solo nel badge blu in alto a destra
   formatted = formatted.replace(/\s*\/\d+(\/\d+)?\s*$/, '')
   return formatted.trim()
+}
+
+// Get base card name: rimuove la rarità tra parentesi per mostrare solo il nome base nel dropdown
+const getBaseCardName = (name) => {
+  if (!name) return ''
+  // Rimuovi la parte tra parentesi (rarity variation) dal nome
+  // Es: "Caterpillar - TOPPS DISNEY WONDER (Black Sparkle Foil)" -> "Caterpillar - TOPPS DISNEY WONDER"
+  let baseName = name.replace(/\s*\([^)]+\)\s*$/, '')
+  // Rimuovi anche eventuali numeri alla fine
+  baseName = baseName.replace(/\s*\/\d+(\/\d+)?\s*$/, '')
+  return baseName.trim()
 }
 
 // Get display rarity: per Disney/Spongebob mostra rarity_variation se presente, altrimenti rarity
