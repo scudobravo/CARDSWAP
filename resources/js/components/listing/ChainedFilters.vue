@@ -447,7 +447,7 @@ const formatCardName = (name) => {
   return formatted.trim()
 }
 
-// Get base card name: rimuove la rarità tra parentesi per mostrare solo il nome base nel dropdown
+// Get base card name: rimuove la rarità tra parentesi e il brand/set per mostrare solo il nome del personaggio
 const getBaseCardName = (name) => {
   if (!name) return ''
   // Rimuovi la parte tra parentesi (rarity variation) dal nome
@@ -455,6 +455,12 @@ const getBaseCardName = (name) => {
   let baseName = name.replace(/\s*\([^)]+\)\s*$/, '')
   // Rimuovi anche eventuali numeri alla fine
   baseName = baseName.replace(/\s*\/\d+(\/\d+)?\s*$/, '')
+  // Estrai solo la parte prima del trattino (nome del personaggio)
+  // Es: "Caterpillar - TOPPS DISNEY WONDER" -> "Caterpillar"
+  const parts = baseName.split(' - ')
+  if (parts.length > 0) {
+    return parts[0].trim()
+  }
   return baseName.trim()
 }
 
