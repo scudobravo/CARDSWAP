@@ -282,5 +282,91 @@ class DisneyFilterController extends Controller
             'total' => $listings->total(),
         ]);
     }
+
+    /**
+     * Search rarities with autocomplete (minimum 1 character)
+     * Per Disney, cerca sia in rarity che in rarity_variation
+     */
+    public function searchRarities(Request $request)
+    {
+        $request->validate([
+            'q' => 'nullable|string|max:100',
+            'set_id' => 'nullable|integer',
+            'year' => 'nullable|string',
+            'brand' => 'nullable|string'
+        ]);
+
+        $query = $request->get('q', '');
+        
+        // Query base per le rarità: cerca sia in rarity che in rarity_variation
+        $raritiesQuery = CardModel::whereHas('category', function($catQuery) {
+                $catQuery->where('slug', 'disney');
+            })
+            ->where('is_active', true)
+            ->where(function($q) {
+                $q->whereNotNull('rarity')
+                  ->where('rarity', '!=', '')
+                  ->orWhereNotNull('rarity_variation')
+                  ->where('rarity_variation', '!=', '');
+            });
+        
+        // Applica filtri aggiuntivi per limitare i risultati
+        if ($request->filled('set_id')) {
+            $raritiesQuery->where('card_set_id', $request->set_id);
+        }
+        
+        if ($request->filled('year')) {
+            $raritiesQuery->where('year', $request->year);
+        }
+        
+        if ($request->filled('brand')) {
+            $raritiesQuery->whereHas('cardSet', function($setQuery) use ($request) {
+                $setQuery->where('brand', $request->brand);
+            });
+        }
+        
+        // Se c'è una query di ricerca, filtra i risultati su rarity o rarity_variation
+        if (!empty($query) && strlen($query) >= 1) {
+            $raritiesQuery->where(function($q) use ($query) {
+                $q->where('rarity', 'LIKE', "%{$query}%")
+                  ->orWhere('rarity_variation', 'LIKE', "%{$query}%");
+            });
+        }
+        
+        // Estrai le rarità uniche: da rarity e rarity_variation
+        $raritiesFromRarity = $raritiesQuery->clone()
+            ->select('rarity')
+            ->whereNotNull('rarity')
+            ->where('rarity', '!=', '')
+            ->distinct()
+            ->pluck('rarity')
+            ->toArray();
+        
+        $raritiesFromVariation = $raritiesQuery->clone()
+            ->select('rarity_variation')
+            ->whereNotNull('rarity_variation')
+            ->where('rarity_variation', '!=', '')
+            ->distinct()
+            ->pluck('rarity_variation')
+            ->toArray();
+        
+        // Combina e rimuovi duplicati
+        $rarities = array_unique(array_merge($raritiesFromRarity, $raritiesFromVariation));
+        
+        // Applica il filtro di ricerca anche sui risultati finali per sicurezza
+        if (!empty($query) && strlen($query) >= 1) {
+            $rarities = array_filter($rarities, function($rarity) use ($query) {
+                return stripos($rarity, $query) !== false;
+            });
+        }
+        
+        // Ordina i risultati
+        sort($rarities);
+        
+        // Limita a 100 risultati
+        $rarities = array_slice($rarities, 0, 100);
+        
+        return response()->json(['rarities' => array_values($rarities)]);
+    }
 }
 

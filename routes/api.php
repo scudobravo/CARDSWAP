@@ -325,6 +325,7 @@ Route::prefix('pokemon/filters')->group(function () {
 Route::prefix('disney/filters')->group(function () {
     Route::get('/options', [DisneyFilterController::class, 'getFilterOptions']);
     Route::get('/card-sets/search', [DisneyFilterController::class, 'searchCardSets']);
+    Route::get('/rarities/search', [DisneyFilterController::class, 'searchRarities']);
     Route::get('/products', [DisneyFilterController::class, 'getFilteredProducts']);
 });
 
@@ -332,6 +333,7 @@ Route::prefix('disney/filters')->group(function () {
 Route::prefix('spongebob/filters')->group(function () {
     Route::get('/options', [SpongebobFilterController::class, 'getFilterOptions']);
     Route::get('/card-sets/search', [SpongebobFilterController::class, 'searchCardSets']);
+    Route::get('/rarities/search', [SpongebobFilterController::class, 'searchRarities']);
     Route::get('/products', [SpongebobFilterController::class, 'getFilteredProducts']);
 });
 
