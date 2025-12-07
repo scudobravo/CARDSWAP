@@ -766,16 +766,30 @@ class CardListingController extends Controller
             $playerName = $cardModel->player->name ?? $cardModel->player_name ?? $cardModel->name ?? 'player';
             $slug = \Illuminate\Support\Str::slug($playerName);
             
+            // Per Disney/Spongebob, estrai solo il nome del personaggio (prima del trattino)
+            $displayName = $playerName;
+            $categorySlug = $cardModel->category->slug ?? '';
+            if (in_array($categorySlug, ['disney', 'spongebob'])) {
+                // Per Disney/Spongebob, il nome è nel campo name del CardModel, non player
+                $cardName = $cardModel->name ?? '';
+                if (strpos($cardName, ' - ') !== false) {
+                    $displayName = trim(explode(' - ', $cardName)[0]);
+                } else {
+                    $displayName = $cardName;
+                }
+            }
+            
             $transformedData = [
                 'id' => $cardListing->id,
                 'listing_id' => $cardListing->id,
                 'card_model_id' => $cardModel->id ?? null,
-                'name' => $playerName,
+                'name' => $displayName,
                 'slug' => $slug,
                 'team' => $cardModel->team->name ?? 'Unknown Team',
                 'set_name' => $cardModel->cardSet->name ?? 'Set Name',
                 'year' => $cardModel->year ?? date('Y'),
                 'rarity' => $cardModel->rarity ?? 'Rare',
+                'rarity_variation' => $cardModel->rarity_variation ?? null,
                 'price' => floatval($cardListing->price), // Restituisce il prezzo come numero, non formattato
                 // Se c'è grading, condition dovrebbe essere null, altrimenti usa il valore o 'excellent' come default
                 'condition' => $cardListing->grading_company_id ? null : ($cardListing->condition ?? 'excellent'),
