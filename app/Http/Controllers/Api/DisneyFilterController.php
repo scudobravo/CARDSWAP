@@ -267,6 +267,12 @@ class DisneyFilterController extends Controller
                 $cardName = trim(explode(' - ', $cardName)[0]);
             }
             
+            // Mappa "common" a "Base Card" per Disney
+            $displayRarity = $cardModel->rarity ?? null;
+            if ($displayRarity === 'common') {
+                $displayRarity = 'Base Card';
+            }
+            
             return [
                 'id' => $cardModel->id,
                 'listing_id' => $listing->id,
@@ -275,7 +281,7 @@ class DisneyFilterController extends Controller
                 'slug' => $cardModel->slug,
                 'set' => $cardSet->name ?? null,
                 'year' => $cardModel->year ?? ($cardSet->year ?? null),
-                'rarity' => $cardModel->rarity ?? null,
+                'rarity' => $displayRarity,
                 'rarity_variation' => $cardModel->rarity_variation ?? null,
                 'price' => $listing->price,
                 'condition' => $listing->condition,
