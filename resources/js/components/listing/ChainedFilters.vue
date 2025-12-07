@@ -234,7 +234,8 @@
           Seleziona Carta ({{ filteredCards.length }} disponibili)
         </label>
         <p class="text-sm text-gray-600 mt-1">
-          Seleziona i filtri sopra per cercare le carte disponibili
+          <span v-if="selectedCardName">Seleziona una variante di {{ selectedCardName }} (differenziate per Rarity e Numbered)</span>
+          <span v-else>Seleziona i filtri sopra per cercare le carte disponibili</span>
         </p>
       </div>
       <!-- Cards grid -->
