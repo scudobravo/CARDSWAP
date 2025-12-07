@@ -469,16 +469,31 @@ const getBaseCardName = (name) => {
 const getDisplayRarity = (card) => {
   if (!card) return null
   
-  // Mappa "common" a "Base Card" per Disney/Spongebob
+  // Il backend ora mappa già "common" a "Base Card" per Disney/Spongebob
+  // Quindi card.rarity potrebbe già essere "Base Card" per queste categorie
   let displayRarity = card.rarity
-  if (['disney', 'spongebob'].includes(props.category) && displayRarity === 'common') {
-    displayRarity = 'Base Card'
+  
+  // Se per qualche motivo il backend non ha mappato, fallback alla mappatura frontend
+  if (['disney', 'spongebob'].includes(props.category)) {
+    if (displayRarity === 'common') {
+      displayRarity = 'Base Card'
+    }
+    // Se rarity è null o vuoto, non mostrare nulla (non "Base Card")
+    if (!displayRarity || displayRarity === 'null' || displayRarity === '') {
+      // Se c'è rarity_variation, mostra solo quella
+      if (card.rarity_variation) {
+        return card.rarity_variation
+      }
+      return null
+    }
   }
   
   // Per tutte le categorie, mostra rarity + (rarity_variation) se presente
   if (card.rarity_variation) {
     return displayRarity ? `${displayRarity} (${card.rarity_variation})` : card.rarity_variation
   }
+  
+  // Restituisci la rarity solo se esiste, altrimenti null
   return displayRarity || null
 }
 const showTeamDropdown = ref(false)

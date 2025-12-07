@@ -280,6 +280,13 @@ class CardSearchController extends Controller
                 $imageUrl = $cardModel->image_url;
             }
 
+            // Mappa "common" a "Base Card" per Disney/Spongebob nella visualizzazione
+            $displayRarity = $cardModel->rarity;
+            $categorySlug = $cardModel->category->slug ?? null;
+            if (in_array($categorySlug, ['disney', 'spongebob']) && $displayRarity === 'common') {
+                $displayRarity = 'Base Card';
+            }
+
             return [
                 'id' => $cardModel->id,
                 'name' => $cardModel->name,
@@ -293,7 +300,7 @@ class CardSearchController extends Controller
                 'player' => $cardModel->player,
                 'team' => $cardModel->team,
                 'league' => $cardModel->league,
-                'rarity' => $cardModel->rarity,
+                'rarity' => $displayRarity, // Usa la rarity mappata per la visualizzazione
                 'rarity_variation' => $cardModel->rarity_variation,
                 'card_number' => $cardModel->card_number,
                 'card_number_in_set' => $cardModel->card_number_in_set,
