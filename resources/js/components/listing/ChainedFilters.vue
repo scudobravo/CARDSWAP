@@ -224,7 +224,7 @@
     </div>
 
     <!-- Carte per categorie senza giocatori (Disney, Spongebob) -->
-    <div v-if="!showPlayer && ['disney', 'spongebob'].includes(props.category) && (localFilters.set || localFilters.year || localFilters.brand || localFilters.rarity)" class="mt-6">
+    <div v-if="!showPlayer && ['disney', 'spongebob'].includes(props.category) && (selectedCardName || localFilters.set || localFilters.year || localFilters.brand || localFilters.rarity)" class="mt-6">
       <!-- Info empty state ABOVE header -->
       <div v-if="filteredCards.length === 0 && hasSearchedCards" class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-800">
         Nessuna carta disponibile con questi criteri
