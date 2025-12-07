@@ -1424,6 +1424,7 @@ class BasketballFilterController extends Controller
                 'set' => $cardModel->cardSet->name ?? 'Unknown Set',
                 'year' => $cardModel->year,
                 'rarity' => $cardModel->rarity,
+                'rarity_variation' => $cardModel->rarity_variation,
                 'condition' => $listing->condition ?? 'excellent',
                 'price' => number_format($listing->price ?? 0, 2, ',', '.'), // Formato italiano: punto per migliaia, virgola per decimali
                 'quantity' => $listing->quantity ?? 1,

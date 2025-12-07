@@ -260,15 +260,23 @@ class DisneyFilterController extends Controller
                 ];
             }
             
+            // Estrai solo il nome del personaggio (prima del trattino)
+            // Es: "Caterpillar - TOPPS DISNEY WONDER (Orange Foil)" -> "Caterpillar"
+            $cardName = $cardModel->name;
+            if (strpos($cardName, ' - ') !== false) {
+                $cardName = trim(explode(' - ', $cardName)[0]);
+            }
+            
             return [
                 'id' => $cardModel->id,
                 'listing_id' => $listing->id,
                 'card_model_id' => $cardModel->id,
-                'name' => $cardModel->name,
+                'name' => $cardName,
                 'slug' => $cardModel->slug,
                 'set' => $cardSet->name ?? null,
                 'year' => $cardModel->year ?? ($cardSet->year ?? null),
                 'rarity' => $cardModel->rarity ?? null,
+                'rarity_variation' => $cardModel->rarity_variation ?? null,
                 'price' => $listing->price,
                 'condition' => $listing->condition,
                 'images' => $listing->images ?? [],
