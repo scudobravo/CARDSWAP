@@ -13,16 +13,16 @@
           @focus="onCardNameFocus"
           @blur="onCardNameBlur"
         />
-        <div v-if="filteredCardsByName.length > 0 && showCardNameDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
-          <div v-for="card in filteredCardsByName" :key="card.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectCard(card)">
-            <span class="font-normal block truncate">{{ getBaseCardName(card.name) }}</span>
+        <div v-if="filteredCardNames.length > 0 && showCardNameDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+          <div v-for="(cardName, index) in filteredCardNames" :key="index" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectCardName(cardName)">
+            <span class="font-normal block truncate">{{ cardName }}</span>
           </div>
         </div>
       </div>
-      <div v-if="selectedCard" class="flex flex-wrap gap-2 mt-2">
+      <div v-if="selectedCardName" class="flex flex-wrap gap-2 mt-2">
         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary text-white">
-          {{ getBaseCardName(selectedCard.name) }}
-          <button type="button" @click="removeSelectedCard" class="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-primary-dark">
+          {{ selectedCardName }}
+          <button type="button" @click="removeSelectedCardName" class="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-primary-dark">
             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
             </svg>
@@ -489,6 +489,8 @@ const showSetDropdown = ref(false)
 const showRarityDropdown = ref(false)
 const showCardNameDropdown = ref(false)
 const filteredCardsByName = ref([])
+const filteredCardNames = ref([]) // Nomi base unici per il dropdown
+const selectedCardName = ref(null) // Nome base selezionato
 const hasSearchedCards = ref(false)
 let cardNameSearchTimeout = null
 
@@ -1317,6 +1319,40 @@ const removeSelectedCard = () => {
   onFiltersChanged()
 }
 
+// Seleziona un nome base (non una carta specifica)
+const selectCardName = (cardName) => {
+  selectedCardName.value = cardName
+  localFilters.value.cardNameSearch = cardName
+  showCardNameDropdown.value = false
+  
+  // Filtra le carte per nome base e mostra nella griglia
+  const cardsWithName = filteredCardsByName.value.filter(card => {
+    const baseName = getBaseCardName(card.name)
+    return baseName === cardName
+  })
+  
+  filteredCards.value = cardsWithName
+  hasSearchedCards.value = true
+  
+  console.log('✅ Nome base selezionato:', cardName, 'carte trovate:', cardsWithName.length)
+  
+  // Se c'è solo una carta, selezionala automaticamente
+  if (cardsWithName.length === 1) {
+    selectCard(cardsWithName[0])
+  }
+  
+  onFiltersChanged()
+}
+
+const removeSelectedCardName = () => {
+  selectedCardName.value = null
+  selectedCard.value = null
+  filteredCards.value = []
+  localFilters.value.cardNameSearch = ''
+  hasSearchedCards.value = false
+  onFiltersChanged()
+}
+
 const onFiltersChanged = () => {
   // Filtri slegati: emetti solo i filtri correnti, senza aggiornare dropdown a cascata
   emit('filters-changed', localFilters.value)
@@ -1494,6 +1530,7 @@ const searchCardsByName = async () => {
   // Skip search if query is too short
   if (query.length < 2) {
     filteredCardsByName.value = []
+    filteredCardNames.value = []
     showCardNameDropdown.value = false
     return
   }
@@ -1527,23 +1564,39 @@ const searchCardsByName = async () => {
       if (!response.ok) {
         console.error('❌ Errore nella ricerca carte per nome:', response.status)
         filteredCardsByName.value = []
+        filteredCardNames.value = []
         return
       }
       
       const data = await response.json()
       console.log('🔍 Carte trovate per nome:', data.cards?.length || 0)
       
-      filteredCardsByName.value = data.cards || []
+      // Raggruppa per nome base e mostra solo nomi unici nel dropdown
+      const cards = data.cards || []
+      filteredCardsByName.value = cards
+      
+      // Estrai nomi base unici
+      const uniqueBaseNames = new Set()
+      cards.forEach(card => {
+        const baseName = getBaseCardName(card.name)
+        if (baseName) {
+          uniqueBaseNames.add(baseName)
+        }
+      })
+      
+      filteredCardNames.value = Array.from(uniqueBaseNames).sort()
+      console.log('🔍 Nomi base unici trovati:', filteredCardNames.value.length)
       showCardNameDropdown.value = true
     } catch (error) {
       console.error('❌ Errore nella ricerca carte per nome:', error)
       filteredCardsByName.value = []
+      filteredCardNames.value = []
     }
   }, 300)
 }
 
 const onCardNameFocus = () => {
-  if (filteredCardsByName.value.length > 0) {
+  if (filteredCardNames.value.length > 0) {
     showCardNameDropdown.value = true
   }
 }
