@@ -154,11 +154,13 @@ class ImportSpongebobCards extends Command
         if (!empty($numbered)) $attributes[] = 'numbered';
 
         // Crea uno slug univoco basato sui dati della carta
+        // IMPORTANTE: NON includere rarity nello slug perché può cambiare (es. da "common" a "Cinderella 75th Story")
+        // La chiave univoca è: name + set + number + rarity_variation
         $uniqueData = json_encode([
             'name' => $cardName,
             'set' => $cardSet->name,
             'number' => $cardNumber,
-            'rarity' => $rarity,
+            'rarity_variation' => $rarityVariation, // Usa rarity_variation invece di rarity
             'numbered' => $numbered,
         ]);
         $uniqueHash = substr(md5($uniqueData), 0, 8);
