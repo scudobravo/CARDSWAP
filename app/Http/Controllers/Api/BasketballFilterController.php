@@ -960,14 +960,19 @@ class BasketballFilterController extends Controller
                           $catQ->where('slug', 'basketball');
                       });
                 })
-                // Per sealed-pack, sealed-box e lotti (che non hanno cardModel), includili sempre
+                // Per sealed-pack, sealed-box e lotti (che non hanno cardModel), includili solo se della categoria basketball
                 ->orWhere(function($sealedQ) {
                     $sealedQ->where(function($subQ) {
                         $subQ->where('listing_type', 'sealed-pack')
                              ->orWhere('listing_type', 'sealed-box')
                              ->orWhere('listing_type', 'lot');
                     })
-                    ->whereNull('card_model_id');
+                    ->whereNull('card_model_id')
+                    ->whereHas('cardSet', function($cardSetQ) {
+                        $cardSetQ->whereHas('category', function($catQ) {
+                            $catQ->where('slug', 'basketball');
+                        });
+                    });
                 });
             });
 

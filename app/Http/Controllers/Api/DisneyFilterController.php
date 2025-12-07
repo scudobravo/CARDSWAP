@@ -124,7 +124,12 @@ class DisneyFilterController extends Controller
                              ->orWhere('listing_type', 'sealed-box')
                              ->orWhere('listing_type', 'lot');
                     })
-                    ->whereNull('card_model_id');
+                    ->whereNull('card_model_id')
+                    ->whereHas('cardSet', function($cardSetQ) {
+                        $cardSetQ->whereHas('category', function($catQ) {
+                            $catQ->where('slug', 'disney');
+                        });
+                    });
                 });
             });
 
