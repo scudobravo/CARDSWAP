@@ -464,32 +464,22 @@ const getBaseCardName = (name) => {
   return baseName.trim()
 }
 
-// Get display rarity: per Disney/Spongebob mostra rarity_variation se presente, altrimenti rarity
-// Se rarity è "common" e c'è rarity_variation, mostra solo rarity_variation
+// Get display rarity: mostra sempre rarity + (rarity_variation) se presente
+// IMPORTANTE: Per Disney/Spongebob, mappa "common" a "Base Card" per la visualizzazione
 const getDisplayRarity = (card) => {
   if (!card) return null
   
-  // Per Disney/Spongebob, priorità a rarity_variation se presente
-  if (['disney', 'spongebob'].includes(props.category)) {
-    if (card.rarity_variation) {
-      return card.rarity_variation
-    }
-    // Se rarity è "common" e non c'è rarity_variation, prova a estrarre dal nome
-    if (card.rarity === 'common' || !card.rarity) {
-      // Estrai la rarità dal nome (parte tra parentesi)
-      const match = card.name?.match(/\(([^)]+)\)/)
-      if (match && match[1]) {
-        return match[1]
-      }
-    }
-    return card.rarity || null
+  // Mappa "common" a "Base Card" per Disney/Spongebob
+  let displayRarity = card.rarity
+  if (['disney', 'spongebob'].includes(props.category) && displayRarity === 'common') {
+    displayRarity = 'Base Card'
   }
   
-  // Per altre categorie, mostra rarity con rarity_variation se presente
+  // Per tutte le categorie, mostra rarity + (rarity_variation) se presente
   if (card.rarity_variation) {
-    return `${card.rarity || ''}${card.rarity ? ` (${card.rarity_variation})` : card.rarity_variation}`
+    return displayRarity ? `${displayRarity} (${card.rarity_variation})` : card.rarity_variation
   }
-  return card.rarity || null
+  return displayRarity || null
 }
 const showTeamDropdown = ref(false)
 const showSetDropdown = ref(false)
@@ -1630,7 +1620,14 @@ const searchCardsForCategory = async () => {
       if (localFilters.value.set) params.append('card_set_id', localFilters.value.set)
       if (localFilters.value.year) params.append('year', localFilters.value.year)
       if (localFilters.value.brand) params.append('brand', localFilters.value.brand)
-      if (localFilters.value.rarity) params.append('rarity', localFilters.value.rarity)
+      if (localFilters.value.rarity) {
+        // IMPORTANTE: Mappa "Base Card" a "common" per il filtro (nel DB è salvato come "common")
+        let rarityFilter = localFilters.value.rarity
+        if (['disney', 'spongebob'].includes(props.category) && rarityFilter === 'Base Card') {
+          rarityFilter = 'common'
+        }
+        params.append('rarity', rarityFilter)
+      }
       
       // Se c'è una ricerca per nome, aggiungila
       if (localFilters.value.cardNameSearch && localFilters.value.cardNameSearch.length >= 2) {

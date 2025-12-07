@@ -75,21 +75,12 @@ class CardSearchController extends Controller
         }
 
         // Filtri per rarità
+        // IMPORTANTE: Il filtro Rarity deve filtrare SOLO su rarity, non su rarity_variation
         if ($request->filled('rarity')) {
             $rarity = $request->get('rarity');
             
-            // Per Disney e Spongebob, cerca anche in rarity_variation e nel nome (tra parentesi)
-            $category = $request->get('category');
-            if (in_array($category, ['disney', 'spongebob'])) {
-                $query->where(function($q) use ($rarity) {
-                    $q->where('rarity', $rarity)
-                      ->orWhere('rarity_variation', $rarity)
-                      ->orWhere('name', 'LIKE', "%({$rarity})%");
-                });
-            } else {
-                // Per altre categorie, cerca solo in rarity
-                $query->where('rarity', $rarity);
-            }
+            // Per tutte le categorie, cerca solo in rarity
+            $query->where('rarity', $rarity);
         }
         
         // Filtri per brand (tramite set)
