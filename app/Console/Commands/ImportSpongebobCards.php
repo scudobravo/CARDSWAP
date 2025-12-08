@@ -23,7 +23,39 @@ class ImportSpongebobCards extends Command
 
     public function handle()
     {
-        $filePath = $this->option('file') ?: base_path('TOIMPORT/Lista Carte Spongebob - Foglio1.csv');
+        $filePath = $this->option('file');
+        
+        // Se non specificato, cerca in percorsi comuni
+        if (!$filePath) {
+            $fileName = 'Lista Carte Spongebob - Foglio1.csv';
+            $possiblePaths = [
+                base_path('TOIMPORT/' . $fileName),
+                base_path('../TOIMPORT/' . $fileName),
+                base_path('storage/app/' . $fileName),
+                base_path('storage/' . $fileName),
+                '/home/forge/www.cardswaptcg.com/current/TOIMPORT/' . $fileName,
+                '/home/forge/www.cardswaptcg.com/shared/TOIMPORT/' . $fileName,
+                '/home/forge/www.cardswaptcg.com/TOIMPORT/' . $fileName,
+            ];
+            
+            foreach ($possiblePaths as $path) {
+                if (file_exists($path)) {
+                    $filePath = $path;
+                    $this->info("✅ File trovato in: {$filePath}");
+                    break;
+                }
+            }
+            
+            if (!$filePath) {
+                $this->error("File non trovato. Percorsi cercati:");
+                foreach ($possiblePaths as $path) {
+                    $this->line("  - {$path}");
+                }
+                $this->error("\nUsa --file=/percorso/completo/al/file.csv per specificare il percorso manualmente");
+                return 1;
+            }
+        }
+        
         $limit = $this->option('limit') ? (int) $this->option('limit') : null;
         $this->chunkSize = (int) $this->option('chunk');
 
