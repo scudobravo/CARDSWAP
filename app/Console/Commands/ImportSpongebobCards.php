@@ -299,5 +299,56 @@ class ImportSpongebobCards extends Command
         }
         return 2025;
     }
+
+    /**
+     * Cerca un file in modo ricorsivo in una directory
+     */
+    private function findFileRecursive($dir, $fileName, $maxDepth = 3, $currentDepth = 0)
+    {
+        if ($currentDepth >= $maxDepth) {
+            return null;
+        }
+
+        if (!is_dir($dir) || !is_readable($dir)) {
+            return null;
+        }
+
+        $items = @scandir($dir);
+        if ($items === false) {
+            return null;
+        }
+
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            $path = $dir . '/' . $item;
+
+            // Evita di cercare in directory che non servono
+            if (is_dir($path)) {
+                $skipDirs = ['node_modules', '.git', 'vendor', 'bootstrap/cache', 'storage/framework'];
+                $shouldSkip = false;
+                foreach ($skipDirs as $skipDir) {
+                    if (strpos($path, $skipDir) !== false) {
+                        $shouldSkip = true;
+                        break;
+                    }
+                }
+                if ($shouldSkip) {
+                    continue;
+                }
+
+                $found = $this->findFileRecursive($path, $fileName, $maxDepth, $currentDepth + 1);
+                if ($found) {
+                    return $found;
+                }
+            } elseif (is_file($path) && basename($path) === $fileName) {
+                return $path;
+            }
+        }
+
+        return null;
+    }
 }
 
