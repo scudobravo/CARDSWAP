@@ -46,12 +46,36 @@ class ImportSpongebobCards extends Command
                 }
             }
             
+            // Se non trovato, cerca in modo ricorsivo nelle directory comuni
+            if (!$filePath) {
+                $this->info("🔍 Cercando il file in modo ricorsivo...");
+                $searchDirs = [
+                    base_path(),
+                    dirname(base_path()),
+                    '/home/forge/www.cardswaptcg.com/current',
+                    '/home/forge/www.cardswaptcg.com/shared',
+                ];
+                
+                foreach ($searchDirs as $dir) {
+                    if (is_dir($dir)) {
+                        $found = $this->findFileRecursive($dir, $fileName);
+                        if ($found) {
+                            $filePath = $found;
+                            $this->info("✅ File trovato in: {$filePath}");
+                            break;
+                        }
+                    }
+                }
+            }
+            
             if (!$filePath) {
                 $this->error("File non trovato. Percorsi cercati:");
                 foreach ($possiblePaths as $path) {
                     $this->line("  - {$path}");
                 }
-                $this->error("\nUsa --file=/percorso/completo/al/file.csv per specificare il percorso manualmente");
+                $this->error("\nCerca manualmente con:");
+                $this->line("  find /home/forge/www.cardswaptcg.com -name '{$fileName}' -type f");
+                $this->error("\nOppure usa --file=/percorso/completo/al/file.csv per specificare il percorso manualmente");
                 return 1;
             }
         }

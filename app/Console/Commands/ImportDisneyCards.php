@@ -25,7 +25,7 @@ class ImportDisneyCards extends Command
     {
         $filePath = $this->option('file');
         
-        // Se non specificato, cerca in percorsi comuni
+        // Se non specificato, cerca in percorsi comuni e poi in modo ricorsivo
         if (!$filePath) {
             $fileName = 'Lista Carte Disney - Foglio1.csv';
             $possiblePaths = [
@@ -46,12 +46,36 @@ class ImportDisneyCards extends Command
                 }
             }
             
+            // Se non trovato, cerca in modo ricorsivo nelle directory comuni
+            if (!$filePath) {
+                $this->info("🔍 Cercando il file in modo ricorsivo...");
+                $searchDirs = [
+                    base_path(),
+                    dirname(base_path()),
+                    '/home/forge/www.cardswaptcg.com/current',
+                    '/home/forge/www.cardswaptcg.com/shared',
+                ];
+                
+                foreach ($searchDirs as $dir) {
+                    if (is_dir($dir)) {
+                        $found = $this->findFileRecursive($dir, $fileName);
+                        if ($found) {
+                            $filePath = $found;
+                            $this->info("✅ File trovato in: {$filePath}");
+                            break;
+                        }
+                    }
+                }
+            }
+            
             if (!$filePath) {
                 $this->error("File non trovato. Percorsi cercati:");
                 foreach ($possiblePaths as $path) {
                     $this->line("  - {$path}");
                 }
-                $this->error("\nUsa --file=/percorso/completo/al/file.csv per specificare il percorso manualmente");
+                $this->error("\nCerca manualmente con:");
+                $this->line("  find /home/forge/www.cardswaptcg.com -name '{$fileName}' -type f");
+                $this->error("\nOppure usa --file=/percorso/completo/al/file.csv per specificare il percorso manualmente");
                 return 1;
             }
         }
@@ -275,6 +299,57 @@ class ImportDisneyCards extends Command
             return (int) $matches[1];
         }
         return 2025;
+    }
+
+    /**
+     * Cerca un file in modo ricorsivo in una directory
+     */
+    private function findFileRecursive($dir, $fileName, $maxDepth = 3, $currentDepth = 0)
+    {
+        if ($currentDepth >= $maxDepth) {
+            return null;
+        }
+
+        if (!is_dir($dir) || !is_readable($dir)) {
+            return null;
+        }
+
+        $items = @scandir($dir);
+        if ($items === false) {
+            return null;
+        }
+
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            $path = $dir . '/' . $item;
+
+            // Evita di cercare in directory che non servono
+            if (is_dir($path)) {
+                $skipDirs = ['node_modules', '.git', 'vendor', 'bootstrap/cache', 'storage/framework'];
+                $shouldSkip = false;
+                foreach ($skipDirs as $skipDir) {
+                    if (strpos($path, $skipDir) !== false) {
+                        $shouldSkip = true;
+                        break;
+                    }
+                }
+                if ($shouldSkip) {
+                    continue;
+                }
+
+                $found = $this->findFileRecursive($path, $fileName, $maxDepth, $currentDepth + 1);
+                if ($found) {
+                    return $found;
+                }
+            } elseif (is_file($path) && basename($path) === $fileName) {
+                return $path;
+            }
+        }
+
+        return null;
     }
 }
 
