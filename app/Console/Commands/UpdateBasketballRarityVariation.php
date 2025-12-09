@@ -35,6 +35,10 @@ class UpdateBasketballRarityVariation extends Command
         $csvFiles = $this->findCsvFiles();
         if (empty($csvFiles)) {
             $this->error('❌ Nessun file CSV trovato!');
+            $this->warn('💡 Suggerimenti:');
+            $this->warn('   1. Verifica che i file CSV siano presenti in /home/forge/www.cardswaptcg.com/current/TOIMPORT/');
+            $this->warn('   2. Esegui lo script direttamente sul server di produzione via SSH');
+            $this->warn('   3. Oppure usa --file=/path/to/file.csv per specificare un file specifico');
             return 1;
         }
 
