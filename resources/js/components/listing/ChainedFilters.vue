@@ -1580,22 +1580,24 @@ const searchCardsByName = async () => {
       const cards = data.cards || []
       filteredCardsByName.value = cards
       
-      // Estrai nomi base unici
+      // Estrai nomi base unici che corrispondono alla ricerca
       const uniqueBaseNames = new Set()
-      const queryLower = query.toLowerCase()
+      const queryLower = query.toLowerCase().trim()
       cards.forEach(card => {
         const baseName = getBaseCardName(card.name)
         if (baseName) {
-          // Mostra il nome base se corrisponde alla ricerca O se la ricerca corrisponde al nome completo
           const baseNameLower = baseName.toLowerCase()
           const fullNameLower = card.name.toLowerCase()
+          // Mostra il nome base se la ricerca corrisponde al nome base O al nome completo
           if (baseNameLower.includes(queryLower) || fullNameLower.includes(queryLower)) {
             uniqueBaseNames.add(baseName)
           }
         }
       })
       
-      // Se non ci sono nomi base corrispondenti ma ci sono carte, mostra tutti i nomi base
+      // IMPORTANTE: Se la ricerca trova carte ma nessun nome base corrisponde esattamente,
+      // mostra comunque tutti i nomi base delle carte trovate (perché la ricerca ha trovato
+      // corrispondenze nel nome completo, ad esempio nel nome del set)
       if (uniqueBaseNames.size === 0 && cards.length > 0) {
         cards.forEach(card => {
           const baseName = getBaseCardName(card.name)
