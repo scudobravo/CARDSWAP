@@ -1599,12 +1599,18 @@ const searchCardsByName = async () => {
         const baseName = getBaseCardName(cardName)
         if (baseName) {
           const baseNameLower = baseName.toLowerCase()
-          // Mostra il nome base SOLO se la ricerca corrisponde al nome base
-          if (baseNameLower.includes(queryLower)) {
+          const fullNameLower = cardName.toLowerCase()
+          // Mostra il nome base se:
+          // 1. La ricerca corrisponde al nome base, OPPURE
+          // 2. La ricerca corrisponde al nome completo (incluso set/brand)
+          // Questo risolve il caso in cui cerco "Spongebob" e il set contiene "SPONGEBOB"
+          // ma il nome base è diverso (es. "You don't need a license...")
+          if (baseNameLower.includes(queryLower) || fullNameLower.includes(queryLower)) {
             uniqueBaseNames.add(baseName)
             matchedCount++
             if (matchedCount <= 5) {
-              console.log('✅ Nome base corrisponde:', baseName, 'per query:', queryLower, 'da carta:', cardName)
+              const matchType = baseNameLower.includes(queryLower) ? 'nome base' : 'nome completo'
+              console.log('✅ Nome base corrisponde:', baseName, 'per query:', queryLower, 'via', matchType, 'da carta:', cardName)
             }
           }
         } else if (index < 5) {
