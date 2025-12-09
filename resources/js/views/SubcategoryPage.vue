@@ -216,9 +216,13 @@
                         <div v-if="product.is_relic" class="bg-gray-100 px-2 py-1 rounded text-xs font-bold text-primary">
                           RELIC
                         </div>
-                        <!-- Rookie -->
-                        <div v-if="product.is_rookie" class="bg-gray-100 px-2 py-1 rounded text-xs font-bold text-primary">
+                        <!-- Rookie (solo per categorie sportive) -->
+                        <div v-if="(category === 'football' || category === 'basketball') && product.is_rookie" class="bg-gray-100 px-2 py-1 rounded text-xs font-bold text-primary">
                           RC
+                        </div>
+                        <!-- Sketch (solo per Disney e Spongebob) -->
+                        <div v-if="(category === 'disney' || category === 'spongebob') && product.is_sketch" class="bg-gray-100 px-2 py-1 rounded text-xs font-bold text-primary">
+                          SKETCH
                         </div>
                         <!-- Condition -->
                         <div class="bg-gray-100 px-2 py-1 rounded text-xs font-bold text-primary">
@@ -330,14 +334,26 @@
                           </div>
                         </div>
 
-                        <!-- Rookie - Mostra solo se is_rookie è true -->
-                        <div v-if="product.is_rookie" class="relative group">
+                        <!-- Rookie - Mostra solo se is_rookie è true (solo per categorie sportive) -->
+                        <div v-if="(category === 'football' || category === 'basketball') && product.is_rookie" class="relative group">
                           <div class="bg-gray-100 p-2 rounded-lg flex items-center justify-center min-w-[40px] min-h-[40px]">
                             <span class="text-primary font-futura-bold text-sm">RC</span>
                           </div>
                           <!-- Tooltip -->
                           <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-primary text-white text-sm font-futura-bold rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
                             ROOKIE
+                            <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-primary"></div>
+                          </div>
+                        </div>
+
+                        <!-- Sketch - Mostra solo se is_sketch è true (solo per Disney e Spongebob) -->
+                        <div v-if="(category === 'disney' || category === 'spongebob') && product.is_sketch" class="relative group">
+                          <div class="bg-gray-100 p-2 rounded-lg flex items-center justify-center min-w-[40px] min-h-[40px]">
+                            <span class="text-primary font-futura-bold text-sm">SKETCH</span>
+                          </div>
+                          <!-- Tooltip -->
+                          <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-primary text-white text-sm font-futura-bold rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                            SKETCH
                             <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-primary"></div>
                           </div>
                         </div>
@@ -534,6 +550,7 @@ const filters = ref({
   jewel: '',
   booklet: '',
   rookie: '',
+  sketch: '',
   multiPlayer: [],
   multiAutograph: [],
   
@@ -822,7 +839,8 @@ const loadProducts = async (reset = false) => {
       params.append('onCardAuto', filters.value.onCardAuto)
     }
 
-    if (filters.value.jewel && filters.value.jewel !== '') {
+    // Jewel e Rookie solo per categorie sportive
+    if ((category.value === 'football' || category.value === 'basketball') && filters.value.jewel && filters.value.jewel !== '') {
       params.append('jewel', filters.value.jewel)
     }
 
@@ -830,8 +848,13 @@ const loadProducts = async (reset = false) => {
       params.append('booklet', filters.value.booklet)
     }
 
-    if (filters.value.rookie && filters.value.rookie !== '') {
+    if ((category.value === 'football' || category.value === 'basketball') && filters.value.rookie && filters.value.rookie !== '') {
       params.append('rookie', filters.value.rookie)
+    }
+
+    // Sketch solo per Disney e Spongebob
+    if ((category.value === 'disney' || category.value === 'spongebob') && filters.value.sketch && filters.value.sketch !== '') {
+      params.append('sketch', filters.value.sketch)
     }
 
     // Filtri multi player/autograph
