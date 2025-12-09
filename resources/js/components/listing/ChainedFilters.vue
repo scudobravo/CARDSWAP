@@ -1583,29 +1583,23 @@ const searchCardsByName = async () => {
       // Estrai nomi base unici che corrispondono alla ricerca
       const uniqueBaseNames = new Set()
       const queryLower = query.toLowerCase().trim()
+      
       cards.forEach(card => {
         const baseName = getBaseCardName(card.name)
         if (baseName) {
           const baseNameLower = baseName.toLowerCase()
           const fullNameLower = card.name.toLowerCase()
-          // Mostra il nome base se la ricerca corrisponde al nome base O al nome completo
-          if (baseNameLower.includes(queryLower) || fullNameLower.includes(queryLower)) {
+          // Mostra il nome base SOLO se la ricerca corrisponde al nome base
+          // (non al nome completo, perché altrimenti mostrerebbe tutti i nomi base
+          // quando si cerca qualcosa che è solo nel nome del set)
+          if (baseNameLower.includes(queryLower)) {
             uniqueBaseNames.add(baseName)
           }
         }
       })
       
-      // IMPORTANTE: Se la ricerca trova carte ma nessun nome base corrisponde esattamente,
-      // mostra comunque tutti i nomi base delle carte trovate (perché la ricerca ha trovato
-      // corrispondenze nel nome completo, ad esempio nel nome del set)
-      if (uniqueBaseNames.size === 0 && cards.length > 0) {
-        cards.forEach(card => {
-          const baseName = getBaseCardName(card.name)
-          if (baseName) {
-            uniqueBaseNames.add(baseName)
-          }
-        })
-      }
+      // Se non ci sono nomi base corrispondenti, non mostrare nulla nel dropdown
+      // (non mostrare tutti i nomi base, perché non corrispondono alla ricerca)
       
       filteredCardNames.value = Array.from(uniqueBaseNames).sort()
       console.log('🔍 Nomi base unici trovati:', filteredCardNames.value.length)
