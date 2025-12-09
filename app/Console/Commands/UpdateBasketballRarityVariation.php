@@ -152,46 +152,49 @@ class UpdateBasketballRarityVariation extends Command
             return [$file];
         }
 
-        // Cerca i file CSV in diverse directory
-        $searchPaths = [
-            base_path('TOIMPORT'),
-            storage_path('app'),
-            storage_path(),
-            '/home/forge/www.cardswaptcg.com/current/TOIMPORT',
+        $csvFiles = [];
+        
+        // Prima cerca i file specifici nel percorso del server Forge
+        $specificFiles = [
             '/home/forge/www.cardswaptcg.com/current/TOIMPORT/Elenco Set Basket 1 - Foglio1.csv',
             '/home/forge/www.cardswaptcg.com/current/TOIMPORT/Elenco Set Basket 2 - Foglio1.csv',
             '/home/forge/www.cardswaptcg.com/current/TOIMPORT/Elenco Set Basket 3 - Foglio1.csv',
-            '/home/forge/www.cardswaptcg.com/releases/*/TOIMPORT',
         ];
-
-        $csvFiles = [];
         
-        foreach ($searchPaths as $path) {
-            // Se è un file specifico, verifica se esiste
-            if (strpos($path, '.csv') !== false) {
-                if (file_exists($path) && is_readable($path)) {
-                    $csvFiles[] = $path;
-                    $this->info("✅ File trovato: {$path}");
+        foreach ($specificFiles as $specificFile) {
+            if (file_exists($specificFile) && is_readable($specificFile)) {
+                $csvFiles[] = $specificFile;
+                $this->info("✅ File trovato: {$specificFile}");
+            }
+        }
+        
+        // Se non ha trovato file specifici, cerca nelle directory
+        if (empty($csvFiles)) {
+            $searchPaths = [
+                base_path('TOIMPORT'),
+                storage_path('app'),
+                storage_path(),
+                '/home/forge/www.cardswaptcg.com/current/TOIMPORT',
+            ];
+
+            foreach ($searchPaths as $path) {
+                if (is_dir($path)) {
+                    $files = glob($path . '/*Basket*.csv');
+                    if ($files) {
+                        $csvFiles = array_merge($csvFiles, $files);
+                        foreach ($files as $f) {
+                            $this->info("✅ File trovato: {$f}");
+                        }
+                    }
                 }
-                continue;
             }
             
-            if (strpos($path, '*') !== false) {
-                // Pattern con wildcard
-                $files = glob($path . '/*Basket*.csv');
-                if ($files) {
-                    $csvFiles = array_merge($csvFiles, $files);
-                    foreach ($files as $f) {
-                        $this->info("✅ File trovato: {$f}");
-                    }
-                }
-            } elseif (is_dir($path)) {
-                $files = glob($path . '/*Basket*.csv');
-                if ($files) {
-                    $csvFiles = array_merge($csvFiles, $files);
-                    foreach ($files as $f) {
-                        $this->info("✅ File trovato: {$f}");
-                    }
+            // Cerca anche nei releases con wildcard
+            $releaseFiles = glob('/home/forge/www.cardswaptcg.com/releases/*/TOIMPORT/*Basket*.csv');
+            if ($releaseFiles) {
+                $csvFiles = array_merge($csvFiles, $releaseFiles);
+                foreach ($releaseFiles as $f) {
+                    $this->info("✅ File trovato: {$f}");
                 }
             }
         }
@@ -199,8 +202,15 @@ class UpdateBasketballRarityVariation extends Command
         // Rimuovi duplicati
         $csvFiles = array_unique($csvFiles);
         
-        // Ordina per data di modifica (più recenti prima)
+        // Ordina per data di modifica (più recenti prima) e preferisci /current/
         usort($csvFiles, function($a, $b) {
+            // Preferisci file in /current/ rispetto a /releases/
+            $aIsCurrent = strpos($a, '/current/') !== false;
+            $bIsCurrent = strpos($b, '/current/') !== false;
+            
+            if ($aIsCurrent && !$bIsCurrent) return -1;
+            if (!$aIsCurrent && $bIsCurrent) return 1;
+            
             if (file_exists($a) && file_exists($b)) {
                 return filemtime($b) - filemtime($a);
             }
