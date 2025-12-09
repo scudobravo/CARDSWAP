@@ -1584,19 +1584,21 @@ const searchCardsByName = async () => {
       const uniqueBaseNames = new Set()
       const queryLower = query.toLowerCase().trim()
       
+      console.log('🔍 Filtro nomi base - Query:', queryLower, 'Carte totali:', cards.length)
+      
       cards.forEach(card => {
         const baseName = getBaseCardName(card.name)
         if (baseName) {
           const baseNameLower = baseName.toLowerCase()
-          const fullNameLower = card.name.toLowerCase()
           // Mostra il nome base SOLO se la ricerca corrisponde al nome base
-          // (non al nome completo, perché altrimenti mostrerebbe tutti i nomi base
-          // quando si cerca qualcosa che è solo nel nome del set)
           if (baseNameLower.includes(queryLower)) {
             uniqueBaseNames.add(baseName)
+            console.log('✅ Nome base corrisponde:', baseName, 'per query:', queryLower)
           }
         }
       })
+      
+      console.log('🔍 Nomi base unici trovati:', uniqueBaseNames.size)
       
       // Se non ci sono nomi base corrispondenti, non mostrare nulla nel dropdown
       // (non mostrare tutti i nomi base, perché non corrispondono alla ricerca)
