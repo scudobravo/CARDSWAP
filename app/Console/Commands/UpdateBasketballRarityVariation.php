@@ -47,60 +47,85 @@ class UpdateBasketballRarityVariation extends Command
             $this->info("   - {$file}");
         }
 
-        // Carica tutti i dati CSV
-        $csvData = $this->loadCsvData($csvFiles);
+        // Rimuovi duplicati dai file CSV (usa solo quelli in /current/)
+        $uniqueCsvFiles = [];
+        foreach ($csvFiles as $file) {
+            if (strpos($file, '/current/TOIMPORT/') !== false) {
+                $uniqueCsvFiles[] = $file;
+            }
+        }
+        // Se non ci sono file in /current/, usa quelli trovati
+        if (empty($uniqueCsvFiles)) {
+            $uniqueCsvFiles = array_unique($csvFiles);
+        } else {
+            $uniqueCsvFiles = array_unique($uniqueCsvFiles);
+        }
+        
+        $this->info("📁 File CSV unici da processare: " . count($uniqueCsvFiles));
+
+        // Carica i dati CSV (processa un file alla volta per risparmiare memoria)
+        $csvData = $this->loadCsvData($uniqueCsvFiles);
         $this->info("📊 Righe CSV caricate: " . count($csvData));
 
-        // Carica tutte le carte di Basketball
-        $cards = CardModel::where('category_id', $category->id)
+        // Conta le carte totali
+        $totalCards = CardModel::where('category_id', $category->id)
             ->whereHas('player')
             ->whereHas('cardSet')
-            ->with(['player', 'cardSet', 'team'])
-            ->get();
+            ->count();
 
-        $this->info("🎴 Carte di Basketball trovate: " . $cards->count());
+        $this->info("🎴 Carte di Basketball totali: {$totalCards}");
 
         $updated = 0;
         $skipped = 0;
         $notFound = 0;
 
-        $bar = $this->output->createProgressBar($cards->count());
+        // Processa le carte in chunk per risparmiare memoria
+        $chunkSize = 500;
+        $bar = $this->output->createProgressBar($totalCards);
         $bar->start();
 
-        foreach ($cards as $card) {
-            try {
-                $csvRow = $this->findMatchingCsvRow($card, $csvData);
-                
-                if ($csvRow) {
-                    $rarityVariation = trim($csvRow['Rarity Variation'] ?? '');
-                    
-                    // Aggiorna solo se la rarity_variation è diversa
-                    if (!empty($rarityVariation) && $card->rarity_variation !== $rarityVariation) {
-                        if (!$dryRun) {
-                            $card->rarity_variation = $rarityVariation;
-                            $card->save();
+        CardModel::where('category_id', $category->id)
+            ->whereHas('player')
+            ->whereHas('cardSet')
+            ->chunk($chunkSize, function ($cards) use ($csvData, $dryRun, &$updated, &$skipped, &$notFound, &$bar) {
+                foreach ($cards as $card) {
+                    try {
+                        // Carica le relazioni solo quando necessario
+                        $card->load(['player', 'cardSet', 'team']);
+                        
+                        $csvRow = $this->findMatchingCsvRow($card, $csvData);
+                        
+                        if ($csvRow) {
+                            $rarityVariation = trim($csvRow['Rarity Variation'] ?? '');
+                            
+                            // Aggiorna solo se la rarity_variation è diversa
+                            if (!empty($rarityVariation) && $card->rarity_variation !== $rarityVariation) {
+                                if (!$dryRun) {
+                                    $card->rarity_variation = $rarityVariation;
+                                    $card->save();
+                                }
+                                $updated++;
+                            } elseif (empty($rarityVariation) && $card->rarity_variation !== null) {
+                                // Se nel CSV è vuoto ma nel DB c'è un valore, resetta
+                                if (!$dryRun) {
+                                    $card->rarity_variation = null;
+                                    $card->save();
+                                }
+                                $updated++;
+                            } else {
+                                $skipped++;
+                            }
+                        } else {
+                            $notFound++;
                         }
-                        $updated++;
-                    } elseif (empty($rarityVariation) && $card->rarity_variation !== null) {
-                        // Se nel CSV è vuoto ma nel DB c'è un valore, resetta
-                        if (!$dryRun) {
-                            $card->rarity_variation = null;
-                            $card->save();
-                        }
-                        $updated++;
-                    } else {
+                    } catch (\Exception $e) {
+                        $this->error("\n❌ Errore aggiornando carta ID {$card->id}: " . $e->getMessage());
                         $skipped++;
                     }
-                } else {
-                    $notFound++;
+                    
+                    $bar->advance();
                 }
-            } catch (\Exception $e) {
-                $this->error("\n❌ Errore aggiornando carta ID {$card->id}: " . $e->getMessage());
-                $skipped++;
-            }
-            
-            $bar->advance();
-        }
+            });
 
         $bar->finish();
         $this->newLine(2);
@@ -188,12 +213,15 @@ class UpdateBasketballRarityVariation extends Command
     private function loadCsvData($files)
     {
         $csvData = [];
+        $processedRows = 0;
 
         foreach ($files as $file) {
             if (!file_exists($file) || !is_readable($file)) {
                 $this->warn("⚠️  File non leggibile: {$file}");
                 continue;
             }
+
+            $this->info("📖 Caricamento file: " . basename($file));
 
             $handle = fopen($file, 'r');
             if (!$handle) {
@@ -213,11 +241,12 @@ class UpdateBasketballRarityVariation extends Command
                 return trim(str_replace("\xEF\xBB\xBF", '', $h));
             }, $headers);
 
-            $rowNum = 1;
+            $rowNum = 0;
             while (($row = fgetcsv($handle)) !== false) {
                 $rowNum++;
                 
-                if (count($row) < count($headers)) {
+                // Salta righe vuote o incomplete
+                if (count($row) < count($headers) || empty(array_filter($row))) {
                     continue;
                 }
 
@@ -236,22 +265,45 @@ class UpdateBasketballRarityVariation extends Command
                     continue;
                 }
 
-                // Crea chiavi di matching multiple
+                // Crea chiavi di matching multiple (solo se non esistono già)
                 $keys = [
                     strtolower("{$playerName}|{$cardNumber}|{$rarity}"),
                     strtolower("{$playerName}|{$cardNumber}|{$brand}|{$setName}|{$rarity}"),
-                    strtolower("{$playerName}|{$cardNumber}|{$teamName}|{$rarity}"),
                 ];
 
+                if (!empty($teamName)) {
+                    $keys[] = strtolower("{$playerName}|{$cardNumber}|{$teamName}|{$rarity}");
+                }
+
+                // Usa solo la prima chiave disponibile per risparmiare memoria
                 foreach ($keys as $key) {
                     if (!isset($csvData[$key])) {
-                        $csvData[$key] = $rowData;
+                        $csvData[$key] = [
+                            'Rarity Variation' => $rarityVariation,
+                            'Player' => $playerName,
+                            'Numero' => $cardNumber,
+                            'Rarity' => $rarity,
+                            'BRAND' => $brand,
+                            'SET' => $setName,
+                            'Team' => $teamName,
+                        ];
+                        $processedRows++;
+                        break; // Usa solo la prima chiave per risparmiare memoria
                     }
+                }
+
+                // Libera memoria periodicamente
+                if ($rowNum % 10000 === 0) {
+                    gc_collect_cycles();
                 }
             }
 
             fclose($handle);
+            $this->info("   ✅ Processate {$rowNum} righe da " . basename($file));
         }
+
+        $this->info("📊 Totale righe CSV processate: {$processedRows}");
+        $this->info("📊 Chiavi uniche create: " . count($csvData));
 
         return $csvData;
     }
