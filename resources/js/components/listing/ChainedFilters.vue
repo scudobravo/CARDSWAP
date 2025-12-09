@@ -1574,11 +1574,18 @@ const searchCardsByName = async () => {
       }
       
       const data = await response.json()
-      console.log('🔍 Carte trovate per nome:', data.cards?.length || 0)
+      console.log('🔍 Risposta API:', data)
+      console.log('🔍 Carte trovate per nome:', data.cards?.length || 0, 'o data.data?.length:', data.data?.length || 0)
       
       // Raggruppa per nome base e mostra solo nomi unici nel dropdown
-      const cards = data.cards || []
+      // L'API può restituire sia 'cards' che 'data'
+      const cards = data.cards || data.data || []
       filteredCardsByName.value = cards
+      
+      console.log('🔍 Carte da processare:', cards.length)
+      if (cards.length > 0) {
+        console.log('🔍 Prima carta esempio:', cards[0])
+      }
       
       // Estrai nomi base unici che corrispondono alla ricerca
       const uniqueBaseNames = new Set()
@@ -1586,19 +1593,26 @@ const searchCardsByName = async () => {
       
       console.log('🔍 Filtro nomi base - Query:', queryLower, 'Carte totali:', cards.length)
       
-      cards.forEach(card => {
-        const baseName = getBaseCardName(card.name)
+      let matchedCount = 0
+      cards.forEach((card, index) => {
+        const cardName = card.name || card.card_name || ''
+        const baseName = getBaseCardName(cardName)
         if (baseName) {
           const baseNameLower = baseName.toLowerCase()
           // Mostra il nome base SOLO se la ricerca corrisponde al nome base
           if (baseNameLower.includes(queryLower)) {
             uniqueBaseNames.add(baseName)
-            console.log('✅ Nome base corrisponde:', baseName, 'per query:', queryLower)
+            matchedCount++
+            if (matchedCount <= 5) {
+              console.log('✅ Nome base corrisponde:', baseName, 'per query:', queryLower, 'da carta:', cardName)
+            }
           }
+        } else if (index < 5) {
+          console.log('⚠️ Nome base vuoto per carta:', cardName, 'card object:', card)
         }
       })
       
-      console.log('🔍 Nomi base unici trovati:', uniqueBaseNames.size)
+      console.log('🔍 Nomi base unici trovati:', uniqueBaseNames.size, 'su', matchedCount, 'corrispondenze')
       
       // Se non ci sono nomi base corrispondenti, non mostrare nulla nel dropdown
       // (non mostrare tutti i nomi base, perché non corrispondono alla ricerca)
