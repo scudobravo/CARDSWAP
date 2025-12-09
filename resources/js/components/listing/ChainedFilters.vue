@@ -497,9 +497,17 @@ const getDisplayRarity = (card) => {
     }
   }
   
-  // Per tutte le categorie, mostra rarity + (rarity_variation) se presente
+  // Per tutte le categorie (incluso Basketball), mostra sempre rarity + (rarity_variation) se presente
+  // Questo è importante per Basketball perché altrimenti le carte sembrano tutte uguali
   if (card.rarity_variation) {
-    return displayRarity ? `${displayRarity} (${card.rarity_variation})` : card.rarity_variation
+    // Se c'è rarity_variation, mostra sempre rarity (rarity_variation) anche se rarity è vuota
+    // Per Basketball, questo aiuta a distinguere le carte
+    if (displayRarity && displayRarity !== 'null' && displayRarity !== '') {
+      return `${displayRarity} (${card.rarity_variation})`
+    } else {
+      // Se rarity è vuota ma c'è rarity_variation, mostra solo rarity_variation
+      return card.rarity_variation
+    }
   }
   
   // Restituisci la rarity solo se esiste, altrimenti null
