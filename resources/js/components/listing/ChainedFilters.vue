@@ -276,6 +276,11 @@
             </span>
           </div>
           
+          <!-- Debug: mostra rarity_variation se presente ma non mostrata nella rarity (solo per debug) -->
+          <div v-if="props.category === 'basketball' && card.rarity_variation && !getDisplayRarity(card)?.includes(card.rarity_variation)" class="text-xs text-orange-600 mt-1">
+            Variation: {{ card.rarity_variation }}
+          </div>
+          
           <!-- Indicatore di selezione -->
           <div v-if="selectedCard && selectedCard.id === card.id" class="mt-2 text-xs text-primary font-medium">
             ✓ Selezionata
@@ -497,15 +502,24 @@ const getDisplayRarity = (card) => {
     }
   }
   
-  // Per tutte le categorie (incluso Basketball), mostra sempre rarity + (rarity_variation) se presente
-  // Questo è importante per Basketball perché altrimenti le carte sembrano tutte uguali
-  if (card.rarity_variation) {
-    // Se c'è rarity_variation, mostra sempre rarity (rarity_variation) anche se rarity è vuota
-    // Per Basketball, questo aiuta a distinguere le carte
+  // Per Basketball, mostra SEMPRE rarity_variation se presente, anche se rarity è "Base"
+  // Questo è fondamentale per distinguere le carte che altrimenti sembrerebbero identiche
+  if (props.category === 'basketball' && card.rarity_variation) {
+    // Per Basketball, mostra sempre rarity (rarity_variation) se c'è rarity_variation
+    // Anche se rarity è "Base" o vuota, mostra comunque la variation
     if (displayRarity && displayRarity !== 'null' && displayRarity !== '') {
       return `${displayRarity} (${card.rarity_variation})`
     } else {
       // Se rarity è vuota ma c'è rarity_variation, mostra solo rarity_variation
+      return card.rarity_variation
+    }
+  }
+  
+  // Per tutte le altre categorie, mostra rarity + (rarity_variation) se presente
+  if (card.rarity_variation) {
+    if (displayRarity && displayRarity !== 'null' && displayRarity !== '') {
+      return `${displayRarity} (${card.rarity_variation})`
+    } else {
       return card.rarity_variation
     }
   }
