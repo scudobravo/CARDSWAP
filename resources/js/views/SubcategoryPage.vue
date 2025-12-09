@@ -756,6 +756,7 @@ const clearFilters = () => {
     jewel: '',
     booklet: '',
     rookie: '',
+    sketch: '',
     multiPlayer: [],
     multiAutograph: [],
     grading: '',
