@@ -45,8 +45,21 @@ class CardSearchController extends Controller
         
         // Filtro per nome carta
         if ($request->filled('name')) {
-            $name = $request->get('name');
-            $query->where('name', 'LIKE', "%{$name}%");
+            $name = trim($request->get('name'));
+            $categorySlug = $request->get('category');
+            
+            // Per Disney/Spongebob, cerca sia nel nome completo che nel nome base (prima del " - ")
+            if (in_array($categorySlug, ['disney', 'spongebob'])) {
+                $query->where(function($q) use ($name) {
+                    // Cerca nel nome completo
+                    $q->where('name', 'LIKE', "%{$name}%")
+                      // Cerca anche nel nome base (prima del " - ")
+                      ->orWhereRaw("SUBSTRING_INDEX(name, ' - ', 1) LIKE ?", ["%{$name}%"]);
+                });
+            } else {
+                // Per altre categorie, cerca solo nel nome completo
+                $query->where('name', 'LIKE', "%{$name}%");
+            }
         }
 
         // Filtri per set
