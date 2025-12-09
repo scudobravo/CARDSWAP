@@ -31,12 +31,26 @@ class UpdateBasketballRarityVariation extends Command
             return 1;
         }
 
-        // Verifica e crea la directory TOIMPORT se non esiste
+        // Usa una directory persistente che non viene cancellata durante i deploy
+        // storage/app è persistente tra i deploy in Forge
+        $persistentPath = storage_path('app/TOIMPORT');
         $toimportPath = '/home/forge/www.cardswaptcg.com/current/TOIMPORT';
+        
+        // Crea la directory persistente se non esiste
+        if (!is_dir($persistentPath)) {
+            $this->info("📁 Creazione directory persistente: {$persistentPath}");
+            if (!mkdir($persistentPath, 0755, true)) {
+                $this->error("❌ Impossibile creare la directory {$persistentPath}");
+            } else {
+                $this->info("✅ Directory persistente creata");
+            }
+        }
+        
+        // Verifica anche la directory current (per retrocompatibilità)
         if (!is_dir($toimportPath)) {
             $this->warn("⚠️  Directory {$toimportPath} non esiste, tentativo di creazione...");
             if (!mkdir($toimportPath, 0755, true)) {
-                $this->error("❌ Impossibile creare la directory {$toimportPath}");
+                $this->warn("⚠️  Impossibile creare la directory {$toimportPath} (non critico)");
             } else {
                 $this->info("✅ Directory {$toimportPath} creata");
             }
@@ -177,7 +191,23 @@ class UpdateBasketballRarityVariation extends Command
 
         $csvFiles = [];
         
-        // Prima cerca i file specifici nel percorso del server Forge
+        // Prima cerca i file nella directory persistente (storage/app/TOIMPORT)
+        $persistentPath = storage_path('app/TOIMPORT');
+        $persistentFiles = [
+            $persistentPath . '/Elenco Set Basket 1 - Foglio1.csv',
+            $persistentPath . '/Elenco Set Basket 2 - Foglio1.csv',
+            $persistentPath . '/Elenco Set Basket 3 - Foglio1.csv',
+        ];
+        
+        $this->info("🔍 Cerca file nella directory persistente (storage/app/TOIMPORT)...");
+        foreach ($persistentFiles as $file) {
+            if (file_exists($file) && is_readable($file)) {
+                $csvFiles[] = $file;
+                $this->info("   ✅ File trovato: {$file}");
+            }
+        }
+        
+        // Poi cerca i file specifici nel percorso del server Forge (per retrocompatibilità)
         $specificFiles = [
             '/home/forge/www.cardswaptcg.com/current/TOIMPORT/Elenco Set Basket 1 - Foglio1.csv',
             '/home/forge/www.cardswaptcg.com/current/TOIMPORT/Elenco Set Basket 2 - Foglio1.csv',
@@ -199,6 +229,7 @@ class UpdateBasketballRarityVariation extends Command
         if (empty($csvFiles)) {
             $this->info("🔍 Cerca file nelle directory...");
             $searchPaths = [
+                storage_path('app/TOIMPORT'), // Directory persistente (priorità)
                 base_path('TOIMPORT'),
                 storage_path('app'),
                 storage_path(),
