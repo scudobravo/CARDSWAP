@@ -1582,12 +1582,28 @@ const searchCardsByName = async () => {
       
       // Estrai nomi base unici
       const uniqueBaseNames = new Set()
+      const queryLower = query.toLowerCase()
       cards.forEach(card => {
         const baseName = getBaseCardName(card.name)
         if (baseName) {
-          uniqueBaseNames.add(baseName)
+          // Mostra il nome base se corrisponde alla ricerca O se la ricerca corrisponde al nome completo
+          const baseNameLower = baseName.toLowerCase()
+          const fullNameLower = card.name.toLowerCase()
+          if (baseNameLower.includes(queryLower) || fullNameLower.includes(queryLower)) {
+            uniqueBaseNames.add(baseName)
+          }
         }
       })
+      
+      // Se non ci sono nomi base corrispondenti ma ci sono carte, mostra tutti i nomi base
+      if (uniqueBaseNames.size === 0 && cards.length > 0) {
+        cards.forEach(card => {
+          const baseName = getBaseCardName(card.name)
+          if (baseName) {
+            uniqueBaseNames.add(baseName)
+          }
+        })
+      }
       
       filteredCardNames.value = Array.from(uniqueBaseNames).sort()
       console.log('🔍 Nomi base unici trovati:', filteredCardNames.value.length)
