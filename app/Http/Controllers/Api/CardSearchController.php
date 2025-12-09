@@ -48,18 +48,15 @@ class CardSearchController extends Controller
             $name = trim($request->get('name'));
             $categorySlug = $request->get('category');
             
-            // Per Disney/Spongebob, cerca sia nel nome completo che nel nome base (prima del " - ")
-            // Usa LOWER per ricerca case-insensitive
+            // Per Disney/Spongebob, cerca SOLO nel nome base (prima del " - ")
+            // Questo perché il nome completo include il set (es. "Caterpillar - TOPPS DISNEY WONDER")
+            // e vogliamo filtrare solo per il nome del personaggio, non per il set
             if (in_array($categorySlug, ['disney', 'spongebob'])) {
-                $query->where(function($q) use ($name) {
-                    $nameLower = strtolower($name);
-                    // Cerca nel nome completo (case-insensitive)
-                    $q->whereRaw('LOWER(name) LIKE ?', ["%{$nameLower}%"])
-                      // Cerca anche nel nome base (prima del " - ") (case-insensitive)
-                      ->orWhereRaw("LOWER(SUBSTRING_INDEX(name, ' - ', 1)) LIKE ?", ["%{$nameLower}%"]);
-                });
+                $nameLower = strtolower($name);
+                // Cerca SOLO nel nome base (prima del " - ") (case-insensitive)
+                $query->whereRaw("LOWER(SUBSTRING_INDEX(name, ' - ', 1)) LIKE ?", ["%{$nameLower}%"]);
             } else {
-                // Per altre categorie, cerca solo nel nome completo
+                // Per altre categorie (Football, Basketball), cerca nel nome completo
                 $query->where('name', 'LIKE', "%{$name}%");
             }
         }
