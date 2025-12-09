@@ -323,6 +323,14 @@ class SpongebobFilterController extends Controller
                 $imageUrl = $cardModel->image_url;
             }
             
+            // Determina se è sketch (da is_sketch o attributes)
+            $isSketch = $cardModel->is_sketch ?? false;
+            if (!$isSketch && $cardModel->attributes) {
+                $attributes = is_string($cardModel->attributes) ? json_decode($cardModel->attributes, true) : $cardModel->attributes;
+                $isSketch = isset($attributes['sketch']) && $attributes['sketch'] === true ||
+                           isset($attributes['SKETCH']) && $attributes['SKETCH'] === true;
+            }
+            
             return [
                 'id' => $cardModel->id,
                 'listing_id' => $listing->id,
@@ -337,6 +345,9 @@ class SpongebobFilterController extends Controller
                 'condition' => $listing->condition,
                 'images' => $listing->images ?? [],
                 'imageUrl' => $imageUrl, // Aggiunto per compatibilità con ProductCard
+                'is_sketch' => $isSketch, // Aggiunto per mostrare badge SKETCH
+                'is_autograph' => $cardModel->is_autograph ?? false,
+                'is_relic' => $cardModel->is_relic ?? false,
                 'seller' => $listing->seller ? [
                     'id' => $listing->seller->id,
                     'name' => $listing->seller->name,
