@@ -129,19 +129,41 @@ class UpdateBasketballRarityVariation extends Command
             storage_path('app'),
             storage_path(),
             '/home/forge/www.cardswaptcg.com/current/TOIMPORT',
+            '/home/forge/www.cardswaptcg.com/current/TOIMPORT/Elenco Set Basket 1 - Foglio1.csv',
+            '/home/forge/www.cardswaptcg.com/current/TOIMPORT/Elenco Set Basket 2 - Foglio1.csv',
+            '/home/forge/www.cardswaptcg.com/current/TOIMPORT/Elenco Set Basket 3 - Foglio1.csv',
             '/home/forge/www.cardswaptcg.com/releases/*/TOIMPORT',
         ];
 
         $csvFiles = [];
         
         foreach ($searchPaths as $path) {
+            // Se è un file specifico, verifica se esiste
+            if (strpos($path, '.csv') !== false) {
+                if (file_exists($path) && is_readable($path)) {
+                    $csvFiles[] = $path;
+                    $this->info("✅ File trovato: {$path}");
+                }
+                continue;
+            }
+            
             if (strpos($path, '*') !== false) {
                 // Pattern con wildcard
                 $files = glob($path . '/*Basket*.csv');
-                $csvFiles = array_merge($csvFiles, $files);
+                if ($files) {
+                    $csvFiles = array_merge($csvFiles, $files);
+                    foreach ($files as $f) {
+                        $this->info("✅ File trovato: {$f}");
+                    }
+                }
             } elseif (is_dir($path)) {
                 $files = glob($path . '/*Basket*.csv');
-                $csvFiles = array_merge($csvFiles, $files);
+                if ($files) {
+                    $csvFiles = array_merge($csvFiles, $files);
+                    foreach ($files as $f) {
+                        $this->info("✅ File trovato: {$f}");
+                    }
+                }
             }
         }
 
@@ -150,7 +172,10 @@ class UpdateBasketballRarityVariation extends Command
         
         // Ordina per data di modifica (più recenti prima)
         usort($csvFiles, function($a, $b) {
-            return filemtime($b) - filemtime($a);
+            if (file_exists($a) && file_exists($b)) {
+                return filemtime($b) - filemtime($a);
+            }
+            return 0;
         });
 
         return $csvFiles;
