@@ -276,9 +276,9 @@
             </span>
           </div>
           
-          <!-- Debug: mostra rarity_variation se presente ma non mostrata nella rarity (solo per debug) -->
-          <div v-if="props.category === 'basketball' && card.rarity_variation && !getDisplayRarity(card)?.includes(card.rarity_variation)" class="text-xs text-orange-600 mt-1">
-            Variation: {{ card.rarity_variation }}
+          <!-- Per Basketball: mostra card_number se presente per distinguere carte con stessa rarity -->
+          <div v-if="props.category === 'basketball' && card.card_number && !card.card_number_in_set" class="text-xs text-gray-500 mt-1">
+            Card #: {{ card.card_number }}
           </div>
           
           <!-- Indicatore di selezione -->

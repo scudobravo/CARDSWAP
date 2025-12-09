@@ -402,6 +402,7 @@ class ImportBasketCards extends Command
                     'set_name' => $cardSet->name,
                     'year' => $year ?: '2024',
                     'rarity' => $rarity ?: 'Base',
+                    'rarity_variation' => !empty($rarityVariation) ? $rarityVariation : null,
                     'card_number' => $cardNumber,
                     'card_number_in_set' => !empty($numbered) ? $numbered : null,
                     'is_rookie' => $isRookie,
