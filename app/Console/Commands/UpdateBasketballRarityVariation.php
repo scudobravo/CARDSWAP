@@ -89,9 +89,11 @@ class UpdateBasketballRarityVariation extends Command
         
         $this->info("📁 File CSV unici da processare: " . count($uniqueCsvFiles));
 
-        // Carica i dati CSV (processa un file alla volta per risparmiare memoria)
-        $csvData = $this->loadCsvData($uniqueCsvFiles);
-        $this->info("📊 Righe CSV caricate: " . count($csvData));
+        // NON caricare tutto il CSV in memoria - invece crea un indice leggero
+        // che mappa solo le chiavi necessarie ai file e posizioni
+        $this->info("📊 Creazione indice CSV (senza caricare tutto in memoria)...");
+        $csvIndex = $this->createCsvIndex($uniqueCsvFiles);
+        $this->info("📊 Chiavi uniche nell'indice: " . count($csvIndex));
 
         // Conta le carte totali
         $totalCards = CardModel::where('category_id', $category->id)
@@ -113,28 +115,19 @@ class UpdateBasketballRarityVariation extends Command
         CardModel::where('category_id', $category->id)
             ->whereHas('player')
             ->whereHas('cardSet')
-            ->chunk($chunkSize, function ($cards) use ($csvData, $dryRun, &$updated, &$skipped, &$notFound, &$bar) {
+            ->chunk($chunkSize, function ($cards) use ($uniqueCsvFiles, $csvIndex, $dryRun, &$updated, &$skipped, &$notFound, &$bar) {
                 foreach ($cards as $card) {
                     try {
                         // Carica le relazioni solo quando necessario
                         $card->load(['player', 'cardSet', 'team']);
                         
-                        $csvRow = $this->findMatchingCsvRow($card, $csvData);
+                        $rarityVariation = $this->findRarityVariationFromCsv($card, $uniqueCsvFiles, $csvIndex);
                         
-                        if ($csvRow) {
-                            $rarityVariation = trim($csvRow['Rarity Variation'] ?? '');
-                            
+                        if ($rarityVariation !== null) {
                             // Aggiorna solo se la rarity_variation è diversa
-                            if (!empty($rarityVariation) && $card->rarity_variation !== $rarityVariation) {
+                            if ($card->rarity_variation !== $rarityVariation) {
                                 if (!$dryRun) {
                                     $card->rarity_variation = $rarityVariation;
-                                    $card->save();
-                                }
-                                $updated++;
-                            } elseif (empty($rarityVariation) && $card->rarity_variation !== null) {
-                                // Se nel CSV è vuoto ma nel DB c'è un valore, resetta
-                                if (!$dryRun) {
-                                    $card->rarity_variation = null;
                                     $card->save();
                                 }
                                 $updated++;
@@ -151,6 +144,9 @@ class UpdateBasketballRarityVariation extends Command
                     
                     $bar->advance();
                 }
+                
+                // Libera memoria dopo ogni chunk
+                gc_collect_cycles();
             });
 
         $bar->finish();
@@ -260,9 +256,11 @@ class UpdateBasketballRarityVariation extends Command
         return $csvFiles;
     }
 
-    private function loadCsvData($files)
+    private function createCsvIndex($files)
     {
-        $csvData = [];
+        // Crea un indice leggero che mappa solo le chiavi ai file
+        // invece di caricare tutti i dati in memoria
+        $index = [];
         $processedRows = 0;
 
         foreach ($files as $file) {
@@ -271,7 +269,7 @@ class UpdateBasketballRarityVariation extends Command
                 continue;
             }
 
-            $this->info("📖 Caricamento file: " . basename($file));
+            $this->info("📖 Creazione indice da: " . basename($file));
 
             $handle = fopen($file, 'r');
             if (!$handle) {
@@ -286,7 +284,7 @@ class UpdateBasketballRarityVariation extends Command
                 continue;
             }
 
-            // Normalizza gli header (rimuovi BOM e spazi)
+            // Normalizza gli header
             $headers = array_map(function($h) {
                 return trim(str_replace("\xEF\xBB\xBF", '', $h));
             }, $headers);
@@ -295,7 +293,6 @@ class UpdateBasketballRarityVariation extends Command
             while (($row = fgetcsv($handle)) !== false) {
                 $rowNum++;
                 
-                // Salta righe vuote o incomplete
                 if (count($row) < count($headers) || empty(array_filter($row))) {
                     continue;
                 }
@@ -309,13 +306,12 @@ class UpdateBasketballRarityVariation extends Command
                 $brand = strtoupper(trim($rowData['BRAND'] ?? ''));
                 $setName = trim($rowData['SET'] ?? '');
                 $teamName = trim($rowData['Team'] ?? '');
-                $numbered = trim($rowData['NUMBERED /'] ?? '');
 
                 if (empty($playerName) || empty($cardNumber)) {
                     continue;
                 }
 
-                // Crea chiavi di matching multiple (solo se non esistono già)
+                // Crea chiavi di matching
                 $keys = [
                     strtolower("{$playerName}|{$cardNumber}|{$rarity}"),
                     strtolower("{$playerName}|{$cardNumber}|{$brand}|{$setName}|{$rarity}"),
@@ -325,25 +321,17 @@ class UpdateBasketballRarityVariation extends Command
                     $keys[] = strtolower("{$playerName}|{$cardNumber}|{$teamName}|{$rarity}");
                 }
 
-                // Usa solo la prima chiave disponibile per risparmiare memoria
+                // Salva solo la chiave -> file mapping (non tutti i dati)
                 foreach ($keys as $key) {
-                    if (!isset($csvData[$key])) {
-                        $csvData[$key] = [
-                            'Rarity Variation' => $rarityVariation,
-                            'Player' => $playerName,
-                            'Numero' => $cardNumber,
-                            'Rarity' => $rarity,
-                            'BRAND' => $brand,
-                            'SET' => $setName,
-                            'Team' => $teamName,
-                        ];
+                    if (!isset($index[$key])) {
+                        $index[$key] = $file; // Salva solo il percorso del file
                         $processedRows++;
-                        break; // Usa solo la prima chiave per risparmiare memoria
+                        break;
                     }
                 }
 
-                // Libera memoria periodicamente
-                if ($rowNum % 10000 === 0) {
+                // Libera memoria ogni 50000 righe
+                if ($rowNum % 50000 === 0) {
                     gc_collect_cycles();
                 }
             }
@@ -352,10 +340,103 @@ class UpdateBasketballRarityVariation extends Command
             $this->info("   ✅ Processate {$rowNum} righe da " . basename($file));
         }
 
-        $this->info("📊 Totale righe CSV processate: {$processedRows}");
-        $this->info("📊 Chiavi uniche create: " . count($csvData));
+        $this->info("📊 Totale chiavi nell'indice: " . count($index));
+        return $index;
+    }
 
-        return $csvData;
+    private function findRarityVariationFromCsv($card, $csvFiles, $csvIndex)
+    {
+        if (!$card->player || !$card->cardSet) {
+            return null;
+        }
+
+        $playerName = strtolower(trim($card->player->name));
+        $cardNumber = strtolower(trim($card->card_number ?? ''));
+        $rarity = strtolower(trim($card->rarity ?? 'Base'));
+        $brand = strtolower(trim($card->cardSet->brand ?? ''));
+        $setName = strtolower(trim($card->cardSet->name ?? ''));
+        $teamName = $card->team ? strtolower(trim($card->team->name ?? '')) : '';
+
+        // Prova diverse chiavi di matching
+        $matchKeys = [
+            "{$playerName}|{$cardNumber}|{$rarity}",
+            "{$playerName}|{$cardNumber}|{$brand}|{$setName}|{$rarity}",
+        ];
+
+        if (!empty($teamName)) {
+            $matchKeys[] = "{$playerName}|{$cardNumber}|{$teamName}|{$rarity}";
+        }
+
+        // Trova il file che contiene questa chiave
+        $matchingFile = null;
+        foreach ($matchKeys as $key) {
+            if (isset($csvIndex[$key])) {
+                $matchingFile = $csvIndex[$key];
+                break;
+            }
+        }
+
+        if (!$matchingFile) {
+            return null;
+        }
+
+        // Leggi solo la riga specifica dal file (non tutto il file)
+        return $this->readRarityVariationFromFile($matchingFile, $playerName, $cardNumber, $rarity, $brand, $setName, $teamName);
+    }
+
+    private function readRarityVariationFromFile($file, $playerName, $cardNumber, $rarity, $brand, $setName, $teamName)
+    {
+        $handle = fopen($file, 'r');
+        if (!$handle) {
+            return null;
+        }
+
+        $headers = fgetcsv($handle);
+        if (!$headers) {
+            fclose($handle);
+            return null;
+        }
+
+        $headers = array_map(function($h) {
+            return trim(str_replace("\xEF\xBB\xBF", '', $h));
+        }, $headers);
+
+        while (($row = fgetcsv($handle)) !== false) {
+            if (count($row) < count($headers)) {
+                continue;
+            }
+
+            $rowData = array_combine($headers, $row);
+            
+            $rowPlayerName = strtolower(trim($rowData['Player'] ?? ''));
+            $rowCardNumber = strtolower(trim($rowData['Numero'] ?? ''));
+            $rowRarity = strtolower(trim($rowData['Rarity'] ?? 'Base'));
+            $rowBrand = strtolower(trim($rowData['BRAND'] ?? ''));
+            $rowSetName = strtolower(trim($rowData['SET'] ?? ''));
+            $rowTeamName = strtolower(trim($rowData['Team'] ?? ''));
+
+            // Verifica se questa riga corrisponde
+            $matches = ($rowPlayerName === $playerName && $rowCardNumber === $cardNumber && $rowRarity === $rarity);
+            
+            if (!$matches) {
+                $matches = ($rowPlayerName === $playerName && $rowCardNumber === $cardNumber && 
+                           $rowBrand === $brand && $rowSetName === $setName && $rowRarity === $rarity);
+            }
+
+            if (!$matches && !empty($teamName) && !empty($rowTeamName)) {
+                $matches = ($rowPlayerName === $playerName && $rowCardNumber === $cardNumber && 
+                           $rowTeamName === $teamName && $rowRarity === $rarity);
+            }
+
+            if ($matches) {
+                $rarityVariation = trim($rowData['Rarity Variation'] ?? '');
+                fclose($handle);
+                return !empty($rarityVariation) ? $rarityVariation : null;
+            }
+        }
+
+        fclose($handle);
+        return null;
     }
 
     private function findMatchingCsvRow($card, $csvData)
