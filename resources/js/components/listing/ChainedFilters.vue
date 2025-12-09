@@ -439,6 +439,14 @@ const showPlayerDropdown = ref(false)
 // Format card name: replace # with / and remove numbered suffix (e.g., "/199", "/50")
 const formatCardName = (name) => {
   if (!name) return ''
+  
+  // Per Disney/Spongebob, mostra solo il nome base (prima del " - ")
+  // perché il set appare già sotto nella card
+  if (['disney', 'spongebob'].includes(props.category)) {
+    return getBaseCardName(name)
+  }
+  
+  // Per altre categorie, mantieni il comportamento originale
   // Sostituisci # con /
   let formatted = name.replace(/#/g, '/')
   // Rimuovi il numero alla fine del nome (es. " /199", " /50", " /1/100")
