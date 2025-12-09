@@ -440,9 +440,9 @@ const showPlayerDropdown = ref(false)
 const formatCardName = (name) => {
   if (!name) return ''
   
-  // Per Disney/Spongebob, mostra solo il nome base (prima del " - ")
+  // Per Disney/Spongebob/Basketball, mostra solo il nome base (prima del " - ")
   // perché il set appare già sotto nella card
-  if (['disney', 'spongebob'].includes(props.category)) {
+  if (['disney', 'spongebob', 'basketball'].includes(props.category)) {
     return getBaseCardName(name)
   }
   
