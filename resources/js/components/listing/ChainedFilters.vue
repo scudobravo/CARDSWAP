@@ -1562,6 +1562,10 @@ const searchCardsByName = async () => {
       // I filtri possono essere applicati dopo la selezione del nome
       // Se l'utente vuole filtrare, può usare i filtri dedicati (Set, Year, Brand, Rarity)
       
+      // Aumenta il limite per ottenere più nomi base unici
+      // Per Disney/Spongebob, ci possono essere migliaia di carte, quindi aumentiamo il limite
+      params.append('per_page', '500')
+      
       const url = `/api/cards/search?${params.toString()}`
       console.log('🔍 Ricerca carte per nome:', url)
       
