@@ -149,6 +149,7 @@ class UpdateBasketballRarityVariation extends Command
         $file = $this->option('file');
         
         if ($file && file_exists($file)) {
+            $this->info("✅ Usando file specificato: {$file}");
             return [$file];
         }
 
@@ -161,15 +162,20 @@ class UpdateBasketballRarityVariation extends Command
             '/home/forge/www.cardswaptcg.com/current/TOIMPORT/Elenco Set Basket 3 - Foglio1.csv',
         ];
         
+        $this->info("🔍 Cerca file specifici nel server Forge...");
         foreach ($specificFiles as $specificFile) {
-            if (file_exists($specificFile) && is_readable($specificFile)) {
+            $exists = file_exists($specificFile);
+            $readable = $exists ? is_readable($specificFile) : false;
+            $this->info("   {$specificFile}: " . ($exists ? ($readable ? "✅ trovato e leggibile" : "⚠️ trovato ma non leggibile") : "❌ non trovato"));
+            
+            if ($exists && $readable) {
                 $csvFiles[] = $specificFile;
-                $this->info("✅ File trovato: {$specificFile}");
             }
         }
         
         // Se non ha trovato file specifici, cerca nelle directory
         if (empty($csvFiles)) {
+            $this->info("🔍 Cerca file nelle directory...");
             $searchPaths = [
                 base_path('TOIMPORT'),
                 storage_path('app'),
@@ -178,24 +184,32 @@ class UpdateBasketballRarityVariation extends Command
             ];
 
             foreach ($searchPaths as $path) {
-                if (is_dir($path)) {
+                $isDir = is_dir($path);
+                $this->info("   {$path}: " . ($isDir ? "✅ directory esiste" : "❌ non esiste o non è una directory"));
+                
+                if ($isDir) {
                     $files = glob($path . '/*Basket*.csv');
                     if ($files) {
                         $csvFiles = array_merge($csvFiles, $files);
                         foreach ($files as $f) {
-                            $this->info("✅ File trovato: {$f}");
+                            $this->info("   ✅ File trovato: {$f}");
                         }
+                    } else {
+                        $this->info("   ℹ️  Nessun file Basket*.csv trovato in questa directory");
                     }
                 }
             }
             
             // Cerca anche nei releases con wildcard
+            $this->info("🔍 Cerca file nei releases...");
             $releaseFiles = glob('/home/forge/www.cardswaptcg.com/releases/*/TOIMPORT/*Basket*.csv');
             if ($releaseFiles) {
                 $csvFiles = array_merge($csvFiles, $releaseFiles);
                 foreach ($releaseFiles as $f) {
-                    $this->info("✅ File trovato: {$f}");
+                    $this->info("   ✅ File trovato: {$f}");
                 }
+            } else {
+                $this->info("   ℹ️  Nessun file trovato nei releases");
             }
         }
 
