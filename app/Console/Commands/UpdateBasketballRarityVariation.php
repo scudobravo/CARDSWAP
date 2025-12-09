@@ -31,14 +31,40 @@ class UpdateBasketballRarityVariation extends Command
             return 1;
         }
 
+        // Verifica e crea la directory TOIMPORT se non esiste
+        $toimportPath = '/home/forge/www.cardswaptcg.com/current/TOIMPORT';
+        if (!is_dir($toimportPath)) {
+            $this->warn("⚠️  Directory {$toimportPath} non esiste, tentativo di creazione...");
+            if (!mkdir($toimportPath, 0755, true)) {
+                $this->error("❌ Impossibile creare la directory {$toimportPath}");
+            } else {
+                $this->info("✅ Directory {$toimportPath} creata");
+            }
+        }
+
         // Trova i file CSV
         $csvFiles = $this->findCsvFiles();
         if (empty($csvFiles)) {
             $this->error('❌ Nessun file CSV trovato!');
             $this->warn('💡 Suggerimenti:');
             $this->warn('   1. Verifica che i file CSV siano presenti in /home/forge/www.cardswaptcg.com/current/TOIMPORT/');
-            $this->warn('   2. Esegui lo script direttamente sul server di produzione via SSH');
-            $this->warn('   3. Oppure usa --file=/path/to/file.csv per specificare un file specifico');
+            $this->warn('   2. Lista file nella directory: ls -la /home/forge/www.cardswaptcg.com/current/TOIMPORT/');
+            $this->warn('   3. Esegui lo script direttamente sul server di produzione via SSH');
+            $this->warn('   4. Oppure usa --file=/path/to/file.csv per specificare un file specifico');
+            
+            // Mostra cosa c'è nella directory se esiste
+            if (is_dir($toimportPath)) {
+                $this->info("\n📁 Contenuto di {$toimportPath}:");
+                $files = scandir($toimportPath);
+                foreach ($files as $file) {
+                    if ($file !== '.' && $file !== '..') {
+                        $fullPath = $toimportPath . '/' . $file;
+                        $size = is_file($fullPath) ? filesize($fullPath) : 0;
+                        $this->info("   - {$file} (" . number_format($size / 1024 / 1024, 2) . " MB)");
+                    }
+                }
+            }
+            
             return 1;
         }
 
