@@ -206,8 +206,8 @@
             </select>
           </div>
 
-          <!-- Jewel -->
-          <div class="space-y-2">
+          <!-- Jewel (solo per categorie sportive) -->
+          <div v-if="!isDisneyOrSpongebob" class="space-y-2">
             <select v-model="localFilters.jewel" class="col-start-1 row-start-1 w-full appearance-none rounded-md border border-gray-300 bg-white py-2 pr-8 pl-3 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm/6">
               <option value="">Jewel</option>
               <option value="yes">Sì</option>
@@ -224,10 +224,19 @@
             </select>
           </div>
 
-          <!-- Rookie -->
-          <div class="space-y-2">
+          <!-- Rookie (solo per categorie sportive) -->
+          <div v-if="!isDisneyOrSpongebob" class="space-y-2">
             <select v-model="localFilters.rookie" class="col-start-1 row-start-1 w-full appearance-none rounded-md border border-gray-300 bg-white py-2 pr-8 pl-3 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm/6">
               <option value="">Rookie (RC)</option>
+              <option value="yes">Sì</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+
+          <!-- Sketch (solo per Disney e Spongebob) -->
+          <div v-if="isDisneyOrSpongebob" class="space-y-2">
+            <select v-model="localFilters.sketch" class="col-start-1 row-start-1 w-full appearance-none rounded-md border border-gray-300 bg-white py-2 pr-8 pl-3 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm/6">
+              <option value="">Sketch</option>
               <option value="yes">Sì</option>
               <option value="no">No</option>
             </select>
@@ -427,6 +436,11 @@ const showSetDropdown = ref(false)
 // Computed property per determinare se mostrare solo i filtri essenziali
 const isSealed = computed(() => {
   return props.subcategory === 'sealed-packs' || props.subcategory === 'sealed-boxes'
+})
+
+// Computed property per determinare se è Disney o Spongebob
+const isDisneyOrSpongebob = computed(() => {
+  return props.category === 'disney' || props.category === 'spongebob'
 })
 
 // REMOVED: Watch for external filter changes - this was causing infinite recursion
@@ -912,6 +926,7 @@ const clearFilters = () => {
     jewel: '',
     booklet: '',
     rookie: '',
+    sketch: '',
     multiPlayer: [],
     multiAutograph: [],
     grading: '',

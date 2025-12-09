@@ -186,6 +186,30 @@ class SpongebobFilterController extends Controller
             });
         }
 
+        // Filtro per sketch (solo per singles, Disney/Spongebob)
+        if (!$isSealed && isset($filters['sketch']) && !empty($filters['sketch'])) {
+            if ($filters['sketch'] === 'yes') {
+                $query->whereHas('cardModel', function($q) {
+                    $q->where(function($q2) {
+                        $q2->where('is_sketch', true)
+                           ->orWhereRaw("JSON_EXTRACT(attributes, '$.sketch') = true")
+                           ->orWhereRaw("JSON_EXTRACT(attributes, '$.SKETCH') = true");
+                    });
+                });
+            } elseif ($filters['sketch'] === 'no') {
+                $query->whereHas('cardModel', function($q) {
+                    $q->where(function($q2) {
+                        $q2->where(function($q3) {
+                            $q3->whereNull('is_sketch')
+                               ->orWhere('is_sketch', false);
+                        })
+                        ->whereRaw("(JSON_EXTRACT(attributes, '$.sketch') IS NULL OR JSON_EXTRACT(attributes, '$.sketch') = false)")
+                        ->whereRaw("(JSON_EXTRACT(attributes, '$.SKETCH') IS NULL OR JSON_EXTRACT(attributes, '$.SKETCH') = false)");
+                    });
+                });
+            }
+        }
+
         // Filtro per sottocategoria
         if (isset($filters['subcategory']) && !empty($filters['subcategory'])) {
             switch ($filters['subcategory']) {
@@ -284,6 +308,21 @@ class SpongebobFilterController extends Controller
                 $displayRarity = 'Base Card';
             }
             
+            // Formatta l'immagine come imageUrl (prima immagine dall'array)
+            $imageUrl = null;
+            if ($listing->images && is_array($listing->images) && count($listing->images) > 0) {
+                $firstImage = $listing->images[0];
+                if (!str_starts_with($firstImage, '/storage/') && !str_starts_with($firstImage, 'http')) {
+                    $imageUrl = '/storage/' . $firstImage;
+                } else {
+                    $imageUrl = $firstImage;
+                }
+            }
+            // Fallback all'immagine del card model
+            if (!$imageUrl && $cardModel->image_url) {
+                $imageUrl = $cardModel->image_url;
+            }
+            
             return [
                 'id' => $cardModel->id,
                 'listing_id' => $listing->id,
@@ -297,6 +336,7 @@ class SpongebobFilterController extends Controller
                 'price' => $listing->price,
                 'condition' => $listing->condition,
                 'images' => $listing->images ?? [],
+                'imageUrl' => $imageUrl, // Aggiunto per compatibilità con ProductCard
                 'seller' => $listing->seller ? [
                     'id' => $listing->seller->id,
                     'name' => $listing->seller->name,
