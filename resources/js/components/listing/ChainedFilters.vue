@@ -1557,11 +1557,10 @@ const searchCardsByName = async () => {
         params.append('category', dbCategory)
       }
       
-      // Aggiungi altri filtri se presenti
-      if (localFilters.value.set) params.append('card_set_id', localFilters.value.set)
-      if (localFilters.value.year) params.append('year', localFilters.value.year)
-      if (localFilters.value.brand) params.append('brand', localFilters.value.brand)
-      if (localFilters.value.rarity) params.append('rarity', localFilters.value.rarity)
+      // IMPORTANTE: Per la ricerca per nome, NON applicare automaticamente gli altri filtri
+      // per permettere all'utente di vedere tutti i risultati possibili
+      // I filtri possono essere applicati dopo la selezione del nome
+      // Se l'utente vuole filtrare, può usare i filtri dedicati (Set, Year, Brand, Rarity)
       
       const url = `/api/cards/search?${params.toString()}`
       console.log('🔍 Ricerca carte per nome:', url)
