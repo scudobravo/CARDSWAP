@@ -187,24 +187,22 @@ class DisneyFilterController extends Controller
         }
 
         // Filtro per sketch (solo per singles, Disney/Spongebob)
+        // Sketch è salvato come elemento nell'array attributes (es: ["sketch","numbered"]), non come chiave
         if (!$isSealed && isset($filters['sketch']) && !empty($filters['sketch'])) {
             if ($filters['sketch'] === 'yes') {
                 $query->whereHas('cardModel', function($q) {
+                    // Cerca "sketch" nell'array attributes usando JSON_CONTAINS
                     $q->where(function($q2) {
-                        $q2->where('is_sketch', true)
-                           ->orWhereRaw("JSON_EXTRACT(attributes, '$.sketch') = true")
-                           ->orWhereRaw("JSON_EXTRACT(attributes, '$.SKETCH') = true");
+                        $q2->whereRaw("JSON_CONTAINS(attributes, '\"sketch\"')")
+                           ->orWhereRaw("JSON_CONTAINS(attributes, '\"SKETCH\"')");
                     });
                 });
             } elseif ($filters['sketch'] === 'no') {
                 $query->whereHas('cardModel', function($q) {
+                    // Escludi carte con "sketch" nell'array attributes
                     $q->where(function($q2) {
-                        $q2->where(function($q3) {
-                            $q3->whereNull('is_sketch')
-                               ->orWhere('is_sketch', false);
-                        })
-                        ->whereRaw("(JSON_EXTRACT(attributes, '$.sketch') IS NULL OR JSON_EXTRACT(attributes, '$.sketch') = false)")
-                        ->whereRaw("(JSON_EXTRACT(attributes, '$.SKETCH') IS NULL OR JSON_EXTRACT(attributes, '$.SKETCH') = false)");
+                        $q2->whereRaw("NOT JSON_CONTAINS(attributes, '\"sketch\"')")
+                           ->whereRaw("NOT JSON_CONTAINS(attributes, '\"SKETCH\"')");
                     });
                 });
             }
@@ -323,12 +321,14 @@ class DisneyFilterController extends Controller
                 $imageUrl = $cardModel->image_url;
             }
             
-            // Determina se è sketch (da is_sketch o attributes)
-            $isSketch = $cardModel->is_sketch ?? false;
-            if (!$isSketch && $cardModel->attributes) {
+            // Determina se è sketch (da attributes array)
+            // Sketch è salvato come elemento nell'array attributes (es: ["sketch","numbered"])
+            $isSketch = false;
+            if ($cardModel->attributes) {
                 $attributes = is_string($cardModel->attributes) ? json_decode($cardModel->attributes, true) : $cardModel->attributes;
-                $isSketch = isset($attributes['sketch']) && $attributes['sketch'] === true ||
-                           isset($attributes['SKETCH']) && $attributes['SKETCH'] === true;
+                if (is_array($attributes)) {
+                    $isSketch = in_array('sketch', $attributes) || in_array('SKETCH', $attributes);
+                }
             }
             
             return [
