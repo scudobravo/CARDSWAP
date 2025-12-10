@@ -766,9 +766,13 @@ class CardController extends Controller
             }
 
             // Query per carte correlate usando criteri multipli
+            // Mostra solo carte che hanno almeno una listing attiva
             $relatedQuery = CardModel::with(['category', 'player', 'team', 'cardSet'])
                 ->where('id', '!=', $cardId) // Esclude la carta principale
-                ->where('is_active', true);
+                ->where('is_active', true)
+                ->whereHas('cardListings', function($q) {
+                    $q->where('status', 'active');
+                });
 
             // Applica filtri basati sui criteri di similarità
             $this->applyRelatedFilters($relatedQuery, $mainCard);
@@ -848,6 +852,9 @@ class CardController extends Controller
                     ->where('id', '!=', $cardId)
                     ->where('is_active', true)
                     ->where('category_id', $mainCard->category_id)
+                    ->whereHas('cardListings', function($q) {
+                        $q->where('status', 'active');
+                    })
                     ->whereNotIn('id', $relatedCards->pluck('id'));
                 
                 // Se è Disney/Spongebob, escludi carte con lo stesso nome base
@@ -1093,7 +1100,10 @@ class CardController extends Controller
             // Query per carte correlate usando criteri multipli
             $relatedQuery = CardModel::with(['category', 'player', 'team', 'cardSet'])
                 ->where('id', '!=', $mainCard->id) // Esclude la carta principale
-                ->where('is_active', true);
+                ->where('is_active', true)
+                ->whereHas('cardListings', function($q) {
+                    $q->where('status', 'active');
+                });
 
             // Applica filtri basati sui criteri di similarità
             $this->applyRelatedFilters($relatedQuery, $mainCard);
@@ -1166,6 +1176,9 @@ class CardController extends Controller
                     ->where('id', '!=', $mainCard->id)
                     ->where('is_active', true)
                     ->where('category_id', $mainCard->category_id)
+                    ->whereHas('cardListings', function($q) {
+                        $q->where('status', 'active');
+                    })
                     ->whereNotIn('id', $relatedCards->pluck('id'));
                 
                 // Se è Disney/Spongebob, escludi carte con lo stesso nome base
