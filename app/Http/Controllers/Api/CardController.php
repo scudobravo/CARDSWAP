@@ -895,6 +895,30 @@ class CardController extends Controller
                     $cardName = $parts[0] ?? $cardName;
                 }
                 
+                // Prendi l'immagine dalla prima listing attiva, altrimenti usa quella del card model
+                $imageUrl = $card->image_url;
+                $listingId = null;
+                
+                // Cerca la prima listing attiva per questa carta
+                $activeListing = $card->cardListings()
+                    ->where('status', 'active')
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+                
+                if ($activeListing) {
+                    $listingId = $activeListing->id;
+                    
+                    // Priorità all'immagine della listing
+                    if ($activeListing->images && is_array($activeListing->images) && count($activeListing->images) > 0) {
+                        $firstImage = $activeListing->images[0];
+                        if (!str_starts_with($firstImage, '/storage/') && !str_starts_with($firstImage, 'http')) {
+                            $imageUrl = '/storage/' . $firstImage;
+                        } else {
+                            $imageUrl = $firstImage;
+                        }
+                    }
+                }
+                
                 return [
                     'id' => $card->id,
                     'name' => $cardName,
@@ -902,12 +926,13 @@ class CardController extends Controller
                     'type' => $this->getCategoryType($card->category->name ?? ''),
                     'price' => $this->getEstimatedPrice($card),
                     'rating' => $this->getEstimatedRating($card),
-                    'image_url' => $card->image_url,
+                    'image_url' => $imageUrl,
                     'set_name' => $card->set_name,
                     'year' => $card->year,
                     'rarity' => $card->rarity,
                     'slug' => $card->slug,
                     'category_slug' => $this->getCategorySlug($card->category->slug ?? ''),
+                    'listing_id' => $listingId, // Aggiunto per la navigazione
                 ];
             });
 
@@ -1247,6 +1272,30 @@ class CardController extends Controller
                     $cardName = $parts[0] ?? $cardName;
                 }
                 
+                // Prendi l'immagine dalla prima listing attiva, altrimenti usa quella del card model
+                $imageUrl = $card->image_url;
+                $listingId = null;
+                
+                // Cerca la prima listing attiva per questa carta
+                $activeListing = $card->cardListings()
+                    ->where('status', 'active')
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+                
+                if ($activeListing) {
+                    $listingId = $activeListing->id;
+                    
+                    // Priorità all'immagine della listing
+                    if ($activeListing->images && is_array($activeListing->images) && count($activeListing->images) > 0) {
+                        $firstImage = $activeListing->images[0];
+                        if (!str_starts_with($firstImage, '/storage/') && !str_starts_with($firstImage, 'http')) {
+                            $imageUrl = '/storage/' . $firstImage;
+                        } else {
+                            $imageUrl = $firstImage;
+                        }
+                    }
+                }
+                
                 return [
                     'id' => $card->id,
                     'name' => $cardName,
@@ -1254,12 +1303,13 @@ class CardController extends Controller
                     'type' => $this->getCategoryType($card->category->name ?? ''),
                     'price' => $this->getEstimatedPrice($card),
                     'rating' => $this->getEstimatedRating($card),
-                    'image_url' => $card->image_url,
+                    'image_url' => $imageUrl,
                     'set_name' => $card->set_name,
                     'year' => $card->year,
                     'rarity' => $card->rarity,
                     'slug' => $card->slug,
                     'category_slug' => $this->getCategorySlug($card->category->slug ?? ''),
+                    'listing_id' => $listingId, // Aggiunto per la navigazione
                 ];
             });
 

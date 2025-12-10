@@ -256,7 +256,11 @@ const goToProduct = (product) => {
         'Basketball': 'basketball',
         'basketball': 'basketball',
         'Pokemon': 'pokemon',
-        'pokemon': 'pokemon'
+        'pokemon': 'pokemon',
+        'Disney': 'disney',
+        'disney': 'disney',
+        'Spongebob': 'spongebob',
+        'spongebob': 'spongebob'
       }
       
       if (product.type && typeMap[product.type]) {
@@ -280,6 +284,23 @@ const goToProduct = (product) => {
     const url = `/${category}/${product.listing_id}/${slug}`
     console.log('Navigating to listing:', url)
     window.location.href = url
+    return
+  }
+  
+  // Per Disney/Spongebob senza listing_id, naviga a /category/:slug
+  if (product.category_slug && ['disney', 'spongebob'].includes(product.category_slug)) {
+    let slug = product.slug
+    if (!slug) {
+      slug = product.name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '')
+    }
+    const url = `/${product.category_slug}/${slug}`
+    console.log('Navigating to card:', url)
+    router.push(url)
     return
   }
   
