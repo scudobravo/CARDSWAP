@@ -595,17 +595,34 @@ class CardController extends Controller
 
             $dbCategory = $categoryMap[$category] ?? $category;
 
-            // Prima prova a cercare per slug esatto
+            // Se lo slug contiene "/", estrai solo l'ultima parte (es. "56/elsa" -> "elsa")
+            $cleanSlug = $slug;
+            if (strpos($slug, '/') !== false) {
+                $parts = explode('/', $slug);
+                $cleanSlug = end($parts); // Prendi l'ultima parte
+            }
+
+            // Prima prova a cercare per slug esatto (con slug pulito)
             $card = CardModel::with(['category', 'player', 'team', 'cardSet'])
                 ->whereHas('category', function($q) use ($dbCategory) {
                     $q->where('slug', $dbCategory);
                 })
-                ->where('slug', $slug)
+                ->where('slug', $cleanSlug)
                 ->first();
             
-            // Se non trovato per slug, prova con il nome
+            // Se non trovato per slug, prova con lo slug originale (potrebbe essere un formato diverso)
+            if (!$card && $cleanSlug !== $slug) {
+                $card = CardModel::with(['category', 'player', 'team', 'cardSet'])
+                    ->whereHas('category', function($q) use ($dbCategory) {
+                        $q->where('slug', $dbCategory);
+                    })
+                    ->where('slug', $slug)
+                    ->first();
+            }
+            
+            // Se non trovato per slug, prova con il nome (usa lo slug pulito)
             if (!$card) {
-                $cardName = str_replace('-', ' ', $slug);
+                $cardName = str_replace('-', ' ', $cleanSlug);
                 $cardName = ucwords($cardName); // Converte in formato nome (es. "lionel messi")
                 
                 $card = CardModel::with(['category', 'player', 'team', 'cardSet'])
@@ -982,17 +999,34 @@ class CardController extends Controller
 
             $dbCategory = $categoryMap[$category] ?? $category;
 
-            // Prima prova a cercare per slug esatto
+            // Se lo slug contiene "/", estrai solo l'ultima parte (es. "56/elsa" -> "elsa")
+            $cleanSlug = $slug;
+            if (strpos($slug, '/') !== false) {
+                $parts = explode('/', $slug);
+                $cleanSlug = end($parts); // Prendi l'ultima parte
+            }
+
+            // Prima prova a cercare per slug esatto (con slug pulito)
             $mainCard = CardModel::with(['category', 'player', 'team', 'cardSet'])
                 ->whereHas('category', function($q) use ($dbCategory) {
                     $q->where('slug', $dbCategory);
                 })
-                ->where('slug', $slug)
+                ->where('slug', $cleanSlug)
                 ->first();
             
-            // Se non trovato per slug, prova con il nome
+            // Se non trovato per slug, prova con lo slug originale (potrebbe essere un formato diverso)
+            if (!$mainCard && $cleanSlug !== $slug) {
+                $mainCard = CardModel::with(['category', 'player', 'team', 'cardSet'])
+                    ->whereHas('category', function($q) use ($dbCategory) {
+                        $q->where('slug', $dbCategory);
+                    })
+                    ->where('slug', $slug)
+                    ->first();
+            }
+            
+            // Se non trovato per slug, prova con il nome (usa lo slug pulito)
             if (!$mainCard) {
-                $cardName = str_replace('-', ' ', $slug);
+                $cardName = str_replace('-', ' ', $cleanSlug);
                 $cardName = ucwords($cardName); // Converte in formato nome (es. "lionel messi")
                 
                 $mainCard = CardModel::with(['category', 'player', 'team', 'cardSet'])
