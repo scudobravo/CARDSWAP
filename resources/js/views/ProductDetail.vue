@@ -1154,16 +1154,28 @@ const loadRelatedProducts = async (cardId) => {
   try {
     let response
     
-    // Se siamo su una route listing, usa l'endpoint per listing correlate
+    // Se siamo su una route listing, verifica se abbiamo i dati della carta
+    // Per Disney/Spongebob, preferiamo usare l'endpoint delle carte correlate
     if (isListingRoute.value) {
-      const listingId = route.params.listingId
-      if (listingId) {
-        console.log('Loading related listings for listing route:', listingId)
-        response = await cardService.getRelatedListings(listingId, 8)
+      const category = route.params.category
+      const slug = route.params.slug
+      
+      // Per Disney/Spongebob, usa l'endpoint delle carte correlate (non listing)
+      if (['disney', 'spongebob'].includes(category)) {
+        console.log('Loading related products for Disney/Spongebob listing route:', category, slug)
+        // Usa lo slug come cardSlug (potrebbe essere "elsa" o "56/elsa")
+        response = await cardService.getRelatedProductsBySlug(category, slug, 8)
       } else {
-        console.log('No listingId available for related listings')
-        relatedProductsLoading.value = false
-        return
+        // Per altre categorie, usa l'endpoint delle listing correlate
+        const listingId = route.params.listingId
+        if (listingId) {
+          console.log('Loading related listings for listing route:', listingId)
+          response = await cardService.getRelatedListings(listingId, 8)
+        } else {
+          console.log('No listingId available for related listings')
+          relatedProductsLoading.value = false
+          return
+        }
       }
     } else if (isSlugRoute.value) {
       // Per route slug, usiamo categoria e slug
