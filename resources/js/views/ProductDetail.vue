@@ -906,7 +906,18 @@ const loadProductDetails = async () => {
             rating: '4.5',
             image_url: imageUrl,
             images: images,
-            category: cardModel?.category?.slug === 'calcio' ? 'football' : (cardModel?.category?.slug === 'basketball' ? 'basketball' : 'pokemon'),
+            category: (() => {
+              const slug = cardModel?.category?.slug
+              const categorySlugMap = {
+                'calcio': 'football',
+                'football': 'football',
+                'basketball': 'basketball',
+                'pokemon': 'pokemon',
+                'disney': 'disney',
+                'spongebob': 'spongebob'
+              }
+              return categorySlugMap[slug] || slug || 'football'
+            })(),
             description: listing.description || cardModel?.description,
             condition: listing.condition || 'LIGHT PLAYED',
             // Dati di grading dalla CardListing
@@ -1191,15 +1202,27 @@ const getCategorySlug = () => {
   if (isSlugRoute.value) {
     return route.params.category
   }
-  // Per route ID, determina dalla categoria del prodotto
+  // Per route ID o listing, determina dalla categoria del prodotto
+  const category = product.value.category
+  if (!category) return 'football'
+  
+  // Mappa sia i valori con maiuscola che minuscola, e anche gli slug
   const categoryMap = {
     'Calcio': 'football',
+    'calcio': 'football',
+    'football': 'football',
+    'Football': 'football',
     'Basketball': 'basketball',
+    'basketball': 'basketball',
     'Pokemon': 'pokemon',
+    'pokemon': 'pokemon',
     'Disney': 'disney',
-    'Spongebob': 'spongebob'
+    'disney': 'disney',
+    'Spongebob': 'spongebob',
+    'spongebob': 'spongebob'
   }
-  return categoryMap[product.value.category] || product.value.category?.toLowerCase() || 'football'
+  
+  return categoryMap[category] || category.toLowerCase() || 'football'
 }
 
 const handleImageError = (event) => {
@@ -1226,7 +1249,27 @@ const getCategoryName = () => {
     }
     return categoryMap[route.params.category] || route.params.category?.charAt(0).toUpperCase() + route.params.category?.slice(1) || 'Categoria'
   }
-  return product.value.category || 'Categoria'
+  // Per route ID o listing, mappa la categoria dal prodotto
+  const category = product.value.category
+  if (!category) return 'Categoria'
+  
+  // Mappa sia i valori con maiuscola che minuscola
+  const categoryMap = {
+    'Calcio': 'Calcio',
+    'calcio': 'Calcio',
+    'football': 'Calcio',
+    'Football': 'Calcio',
+    'Basketball': 'Basketball',
+    'basketball': 'Basketball',
+    'Pokemon': 'Pokemon',
+    'pokemon': 'Pokemon',
+    'Disney': 'Disney',
+    'disney': 'Disney',
+    'Spongebob': 'Spongebob',
+    'spongebob': 'Spongebob'
+  }
+  
+  return categoryMap[category] || category.charAt(0).toUpperCase() + category.slice(1)
 }
 
 const getProductDisplayName = () => {
