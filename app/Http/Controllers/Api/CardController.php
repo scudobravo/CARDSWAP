@@ -773,8 +773,7 @@ class CardController extends Controller
                 ->where('is_active', true)
                 ->whereNotNull('name')
                 ->where('name', '!=', '')
-                ->where('name', '!=', 'Player')
-                ->where('name', 'NOT LIKE', '%We Cant Say%'); // Escludi carte con nomi strani
+                ->where('name', '!=', 'Player');
 
             // Applica filtri basati sui criteri di similarità
             $this->applyRelatedFilters($relatedQuery, $mainCard);
@@ -1113,8 +1112,7 @@ class CardController extends Controller
                 ->where('is_active', true)
                 ->whereNotNull('name')
                 ->where('name', '!=', '')
-                ->where('name', '!=', 'Player')
-                ->where('name', 'NOT LIKE', '%We Cant Say%'); // Escludi carte con nomi strani
+                ->where('name', '!=', 'Player');
 
             // Applica filtri basati sui criteri di similarità
             $this->applyRelatedFilters($relatedQuery, $mainCard);
@@ -1211,7 +1209,6 @@ class CardController extends Controller
                     ->whereNotNull('name')
                     ->where('name', '!=', '')
                     ->where('name', '!=', 'Player')
-                    ->where('name', 'NOT LIKE', '%We Cant Say%')
                     ->whereNotIn('id', $relatedCards->pluck('id'));
                 
                 // Se è Disney/Spongebob, escludi carte con lo stesso nome base
