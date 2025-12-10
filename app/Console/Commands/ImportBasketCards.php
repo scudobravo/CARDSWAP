@@ -97,6 +97,12 @@ class ImportBasketCards extends Command
                     
                     $this->info("📦 Chunk {$chunkCount} completato: {$result['processed']} processate, {$result['skipped']} saltate");
                     
+                    // Flush output per assicurarsi che i messaggi vengano scritti immediatamente
+                    if (function_exists('ob_flush')) {
+                        @ob_flush();
+                    }
+                    flush();
+                    
                     $chunk = [];
                     unset($result);
                     

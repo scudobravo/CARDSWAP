@@ -1195,9 +1195,11 @@ const getCategorySlug = () => {
   const categoryMap = {
     'Calcio': 'football',
     'Basketball': 'basketball',
-    'Pokemon': 'pokemon'
+    'Pokemon': 'pokemon',
+    'Disney': 'disney',
+    'Spongebob': 'spongebob'
   }
-  return categoryMap[product.value.category] || 'football'
+  return categoryMap[product.value.category] || product.value.category?.toLowerCase() || 'football'
 }
 
 const handleImageError = (event) => {
@@ -1218,9 +1220,11 @@ const getCategoryName = () => {
     const categoryMap = {
       'football': 'Calcio',
       'basketball': 'Basketball', 
-      'pokemon': 'Pokemon'
+      'pokemon': 'Pokemon',
+      'disney': 'Disney',
+      'spongebob': 'Spongebob'
     }
-    return categoryMap[route.params.category] || 'Categoria'
+    return categoryMap[route.params.category] || route.params.category?.charAt(0).toUpperCase() + route.params.category?.slice(1) || 'Categoria'
   }
   return product.value.category || 'Categoria'
 }

@@ -356,6 +356,10 @@ class CardController extends Controller
             case 'pokemon':
             case 'tcg':
                 return 'Pokemon';
+            case 'disney':
+                return 'Disney';
+            case 'spongebob':
+                return 'Spongebob';
             default:
                 return 'Carta da collezione';
         }
