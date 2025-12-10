@@ -756,24 +756,47 @@ class CardController extends Controller
             // Applica filtri basati sui criteri di similarità
             $this->applyRelatedFilters($relatedQuery, $mainCard);
 
+            // Determina se è una categoria senza player (Disney, Spongebob)
+            $isNonPlayerCategory = in_array($mainCard->category->slug ?? '', ['disney', 'spongebob']);
+            
             // Ordina per rilevanza (priorità: stesso set, stessa squadra, stesso anno, stessa rarità)
-            $relatedQuery->orderByRaw("
-                CASE 
-                    WHEN card_set_id = ? AND player_id != ? THEN 1
-                    WHEN team_id = ? AND player_id != ? THEN 2  
-                    WHEN year = ? AND category_id = ? AND player_id != ? THEN 3
-                    WHEN rarity = ? AND category_id = ? AND player_id != ? THEN 4
-                    WHEN category_id = ? AND player_id != ? THEN 5
-                    ELSE 6
-                END,
-                created_at DESC
-            ", [
-                $mainCard->card_set_id, $mainCard->player_id,
-                $mainCard->team_id, $mainCard->player_id,
-                $mainCard->year, $mainCard->category_id, $mainCard->player_id,
-                $mainCard->rarity, $mainCard->category_id, $mainCard->player_id,
-                $mainCard->category_id, $mainCard->player_id
-            ]);
+            if ($isNonPlayerCategory) {
+                // Per Disney/Spongebob, ordina senza usare player_id
+                $relatedQuery->orderByRaw("
+                    CASE 
+                        WHEN card_set_id = ? THEN 1
+                        WHEN year = ? AND category_id = ? THEN 2
+                        WHEN rarity = ? AND category_id = ? THEN 3
+                        WHEN category_id = ? THEN 4
+                        ELSE 5
+                    END,
+                    created_at DESC
+                ", [
+                    $mainCard->card_set_id,
+                    $mainCard->year, $mainCard->category_id,
+                    $mainCard->rarity, $mainCard->category_id,
+                    $mainCard->category_id
+                ]);
+            } else {
+                // Per categorie con player, usa la logica originale
+                $relatedQuery->orderByRaw("
+                    CASE 
+                        WHEN card_set_id = ? AND (player_id != ? OR player_id IS NULL) THEN 1
+                        WHEN team_id = ? AND (player_id != ? OR player_id IS NULL) THEN 2  
+                        WHEN year = ? AND category_id = ? AND (player_id != ? OR player_id IS NULL) THEN 3
+                        WHEN rarity = ? AND category_id = ? AND (player_id != ? OR player_id IS NULL) THEN 4
+                        WHEN category_id = ? AND (player_id != ? OR player_id IS NULL) THEN 5
+                        ELSE 6
+                    END,
+                    created_at DESC
+                ", [
+                    $mainCard->card_set_id, $mainCard->player_id,
+                    $mainCard->team_id, $mainCard->player_id,
+                    $mainCard->year, $mainCard->category_id, $mainCard->player_id,
+                    $mainCard->rarity, $mainCard->category_id, $mainCard->player_id,
+                    $mainCard->category_id, $mainCard->player_id
+                ]);
+            }
 
             $relatedCards = $relatedQuery->limit($limit)->get();
 
@@ -795,9 +818,16 @@ class CardController extends Controller
 
             // Trasforma i dati per il frontend
             $transformedCards = $relatedCards->map(function ($card) {
+                // Per Disney/Spongebob, estrai solo il nome base (prima del " - ")
+                $cardName = $card->player_name ?: $card->name ?: 'Player';
+                if (in_array($card->category->slug ?? '', ['disney', 'spongebob']) && $cardName) {
+                    $parts = explode(' - ', $cardName);
+                    $cardName = $parts[0] ?? $cardName;
+                }
+                
                 return [
                     'id' => $card->id,
-                    'name' => $card->player_name ?: $card->name ?: 'Player',
+                    'name' => $cardName,
                     'team' => $this->getTeamName($card),
                     'type' => $this->getCategoryType($card->category->name ?? ''),
                     'price' => $this->getEstimatedPrice($card),
@@ -837,44 +867,83 @@ class CardController extends Controller
      */
     private function applyRelatedFilters($query, $mainCard): void
     {
-        // Criteri di similarità in ordine di priorità (escludendo stesso giocatore):
+        // Determina se è una categoria senza player (Disney, Spongebob)
+        $isNonPlayerCategory = in_array($mainCard->category->slug ?? '', ['disney', 'spongebob']);
+        
+        // Estrai il nome base per Disney/Spongebob (prima del " - ")
+        $mainCardBaseName = null;
+        if ($isNonPlayerCategory && $mainCard->name) {
+            $parts = explode(' - ', $mainCard->name);
+            $mainCardBaseName = $parts[0] ?? null;
+        }
+        
+        // Criteri di similarità in ordine di priorità:
         
         // 1. Stesso set (se disponibile) - carte diverse dello stesso set
         if ($mainCard->card_set_id) {
-            $query->where('card_set_id', $mainCard->card_set_id)
-                  ->where('player_id', '!=', $mainCard->player_id); // Esclude stesso giocatore
+            if ($isNonPlayerCategory && $mainCardBaseName) {
+                // Per Disney/Spongebob, escludi carte con lo stesso nome base
+                $query->where('card_set_id', $mainCard->card_set_id)
+                      ->where(function($q) use ($mainCardBaseName) {
+                          $q->whereRaw('SUBSTRING_INDEX(name, \' - \', 1) != ?', [$mainCardBaseName])
+                            ->orWhereNull('name');
+                      });
+            } else {
+                // Per categorie con player, escludi stesso giocatore
+                $query->where('card_set_id', $mainCard->card_set_id);
+                if ($mainCard->player_id) {
+                    $query->where('player_id', '!=', $mainCard->player_id);
+                }
+            }
         }
         
-        // 2. Stessa squadra (se disponibile) - altri giocatori della stessa squadra
-        if ($mainCard->team_id) {
+        // 2. Stessa squadra (solo per categorie con player)
+        if (!$isNonPlayerCategory && $mainCard->team_id) {
             $query->orWhere(function($q) use ($mainCard) {
-                $q->where('team_id', $mainCard->team_id)
-                  ->where('player_id', '!=', $mainCard->player_id); // Esclude stesso giocatore
+                $q->where('team_id', $mainCard->team_id);
+                if ($mainCard->player_id) {
+                    $q->where('player_id', '!=', $mainCard->player_id);
+                }
             });
         }
         
-        // 3. Stesso anno e stessa categoria - carte di altri giocatori dello stesso anno
+        // 3. Stesso anno e stessa categoria
         if ($mainCard->year) {
-            $query->orWhere(function($q) use ($mainCard) {
+            $query->orWhere(function($q) use ($mainCard, $isNonPlayerCategory, $mainCardBaseName) {
                 $q->where('year', $mainCard->year)
-                  ->where('category_id', $mainCard->category_id)
-                  ->where('player_id', '!=', $mainCard->player_id); // Esclude stesso giocatore
+                  ->where('category_id', $mainCard->category_id);
+                
+                if ($isNonPlayerCategory && $mainCardBaseName) {
+                    $q->whereRaw('SUBSTRING_INDEX(name, \' - \', 1) != ?', [$mainCardBaseName]);
+                } elseif ($mainCard->player_id) {
+                    $q->where('player_id', '!=', $mainCard->player_id);
+                }
             });
         }
         
-        // 4. Stessa rarità e stessa categoria - carte di altri giocatori con stessa rarità
+        // 4. Stessa rarità e stessa categoria
         if ($mainCard->rarity) {
-            $query->orWhere(function($q) use ($mainCard) {
+            $query->orWhere(function($q) use ($mainCard, $isNonPlayerCategory, $mainCardBaseName) {
                 $q->where('rarity', $mainCard->rarity)
-                  ->where('category_id', $mainCard->category_id)
-                  ->where('player_id', '!=', $mainCard->player_id); // Esclude stesso giocatore
+                  ->where('category_id', $mainCard->category_id);
+                
+                if ($isNonPlayerCategory && $mainCardBaseName) {
+                    $q->whereRaw('SUBSTRING_INDEX(name, \' - \', 1) != ?', [$mainCardBaseName]);
+                } elseif ($mainCard->player_id) {
+                    $q->where('player_id', '!=', $mainCard->player_id);
+                }
             });
         }
         
-        // 5. Fallback: stessa categoria (sempre applicata come ultimo criterio)
-        $query->orWhere(function($q) use ($mainCard) {
-            $q->where('category_id', $mainCard->category_id)
-              ->where('player_id', '!=', $mainCard->player_id); // Esclude stesso giocatore
+        // 5. Fallback: stessa categoria
+        $query->orWhere(function($q) use ($mainCard, $isNonPlayerCategory, $mainCardBaseName) {
+            $q->where('category_id', $mainCard->category_id);
+            
+            if ($isNonPlayerCategory && $mainCardBaseName) {
+                $q->whereRaw('SUBSTRING_INDEX(name, \' - \', 1) != ?', [$mainCardBaseName]);
+            } elseif ($mainCard->player_id) {
+                $q->where('player_id', '!=', $mainCard->player_id);
+            }
         });
     }
 
@@ -949,24 +1018,47 @@ class CardController extends Controller
             // Applica filtri basati sui criteri di similarità
             $this->applyRelatedFilters($relatedQuery, $mainCard);
 
+            // Determina se è una categoria senza player (Disney, Spongebob)
+            $isNonPlayerCategory = in_array($mainCard->category->slug ?? '', ['disney', 'spongebob']);
+            
             // Ordina per rilevanza (priorità: stesso set, stessa squadra, stesso anno, stessa rarità)
-            $relatedQuery->orderByRaw("
-                CASE 
-                    WHEN card_set_id = ? AND player_id != ? THEN 1
-                    WHEN team_id = ? AND player_id != ? THEN 2  
-                    WHEN year = ? AND category_id = ? AND player_id != ? THEN 3
-                    WHEN rarity = ? AND category_id = ? AND player_id != ? THEN 4
-                    WHEN category_id = ? AND player_id != ? THEN 5
-                    ELSE 6
-                END,
-                created_at DESC
-            ", [
-                $mainCard->card_set_id, $mainCard->player_id,
-                $mainCard->team_id, $mainCard->player_id,
-                $mainCard->year, $mainCard->category_id, $mainCard->player_id,
-                $mainCard->rarity, $mainCard->category_id, $mainCard->player_id,
-                $mainCard->category_id, $mainCard->player_id
-            ]);
+            if ($isNonPlayerCategory) {
+                // Per Disney/Spongebob, ordina senza usare player_id
+                $relatedQuery->orderByRaw("
+                    CASE 
+                        WHEN card_set_id = ? THEN 1
+                        WHEN year = ? AND category_id = ? THEN 2
+                        WHEN rarity = ? AND category_id = ? THEN 3
+                        WHEN category_id = ? THEN 4
+                        ELSE 5
+                    END,
+                    created_at DESC
+                ", [
+                    $mainCard->card_set_id,
+                    $mainCard->year, $mainCard->category_id,
+                    $mainCard->rarity, $mainCard->category_id,
+                    $mainCard->category_id
+                ]);
+            } else {
+                // Per categorie con player, usa la logica originale
+                $relatedQuery->orderByRaw("
+                    CASE 
+                        WHEN card_set_id = ? AND (player_id != ? OR player_id IS NULL) THEN 1
+                        WHEN team_id = ? AND (player_id != ? OR player_id IS NULL) THEN 2  
+                        WHEN year = ? AND category_id = ? AND (player_id != ? OR player_id IS NULL) THEN 3
+                        WHEN rarity = ? AND category_id = ? AND (player_id != ? OR player_id IS NULL) THEN 4
+                        WHEN category_id = ? AND (player_id != ? OR player_id IS NULL) THEN 5
+                        ELSE 6
+                    END,
+                    created_at DESC
+                ", [
+                    $mainCard->card_set_id, $mainCard->player_id,
+                    $mainCard->team_id, $mainCard->player_id,
+                    $mainCard->year, $mainCard->category_id, $mainCard->player_id,
+                    $mainCard->rarity, $mainCard->category_id, $mainCard->player_id,
+                    $mainCard->category_id, $mainCard->player_id
+                ]);
+            }
 
             $relatedCards = $relatedQuery->limit($limit)->get();
 
@@ -988,9 +1080,16 @@ class CardController extends Controller
 
             // Trasforma i dati per il frontend
             $transformedCards = $relatedCards->map(function ($card) {
+                // Per Disney/Spongebob, estrai solo il nome base (prima del " - ")
+                $cardName = $card->player_name ?: $card->name ?: 'Player';
+                if (in_array($card->category->slug ?? '', ['disney', 'spongebob']) && $cardName) {
+                    $parts = explode(' - ', $cardName);
+                    $cardName = $parts[0] ?? $cardName;
+                }
+                
                 return [
                     'id' => $card->id,
-                    'name' => $card->player_name ?: $card->name ?: 'Player',
+                    'name' => $cardName,
                     'team' => $this->getTeamName($card),
                     'type' => $this->getCategoryType($card->category->name ?? ''),
                     'price' => $this->getEstimatedPrice($card),
