@@ -894,73 +894,78 @@ class CardController extends Controller
             $mainCardBaseName = $parts[0] ?? null;
         }
         
-        // Criteri di similarità in ordine di priorità:
-        
-        // 1. Stesso set (se disponibile) - carte diverse dello stesso set
-        if ($mainCard->card_set_id) {
-            if ($isNonPlayerCategory && $mainCardBaseName) {
-                // Per Disney/Spongebob, escludi carte con lo stesso nome base
-                $query->where('card_set_id', $mainCard->card_set_id)
-                      ->where(function($q) use ($mainCardBaseName) {
-                          $q->whereRaw('SUBSTRING_INDEX(name, \' - \', 1) != ?', [$mainCardBaseName])
-                            ->orWhereNull('name');
-                      });
-            } else {
-                // Per categorie con player, escludi stesso giocatore
-                $query->where('card_set_id', $mainCard->card_set_id);
-                if ($mainCard->player_id) {
-                    $query->where('player_id', '!=', $mainCard->player_id);
+        // Usa where con una funzione che raggruppa tutti i criteri OR
+        $query->where(function($q) use ($mainCard, $isNonPlayerCategory, $mainCardBaseName) {
+            // 1. Stesso set (se disponibile) - carte diverse dello stesso set
+            if ($mainCard->card_set_id) {
+                if ($isNonPlayerCategory && $mainCardBaseName) {
+                    // Per Disney/Spongebob, escludi carte con lo stesso nome base
+                    $q->where(function($subQ) use ($mainCard, $mainCardBaseName) {
+                        $subQ->where('card_set_id', $mainCard->card_set_id)
+                             ->whereRaw('SUBSTRING_INDEX(name, \' - \', 1) != ?', [$mainCardBaseName]);
+                    });
+                } else {
+                    // Per categorie con player, escludi stesso giocatore
+                    $subQ = $q->where(function($subQ) use ($mainCard) {
+                        $subQ->where('card_set_id', $mainCard->card_set_id);
+                        if ($mainCard->player_id) {
+                            $subQ->where('player_id', '!=', $mainCard->player_id);
+                        } else {
+                            // Se non c'è player_id, escludi solo se player_id è NULL
+                            $subQ->whereNull('player_id');
+                        }
+                    });
                 }
             }
-        }
-        
-        // 2. Stessa squadra (solo per categorie con player)
-        if (!$isNonPlayerCategory && $mainCard->team_id) {
-            $query->orWhere(function($q) use ($mainCard) {
-                $q->where('team_id', $mainCard->team_id);
-                if ($mainCard->player_id) {
-                    $q->where('player_id', '!=', $mainCard->player_id);
-                }
-            });
-        }
-        
-        // 3. Stesso anno e stessa categoria
-        if ($mainCard->year) {
-            $query->orWhere(function($q) use ($mainCard, $isNonPlayerCategory, $mainCardBaseName) {
-                $q->where('year', $mainCard->year)
-                  ->where('category_id', $mainCard->category_id);
-                
-                if ($isNonPlayerCategory && $mainCardBaseName) {
-                    $q->whereRaw('SUBSTRING_INDEX(name, \' - \', 1) != ?', [$mainCardBaseName]);
-                } elseif ($mainCard->player_id) {
-                    $q->where('player_id', '!=', $mainCard->player_id);
-                }
-            });
-        }
-        
-        // 4. Stessa rarità e stessa categoria
-        if ($mainCard->rarity) {
-            $query->orWhere(function($q) use ($mainCard, $isNonPlayerCategory, $mainCardBaseName) {
-                $q->where('rarity', $mainCard->rarity)
-                  ->where('category_id', $mainCard->category_id);
-                
-                if ($isNonPlayerCategory && $mainCardBaseName) {
-                    $q->whereRaw('SUBSTRING_INDEX(name, \' - \', 1) != ?', [$mainCardBaseName]);
-                } elseif ($mainCard->player_id) {
-                    $q->where('player_id', '!=', $mainCard->player_id);
-                }
-            });
-        }
-        
-        // 5. Fallback: stessa categoria
-        $query->orWhere(function($q) use ($mainCard, $isNonPlayerCategory, $mainCardBaseName) {
-            $q->where('category_id', $mainCard->category_id);
             
-            if ($isNonPlayerCategory && $mainCardBaseName) {
-                $q->whereRaw('SUBSTRING_INDEX(name, \' - \', 1) != ?', [$mainCardBaseName]);
-            } elseif ($mainCard->player_id) {
-                $q->where('player_id', '!=', $mainCard->player_id);
+            // 2. Stessa squadra (solo per categorie con player)
+            if (!$isNonPlayerCategory && $mainCard->team_id) {
+                $q->orWhere(function($subQ) use ($mainCard) {
+                    $subQ->where('team_id', $mainCard->team_id);
+                    if ($mainCard->player_id) {
+                        $subQ->where('player_id', '!=', $mainCard->player_id);
+                    }
+                });
             }
+            
+            // 3. Stesso anno e stessa categoria
+            if ($mainCard->year) {
+                $q->orWhere(function($subQ) use ($mainCard, $isNonPlayerCategory, $mainCardBaseName) {
+                    $subQ->where('year', $mainCard->year)
+                         ->where('category_id', $mainCard->category_id);
+                    
+                    if ($isNonPlayerCategory && $mainCardBaseName) {
+                        $subQ->whereRaw('SUBSTRING_INDEX(name, \' - \', 1) != ?', [$mainCardBaseName]);
+                    } elseif ($mainCard->player_id) {
+                        $subQ->where('player_id', '!=', $mainCard->player_id);
+                    }
+                });
+            }
+            
+            // 4. Stessa rarità e stessa categoria
+            if ($mainCard->rarity) {
+                $q->orWhere(function($subQ) use ($mainCard, $isNonPlayerCategory, $mainCardBaseName) {
+                    $subQ->where('rarity', $mainCard->rarity)
+                         ->where('category_id', $mainCard->category_id);
+                    
+                    if ($isNonPlayerCategory && $mainCardBaseName) {
+                        $subQ->whereRaw('SUBSTRING_INDEX(name, \' - \', 1) != ?', [$mainCardBaseName]);
+                    } elseif ($mainCard->player_id) {
+                        $subQ->where('player_id', '!=', $mainCard->player_id);
+                    }
+                });
+            }
+            
+            // 5. Fallback: stessa categoria (sempre incluso)
+            $q->orWhere(function($subQ) use ($mainCard, $isNonPlayerCategory, $mainCardBaseName) {
+                $subQ->where('category_id', $mainCard->category_id);
+                
+                if ($isNonPlayerCategory && $mainCardBaseName) {
+                    $subQ->whereRaw('SUBSTRING_INDEX(name, \' - \', 1) != ?', [$mainCardBaseName]);
+                } elseif ($mainCard->player_id) {
+                    $subQ->where('player_id', '!=', $mainCard->player_id);
+                }
+            });
         });
     }
 
@@ -1095,17 +1100,36 @@ class CardController extends Controller
             }
 
             $relatedCards = $relatedQuery->limit($limit)->get();
+            
+            // Log per debug
+            \Log::info('Related products query', [
+                'main_card_id' => $mainCard->id,
+                'main_card_name' => $mainCard->name,
+                'main_card_category' => $mainCard->category->slug ?? null,
+                'related_count' => $relatedCards->count(),
+                'limit' => $limit,
+                'query_sql' => $relatedQuery->toSql(),
+                'query_bindings' => $relatedQuery->getBindings()
+            ]);
 
             // Se non abbiamo abbastanza risultati con i criteri principali, 
             // espandiamo la ricerca nella stessa categoria
             if ($relatedCards->count() < $limit) {
                 $remainingLimit = $limit - $relatedCards->count();
-                $fallbackCards = CardModel::with(['category', 'player', 'team', 'cardSet'])
+                
+                // Per Disney/Spongebob, escludi anche carte con lo stesso nome base
+                $fallbackQuery = CardModel::with(['category', 'player', 'team', 'cardSet'])
                     ->where('id', '!=', $mainCard->id)
                     ->where('is_active', true)
                     ->where('category_id', $mainCard->category_id)
-                    ->whereNotIn('id', $relatedCards->pluck('id'))
-                    ->orderBy('created_at', 'desc')
+                    ->whereNotIn('id', $relatedCards->pluck('id'));
+                
+                // Se è Disney/Spongebob, escludi carte con lo stesso nome base
+                if ($isNonPlayerCategory && $mainCardBaseName) {
+                    $fallbackQuery->whereRaw('SUBSTRING_INDEX(name, \' - \', 1) != ?', [$mainCardBaseName]);
+                }
+                
+                $fallbackCards = $fallbackQuery->orderBy('created_at', 'desc')
                     ->limit($remainingLimit)
                     ->get();
 
