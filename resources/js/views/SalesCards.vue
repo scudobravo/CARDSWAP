@@ -95,14 +95,35 @@
 
     <!-- Listings Grid -->
     <div v-else class="bg-white rounded-lg border border-gray-200">
-      <div class="px-6 py-4 border-b border-gray-200">
+      <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
         <h3 class="text-lg font-gill-sans-semibold text-gray-900">
           Le tue carte in vendita ({{ listings.length }})
         </h3>
+        
+        <!-- View Toggle -->
+        <div class="flex rounded-md shadow-sm">
+          <button 
+            type="button" 
+            :class="[viewMode === 'grid' ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:text-gray-900', 'px-3 py-2 text-sm font-medium border border-gray-300 rounded-l-md focus:z-10 focus:ring-1 focus:ring-primary focus:border-primary']"
+            @click="viewMode = 'grid'"
+          >
+            <Squares2X2Icon class="size-4" />
+          </button>
+          <button 
+            type="button" 
+            :class="[viewMode === 'list' ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:text-gray-900', 'px-3 py-2 text-sm font-medium border border-gray-300 rounded-r-md focus:z-10 focus:ring-1 focus:ring-primary focus:border-primary']"
+            @click="viewMode = 'list'"
+          >
+            <svg class="size-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
       </div>
       
       <div class="p-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Desktop Grid View -->
+        <div v-if="viewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div
             v-for="listing in listings"
             :key="listing.id"
@@ -179,6 +200,104 @@
             </div>
           </div>
         </div>
+
+        <!-- Desktop List View -->
+        <div v-if="viewMode === 'list'" class="space-y-4">
+          <div
+            v-for="listing in listings"
+            :key="listing.id"
+            class="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+          >
+            <div class="flex">
+              <!-- Image Area -->
+              <div class="w-48 h-64 bg-gray-200 overflow-hidden flex-shrink-0 relative">
+                <img 
+                  v-if="listing.images && listing.images.length > 0"
+                  :src="`/storage/${listing.images[0]}`"
+                  :alt="listing.card_model?.name || 'Carta'"
+                  class="w-full h-full object-cover"
+                  @error="handleImageError"
+                />
+                <div v-else class="w-full h-full flex items-center justify-center bg-gray-200">
+                  <div class="text-center">
+                    <div class="w-16 h-16 bg-gray-300 rounded-lg mx-auto mb-2"></div>
+                    <p class="text-xs text-gray-500">Nessuna immagine</p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Card Details -->
+              <div class="flex-1 p-4 flex flex-col justify-between">
+                <div>
+                  <h4 class="text-lg font-gill-sans-semibold text-gray-900">
+                    {{ listing.card_model?.name || 'Carta' }}
+                  </h4>
+                  
+                  <div class="mt-2 text-sm text-gray-600 space-y-1">
+                    <div class="flex justify-between">
+                      <span>Set:</span>
+                      <span class="font-medium">{{ listing.card_model?.set_name || 'Set' }} - {{ listing.card_model?.year || 'Anno' }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span>Giocatore:</span>
+                      <span class="font-medium">{{ listing.card_model?.player?.name || 'Giocatore' }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span>Squadra:</span>
+                      <span class="font-medium">{{ listing.card_model?.team?.name || 'Squadra' }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span>Condizione:</span>
+                      <span class="font-medium capitalize">{{ formatCondition(listing) }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span>Quantità:</span>
+                      <span class="font-medium">{{ listing.quantity }}</span>
+                    </div>
+                  </div>
+                  
+                  <div class="mt-3">
+                    <span
+                      :class="[
+                        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+                        listing.status === 'active' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      ]"
+                    >
+                      {{ listing.status === 'active' ? 'Attiva' : 'Inattiva' }}
+                    </span>
+                  </div>
+                </div>
+                
+                <!-- Price and Actions -->
+                <div class="mt-4 flex items-center justify-between">
+                  <p class="text-lg font-gill-sans-bold text-primary">
+                    €{{ formatPriceItaliana(listing.price) }}
+                  </p>
+                  <div class="flex space-x-2">
+                    <button
+                      @click="editListing(listing)"
+                      class="text-gray-400 hover:text-gray-600 transition-colors"
+                      title="Modifica"
+                    >
+                      <PencilIcon class="h-5 w-5" />
+                    </button>
+                    <button
+                      @click="deleteListing(listing)"
+                      class="text-gray-400 hover:text-red-600 transition-colors"
+                      title="Elimina"
+                      :disabled="deletingListing === listing.id"
+                    >
+                      <TrashIcon v-if="deletingListing !== listing.id" class="h-5 w-5" />
+                      <div v-else class="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600"></div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -200,6 +319,7 @@ import { useAuthStore } from '@/stores/auth'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import CreateListingModal from '@/components/listing/CreateListingModal.vue'
 import { PlusIcon, FolderIcon, ExclamationTriangleIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import { Squares2X2Icon } from '@heroicons/vue/20/solid'
 import { formatPriceItaliana } from '../utils/priceFormatter'
 import { formatCondition } from '@/utils/conditionFormatter'
 
@@ -211,6 +331,7 @@ const listings = ref([])
 const loading = ref(false)
 const error = ref(null)
 const deletingListing = ref(null)
+const viewMode = ref('grid')
 
 // Load listings from API
 const loadListings = async () => {
