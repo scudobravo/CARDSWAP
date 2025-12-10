@@ -816,21 +816,61 @@ class CardController extends Controller
             }
 
             $relatedCards = $relatedQuery->limit($limit)->get();
+            
+            // Determina se è una categoria senza player (Disney, Spongebob)
+            $isNonPlayerCategory = in_array($mainCard->category->slug ?? '', ['disney', 'spongebob']);
+            $mainCardBaseName = null;
+            if ($isNonPlayerCategory && $mainCard->name) {
+                $parts = explode(' - ', $mainCard->name);
+                $mainCardBaseName = $parts[0] ?? null;
+            }
+            
+            // Debug info per la risposta
+            $debugInfo = [
+                'main_card_id' => $mainCard->id,
+                'main_card_name' => $mainCard->name,
+                'main_card_category' => $mainCard->category->slug ?? null,
+                'main_card_set_id' => $mainCard->card_set_id,
+                'main_card_year' => $mainCard->year,
+                'main_card_rarity' => $mainCard->rarity,
+                'is_non_player_category' => $isNonPlayerCategory,
+                'main_card_base_name' => $mainCardBaseName ?? null,
+                'related_count_after_filters' => $relatedCards->count(),
+                'limit' => $limit,
+            ];
 
             // Se non abbiamo abbastanza risultati con i criteri principali, 
             // espandiamo la ricerca nella stessa categoria
             if ($relatedCards->count() < $limit) {
                 $remainingLimit = $limit - $relatedCards->count();
-                $fallbackCards = CardModel::with(['category', 'player', 'team', 'cardSet'])
+                
+                $fallbackQuery = CardModel::with(['category', 'player', 'team', 'cardSet'])
                     ->where('id', '!=', $cardId)
                     ->where('is_active', true)
                     ->where('category_id', $mainCard->category_id)
-                    ->whereNotIn('id', $relatedCards->pluck('id'))
-                    ->orderBy('created_at', 'desc')
+                    ->whereNotIn('id', $relatedCards->pluck('id'));
+                
+                // Se è Disney/Spongebob, escludi carte con lo stesso nome base
+                if ($isNonPlayerCategory && $mainCardBaseName) {
+                    $fallbackQuery->whereRaw('SUBSTRING_INDEX(name, \' - \', 1) != ?', [$mainCardBaseName]);
+                }
+                
+                $fallbackCards = $fallbackQuery->orderBy('created_at', 'desc')
                     ->limit($remainingLimit)
                     ->get();
 
+                $debugInfo['fallback_count'] = $fallbackCards->count();
                 $relatedCards = $relatedCards->merge($fallbackCards);
+            }
+            
+            $debugInfo['total_related_count'] = $relatedCards->count();
+            
+            // Conta quante carte Disney/Spongebob ci sono nel database (per debug)
+            if ($isNonPlayerCategory) {
+                $totalCardsInCategory = CardModel::where('category_id', $mainCard->category_id)
+                    ->where('is_active', true)
+                    ->count();
+                $debugInfo['total_cards_in_category'] = $totalCardsInCategory;
             }
 
             // Trasforma i dati per il frontend
@@ -862,7 +902,8 @@ class CardController extends Controller
                 'success' => true,
                 'data' => $transformedCards,
                 'count' => $transformedCards->count(),
-                'criteria' => $this->getRelatedCriteria($mainCard)
+                'criteria' => $this->getRelatedCriteria($mainCard),
+                'debug' => $debugInfo ?? [] // Aggiunto per debug temporaneo
             ]);
 
         } catch (\Exception $e) {
@@ -1101,16 +1142,19 @@ class CardController extends Controller
 
             $relatedCards = $relatedQuery->limit($limit)->get();
             
-            // Log per debug
-            \Log::info('Related products query', [
+            // Debug info per la risposta
+            $debugInfo = [
                 'main_card_id' => $mainCard->id,
                 'main_card_name' => $mainCard->name,
                 'main_card_category' => $mainCard->category->slug ?? null,
-                'related_count' => $relatedCards->count(),
+                'main_card_set_id' => $mainCard->card_set_id,
+                'main_card_year' => $mainCard->year,
+                'main_card_rarity' => $mainCard->rarity,
+                'is_non_player_category' => $isNonPlayerCategory,
+                'main_card_base_name' => $mainCardBaseName ?? null,
+                'related_count_after_filters' => $relatedCards->count(),
                 'limit' => $limit,
-                'query_sql' => $relatedQuery->toSql(),
-                'query_bindings' => $relatedQuery->getBindings()
-            ]);
+            ];
 
             // Se non abbiamo abbastanza risultati con i criteri principali, 
             // espandiamo la ricerca nella stessa categoria
@@ -1133,7 +1177,18 @@ class CardController extends Controller
                     ->limit($remainingLimit)
                     ->get();
 
+                $debugInfo['fallback_count'] = $fallbackCards->count();
                 $relatedCards = $relatedCards->merge($fallbackCards);
+            }
+            
+            $debugInfo['total_related_count'] = $relatedCards->count();
+            
+            // Conta quante carte Disney/Spongebob ci sono nel database (per debug)
+            if ($isNonPlayerCategory) {
+                $totalCardsInCategory = CardModel::where('category_id', $mainCard->category_id)
+                    ->where('is_active', true)
+                    ->count();
+                $debugInfo['total_cards_in_category'] = $totalCardsInCategory;
             }
 
             // Trasforma i dati per il frontend
@@ -1165,7 +1220,8 @@ class CardController extends Controller
                 'success' => true,
                 'data' => $transformedCards,
                 'count' => $transformedCards->count(),
-                'criteria' => $this->getRelatedCriteria($mainCard)
+                'criteria' => $this->getRelatedCriteria($mainCard),
+                'debug' => $debugInfo ?? [] // Aggiunto per debug temporaneo
             ]);
 
         } catch (\Exception $e) {
