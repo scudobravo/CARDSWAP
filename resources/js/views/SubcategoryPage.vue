@@ -169,6 +169,7 @@
                 v-for="product in displayedProducts" 
                 :key="product.id" 
                 :product="product"
+                :category="category"
                 @add-to-cart="handleAddToCart"
                 class="cursor-pointer"
                 @click="goToProduct(product)"
@@ -232,7 +233,7 @@
                       
                       <!-- Compact Details -->
                       <div class="mt-2 text-xs text-gray-600 space-y-1">
-                        <div class="flex justify-between">
+                        <div v-if="category !== 'disney' && category !== 'spongebob'" class="flex justify-between">
                           <span>Team:</span>
                           <span class="font-medium truncate ml-2">{{ product.team && product.team !== 'Team' && product.team !== 'Team Name' && product.team !== 'Unknown Team' ? product.team : '-' }}</span>
                         </div>
@@ -401,7 +402,7 @@
                       
                       <!-- Details -->
                       <div class="mt-2 text-sm text-gray-600 space-y-1">
-                        <div class="flex justify-between">
+                        <div v-if="category !== 'disney' && category !== 'spongebob'" class="flex justify-between">
                           <span>Team:</span>
                           <span class="font-medium">{{ product.team || 'Team' }}</span>
                         </div>

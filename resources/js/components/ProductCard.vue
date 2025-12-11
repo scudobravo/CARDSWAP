@@ -118,7 +118,7 @@
 
     <!-- Card Details -->
     <div class="px-2 sm:px-4 pb-2 sm:pb-3 space-y-0.5 sm:space-y-1 flex-grow">
-      <div class="flex justify-between text-xs sm:text-sm text-gray-600">
+      <div v-if="shouldShowTeam" class="flex justify-between text-xs sm:text-sm text-gray-600">
         <span class="truncate">Team:</span>
         <span class="font-medium truncate ml-2">{{ product.team && product.team !== 'Team' && product.team !== 'Team Name' && product.team !== 'Unknown Team' ? product.team : '-' }}</span>
       </div>
@@ -187,6 +187,10 @@ const props = defineProps({
       is_legend: false,
       imageUrl: null
     })
+  },
+  category: {
+    type: String,
+    default: null
   }
 })
 
@@ -207,6 +211,12 @@ const isValidNumbered = computed(() => {
   }
   
   return true
+})
+
+// Determina se mostrare il campo Team (non mostrare per Disney e SpongeBob)
+const shouldShowTeam = computed(() => {
+  const category = props.category || props.product.category_slug || props.product.category
+  return category !== 'disney' && category !== 'spongebob'
 })
 
 // Emits

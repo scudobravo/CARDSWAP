@@ -279,7 +279,7 @@
             </div>
             <!-- Per carte normali (singles, bulk) -->
             <div v-else class="space-y-3">
-              <div class="flex justify-between">
+              <div v-if="getCategorySlug() !== 'disney' && getCategorySlug() !== 'spongebob'" class="flex justify-between">
                 <span class="text-gray-600 font-gill-sans">Team:</span>
                 <span class="font-futura-bold text-primary">{{ product.team && product.team !== 'Team Name' && product.team !== 'Unknown Team' && product.team !== 'Team' ? product.team : '-' }}</span>
               </div>
