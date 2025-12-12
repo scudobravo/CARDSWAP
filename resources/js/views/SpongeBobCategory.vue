@@ -53,6 +53,32 @@
         </div>
       </div>
     </div>
+
+    <!-- Top Characters Section with fullwidth border -->
+    <div class="border-b border-gray-300 py-12">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <ProductCarousel 
+          title="Top Characters" 
+          :products="topCharacters" 
+          category="spongebob"
+          section="top_players"
+          :use-dynamic-data="true"
+        />
+      </div>
+    </div>
+
+    <!-- Most Expensive Section (no border) -->
+    <div class="py-12">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <ProductCarousel 
+          title="Most Expensive" 
+          :products="mostExpensive" 
+          category="spongebob"
+          section="most_expensive"
+          :use-dynamic-data="true"
+        />
+      </div>
+    </div>
     
     <!-- Footer -->
     <Footer />
@@ -64,6 +90,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Header from '../components/Header.vue'
 import Footer from '../components/Footer.vue'
+import ProductCarousel from '../components/ProductCarousel.vue'
 
 const router = useRouter()
 
@@ -98,5 +125,11 @@ const productTypes = ref([
 const goToProductType = (productType) => {
   router.push(`/categories/spongebob/${productType.slug}`)
 }
+
+// Top characters data (will be populated dynamically)
+const topCharacters = ref([])
+
+// Most expensive data (will be populated dynamically)
+const mostExpensive = ref([])
 </script>
 
