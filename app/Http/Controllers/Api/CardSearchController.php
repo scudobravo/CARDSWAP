@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\CardModel;
+use App\Models\CardListing;
 use Illuminate\Http\Request;
 
 class CardSearchController extends Controller
@@ -28,11 +29,8 @@ class CardSearchController extends Controller
         
         // Solo per la ricerca pubblica, filtra per listing attive
         // Per la creazione di listing, mostriamo tutte le carte disponibili
-        // Se viene passato il parametro 'search' (ricerca testuale pubblica), filtra automaticamente per listings attive
-        $shouldFilterListings = ($request->filled('only_with_listings') && $request->get('only_with_listings') === 'true') 
-            || $request->filled('search'); // Ricerca testuale pubblica = solo carte con listings
-        
-        if ($shouldFilterListings) {
+        // NOTA: Se viene passato 'search', la ricerca viene gestita da searchListings() che restituisce le singole listings
+        if ($request->filled('only_with_listings') && $request->get('only_with_listings') === 'true') {
             $query->whereHas('cardListings', function($q) {
                 $q->where('status', 'active');
             });
@@ -227,22 +225,10 @@ class CardSearchController extends Controller
         }
 
         // Ricerca testuale
+        // Se viene passato 'search', restituiamo le singole CardListing invece dei CardModel
+        // così ogni inserzione con prezzo diverso appare come risultato separato
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('card_number', 'like', "%{$search}%")
-                  ->orWhere('card_number_in_set', 'like', "%{$search}%")
-                  ->orWhereHas('player', function($playerQuery) use ($search) {
-                      $playerQuery->where('name', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('team', function($teamQuery) use ($search) {
-                      $teamQuery->where('name', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('league', function($leagueQuery) use ($search) {
-                      $leagueQuery->where('name', 'like', "%{$search}%");
-                  });
-            });
+            return $this->searchListings($request);
         }
 
         // Ordinamento
@@ -357,6 +343,188 @@ class CardSearchController extends Controller
                 'last_page' => $cards->lastPage(),
                 'per_page' => $cards->perPage(),
                 'total' => $cards->total(),
+            ],
+            'stats' => $stats,
+        ]);
+    }
+
+    /**
+     * Search individual listings instead of card models for public text search
+     * This ensures each listing with different price appears as separate result
+     */
+    private function searchListings(Request $request)
+    {
+        $search = $request->search;
+        
+        // Query per le listings attive con tutte le relazioni necessarie
+        $listingsQuery = CardListing::with([
+            'cardModel' => function($q) {
+                $q->with([
+                    'category',
+                    'cardSet',
+                    'player',
+                    'team',
+                    'league',
+                    'gradingCompany'
+                ]);
+            },
+            'gradingCompany',
+            'seller'
+        ])
+        ->where('status', 'active')
+        ->whereHas('cardModel', function($q) use ($search) {
+            $q->where('is_active', true)
+              ->where(function($query) use ($search) {
+                  $query->where('name', 'like', "%{$search}%")
+                        ->orWhere('card_number', 'like', "%{$search}%")
+                        ->orWhere('card_number_in_set', 'like', "%{$search}%")
+                        ->orWhereHas('player', function($playerQuery) use ($search) {
+                            $playerQuery->where('name', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('team', function($teamQuery) use ($search) {
+                            $teamQuery->where('name', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('league', function($leagueQuery) use ($search) {
+                            $leagueQuery->where('name', 'like', "%{$search}%");
+                        });
+              });
+        });
+
+        // Ordinamento
+        $sortBy = $request->get('sort_by', 'price');
+        $sortOrder = $request->get('sort_order', 'asc');
+        
+        switch ($sortBy) {
+            case 'price_low':
+            case 'price':
+                $listingsQuery->orderBy('card_listings.price', $sortOrder);
+                break;
+            case 'price_high':
+                $listingsQuery->orderBy('card_listings.price', 'desc');
+                break;
+            case 'name':
+                $listingsQuery->join('card_models', 'card_listings.card_model_id', '=', 'card_models.id')
+                             ->orderBy('card_models.name', $sortOrder)
+                             ->select('card_listings.*')
+                             ->distinct();
+                break;
+            case 'year':
+                $listingsQuery->join('card_models', 'card_listings.card_model_id', '=', 'card_models.id')
+                             ->orderBy('card_models.year', $sortOrder)
+                             ->select('card_listings.*')
+                             ->distinct();
+                break;
+            default:
+                $listingsQuery->orderBy('card_listings.price', 'asc');
+        }
+
+        // Paginazione
+        $perPage = $request->get('per_page', 20);
+        $page = $request->get('page', 1);
+        $listings = $listingsQuery->paginate($perPage, ['*'], 'page', $page);
+
+        // Trasforma i dati per includere tutte le informazioni necessarie
+        $transformedListings = $listings->getCollection()->map(function($listing) {
+            $cardModel = $listing->cardModel;
+            
+            if (!$cardModel) {
+                return null;
+            }
+
+            // Priorità alle immagini dalla listing, poi fallback al card model
+            $imageUrl = null;
+            if ($listing->images && is_array($listing->images) && count($listing->images) > 0) {
+                $firstImage = $listing->images[0];
+                if (!str_starts_with($firstImage, '/storage/') && !str_starts_with($firstImage, 'http')) {
+                    $imageUrl = '/storage/' . $firstImage;
+                } else {
+                    $imageUrl = $firstImage;
+                }
+            }
+            
+            // Fallback all'immagine del card model
+            if (!$imageUrl && $cardModel->image_url) {
+                $imageUrl = $cardModel->image_url;
+            }
+
+            // Mappa SOLO "common" a "Base Card" per Disney/Spongebob nella visualizzazione
+            $displayRarity = $cardModel->rarity;
+            $categorySlug = $cardModel->category->slug ?? null;
+            if (in_array($categorySlug, ['disney', 'spongebob']) && $displayRarity === 'common') {
+                $displayRarity = 'Base Card';
+            }
+
+            // Crea un oggetto con i dati della listing per formatCondition
+            $listingData = [
+                'condition' => $listing->condition,
+                'grading_company_id' => $listing->grading_company_id,
+                'grading_company' => $listing->gradingCompany,
+                'card_condition_score' => $listing->card_condition_score,
+                'autograph_condition_score' => $listing->autograph_condition_score
+            ];
+
+            return [
+                'id' => $cardModel->id, // Manteniamo l'ID del card model per compatibilità
+                'listing_id' => $listing->id, // Aggiungiamo l'ID della listing
+                'name' => $cardModel->name,
+                'set_name' => $cardModel->set_name ?? $cardModel->cardSet->name ?? null,
+                'year' => $cardModel->year,
+                'image_url' => $imageUrl,
+                'imageUrl' => $imageUrl, // Alias per compatibilità
+                'category' => $cardModel->category,
+                'cardSet' => $cardModel->cardSet,
+                'player' => $cardModel->player,
+                'team' => $cardModel->team,
+                'league' => $cardModel->league,
+                'rarity' => $displayRarity,
+                'rarity_variation' => $cardModel->rarity_variation,
+                'card_number' => $cardModel->card_number,
+                'card_number_in_set' => $cardModel->card_number_in_set,
+                'is_autograph' => $cardModel->is_autograph ?? false,
+                'is_relic' => $cardModel->is_relic ?? false,
+                'is_rookie' => $cardModel->is_rookie ?? false,
+                'is_star' => $cardModel->is_star ?? false,
+                'is_legend' => $cardModel->is_legend ?? false,
+                'price' => $listing->price, // Prezzo dalla listing, non dal card model
+                // Dati della listing per la visualizzazione
+                'condition' => $listing->condition,
+                'grading_company_id' => $listing->grading_company_id,
+                'grading_company' => $listing->gradingCompany,
+                'card_condition_score' => $listing->card_condition_score,
+                'autograph_condition_score' => $listing->autograph_condition_score,
+                'quantity' => $listing->quantity,
+                'seller' => $listing->seller,
+                // Manteniamo anche card_listings per compatibilità (solo questa listing)
+                'card_listings' => collect([$listing]),
+            ];
+        })->filter(); // Rimuove eventuali null
+
+        // Statistiche
+        $stats = [
+            'total_cards' => $listings->total(),
+            'price_range' => [
+                'min' => $transformedListings->min('price') ?? 0,
+                'max' => $transformedListings->max('price') ?? 0,
+            ],
+            'available_conditions' => $transformedListings
+                ->pluck('condition')
+                ->unique()
+                ->values(),
+        ];
+
+        // Formato compatibile con SearchResults.vue
+        return response()->json([
+            'data' => $transformedListings->values()->all(),
+            'total' => $listings->total(),
+            'current_page' => $listings->currentPage(),
+            'last_page' => $listings->lastPage(),
+            'per_page' => $listings->perPage(),
+            'cards' => $transformedListings->values()->all(), // Mantenuto per retrocompatibilità
+            'pagination' => [
+                'current_page' => $listings->currentPage(),
+                'last_page' => $listings->lastPage(),
+                'per_page' => $listings->perPage(),
+                'total' => $listings->total(),
             ],
             'stats' => $stats,
         ]);

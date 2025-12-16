@@ -151,24 +151,37 @@ const goToCardDetail = (card) => {
 
 // Funzione per trasformare i dati della carta nel formato ProductCard
 const transformCardToProduct = (card) => {
-  // Prendi il prezzo dal primo listing attivo, se disponibile
-  const firstListing = card.card_listings && card.card_listings.length > 0 
-    ? card.card_listings[0] 
-    : null
+  // Se i dati della listing sono già presenti direttamente nell'oggetto (ricerca testuale),
+  // usali direttamente, altrimenti prendili dal primo listing
+  let listingData = {
+    condition: card.condition || null,
+    grading_company_id: card.grading_company_id || null,
+    grading_company: card.grading_company || null,
+    card_condition_score: card.card_condition_score || null,
+    autograph_condition_score: card.autograph_condition_score || null
+  }
   
-  // Crea un oggetto con tutti i dati necessari per formatCondition
-  const listingData = firstListing ? {
-    condition: firstListing.condition,
-    grading_company_id: firstListing.grading_company_id,
-    grading_company: firstListing.grading_company,
-    card_condition_score: firstListing.card_condition_score,
-    autograph_condition_score: firstListing.autograph_condition_score
-  } : {
-    condition: null,
-    grading_company_id: null,
-    grading_company: null,
-    card_condition_score: null,
-    autograph_condition_score: null
+  // Se i dati non sono presenti direttamente, prova a prenderli dal primo listing
+  if (!listingData.condition && card.card_listings && card.card_listings.length > 0) {
+    const firstListing = card.card_listings[0]
+    listingData = {
+      condition: firstListing.condition,
+      grading_company_id: firstListing.grading_company_id,
+      grading_company: firstListing.grading_company,
+      card_condition_score: firstListing.card_condition_score,
+      autograph_condition_score: firstListing.autograph_condition_score
+    }
+  }
+  
+  // Se ancora non ci sono dati, usa valori null
+  if (!listingData.condition) {
+    listingData = {
+      condition: null,
+      grading_company_id: null,
+      grading_company: null,
+      card_condition_score: null,
+      autograph_condition_score: null
+    }
   }
   
   return {
@@ -183,7 +196,7 @@ const transformCardToProduct = (card) => {
     condition: formatCondition(listingData),
     // Passa anche i dati raw per eventuali usi futuri
     ...listingData,
-    price: firstListing?.price || card.price || 0,
+    price: card.price || 0, // Il prezzo è già presente direttamente nell'oggetto quando viene da searchListings
     card_number: card.card_number,
     card_number_in_set: card.card_number_in_set,
     is_autograph: card.is_autograph || false,
