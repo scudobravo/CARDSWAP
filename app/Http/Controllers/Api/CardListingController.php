@@ -261,6 +261,72 @@ class CardListingController extends Controller
                 $cardListing->shippingZones()->attach($request->shipping_zones);
             }
 
+            // Aggiorna anche il CardModel associato se ci sono caratteristiche da aggiornare
+            // Le caratteristiche vengono inviate come autograph, rookie, relic, jewel, multiAutograph
+            if ($cardListing->cardModel) {
+                $cardModelUpdate = [];
+                
+                // Converti i valori delle caratteristiche dal formato frontend al formato database
+                if ($request->has('autograph')) {
+                    $autographValue = $request->input('autograph');
+                    $cardModelUpdate['is_autograph'] = in_array(strtolower($autographValue), ['si', 'yes', '1', 'true', 'sì']);
+                }
+                
+                if ($request->has('rookie')) {
+                    $rookieValue = $request->input('rookie');
+                    $cardModelUpdate['is_rookie'] = in_array(strtolower($rookieValue), ['si', 'yes', '1', 'true', 'sì']);
+                }
+                
+                if ($request->has('relic')) {
+                    $relicValue = $request->input('relic');
+                    $cardModelUpdate['is_relic'] = in_array(strtolower($relicValue), ['si', 'yes', '1', 'true', 'sì']);
+                }
+                
+                if ($request->has('jewel')) {
+                    $jewelValue = $request->input('jewel');
+                    $cardModelUpdate['is_jewel'] = in_array(strtolower($jewelValue), ['si', 'yes', '1', 'true', 'sì']);
+                }
+                
+                if ($request->has('onCardAuto')) {
+                    $onCardAutoValue = $request->input('onCardAuto');
+                    $cardModelUpdate['is_on_card_auto'] = in_array(strtolower($onCardAutoValue), ['si', 'yes', '1', 'true', 'sì']);
+                }
+                
+                // Gestione multiAutograph/multiPlayer
+                if ($request->has('multiAutograph') || $request->has('multiPlayer')) {
+                    $multiValue = $request->input('multiAutograph') ?? $request->input('multiPlayer');
+                    
+                    // Reset di tutti i campi multi_player
+                    $cardModelUpdate['is_multi_player_dual'] = false;
+                    $cardModelUpdate['is_multi_player_triple'] = false;
+                    $cardModelUpdate['is_multi_player_quad'] = false;
+                    $cardModelUpdate['is_booklet'] = false;
+                    
+                    // Imposta il campo corretto in base al valore
+                    if (!empty($multiValue)) {
+                        switch (strtolower(trim($multiValue))) {
+                            case 'dual':
+                                $cardModelUpdate['is_multi_player_dual'] = true;
+                                break;
+                            case 'triple':
+                                $cardModelUpdate['is_multi_player_triple'] = true;
+                                break;
+                            case 'quad':
+                                $cardModelUpdate['is_multi_player_quad'] = true;
+                                break;
+                            case 'booklet':
+                                $cardModelUpdate['is_booklet'] = true;
+                                break;
+                        }
+                    }
+                }
+                
+                // Aggiorna il CardModel solo se ci sono modifiche
+                if (!empty($cardModelUpdate)) {
+                    $cardListing->cardModel->update($cardModelUpdate);
+                }
+            }
+
             // Pubblica automaticamente tutte le inserzioni (rimosso requisito KYC)
             $oldStatus = $cardListing->status;
             $cardListing->publish(); // Imposta status a 'active' e published_at
@@ -971,6 +1037,72 @@ class CardListingController extends Controller
             // Aggiorna zone di spedizione se fornite
             if ($request->has('shipping_zones')) {
                 $cardListing->shippingZones()->sync($request->shipping_zones);
+            }
+
+            // Aggiorna anche il CardModel associato se ci sono caratteristiche da aggiornare
+            // Le caratteristiche vengono inviate come autograph, rookie, relic, jewel, multiAutograph
+            if ($cardListing->cardModel) {
+                $cardModelUpdate = [];
+                
+                // Converti i valori delle caratteristiche dal formato frontend al formato database
+                if ($request->has('autograph')) {
+                    $autographValue = $request->input('autograph');
+                    $cardModelUpdate['is_autograph'] = in_array(strtolower($autographValue), ['si', 'yes', '1', 'true', 'sì']);
+                }
+                
+                if ($request->has('rookie')) {
+                    $rookieValue = $request->input('rookie');
+                    $cardModelUpdate['is_rookie'] = in_array(strtolower($rookieValue), ['si', 'yes', '1', 'true', 'sì']);
+                }
+                
+                if ($request->has('relic')) {
+                    $relicValue = $request->input('relic');
+                    $cardModelUpdate['is_relic'] = in_array(strtolower($relicValue), ['si', 'yes', '1', 'true', 'sì']);
+                }
+                
+                if ($request->has('jewel')) {
+                    $jewelValue = $request->input('jewel');
+                    $cardModelUpdate['is_jewel'] = in_array(strtolower($jewelValue), ['si', 'yes', '1', 'true', 'sì']);
+                }
+                
+                if ($request->has('onCardAuto')) {
+                    $onCardAutoValue = $request->input('onCardAuto');
+                    $cardModelUpdate['is_on_card_auto'] = in_array(strtolower($onCardAutoValue), ['si', 'yes', '1', 'true', 'sì']);
+                }
+                
+                // Gestione multiAutograph/multiPlayer
+                if ($request->has('multiAutograph') || $request->has('multiPlayer')) {
+                    $multiValue = $request->input('multiAutograph') ?? $request->input('multiPlayer');
+                    
+                    // Reset di tutti i campi multi_player
+                    $cardModelUpdate['is_multi_player_dual'] = false;
+                    $cardModelUpdate['is_multi_player_triple'] = false;
+                    $cardModelUpdate['is_multi_player_quad'] = false;
+                    $cardModelUpdate['is_booklet'] = false;
+                    
+                    // Imposta il campo corretto in base al valore
+                    if (!empty($multiValue)) {
+                        switch (strtolower(trim($multiValue))) {
+                            case 'dual':
+                                $cardModelUpdate['is_multi_player_dual'] = true;
+                                break;
+                            case 'triple':
+                                $cardModelUpdate['is_multi_player_triple'] = true;
+                                break;
+                            case 'quad':
+                                $cardModelUpdate['is_multi_player_quad'] = true;
+                                break;
+                            case 'booklet':
+                                $cardModelUpdate['is_booklet'] = true;
+                                break;
+                        }
+                    }
+                }
+                
+                // Aggiorna il CardModel solo se ci sono modifiche
+                if (!empty($cardModelUpdate)) {
+                    $cardListing->cardModel->update($cardModelUpdate);
+                }
             }
 
             // Assicurati che l'inserzione sia pubblicata dopo l'aggiornamento
