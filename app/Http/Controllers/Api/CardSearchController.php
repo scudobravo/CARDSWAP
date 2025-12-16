@@ -28,7 +28,11 @@ class CardSearchController extends Controller
         
         // Solo per la ricerca pubblica, filtra per listing attive
         // Per la creazione di listing, mostriamo tutte le carte disponibili
-        if ($request->filled('only_with_listings') && $request->get('only_with_listings') === 'true') {
+        // Se viene passato il parametro 'search' (ricerca testuale pubblica), filtra automaticamente per listings attive
+        $shouldFilterListings = ($request->filled('only_with_listings') && $request->get('only_with_listings') === 'true') 
+            || $request->filled('search'); // Ricerca testuale pubblica = solo carte con listings
+        
+        if ($shouldFilterListings) {
             $query->whereHas('cardListings', function($q) {
                 $q->where('status', 'active');
             });

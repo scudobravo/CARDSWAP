@@ -95,7 +95,8 @@ const searchCards = async (page = 1) => {
   isLoading.value = true
   
   try {
-    const response = await fetch(`/api/cards/search?search=${encodeURIComponent(searchQuery.value)}&page=${page}`, {
+    const url = `/api/cards/search?search=${encodeURIComponent(searchQuery.value)}&page=${page}`
+    const response = await fetch(url, {
       headers: {
         'Accept': 'application/json',
         'X-Requested-With': 'XMLHttpRequest'
@@ -115,7 +116,15 @@ const searchCards = async (page = 1) => {
       hasMoreResults.value = data.current_page < data.last_page
       currentPage.value = data.current_page || 1
     } else {
-      console.error('Errore durante la ricerca')
+      // Prova a leggere il messaggio di errore dalla risposta
+      let errorMessage = `Errore HTTP ${response.status}`
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.message || errorMessage
+      } catch (e) {
+        // Ignora se non riesce a parsare la risposta
+      }
+      console.error('Errore durante la ricerca:', errorMessage, 'URL:', url)
       cards.value = []
       totalResults.value = 0
     }
