@@ -303,4 +303,136 @@ class CardModelController extends Controller
             'data' => $data
         ]);
     }
+
+    /**
+     * Aggiorna un modello di carta
+     */
+    public function update(Request $request, CardModel $cardModel): JsonResponse
+    {
+        try {
+            $data = $request->all();
+
+            // Converti i valori stringa "si"/"yes" in booleani per le caratteristiche
+            $booleanFields = [
+                'is_rookie',
+                'is_star',
+                'is_legend',
+                'is_autograph',
+                'is_relic',
+                'is_on_card_auto',
+                'is_jewel',
+                'is_booklet',
+                'is_multi_player_dual',
+                'is_multi_player_triple',
+                'is_multi_player_quad'
+            ];
+
+            foreach ($booleanFields as $field) {
+                if (isset($data[$field])) {
+                    $value = $data[$field];
+                    // Gestisci diversi formati: "si", "yes", "1", "true", true, 1
+                    if (is_string($value)) {
+                        $value = strtolower(trim($value));
+                        $data[$field] = in_array($value, ['si', 'yes', '1', 'true', 'sì']);
+                    } elseif (is_numeric($value)) {
+                        $data[$field] = (bool) $value;
+                    } else {
+                        $data[$field] = (bool) $value;
+                    }
+                }
+            }
+
+            // Gestione multi_player: se viene passato un valore per multiAutograph o multiPlayer,
+            // aggiorna i campi corrispondenti
+            if (isset($data['multiAutograph']) || isset($data['multiPlayer'])) {
+                $multiValue = $data['multiAutograph'] ?? $data['multiPlayer'] ?? '';
+                
+                // Reset di tutti i campi multi_player
+                $data['is_multi_player_dual'] = false;
+                $data['is_multi_player_triple'] = false;
+                $data['is_multi_player_quad'] = false;
+                $data['is_booklet'] = false;
+                
+                // Imposta il campo corretto in base al valore
+                if (!empty($multiValue)) {
+                    switch (strtolower(trim($multiValue))) {
+                        case 'dual':
+                            $data['is_multi_player_dual'] = true;
+                            break;
+                        case 'triple':
+                            $data['is_multi_player_triple'] = true;
+                            break;
+                        case 'quad':
+                            $data['is_multi_player_quad'] = true;
+                            break;
+                        case 'booklet':
+                            $data['is_booklet'] = true;
+                            break;
+                    }
+                }
+            }
+
+            // Rimuovi campi che non sono nel fillable
+            $fillable = [
+                'category_id',
+                'card_set_id',
+                'player_id',
+                'team_id',
+                'league_id',
+                'name',
+                'slug',
+                'description',
+                'set_name',
+                'year',
+                'rarity',
+                'rarity_variation',
+                'card_number',
+                'card_number_in_set',
+                'parallel_type',
+                'insert_type',
+                'is_rookie',
+                'is_star',
+                'is_legend',
+                'is_autograph',
+                'is_relic',
+                'is_on_card_auto',
+                'is_jewel',
+                'is_booklet',
+                'is_multi_player_dual',
+                'is_multi_player_triple',
+                'is_multi_player_quad',
+                'artist',
+                'image_url',
+                'grading_company_id',
+                'grading_score',
+                'grading_notes',
+                'price',
+                'attributes',
+                'is_active',
+            ];
+
+            // Filtra solo i campi fillable
+            $updateData = array_intersect_key($data, array_flip($fillable));
+
+            // Aggiorna il modello
+            $cardModel->update($updateData);
+
+            // Ricarica le relazioni
+            $cardModel->load(['category', 'cardSet', 'player', 'team', 'league']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Carta aggiornata con successo',
+                'data' => [
+                    'card_model' => $cardModel
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Errore nell\'aggiornamento della carta: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
