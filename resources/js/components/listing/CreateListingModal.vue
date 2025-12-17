@@ -3149,8 +3149,40 @@ const initializeEditMode = async (listing) => {
   try {
     console.log('🔄 Inizializzazione modalità edit con listing:', listing)
     
+    // IMPORTANTE: Ricarica sempre la listing dal backend per avere i dati più aggiornati del CardModel
+    let freshListing = listing
+    if (listing.id) {
+      try {
+        console.log('📡 Ricaricamento listing dal backend per avere CardModel aggiornato:', listing.id)
+        const response = await fetch(`/api/listings/${listing.id}`, {
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        })
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && data.data) {
+            freshListing = data.data
+            console.log('✅ Listing ricaricata dal backend con CardModel aggiornato:', {
+              listing_id: freshListing.id,
+              card_model_id: freshListing.card_model?.id || freshListing.cardModel?.id,
+              is_rookie: freshListing.card_model?.is_rookie || freshListing.cardModel?.is_rookie,
+              is_autograph: freshListing.card_model?.is_autograph || freshListing.cardModel?.is_autograph,
+              is_relic: freshListing.card_model?.is_relic || freshListing.cardModel?.is_relic,
+              is_jewel: freshListing.card_model?.is_jewel || freshListing.cardModel?.is_jewel
+            })
+          }
+        } else {
+          console.warn('⚠️ Errore nel ricaricamento listing, uso dati in memoria')
+        }
+      } catch (error) {
+        console.warn('⚠️ Errore nel ricaricamento listing, uso dati in memoria:', error)
+      }
+    }
+    
     // Determina il tipo di listing (sealed-pack, sealed-box, lot, single, bulk)
-    const listingType = listing.listing_type || 'single'
+    const listingType = freshListing.listing_type || 'single'
     
     // Imposta la modalità corretta
     if (listingType === 'sealed-pack') {
@@ -3165,31 +3197,31 @@ const initializeEditMode = async (listing) => {
       selectedMode.value = 'single'
     }
     
-    // Imposta i dati dell'inserzione
+    // Imposta i dati dell'inserzione (usa freshListing invece di listing)
     listingData.value = {
-      card_model_id: listing.card_model_id,
-      price: listing.price,
-      condition: listing.condition,
-      autograph_condition: listing.autograph_condition || listing.condition,
-      quantity: listing.quantity,
-      language: listing.language,
-      description: listing.description || '',
-      is_foil: listing.is_foil,
-      is_signed: listing.is_signed,
-      is_altered: listing.is_altered,
-      is_first_edition: listing.is_first_edition,
-      is_negotiable: listing.is_negotiable
+      card_model_id: freshListing.card_model_id,
+      price: freshListing.price,
+      condition: freshListing.condition,
+      autograph_condition: freshListing.autograph_condition || freshListing.condition,
+      quantity: freshListing.quantity,
+      language: freshListing.language,
+      description: freshListing.description || '',
+      is_foil: freshListing.is_foil,
+      is_signed: freshListing.is_signed,
+      is_altered: freshListing.is_altered,
+      is_first_edition: freshListing.is_first_edition,
+      is_negotiable: freshListing.is_negotiable
     }
     
     // Per sealed-pack, sealed-box e lot, non c'è cardModel
     if (listingType === 'sealed-pack' || listingType === 'sealed-box' || listingType === 'lot') {
-      // Imposta i dati specifici per sealed-pack/box/lot
-      listingData.value.title = listing.title || listing.name || (listingType === 'sealed-pack' ? 'Sealed Pack' : (listingType === 'sealed-box' ? 'Sealed Box' : 'Lot'))
+      // Imposta i dati specifici per sealed-pack/box/lot (usa freshListing)
+      listingData.value.title = freshListing.title || freshListing.name || (listingType === 'sealed-pack' ? 'Sealed Pack' : (listingType === 'sealed-box' ? 'Sealed Box' : 'Lot'))
       
       // Imposta la categoria dalla route o dal listing
       // Per sealed-pack/box/lot, la categoria potrebbe essere determinata dalla route o dal listing
-      if (listing.category) {
-        selectedCategory.value = listing.category === 'calcio' ? 'football' : (listing.category === 'basketball' ? 'basketball' : 'pokemon')
+      if (freshListing.category) {
+        selectedCategory.value = freshListing.category === 'calcio' ? 'football' : (freshListing.category === 'basketball' ? 'basketball' : 'pokemon')
       } else {
         // Default a football se non specificato
         selectedCategory.value = 'football'
@@ -3197,23 +3229,23 @@ const initializeEditMode = async (listing) => {
       
       // Log completo del listing per debug
       console.log('🔍 Listing completo per sealed-pack/box/lot:', {
-        id: listing.id,
-        listing_type: listing.listing_type,
-        card_set_id: listing.card_set_id,
-        set_id: listing.set_id,
-        year: listing.year,
-        brand: listing.brand,
-        card_set: listing.card_set,
-        allKeys: Object.keys(listing)
+        id: freshListing.id,
+        listing_type: freshListing.listing_type,
+        card_set_id: freshListing.card_set_id,
+        set_id: freshListing.set_id,
+        year: freshListing.year,
+        brand: freshListing.brand,
+        card_set: freshListing.card_set,
+        allKeys: Object.keys(freshListing)
       })
       
       // Imposta i filtri per sealed-pack/box/lot (Set, Year, Brand)
       // Questi vengono popolati dal form quando l'utente li ha inseriti
       // Prova a recuperare set_id, year e brand dal listing o dal card_set se presente
       // IMPORTANTE: I dati potrebbero essere in campi diversi o potrebbero non essere stati salvati
-      const setId = listing.card_set_id || listing.set_id || listing.card_set?.id || listing.card_set_id || ''
-      const year = listing.year || listing.card_set?.year || ''
-      const brand = listing.brand || listing.card_set?.brand || ''
+      const setId = freshListing.card_set_id || freshListing.set_id || freshListing.card_set?.id || freshListing.card_set_id || ''
+      const year = freshListing.year || freshListing.card_set?.year || ''
+      const brand = freshListing.brand || freshListing.card_set?.brand || ''
       
       filters.value = {
         ...filters.value,
@@ -3227,9 +3259,9 @@ const initializeEditMode = async (listing) => {
         year: year,
         brand: brand,
         filters: filters.value,
-        listingHasCardSetId: !!listing.card_set_id,
-        listingHasYear: !!listing.year,
-        listingHasBrand: !!listing.brand
+        listingHasCardSetId: !!freshListing.card_set_id,
+        listingHasYear: !!freshListing.year,
+        listingHasBrand: !!freshListing.brand
       })
       
       // Se i filtri sono vuoti, potrebbe essere necessario caricare i dettagli completi del listing
@@ -3237,7 +3269,7 @@ const initializeEditMode = async (listing) => {
         console.warn('⚠️ Nessun filtro trovato nel listing, potrebbe essere necessario caricare i dettagli completi')
         // Prova a caricare i dettagli completi del listing dall'API
         try {
-          const response = await fetch(`/api/listings/${listing.id}`, {
+          const response = await fetch(`/api/listings/${freshListing.id}`, {
             headers: {
               'Accept': 'application/json',
               'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -3316,7 +3348,7 @@ const initializeEditMode = async (listing) => {
       if (selectedCardModel.value) {
         filters.value = {
           ...filters.value,
-          condition: listing.condition,
+          condition: freshListing.condition,
           brand: selectedCardModel.value?.card_set?.brand || selectedCardModel.value?.brand || '',
           rarity: selectedCardModel.value?.rarity || '',
           year: selectedCardModel.value?.year || selectedCardModel.value?.card_set?.year || '',
@@ -3330,9 +3362,9 @@ const initializeEditMode = async (listing) => {
     }
     
     
-    // Imposta additionalDetails con i dati dell'inserzione
+    // Imposta additionalDetails con i dati dell'inserzione (usa freshListing)
     // IMPORTANTE: Leggi le caratteristiche dal CardModel se disponibile, altrimenti fallback alla CardListing
-    const cardModel = listing.card_model || listing.cardModel
+    const cardModel = freshListing.card_model || freshListing.cardModel
     const isRookie = cardModel?.is_rookie === true || cardModel?.is_rookie === 1 || cardModel?.is_rookie === '1' || listing.is_first_edition
     const isAutograph = cardModel?.is_autograph === true || cardModel?.is_autograph === 1 || cardModel?.is_autograph === '1' || listing.is_signed
     const isRelic = cardModel?.is_relic === true || cardModel?.is_relic === 1 || cardModel?.is_relic === '1' || listing.is_altered
@@ -3369,13 +3401,13 @@ const initializeEditMode = async (listing) => {
     })
     
     additionalDetails.value = {
-      condition: listing.condition || '',
-      autographCondition: listing.autograph_condition || listing.condition || '',
-      gradingCompany: listing.grading_company_id || listing.grading_company || '',
-      gradingScore: listing.grading_score || '',
-      cardConditionScore: listing.card_condition_score || '',
-      autographConditionScore: listing.autograph_condition_score || '',
-      notes: listing.description || listing.notes || '', // Popola notes da description se notes non esiste
+      condition: freshListing.condition || '',
+      autographCondition: freshListing.autograph_condition || freshListing.condition || '',
+      gradingCompany: freshListing.grading_company_id || freshListing.grading_company || '',
+      gradingScore: freshListing.grading_score || '',
+      cardConditionScore: freshListing.card_condition_score || '',
+      autographConditionScore: freshListing.autograph_condition_score || '',
+      notes: freshListing.description || freshListing.notes || '', // Popola notes da description se notes non esiste
       // Caratteristiche speciali - LEGGI DAL CARDMODEL se disponibile
       autograph: isAutograph ? 'yes' : 'no',
       relic: isRelic ? 'yes' : 'no',
@@ -3385,19 +3417,19 @@ const initializeEditMode = async (listing) => {
       multiAutograph: multiAutograph
     }
     
-    // Imposta le zone di spedizione
-    if (listing.shipping_zones && Array.isArray(listing.shipping_zones) && listing.shipping_zones.length > 0) {
-      selectedShippingZones.value = listing.shipping_zones.map(zone => zone.id || zone)
-    } else if (listing.shippingZones && Array.isArray(listing.shippingZones) && listing.shippingZones.length > 0) {
-      selectedShippingZones.value = listing.shippingZones.map(zone => zone.id || zone)
+    // Imposta le zone di spedizione (usa freshListing)
+    if (freshListing.shipping_zones && Array.isArray(freshListing.shipping_zones) && freshListing.shipping_zones.length > 0) {
+      selectedShippingZones.value = freshListing.shipping_zones.map(zone => zone.id || zone)
+    } else if (freshListing.shippingZones && Array.isArray(freshListing.shippingZones) && freshListing.shippingZones.length > 0) {
+      selectedShippingZones.value = freshListing.shippingZones.map(zone => zone.id || zone)
     } else {
       selectedShippingZones.value = []
     }
     
-    // Imposta le immagini se presenti (sono memorizzate come array JSON)
-    if (listing.images && Array.isArray(listing.images) && listing.images.length > 0) {
+    // Imposta le immagini se presenti (sono memorizzate come array JSON) (usa freshListing)
+    if (freshListing.images && Array.isArray(freshListing.images) && freshListing.images.length > 0) {
       // Converti le immagini esistenti nel formato corretto
-      cardImages.value = listing.images.map((imageUrl, index) => {
+      cardImages.value = freshListing.images.map((imageUrl, index) => {
         if (index < 4 && imageUrl) {
           return {
             file: null, // Non abbiamo il file originale
