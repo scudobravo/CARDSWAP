@@ -1044,30 +1044,47 @@ class CardListingController extends Controller
             if ($cardListing->cardModel) {
                 $cardModelUpdate = [];
                 
+                // Log dei dati ricevuti per debug
+                \Log::info('🔍 UPDATE - Aggiornamento CardModel - Dati ricevuti:', [
+                    'listing_id' => $cardListing->id,
+                    'card_model_id' => $cardListing->cardModel->id,
+                    'autograph' => $request->input('autograph'),
+                    'rookie' => $request->input('rookie'),
+                    'relic' => $request->input('relic'),
+                    'jewel' => $request->input('jewel'),
+                    'onCardAuto' => $request->input('onCardAuto'),
+                    'multiAutograph' => $request->input('multiAutograph'),
+                ]);
+                
                 // Converti i valori delle caratteristiche dal formato frontend al formato database
                 if ($request->has('autograph')) {
                     $autographValue = $request->input('autograph');
                     $cardModelUpdate['is_autograph'] = in_array(strtolower($autographValue), ['si', 'yes', '1', 'true', 'sì']);
+                    \Log::info('🔍 Autograph convertito:', ['input' => $autographValue, 'output' => $cardModelUpdate['is_autograph']]);
                 }
                 
                 if ($request->has('rookie')) {
                     $rookieValue = $request->input('rookie');
                     $cardModelUpdate['is_rookie'] = in_array(strtolower($rookieValue), ['si', 'yes', '1', 'true', 'sì']);
+                    \Log::info('🔍 Rookie convertito:', ['input' => $rookieValue, 'output' => $cardModelUpdate['is_rookie']]);
                 }
                 
                 if ($request->has('relic')) {
                     $relicValue = $request->input('relic');
                     $cardModelUpdate['is_relic'] = in_array(strtolower($relicValue), ['si', 'yes', '1', 'true', 'sì']);
+                    \Log::info('🔍 Relic convertito:', ['input' => $relicValue, 'output' => $cardModelUpdate['is_relic']]);
                 }
                 
                 if ($request->has('jewel')) {
                     $jewelValue = $request->input('jewel');
                     $cardModelUpdate['is_jewel'] = in_array(strtolower($jewelValue), ['si', 'yes', '1', 'true', 'sì']);
+                    \Log::info('🔍 Jewel convertito:', ['input' => $jewelValue, 'output' => $cardModelUpdate['is_jewel']]);
                 }
                 
                 if ($request->has('onCardAuto')) {
                     $onCardAutoValue = $request->input('onCardAuto');
                     $cardModelUpdate['is_on_card_auto'] = in_array(strtolower($onCardAutoValue), ['si', 'yes', '1', 'true', 'sì']);
+                    \Log::info('🔍 OnCardAuto convertito:', ['input' => $onCardAutoValue, 'output' => $cardModelUpdate['is_on_card_auto']]);
                 }
                 
                 // Gestione multiAutograph/multiPlayer
@@ -1097,12 +1114,35 @@ class CardListingController extends Controller
                                 break;
                         }
                     }
+                    \Log::info('🔍 MultiAutograph convertito:', ['input' => $multiValue, 'output' => $cardModelUpdate]);
                 }
+                
+                // Log dei valori prima dell'aggiornamento
+                \Log::info('🔍 Valori CardModel PRIMA aggiornamento:', [
+                    'is_rookie' => $cardListing->cardModel->is_rookie,
+                    'is_autograph' => $cardListing->cardModel->is_autograph,
+                    'is_relic' => $cardListing->cardModel->is_relic,
+                    'is_jewel' => $cardListing->cardModel->is_jewel,
+                ]);
                 
                 // Aggiorna il CardModel solo se ci sono modifiche
                 if (!empty($cardModelUpdate)) {
                     $cardListing->cardModel->update($cardModelUpdate);
+                    \Log::info('✅ CardModel aggiornato con successo:', $cardModelUpdate);
+                    
+                    // Ricarica il modello per verificare i valori aggiornati
+                    $cardListing->cardModel->refresh();
+                    \Log::info('🔍 Valori CardModel DOPO aggiornamento:', [
+                        'is_rookie' => $cardListing->cardModel->is_rookie,
+                        'is_autograph' => $cardListing->cardModel->is_autograph,
+                        'is_relic' => $cardListing->cardModel->is_relic,
+                        'is_jewel' => $cardListing->cardModel->is_jewel,
+                    ]);
+                } else {
+                    \Log::warning('⚠️ Nessun campo da aggiornare nel CardModel');
                 }
+            } else {
+                \Log::warning('⚠️ CardListing senza CardModel associato', ['listing_id' => $cardListing->id]);
             }
 
             // Assicurati che l'inserzione sia pubblicata dopo l'aggiornamento
