@@ -268,21 +268,31 @@ class HomeController extends Controller
         try {
             $suggestions = [];
 
-            // Suggerimenti da modelli di carte - solo quelle con listings attivi (in vendita)
-            $cardSuggestions = CardModel::with('category')
-                ->select('id', 'name', 'slug', 'set_name', 'year', 'category_id')
-                ->where('is_active', true)
-                ->whereHas('cardListings', function($q) {
-                    $q->where('status', 'active');
+            // Suggerimenti da singole CardListing - così ogni inserzione con prezzo diverso appare separatamente
+            $listingSuggestions = CardListing::with([
+                'cardModel' => function($q) {
+                    $q->with('category');
+                }
+            ])
+                ->where('status', 'active')
+                ->whereHas('cardModel', function($q) use ($query) {
+                    $q->where('is_active', true)
+                      ->where(function ($queryBuilder) use ($query) {
+                          $queryBuilder->where('name', 'LIKE', "%{$query}%")
+                                        ->orWhere('set_name', 'LIKE', "%{$query}%");
+                      });
                 })
-                ->where(function ($q) use ($query) {
-                    $q->where('name', 'LIKE', "%{$query}%")
-                      ->orWhere('set_name', 'LIKE', "%{$query}%");
-                })
-                ->limit(5)
+                ->orderBy('price', 'asc') // Ordina per prezzo crescente
+                ->limit(20) // Aumentato per mostrare più inserzioni
                 ->get();
 
-            foreach ($cardSuggestions as $card) {
+            foreach ($listingSuggestions as $listing) {
+                $card = $listing->cardModel;
+                
+                if (!$card) {
+                    continue;
+                }
+                
                 // Mappa le categorie del database agli slug URL
                 $categoryMap = [
                     'calcio' => 'football',
@@ -297,11 +307,16 @@ class HomeController extends Controller
                     $cardSlug = $this->generateSlug($card->name);
                 }
                 
+                // Mostra il prezzo nel subtext per distinguere le inserzioni
+                $priceText = '€' . number_format($listing->price, 2, ',', '.');
+                $subtext = $card->set_name . ' (' . $card->year . ') - ' . $priceText;
+                
                 $suggestions[] = [
                     'type' => 'card',
                     'id' => $card->id,
+                    'listing_id' => $listing->id,
                     'text' => $card->name,
-                    'subtext' => $card->set_name . ' (' . $card->year . ')',
+                    'subtext' => $subtext,
                     'url' => "/{$categorySlug}/{$cardSlug}",
                 ];
             }
