@@ -2142,6 +2142,33 @@ const createNewSingleListing = async () => {
     formData.append('shipping_zones[]', zoneId)
   })
   
+  // Campi booleani - sempre inviati
+  formData.append('is_foil', listingData.value.is_foil ? 'true' : 'false')
+  formData.append('is_signed', listingData.value.is_signed ? 'true' : 'false')
+  formData.append('is_altered', listingData.value.is_altered ? 'true' : 'false')
+  formData.append('is_first_edition', listingData.value.is_first_edition ? 'true' : 'false')
+  formData.append('is_negotiable', listingData.value.is_negotiable ? 'true' : 'false')
+  
+  // Aggiungi le caratteristiche speciali per aggiornare il CardModel
+  if (additionalDetails.value.autograph) {
+    formData.append('autograph', additionalDetails.value.autograph)
+  }
+  if (additionalDetails.value.rookie) {
+    formData.append('rookie', additionalDetails.value.rookie)
+  }
+  if (additionalDetails.value.relic) {
+    formData.append('relic', additionalDetails.value.relic)
+  }
+  if (additionalDetails.value.jewel) {
+    formData.append('jewel', additionalDetails.value.jewel)
+  }
+  if (additionalDetails.value.onCardAuto) {
+    formData.append('onCardAuto', additionalDetails.value.onCardAuto)
+  }
+  if (additionalDetails.value.multiAutograph) {
+    formData.append('multiAutograph', additionalDetails.value.multiAutograph)
+  }
+  
   // Prepara i dati per il log (condition potrebbe non essere definito se c'è grading)
   const logCondition = additionalDetails.value.gradingCompany 
     ? `Graded (${additionalDetails.value.gradingCompany})` 
@@ -3775,6 +3802,26 @@ const updateSingleListing = async () => {
     formData.append('is_first_edition', listingData.value.is_first_edition ? 'true' : 'false')
     formData.append('is_negotiable', listingData.value.is_negotiable ? 'true' : 'false')
     
+    // Aggiungi le caratteristiche speciali per aggiornare il CardModel
+    if (additionalDetails.value.autograph) {
+      formData.append('autograph', additionalDetails.value.autograph)
+    }
+    if (additionalDetails.value.rookie) {
+      formData.append('rookie', additionalDetails.value.rookie)
+    }
+    if (additionalDetails.value.relic) {
+      formData.append('relic', additionalDetails.value.relic)
+    }
+    if (additionalDetails.value.jewel) {
+      formData.append('jewel', additionalDetails.value.jewel)
+    }
+    if (additionalDetails.value.onCardAuto) {
+      formData.append('onCardAuto', additionalDetails.value.onCardAuto)
+    }
+    if (additionalDetails.value.multiAutograph) {
+      formData.append('multiAutograph', additionalDetails.value.multiAutograph)
+    }
+    
     // Aggiungi solo le nuove immagini (quelle con file e non esistenti) - comprimi SEMPRE se > 500KB
     const newImages = cardImages.value.filter(image => image && image.file && !image.isExisting)
     
@@ -3847,7 +3894,14 @@ const updateSingleListing = async () => {
       is_signed: listingData.value.is_signed,
       is_altered: listingData.value.is_altered,
       is_first_edition: listingData.value.is_first_edition,
-      is_negotiable: listingData.value.is_negotiable
+      is_negotiable: listingData.value.is_negotiable,
+      // Caratteristiche speciali per CardModel
+      autograph: additionalDetails.value.autograph,
+      rookie: additionalDetails.value.rookie,
+      relic: additionalDetails.value.relic,
+      jewel: additionalDetails.value.jewel,
+      onCardAuto: additionalDetails.value.onCardAuto,
+      multiAutograph: additionalDetails.value.multiAutograph
     })
     
     // Usa POST invece di PUT per FormData (Laravel non processa correttamente PUT con multipart)
