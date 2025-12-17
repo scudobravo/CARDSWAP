@@ -3331,6 +3331,43 @@ const initializeEditMode = async (listing) => {
     
     
     // Imposta additionalDetails con i dati dell'inserzione
+    // IMPORTANTE: Leggi le caratteristiche dal CardModel se disponibile, altrimenti fallback alla CardListing
+    const cardModel = listing.card_model || listing.cardModel
+    const isRookie = cardModel?.is_rookie === true || cardModel?.is_rookie === 1 || cardModel?.is_rookie === '1' || listing.is_first_edition
+    const isAutograph = cardModel?.is_autograph === true || cardModel?.is_autograph === 1 || cardModel?.is_autograph === '1' || listing.is_signed
+    const isRelic = cardModel?.is_relic === true || cardModel?.is_relic === 1 || cardModel?.is_relic === '1' || listing.is_altered
+    const isJewel = cardModel?.is_jewel === true || cardModel?.is_jewel === 1 || cardModel?.is_jewel === '1' || listing.is_foil
+    const isOnCardAuto = cardModel?.is_on_card_auto === true || cardModel?.is_on_card_auto === 1 || cardModel?.is_on_card_auto === '1' || listing.is_signed
+    
+    // Determina multiAutograph dal CardModel
+    let multiAutograph = ''
+    if (cardModel) {
+      if (cardModel.is_booklet === true || cardModel.is_booklet === 1) {
+        multiAutograph = 'booklet'
+      } else if (cardModel.is_multi_player_quad === true || cardModel.is_multi_player_quad === 1) {
+        multiAutograph = 'quad'
+      } else if (cardModel.is_multi_player_triple === true || cardModel.is_multi_player_triple === 1) {
+        multiAutograph = 'triple'
+      } else if (cardModel.is_multi_player_dual === true || cardModel.is_multi_player_dual === 1) {
+        multiAutograph = 'dual'
+      }
+    }
+    
+    console.log('🔄 Caricamento caratteristiche per edit:', {
+      fromCardModel: !!cardModel,
+      isRookie,
+      isAutograph,
+      isRelic,
+      isJewel,
+      multiAutograph,
+      cardModelData: cardModel ? {
+        is_rookie: cardModel.is_rookie,
+        is_autograph: cardModel.is_autograph,
+        is_relic: cardModel.is_relic,
+        is_jewel: cardModel.is_jewel
+      } : null
+    })
+    
     additionalDetails.value = {
       condition: listing.condition || '',
       autographCondition: listing.autograph_condition || listing.condition || '',
@@ -3339,13 +3376,13 @@ const initializeEditMode = async (listing) => {
       cardConditionScore: listing.card_condition_score || '',
       autographConditionScore: listing.autograph_condition_score || '',
       notes: listing.description || listing.notes || '', // Popola notes da description se notes non esiste
-      // Caratteristiche speciali
-      autograph: listing.is_signed ? 'yes' : 'no',
-      relic: listing.is_altered ? 'yes' : 'no',
-      onCardAuto: listing.is_signed ? 'yes' : 'no',
-      rookie: listing.is_first_edition ? 'yes' : 'no',
-      jewel: listing.is_foil ? 'yes' : 'no',
-      multiAutograph: ''
+      // Caratteristiche speciali - LEGGI DAL CARDMODEL se disponibile
+      autograph: isAutograph ? 'yes' : 'no',
+      relic: isRelic ? 'yes' : 'no',
+      onCardAuto: isOnCardAuto ? 'yes' : 'no',
+      rookie: isRookie ? 'yes' : 'no',
+      jewel: isJewel ? 'yes' : 'no',
+      multiAutograph: multiAutograph
     }
     
     // Imposta le zone di spedizione
