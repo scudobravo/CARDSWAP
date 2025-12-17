@@ -499,45 +499,45 @@ watch(() => props.cardData, (newCardData) => {
   }
   
   // Popola additionalDetails quando arrivano nuovi dati
-  // IMPORTANTE: In modalità edit, popola sempre quando arrivano dati nuovi (anche se hasInitialized è true)
+  // IMPORTANTE: In modalità edit, popola sempre quando arrivano dati nuovi
   if (newCardData) {
     // Controlla se ci sono valori nuovi da applicare (non vuoti)
     const hasNewValues = newCardData.autograph || newCardData.relic || newCardData.rookie || 
                          newCardData.jewel || newCardData.onCardAuto || newCardData.multiAutograph ||
                          newCardData.condition || newCardData.gradingCompany
     
+    // Se ci sono nuovi valori, resetta hasInitialized per forzare il popolamento
+    if (hasNewValues && hasInitialized.value) {
+      console.log('🔄 Reset hasInitialized per popolare con nuovi valori dal CardModel')
+      hasInitialized.value = false
+    }
+    
     // Popola se:
     // 1. Non è ancora stato inizializzato, OPPURE
     // 2. Ci sono nuovi valori da applicare (per supportare il ricaricamento in edit mode)
     if (!hasInitialized.value || hasNewValues) {
-      // Popola solo se i campi sono vuoti OPPURE se ci sono nuovi valori da applicare
-      const shouldPopulate = !hasInitialized.value || 
-                             (hasNewValues && (
-                               !additionalDetails.value.autograph || 
-                               !additionalDetails.value.relic || 
-                               !additionalDetails.value.rookie ||
-                               !additionalDetails.value.jewel
-                             ))
+      // Popola sempre se ci sono nuovi valori, altrimenti solo se i campi sono vuoti
+      const shouldPopulate = !hasInitialized.value || hasNewValues
       
       if (shouldPopulate) {
-        // Aggiorna i campi con i nuovi valori, mantenendo quelli esistenti se non sono vuoti
+        // Se ci sono nuovi valori, usa quelli, altrimenti mantieni quelli esistenti
         additionalDetails.value = {
-          condition: newCardData.condition || additionalDetails.value.condition || '',
+          condition: newCardData.condition !== undefined ? newCardData.condition : (additionalDetails.value.condition || ''),
           // NON usare condition come fallback per autographCondition
-          autographCondition: newCardData.autographCondition || additionalDetails.value.autographCondition || '',
-          gradingCompany: newCardData.gradingCompany || additionalDetails.value.gradingCompany || '',
-          gradingScore: newCardData.gradingScore || additionalDetails.value.gradingScore || '',
-          cardConditionScore: newCardData.cardConditionScore || additionalDetails.value.cardConditionScore || '',
-          autographConditionScore: newCardData.autographConditionScore || additionalDetails.value.autographConditionScore || '',
-          // Filtri Extra - usa i nuovi valori se presenti, altrimenti mantieni quelli esistenti
-          autograph: newCardData.autograph || additionalDetails.value.autograph || '',
-          relic: newCardData.relic || additionalDetails.value.relic || '',
-          onCardAuto: newCardData.onCardAuto || additionalDetails.value.onCardAuto || '',
-          rookie: newCardData.rookie || additionalDetails.value.rookie || '',
-          jewel: newCardData.jewel || additionalDetails.value.jewel || '',
-          multiAutograph: newCardData.multiAutograph || additionalDetails.value.multiAutograph || '',
-          description: newCardData.description || additionalDetails.value.description || '',
-          notes: newCardData.notes || additionalDetails.value.notes || ''
+          autographCondition: newCardData.autographCondition !== undefined ? newCardData.autographCondition : (additionalDetails.value.autographCondition || ''),
+          gradingCompany: newCardData.gradingCompany !== undefined ? newCardData.gradingCompany : (additionalDetails.value.gradingCompany || ''),
+          gradingScore: newCardData.gradingScore !== undefined ? newCardData.gradingScore : (additionalDetails.value.gradingScore || ''),
+          cardConditionScore: newCardData.cardConditionScore !== undefined ? newCardData.cardConditionScore : (additionalDetails.value.cardConditionScore || ''),
+          autographConditionScore: newCardData.autographConditionScore !== undefined ? newCardData.autographConditionScore : (additionalDetails.value.autographConditionScore || ''),
+          // Filtri Extra - usa i nuovi valori se presenti (anche se vuoti), altrimenti mantieni quelli esistenti
+          autograph: newCardData.autograph !== undefined ? newCardData.autograph : (additionalDetails.value.autograph || ''),
+          relic: newCardData.relic !== undefined ? newCardData.relic : (additionalDetails.value.relic || ''),
+          onCardAuto: newCardData.onCardAuto !== undefined ? newCardData.onCardAuto : (additionalDetails.value.onCardAuto || ''),
+          rookie: newCardData.rookie !== undefined ? newCardData.rookie : (additionalDetails.value.rookie || ''),
+          jewel: newCardData.jewel !== undefined ? newCardData.jewel : (additionalDetails.value.jewel || ''),
+          multiAutograph: newCardData.multiAutograph !== undefined ? newCardData.multiAutograph : (additionalDetails.value.multiAutograph || ''),
+          description: newCardData.description !== undefined ? newCardData.description : (additionalDetails.value.description || ''),
+          notes: newCardData.notes !== undefined ? newCardData.notes : (additionalDetails.value.notes || '')
         }
         
         console.log('🔄 ImagePreviewStep - additionalDetails popolato:', {
@@ -550,7 +550,9 @@ watch(() => props.cardData, (newCardData) => {
             rookie: newCardData.rookie,
             relic: newCardData.relic,
             jewel: newCardData.jewel
-          }
+          },
+          hasNewValues,
+          wasInitialized: hasInitialized.value
         })
         
         // Marca come inizializzato dopo il popolamento
