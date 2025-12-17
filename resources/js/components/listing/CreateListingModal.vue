@@ -2676,14 +2676,16 @@ const getSingleCardData = computed(() => {
       // Dati aggiuntivi per il componente ImagePreviewStep
       gradingCompany: additionalDetails.value.gradingCompany,
       gradingScore: additionalDetails.value.gradingScore,
+      cardConditionScore: additionalDetails.value.cardConditionScore,
+      autographConditionScore: additionalDetails.value.autographConditionScore,
       notes: additionalDetails.value.notes || listingData.value.description || '',
-      // Caratteristiche speciali
-      autograph: listingData.value.is_signed ? 'yes' : 'no',
-      relic: listingData.value.is_altered ? 'yes' : 'no',
-      onCardAuto: listingData.value.is_signed ? 'yes' : 'no',
-      rookie: listingData.value.is_first_edition ? 'yes' : 'no',
-      jewel: listingData.value.is_foil ? 'yes' : 'no',
-      multiAutograph: '',
+      // Caratteristiche speciali - USA additionalDetails che legge dal CardModel
+      autograph: additionalDetails.value.autograph || (listingData.value.is_signed ? 'yes' : 'no'),
+      relic: additionalDetails.value.relic || (listingData.value.is_altered ? 'yes' : 'no'),
+      onCardAuto: additionalDetails.value.onCardAuto || (listingData.value.is_signed ? 'yes' : 'no'),
+      rookie: additionalDetails.value.rookie || (listingData.value.is_first_edition ? 'yes' : 'no'),
+      jewel: additionalDetails.value.jewel || (listingData.value.is_foil ? 'yes' : 'no'),
+      multiAutograph: additionalDetails.value.multiAutograph || '',
       // Passa TUTTE le immagini (esistenti + nuove) per mantenere la persistenza
       existingImages: cardImages.value.filter(img => img !== null)
     }

@@ -498,39 +498,64 @@ watch(() => props.cardData, (newCardData) => {
     }
   }
   
-  // Popola additionalDetails SOLO al primo caricamento (quando hasInitialized è false)
-  // NON popolare se l'utente ha già interagito con i campi
-  if (newCardData && !hasInitialized.value) {
-    // Popola solo se i campi sono completamente vuoti
-    const shouldPopulate = !additionalDetails.value.condition && 
-                           !additionalDetails.value.gradingCompany &&
-                           !additionalDetails.value.autographCondition &&
-                           !additionalDetails.value.autograph && 
-                           !additionalDetails.value.relic && 
-                           !additionalDetails.value.onCardAuto
+  // Popola additionalDetails quando arrivano nuovi dati
+  // IMPORTANTE: In modalità edit, popola sempre quando arrivano dati nuovi (anche se hasInitialized è true)
+  if (newCardData) {
+    // Controlla se ci sono valori nuovi da applicare (non vuoti)
+    const hasNewValues = newCardData.autograph || newCardData.relic || newCardData.rookie || 
+                         newCardData.jewel || newCardData.onCardAuto || newCardData.multiAutograph ||
+                         newCardData.condition || newCardData.gradingCompany
     
-    if (shouldPopulate) {
-      additionalDetails.value = {
-        condition: newCardData.condition || '',
-        // NON usare condition come fallback per autographCondition
-        autographCondition: newCardData.autographCondition || '',
-        gradingCompany: newCardData.gradingCompany || '',
-        gradingScore: newCardData.gradingScore || '',
-        cardConditionScore: newCardData.cardConditionScore || '',
-        autographConditionScore: newCardData.autographConditionScore || '',
-        // Filtri Extra - pre-popola dalla carta selezionata se non già impostati
-        autograph: newCardData.autograph || '',
-        relic: newCardData.relic || '',
-        onCardAuto: newCardData.onCardAuto || '',
-        rookie: newCardData.rookie || '',
-        jewel: newCardData.jewel || '',
-        multiAutograph: newCardData.multiAutograph || '',
-        description: newCardData.description || '',
-        notes: newCardData.notes || ''
-      }
+    // Popola se:
+    // 1. Non è ancora stato inizializzato, OPPURE
+    // 2. Ci sono nuovi valori da applicare (per supportare il ricaricamento in edit mode)
+    if (!hasInitialized.value || hasNewValues) {
+      // Popola solo se i campi sono vuoti OPPURE se ci sono nuovi valori da applicare
+      const shouldPopulate = !hasInitialized.value || 
+                             (hasNewValues && (
+                               !additionalDetails.value.autograph || 
+                               !additionalDetails.value.relic || 
+                               !additionalDetails.value.rookie ||
+                               !additionalDetails.value.jewel
+                             ))
       
-      // Marca come inizializzato dopo il primo popolamento
-      hasInitialized.value = true
+      if (shouldPopulate) {
+        // Aggiorna i campi con i nuovi valori, mantenendo quelli esistenti se non sono vuoti
+        additionalDetails.value = {
+          condition: newCardData.condition || additionalDetails.value.condition || '',
+          // NON usare condition come fallback per autographCondition
+          autographCondition: newCardData.autographCondition || additionalDetails.value.autographCondition || '',
+          gradingCompany: newCardData.gradingCompany || additionalDetails.value.gradingCompany || '',
+          gradingScore: newCardData.gradingScore || additionalDetails.value.gradingScore || '',
+          cardConditionScore: newCardData.cardConditionScore || additionalDetails.value.cardConditionScore || '',
+          autographConditionScore: newCardData.autographConditionScore || additionalDetails.value.autographConditionScore || '',
+          // Filtri Extra - usa i nuovi valori se presenti, altrimenti mantieni quelli esistenti
+          autograph: newCardData.autograph || additionalDetails.value.autograph || '',
+          relic: newCardData.relic || additionalDetails.value.relic || '',
+          onCardAuto: newCardData.onCardAuto || additionalDetails.value.onCardAuto || '',
+          rookie: newCardData.rookie || additionalDetails.value.rookie || '',
+          jewel: newCardData.jewel || additionalDetails.value.jewel || '',
+          multiAutograph: newCardData.multiAutograph || additionalDetails.value.multiAutograph || '',
+          description: newCardData.description || additionalDetails.value.description || '',
+          notes: newCardData.notes || additionalDetails.value.notes || ''
+        }
+        
+        console.log('🔄 ImagePreviewStep - additionalDetails popolato:', {
+          autograph: additionalDetails.value.autograph,
+          rookie: additionalDetails.value.rookie,
+          relic: additionalDetails.value.relic,
+          jewel: additionalDetails.value.jewel,
+          fromCardData: {
+            autograph: newCardData.autograph,
+            rookie: newCardData.rookie,
+            relic: newCardData.relic,
+            jewel: newCardData.jewel
+          }
+        })
+        
+        // Marca come inizializzato dopo il popolamento
+        hasInitialized.value = true
+      }
     }
   }
   
