@@ -1129,9 +1129,17 @@ const nextStep = () => {
       const isRelic = card.is_relic === true || card.is_relic === 1 || card.is_relic === '1'
       const isOnCardAuto = card.is_on_card_auto === true || card.is_on_card_auto === 1 || card.is_on_card_auto === '1'
       const isJewel = card.is_jewel === true || card.is_jewel === 1 || card.is_jewel === '1'
-      // Sketch per Disney/Spongebob (dall'attributo SKETCH o is_sketch)
-      const isSketch = card.is_sketch === true || card.is_sketch === 1 || card.is_sketch === '1' || 
-                       (card.attributes && (card.attributes.sketch === true || card.attributes.sketch === 1 || card.attributes.sketch === '1'))
+      // Sketch per Disney/Spongebob (dall'array attributes)
+      let isSketch = false
+      if (card.attributes) {
+        const attributes = Array.isArray(card.attributes) ? card.attributes : 
+                          (typeof card.attributes === 'string' ? JSON.parse(card.attributes) : [])
+        if (Array.isArray(attributes)) {
+          isSketch = attributes.some(attr => 
+            typeof attr === 'string' && attr.toLowerCase() === 'sketch'
+          )
+        }
+      }
       
       console.log('🔄 Valori convertiti - isRookie:', isRookie, 'isAutograph:', isAutograph, 'isRelic:', isRelic, 'isSketch:', isSketch)
       
@@ -2165,9 +2173,12 @@ const createNewSingleListing = async () => {
   if (additionalDetails.value.onCardAuto) {
     formData.append('onCardAuto', additionalDetails.value.onCardAuto)
   }
-  if (additionalDetails.value.multiAutograph) {
-    formData.append('multiAutograph', additionalDetails.value.multiAutograph)
-  }
+    if (additionalDetails.value.multiAutograph) {
+      formData.append('multiAutograph', additionalDetails.value.multiAutograph)
+    }
+    if (additionalDetails.value.sketch) {
+      formData.append('sketch', additionalDetails.value.sketch)
+    }
   
   // Prepara i dati per il log (condition potrebbe non essere definito se c'è grading)
   const logCondition = additionalDetails.value.gradingCompany 
@@ -2685,6 +2696,7 @@ const getSingleCardData = computed(() => {
       onCardAuto: additionalDetails.value.onCardAuto || (listingData.value.is_signed ? 'yes' : 'no'),
       rookie: additionalDetails.value.rookie || (listingData.value.is_first_edition ? 'yes' : 'no'),
       jewel: additionalDetails.value.jewel || (listingData.value.is_foil ? 'yes' : 'no'),
+      sketch: additionalDetails.value.sketch || '',
       multiAutograph: additionalDetails.value.multiAutograph || '',
       // Passa TUTTE le immagini (esistenti + nuove) per mantenere la persistenza
       existingImages: cardImages.value.filter(img => img !== null)
@@ -2713,9 +2725,17 @@ const getSingleCardData = computed(() => {
     const isRelic = card.is_relic === true || card.is_relic === 1 || card.is_relic === '1'
     const isOnCardAuto = card.is_on_card_auto === true || card.is_on_card_auto === 1 || card.is_on_card_auto === '1'
     const isJewel = card.is_jewel === true || card.is_jewel === 1 || card.is_jewel === '1'
-    // Sketch per Disney/Spongebob (dall'attributo SKETCH o is_sketch)
-    const isSketch = card.is_sketch === true || card.is_sketch === 1 || card.is_sketch === '1' || 
-                     (card.attributes && (card.attributes.sketch === true || card.attributes.sketch === 1 || card.attributes.sketch === '1'))
+    // Sketch per Disney/Spongebob (dall'array attributes)
+    let isSketch = false
+    if (card.attributes) {
+      const attributes = Array.isArray(card.attributes) ? card.attributes : 
+                        (typeof card.attributes === 'string' ? JSON.parse(card.attributes) : [])
+      if (Array.isArray(attributes)) {
+        isSketch = attributes.some(attr => 
+          typeof attr === 'string' && attr.toLowerCase() === 'sketch'
+        )
+      }
+    }
     
     const baseSpecialFeatures = {
       autograph: isAutograph ? 'yes' : 'no',
@@ -3387,18 +3407,32 @@ const initializeEditMode = async (listing) => {
       }
     }
     
+    // Determina sketch per Disney/Spongebob (dall'array attributes)
+    let isSketch = false
+    if (cardModel?.attributes) {
+      const attributes = Array.isArray(cardModel.attributes) ? cardModel.attributes : 
+                        (typeof cardModel.attributes === 'string' ? JSON.parse(cardModel.attributes) : [])
+      if (Array.isArray(attributes)) {
+        isSketch = attributes.some(attr => 
+          typeof attr === 'string' && attr.toLowerCase() === 'sketch'
+        )
+      }
+    }
+    
     console.log('🔄 Caricamento caratteristiche per edit:', {
       fromCardModel: !!cardModel,
       isRookie,
       isAutograph,
       isRelic,
       isJewel,
+      isSketch,
       multiAutograph,
       cardModelData: cardModel ? {
         is_rookie: cardModel.is_rookie,
         is_autograph: cardModel.is_autograph,
         is_relic: cardModel.is_relic,
-        is_jewel: cardModel.is_jewel
+        is_jewel: cardModel.is_jewel,
+        attributes: cardModel.attributes
       } : null
     })
     
@@ -3416,7 +3450,8 @@ const initializeEditMode = async (listing) => {
       onCardAuto: isOnCardAuto ? 'yes' : 'no',
       rookie: isRookie ? 'yes' : 'no',
       jewel: isJewel ? 'yes' : 'no',
-      multiAutograph: multiAutograph
+      multiAutograph: multiAutograph,
+      sketch: isSketch ? 'yes' : 'no'
     }
     
     // Imposta le zone di spedizione (usa freshListing)
@@ -3891,6 +3926,9 @@ const updateSingleListing = async () => {
     }
     if (additionalDetails.value.multiAutograph) {
       formData.append('multiAutograph', additionalDetails.value.multiAutograph)
+    }
+    if (additionalDetails.value.sketch) {
+      formData.append('sketch', additionalDetails.value.sketch)
     }
     
     // Aggiungi solo le nuove immagini (quelle con file e non esistenti) - comprimi SEMPRE se > 500KB

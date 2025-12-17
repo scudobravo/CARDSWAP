@@ -321,6 +321,34 @@ class CardListingController extends Controller
                     }
                 }
                 
+                // Gestione sketch per Disney/Spongebob (salvato nell'array attributes)
+                if ($request->has('sketch')) {
+                    $sketchValue = $request->input('sketch');
+                    $isSketch = in_array(strtolower($sketchValue), ['si', 'yes', '1', 'true', 'sì']);
+                    
+                    // Leggi gli attributes attuali
+                    $attributes = $cardListing->cardModel->attributes ?? [];
+                    if (is_string($attributes)) {
+                        $attributes = json_decode($attributes, true) ?? [];
+                    }
+                    if (!is_array($attributes)) {
+                        $attributes = [];
+                    }
+                    
+                    // Rimuovi "sketch" e "SKETCH" se esistono
+                    $attributes = array_filter($attributes, function($attr) {
+                        return strtolower($attr) !== 'sketch';
+                    });
+                    $attributes = array_values($attributes); // Re-indicizza l'array
+                    
+                    // Aggiungi "sketch" se il valore è "yes"
+                    if ($isSketch) {
+                        $attributes[] = 'sketch';
+                    }
+                    
+                    $cardModelUpdate['attributes'] = $attributes;
+                }
+                
                 // Aggiorna il CardModel solo se ci sono modifiche
                 if (!empty($cardModelUpdate)) {
                     $cardListing->cardModel->update($cardModelUpdate);
@@ -1054,6 +1082,7 @@ class CardListingController extends Controller
                     'jewel' => $request->input('jewel'),
                     'onCardAuto' => $request->input('onCardAuto'),
                     'multiAutograph' => $request->input('multiAutograph'),
+                    'sketch' => $request->input('sketch'),
                 ]);
                 
                 // Converti i valori delle caratteristiche dal formato frontend al formato database
@@ -1117,12 +1146,42 @@ class CardListingController extends Controller
                     \Log::info('🔍 MultiAutograph convertito:', ['input' => $multiValue, 'output' => $cardModelUpdate]);
                 }
                 
+                // Gestione sketch per Disney/Spongebob (salvato nell'array attributes)
+                if ($request->has('sketch')) {
+                    $sketchValue = $request->input('sketch');
+                    $isSketch = in_array(strtolower($sketchValue), ['si', 'yes', '1', 'true', 'sì']);
+                    
+                    // Leggi gli attributes attuali
+                    $attributes = $cardListing->cardModel->attributes ?? [];
+                    if (is_string($attributes)) {
+                        $attributes = json_decode($attributes, true) ?? [];
+                    }
+                    if (!is_array($attributes)) {
+                        $attributes = [];
+                    }
+                    
+                    // Rimuovi "sketch" e "SKETCH" se esistono
+                    $attributes = array_filter($attributes, function($attr) {
+                        return strtolower($attr) !== 'sketch';
+                    });
+                    $attributes = array_values($attributes); // Re-indicizza l'array
+                    
+                    // Aggiungi "sketch" se il valore è "yes"
+                    if ($isSketch) {
+                        $attributes[] = 'sketch';
+                    }
+                    
+                    $cardModelUpdate['attributes'] = $attributes;
+                    \Log::info('🔍 Sketch convertito:', ['input' => $sketchValue, 'output' => $isSketch, 'attributes' => $attributes]);
+                }
+                
                 // Log dei valori prima dell'aggiornamento
                 \Log::info('🔍 Valori CardModel PRIMA aggiornamento:', [
                     'is_rookie' => $cardListing->cardModel->is_rookie,
                     'is_autograph' => $cardListing->cardModel->is_autograph,
                     'is_relic' => $cardListing->cardModel->is_relic,
                     'is_jewel' => $cardListing->cardModel->is_jewel,
+                    'attributes' => $cardListing->cardModel->attributes,
                 ]);
                 
                 // Aggiorna il CardModel solo se ci sono modifiche
@@ -1137,6 +1196,7 @@ class CardListingController extends Controller
                         'is_autograph' => $cardListing->cardModel->is_autograph,
                         'is_relic' => $cardListing->cardModel->is_relic,
                         'is_jewel' => $cardListing->cardModel->is_jewel,
+                        'attributes' => $cardListing->cardModel->attributes,
                     ]);
                 } else {
                     \Log::warning('⚠️ Nessun campo da aggiornare nel CardModel');

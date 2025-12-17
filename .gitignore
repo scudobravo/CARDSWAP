@@ -54,3 +54,4 @@ Thumbs.db
 # Test files
 /coverage/
 /.phpunit.result.cachebackup_before_reset.sql
+backup_before_reset.sql

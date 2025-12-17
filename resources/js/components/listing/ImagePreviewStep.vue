@@ -504,7 +504,7 @@ watch(() => props.cardData, (newCardData) => {
     // Controlla se ci sono valori nuovi da applicare (non vuoti)
     const hasNewValues = newCardData.autograph || newCardData.relic || newCardData.rookie || 
                          newCardData.jewel || newCardData.onCardAuto || newCardData.multiAutograph ||
-                         newCardData.condition || newCardData.gradingCompany
+                         newCardData.sketch || newCardData.condition || newCardData.gradingCompany
     
     // Se ci sono nuovi valori, resetta hasInitialized per forzare il popolamento
     if (hasNewValues && hasInitialized.value) {
@@ -518,12 +518,12 @@ watch(() => props.cardData, (newCardData) => {
     if (!hasInitialized.value || hasNewValues) {
       // Popola sempre se ci sono nuovi valori, altrimenti solo se i campi sono vuoti
       const shouldPopulate = !hasInitialized.value || hasNewValues
-      
-      if (shouldPopulate) {
+    
+    if (shouldPopulate) {
         // Se ci sono nuovi valori, usa quelli, altrimenti mantieni quelli esistenti
-        additionalDetails.value = {
+      additionalDetails.value = {
           condition: newCardData.condition !== undefined ? newCardData.condition : (additionalDetails.value.condition || ''),
-          // NON usare condition come fallback per autographCondition
+        // NON usare condition come fallback per autographCondition
           autographCondition: newCardData.autographCondition !== undefined ? newCardData.autographCondition : (additionalDetails.value.autographCondition || ''),
           gradingCompany: newCardData.gradingCompany !== undefined ? newCardData.gradingCompany : (additionalDetails.value.gradingCompany || ''),
           gradingScore: newCardData.gradingScore !== undefined ? newCardData.gradingScore : (additionalDetails.value.gradingScore || ''),
@@ -535,6 +535,7 @@ watch(() => props.cardData, (newCardData) => {
           onCardAuto: newCardData.onCardAuto !== undefined ? newCardData.onCardAuto : (additionalDetails.value.onCardAuto || ''),
           rookie: newCardData.rookie !== undefined ? newCardData.rookie : (additionalDetails.value.rookie || ''),
           jewel: newCardData.jewel !== undefined ? newCardData.jewel : (additionalDetails.value.jewel || ''),
+          sketch: newCardData.sketch !== undefined ? newCardData.sketch : (additionalDetails.value.sketch || ''),
           multiAutograph: newCardData.multiAutograph !== undefined ? newCardData.multiAutograph : (additionalDetails.value.multiAutograph || ''),
           description: newCardData.description !== undefined ? newCardData.description : (additionalDetails.value.description || ''),
           notes: newCardData.notes !== undefined ? newCardData.notes : (additionalDetails.value.notes || '')
@@ -545,18 +546,20 @@ watch(() => props.cardData, (newCardData) => {
           rookie: additionalDetails.value.rookie,
           relic: additionalDetails.value.relic,
           jewel: additionalDetails.value.jewel,
+          sketch: additionalDetails.value.sketch,
           fromCardData: {
             autograph: newCardData.autograph,
             rookie: newCardData.rookie,
             relic: newCardData.relic,
-            jewel: newCardData.jewel
+            jewel: newCardData.jewel,
+            sketch: newCardData.sketch
           },
           hasNewValues,
           wasInitialized: hasInitialized.value
         })
         
         // Marca come inizializzato dopo il popolamento
-        hasInitialized.value = true
+      hasInitialized.value = true
       }
     }
   }
