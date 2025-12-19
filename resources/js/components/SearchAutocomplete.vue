@@ -92,7 +92,9 @@
         <!-- Bottone Carica altri risultati -->
         <div v-if="hasMorePages && !isLoadingMore" class="p-3 border-t border-gray-200">
           <button 
+            @mousedown.prevent="isClickingButton = true"
             @click="loadMoreSuggestions"
+            @mouseup="setTimeout(() => isClickingButton = false, 100)"
             class="w-full bg-primary text-white px-4 py-2 rounded-lg font-futura-bold text-sm hover:bg-opacity-90 transition-colors"
           >
             Carica altri risultati
@@ -128,6 +130,7 @@ const isLoadingMore = ref(false)
 const currentPage = ref(1)
 const hasMorePages = ref(false)
 const perPage = 20
+const isClickingButton = ref(false)
 
 // Debounce timer
 let searchTimeout = null
@@ -287,10 +290,18 @@ const performGeneralSearch = () => {
 
 // Funzione per gestire il blur
 const handleBlur = () => {
+  // Se si sta cliccando sul bottone, non chiudere la tendina
+  if (isClickingButton.value) {
+    return
+  }
+  
   // Ritarda la chiusura per permettere il click sui suggerimenti
   setTimeout(() => {
-    showSuggestions.value = false
-    selectedIndex.value = -1
+    // Se non si sta ancora cliccando sul bottone, chiudi la tendina
+    if (!isClickingButton.value) {
+      showSuggestions.value = false
+      selectedIndex.value = -1
+    }
   }, 200)
 }
 
