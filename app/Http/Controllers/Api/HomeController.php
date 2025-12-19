@@ -262,7 +262,7 @@ class HomeController extends Controller
         
         // Se non c'è query, restituisci suggerimenti popolari
         if (strlen($query) < 2) {
-            return $this->getPopularSuggestions();
+            return $this->getPopularSuggestions($request);
         }
 
         try {
@@ -434,23 +434,43 @@ class HomeController extends Controller
     /**
      * Get popular suggestions when no search query
      */
-    private function getPopularSuggestions(): JsonResponse
+    private function getPopularSuggestions(Request $request = null): JsonResponse
     {
         try {
             $suggestions = [];
 
-            // Carte più popolari o recenti - solo quelle con listings attivi (in vendita)
-            $popularCards = CardModel::with('category')
-                ->select('id', 'name', 'slug', 'set_name', 'year', 'category_id')
-                ->where('is_active', true)
-                ->whereHas('cardListings', function($q) {
-                    $q->where('status', 'active');
+            // Parametri di paginazione (se disponibili dalla request)
+            $perPage = $request ? $request->get('per_page', 20) : 20;
+            $page = $request ? $request->get('page', 1) : 1;
+
+            // Suggerimenti popolari da singole CardListing - così ogni inserzione appare separatamente
+            $popularListingsQuery = CardListing::with([
+                'cardModel' => function($q) {
+                    $q->with('category');
+                }
+            ])
+                ->where('status', 'active')
+                ->whereHas('cardModel', function($q) {
+                    $q->where('is_active', true);
                 })
-                ->orderBy('created_at', 'desc')
-                ->limit(8)
+                ->orderBy('created_at', 'desc'); // Ordina per data di creazione (più recenti prima)
+
+            // Conta il totale per la paginazione
+            $total = $popularListingsQuery->count();
+            
+            // Applica paginazione
+            $popularListings = $popularListingsQuery
+                ->skip(($page - 1) * $perPage)
+                ->take($perPage)
                 ->get();
 
-            foreach ($popularCards as $card) {
+            foreach ($popularListings as $listing) {
+                $card = $listing->cardModel;
+                
+                if (!$card) {
+                    continue;
+                }
+                
                 // Mappa le categorie del database agli slug URL
                 $categoryMap = [
                     'calcio' => 'football',
@@ -465,24 +485,44 @@ class HomeController extends Controller
                     $cardSlug = $this->generateSlug($card->name);
                 }
                 
+                // Mostra il prezzo nel subtext per distinguere le inserzioni
+                $priceText = '€' . number_format($listing->price, 2, ',', '.');
+                $subtext = $card->set_name . ' (' . $card->year . ') - ' . $priceText;
+                
                 $suggestions[] = [
                     'type' => 'card',
                     'id' => $card->id,
+                    'listing_id' => $listing->id,
                     'text' => $card->name,
-                    'subtext' => $card->set_name . ' (' . $card->year . ')',
+                    'subtext' => $subtext,
                     'url' => "/{$categorySlug}/{$cardSlug}",
                 ];
             }
 
+            // Calcola se ci sono più pagine
+            $hasMorePages = ($page * $perPage) < $total;
+
             return response()->json([
                 'success' => true,
-                'data' => $suggestions
+                'data' => $suggestions,
+                'pagination' => [
+                    'current_page' => (int)$page,
+                    'per_page' => (int)$perPage,
+                    'total' => $total,
+                    'has_more_pages' => $hasMorePages
+                ]
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => true,
-                'data' => []
+                'data' => [],
+                'pagination' => [
+                    'current_page' => 1,
+                    'per_page' => 20,
+                    'total' => 0,
+                    'has_more_pages' => false
+                ]
             ]);
         }
     }
