@@ -92,9 +92,9 @@
         <!-- Bottone Carica altri risultati -->
         <div v-if="hasMorePages && !isLoadingMore" class="p-3 border-t border-gray-200">
           <button 
-            @mousedown.prevent="isClickingButton = true"
+            @mousedown.prevent="handleButtonMouseDown"
             @click="loadMoreSuggestions"
-            @mouseup="setTimeout(() => isClickingButton = false, 100)"
+            @mouseup="handleButtonMouseUp"
             class="w-full bg-primary text-white px-4 py-2 rounded-lg font-futura-bold text-sm hover:bg-opacity-90 transition-colors"
           >
             Carica altri risultati
@@ -222,6 +222,19 @@ const loadMoreSuggestions = () => {
   if (!isLoadingMore.value && hasMorePages.value) {
     fetchSuggestions(currentPage.value + 1, true)
   }
+}
+
+// Funzione per gestire il mousedown sul bottone
+const handleButtonMouseDown = (event) => {
+  event.preventDefault()
+  isClickingButton.value = true
+}
+
+// Funzione per gestire il mouseup sul bottone
+const handleButtonMouseUp = () => {
+  setTimeout(() => {
+    isClickingButton.value = false
+  }, 100)
 }
 
 // Funzione per gestire la navigazione con tastiera
