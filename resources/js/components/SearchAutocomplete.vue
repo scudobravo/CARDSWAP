@@ -45,7 +45,7 @@
       <div v-else-if="suggestions.length > 0">
         <div 
           v-for="(suggestion, index) in suggestions" 
-          :key="`${suggestion.type}-${suggestion.id}`"
+          :key="`${suggestion.type}-${suggestion.id}-${suggestion.listing_id || ''}`"
           :class="[
             'px-4 py-3 cursor-pointer border-b border-gray-100 hover:bg-gray-50 transition-colors',
             selectedIndex === index ? 'bg-secondary/10' : ''
@@ -88,6 +88,24 @@
             </div>
           </div>
         </div>
+        
+        <!-- Bottone Carica altri risultati -->
+        <div v-if="hasMorePages && !isLoadingMore" class="p-3 border-t border-gray-200">
+          <button 
+            @click="loadMoreSuggestions"
+            class="w-full bg-primary text-white px-4 py-2 rounded-lg font-futura-bold text-sm hover:bg-opacity-90 transition-colors"
+          >
+            Carica altri risultati
+          </button>
+        </div>
+        
+        <!-- Loading indicator per caricamento di più risultati -->
+        <div v-if="isLoadingMore" class="p-4 text-center border-t border-gray-200">
+          <svg class="animate-spin h-5 w-5 text-primary mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
       </div>
     </div>
   </div>
@@ -106,6 +124,10 @@ const suggestions = ref([])
 const showSuggestions = ref(false)
 const selectedIndex = ref(-1)
 const isLoading = ref(false)
+const isLoadingMore = ref(false)
+const currentPage = ref(1)
+const hasMorePages = ref(false)
+const perPage = 20
 
 // Debounce timer
 let searchTimeout = null
@@ -115,7 +137,9 @@ const handleFocus = () => {
   showSuggestions.value = true
   // Carica suggerimenti iniziali quando si fa focus
   if (searchQuery.value.length === 0) {
-    fetchSuggestions()
+    currentPage.value = 1
+    hasMorePages.value = false
+    fetchSuggestions(1, false)
   }
 }
 
@@ -126,22 +150,32 @@ const handleSearch = () => {
     clearTimeout(searchTimeout)
   }
   
-  // Reset dell'indice selezionato
+  // Reset dell'indice selezionato e della paginazione
   selectedIndex.value = -1
+  currentPage.value = 1
+  hasMorePages.value = false
   
   // Imposta un timeout per evitare troppe richieste
   searchTimeout = setTimeout(() => {
-    fetchSuggestions()
+    fetchSuggestions(1, false)
   }, 300)
 }
 
 // Funzione per recuperare i suggerimenti
-const fetchSuggestions = async () => {
-  isLoading.value = true
+const fetchSuggestions = async (page = 1, append = false) => {
+  // Se stiamo caricando più risultati, usa isLoadingMore invece di isLoading
+  if (append) {
+    isLoadingMore.value = true
+  } else {
+    isLoading.value = true
+    currentPage.value = 1
+    suggestions.value = []
+  }
   
   try {
     // Passa anche query vuota per ottenere suggerimenti iniziali
-    const response = await fetch(`/api/home/search-suggestions?q=${encodeURIComponent(searchQuery.value)}`, {
+    const url = `/api/home/search-suggestions?q=${encodeURIComponent(searchQuery.value)}&page=${page}&per_page=${perPage}`
+    const response = await fetch(url, {
       headers: {
         'Accept': 'application/json',
         'X-Requested-With': 'XMLHttpRequest'
@@ -150,15 +184,40 @@ const fetchSuggestions = async () => {
     
     if (response.ok) {
       const data = await response.json()
-      suggestions.value = data.data || []
+      
+      if (append) {
+        // Aggiungi i nuovi suggerimenti a quelli esistenti
+        suggestions.value.push(...(data.data || []))
+      } else {
+        // Sostituisci i suggerimenti esistenti
+        suggestions.value = data.data || []
+      }
+      
+      // Aggiorna lo stato della paginazione
+      if (data.pagination) {
+        currentPage.value = data.pagination.current_page
+        hasMorePages.value = data.pagination.has_more_pages || false
+      }
     } else {
-      suggestions.value = []
+      if (!append) {
+        suggestions.value = []
+      }
     }
   } catch (error) {
     console.error('Errore durante la ricerca:', error)
-    suggestions.value = []
+    if (!append) {
+      suggestions.value = []
+    }
   } finally {
     isLoading.value = false
+    isLoadingMore.value = false
+  }
+}
+
+// Funzione per caricare più risultati
+const loadMoreSuggestions = () => {
+  if (!isLoadingMore.value && hasMorePages.value) {
+    fetchSuggestions(currentPage.value + 1, true)
   }
 }
 

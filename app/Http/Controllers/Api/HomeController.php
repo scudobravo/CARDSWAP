@@ -268,8 +268,12 @@ class HomeController extends Controller
         try {
             $suggestions = [];
 
-            // Suggerimenti da singole CardListing - così ogni inserzione con prezzo diverso appare separatamente
-            $listingSuggestions = CardListing::with([
+            // Parametri di paginazione
+            $perPage = $request->get('per_page', 20);
+            $page = $request->get('page', 1);
+
+            // Query base per le CardListing
+            $listingsQuery = CardListing::with([
                 'cardModel' => function($q) {
                     $q->with('category');
                 }
@@ -282,8 +286,15 @@ class HomeController extends Controller
                                         ->orWhere('set_name', 'LIKE', "%{$query}%");
                       });
                 })
-                ->orderBy('price', 'asc') // Ordina per prezzo crescente
-                ->limit(20) // Aumentato per mostrare più inserzioni
+                ->orderBy('price', 'asc'); // Ordina per prezzo crescente
+
+            // Conta il totale per la paginazione
+            $total = $listingsQuery->count();
+            
+            // Applica paginazione
+            $listingSuggestions = $listingsQuery
+                ->skip(($page - 1) * $perPage)
+                ->take($perPage)
                 ->get();
 
             foreach ($listingSuggestions as $listing) {
@@ -321,18 +332,18 @@ class HomeController extends Controller
                 ];
             }
 
-            // Suggerimenti da giocatori (non mostrarli - non hanno pagina propria)
-            // I giocatori sono accessibili solo tramite la pagina delle carte
-
-            // Suggerimenti da squadre (non mostrarli - non hanno pagina propria)
-            // Le squadre sono accessibili solo tramite la pagina delle carte
-
-            // Suggerimenti da set (non mostrarli - non hanno pagina propria)
-            // I set sono accessibili solo tramite i filtri delle categorie
+            // Calcola se ci sono più pagine
+            $hasMorePages = ($page * $perPage) < $total;
 
             return response()->json([
                 'success' => true,
-                'data' => $suggestions
+                'data' => $suggestions,
+                'pagination' => [
+                    'current_page' => (int)$page,
+                    'per_page' => (int)$perPage,
+                    'total' => $total,
+                    'has_more_pages' => $hasMorePages
+                ]
             ]);
 
         } catch (\Exception $e) {
