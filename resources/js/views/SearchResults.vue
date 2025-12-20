@@ -53,7 +53,7 @@
         </div>
 
         <!-- Load More Button -->
-        <div v-if="hasMoreResults && !isLoading && !isLoadingMore" class="text-center mt-8">
+        <div v-if="hasMoreResults && !isLoading && !isLoadingMore && cards.length > 0" class="text-center mt-8">
           <button 
             @click="loadMore"
             class="bg-primary text-white px-6 py-3 rounded-lg font-futura-bold text-sm hover:bg-opacity-90 transition-colors"
@@ -71,6 +71,12 @@
             </svg>
             <span class="text-gray-600 font-gill-sans">Caricamento risultati...</span>
           </div>
+        </div>
+        
+        <!-- Debug info (rimuovere in produzione) -->
+        <div v-if="false" class="text-xs text-gray-400 mt-4 p-2 bg-gray-100 rounded">
+          Debug: hasMoreResults={{ hasMoreResults }}, isLoading={{ isLoading }}, isLoadingMore={{ isLoadingMore }}, 
+          cards.length={{ cards.length }}, currentPage={{ currentPage }}, totalResults={{ totalResults }}
         </div>
       </div>
     </div>
@@ -131,8 +137,22 @@ const searchCards = async (page = 1) => {
       }
       
       totalResults.value = data.total || 0
-      hasMoreResults.value = data.current_page < data.last_page
-      currentPage.value = data.current_page || 1
+      
+      // Gestisci la paginazione - supporta sia il formato diretto che quello annidato
+      const currentPageNum = data.current_page || data.pagination?.current_page || page
+      const lastPageNum = data.last_page || data.pagination?.last_page || 1
+      
+      currentPage.value = currentPageNum
+      hasMoreResults.value = currentPageNum < lastPageNum
+      
+      // Debug log per verificare la paginazione
+      console.log('Paginazione:', {
+        current_page: currentPageNum,
+        last_page: lastPageNum,
+        total: totalResults.value,
+        hasMore: hasMoreResults.value,
+        cardsCount: cards.value.length
+      })
     } else {
       // Prova a leggere il messaggio di errore dalla risposta
       let errorMessage = `Errore HTTP ${response.status}`
