@@ -73,8 +73,8 @@
           </div>
         </div>
         
-        <!-- Debug info (rimuovere in produzione) -->
-        <div v-if="false" class="text-xs text-gray-400 mt-4 p-2 bg-gray-100 rounded">
+        <!-- Debug info (temporaneo per troubleshooting) -->
+        <div class="text-xs text-gray-400 mt-4 p-2 bg-gray-100 rounded">
           Debug: hasMoreResults={{ hasMoreResults }}, isLoading={{ isLoading }}, isLoadingMore={{ isLoadingMore }}, 
           cards.length={{ cards.length }}, currentPage={{ currentPage }}, totalResults={{ totalResults }}
         </div>
@@ -108,7 +108,12 @@ const hasMoreResults = ref(false)
 
 // Funzione per cercare le carte
 const searchCards = async (page = 1) => {
-  if (!searchQuery.value.trim()) return
+  console.log('🔍 searchCards chiamata:', { page, query: searchQuery.value })
+  
+  if (!searchQuery.value.trim()) {
+    console.log('❌ Query vuota, esco')
+    return
+  }
   
   // Se stiamo caricando più risultati, usa isLoadingMore invece di isLoading
   if (page === 1) {
@@ -120,6 +125,8 @@ const searchCards = async (page = 1) => {
   
   try {
     const url = `/api/cards/search?search=${encodeURIComponent(searchQuery.value)}&page=${page}`
+    console.log('📡 Fetch URL:', url)
+    
     const response = await fetch(url, {
       headers: {
         'Accept': 'application/json',
@@ -127,8 +134,11 @@ const searchCards = async (page = 1) => {
       }
     })
     
+    console.log('📡 Response status:', response.status, response.ok)
+    
     if (response.ok) {
       const data = await response.json()
+      console.log('✅ Data ricevuta:', data)
       
       if (page === 1) {
         cards.value = data.data || []
@@ -146,12 +156,14 @@ const searchCards = async (page = 1) => {
       hasMoreResults.value = currentPageNum < lastPageNum
       
       // Debug log per verificare la paginazione
-      console.log('Paginazione:', {
+      console.log('📊 Paginazione:', {
         current_page: currentPageNum,
         last_page: lastPageNum,
         total: totalResults.value,
         hasMore: hasMoreResults.value,
-        cardsCount: cards.value.length
+        cardsCount: cards.value.length,
+        isLoading: isLoading.value,
+        isLoadingMore: isLoadingMore.value
       })
     } else {
       // Prova a leggere il messaggio di errore dalla risposta
