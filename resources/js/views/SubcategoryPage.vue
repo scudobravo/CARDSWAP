@@ -435,8 +435,29 @@
               </div>
             </div>
 
-            <!-- Infinite scroll trigger -->
-            <div v-if="hasMoreProducts" ref="loadingMoreTrigger" class="flex justify-center py-8">
+            <!-- Load More Button (mobile-first) -->
+            <div v-if="hasMoreProducts && !loadingMore && !loading" class="flex justify-center py-8">
+              <button 
+                @click="loadMoreProducts"
+                class="bg-primary text-white px-6 py-3 rounded-lg font-futura-bold text-sm hover:bg-opacity-90 transition-colors"
+              >
+                Carica Altri Risultati
+              </button>
+            </div>
+            
+            <!-- Loading indicator per caricamento incrementale -->
+            <div v-if="loadingMore" class="flex justify-center py-8">
+              <div class="flex items-center space-x-3">
+                <svg class="animate-spin h-6 w-6 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="text-gray-600 font-gill-sans">Caricamento risultati...</span>
+              </div>
+            </div>
+            
+            <!-- Infinite scroll trigger (nascosto, mantenuto per retrocompatibilità) -->
+            <div v-if="false && hasMoreProducts" ref="loadingMoreTrigger" class="flex justify-center py-8">
               <div v-if="loadingMore" class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
             </div>
           </div>
@@ -934,16 +955,24 @@ const loadProducts = async (reset = false) => {
   } finally {
     loading.value = false
     loadingMore.value = false
-    // Reconnect observer only if there are more products to load and we're not resetting
-    if (!reset && hasMoreProducts.value) {
-      nextTick(() => {
-        connectObserver()
-      })
-    }
+    // Observer disabilitato - usiamo il bottone invece dello scroll infinito
+    // if (!reset && hasMoreProducts.value) {
+    //   nextTick(() => {
+    //     connectObserver()
+    //   })
+    // }
   }
 }
 
-// loadMoreProducts is now handled directly by the IntersectionObserver
+// Funzione per caricare più prodotti (chiamata dal bottone)
+const loadMoreProducts = () => {
+  if (hasMoreProducts.value && !loading.value && !loadingMore.value) {
+    currentPage.value++
+    loadProducts(false)
+  }
+}
+
+// loadMoreProducts is now handled directly by the IntersectionObserver (disabilitato, usiamo il bottone)
 
 const goToProduct = (product) => {
   // Naviga alla pagina del prodotto usando URL SEO-friendly
