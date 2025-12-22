@@ -501,6 +501,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/start', [KycController::class, 'startKyc']);
         Route::get('/check-status', [KycController::class, 'checkKycStatus']);
         Route::post('/complete-profile', [KycController::class, 'completeProfile']);
+        Route::delete('/cancel', [KycController::class, 'cancelVerification']); // Cancella sessione di verifica fallita o in corso
     });
 
     // Rotte per Stripe Connect

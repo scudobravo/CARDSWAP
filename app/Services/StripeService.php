@@ -162,6 +162,52 @@ class StripeService
     }
 
     /**
+     * Resetta una sessione di verifica (pulisce i dati locali)
+     * Nota: Stripe non permette di cancellare le sessioni, ma possiamo resettare i dati locali
+     * per permettere all'utente di creare una nuova sessione
+     */
+    public function resetVerificationSession(User $user): array
+    {
+        try {
+            $sessionId = $user->stripe_verification_session_id;
+            
+            if ($sessionId) {
+                // Verifica lo stato della sessione prima di resettare
+                try {
+                    $sessionStatus = $this->getVerificationSessionStatus($sessionId);
+                    Log::info('Resetting verification session ' . $sessionId . ' with status: ' . ($sessionStatus['status'] ?? 'unknown'));
+                } catch (\Exception $e) {
+                    Log::warning('Could not retrieve session status before reset: ' . $e->getMessage());
+                }
+            }
+            
+            // Resetta i dati locali dell'utente
+            $user->update([
+                'stripe_verification_session_id' => null,
+                'kyc_status' => 'not_submitted',
+                'kyc_submitted_at' => null,
+                'kyc_verified_at' => null,
+                'kyc_rejection_reason' => null,
+                // Non resettiamo stripe_identity_verified se era già verificato
+                // perché potrebbe essere ancora valido
+            ]);
+            
+            Log::info('Verification session reset for user: ' . $user->id);
+            
+            return [
+                'success' => true,
+                'message' => 'Sessione di verifica resettata con successo'
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error resetting verification session: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Crea un account Stripe Connect per venditori
      */
     public function createConnectAccount(User $user, array $accountData = []): array

@@ -536,6 +536,7 @@ class KycController extends Controller
                 Log::info('User has existing verification session: ' . $user->stripe_verification_session_id);
                 $sessionStatus = $stripeService->getVerificationSessionStatus($user->stripe_verification_session_id);
                 
+                // Se la sessione è ancora attiva e richiede input, restituisci l'URL
                 if ($sessionStatus['success'] && $sessionStatus['status'] === 'requires_input' && isset($sessionStatus['url'])) {
                     return response()->json([
                         'success' => true,
@@ -545,6 +546,30 @@ class KycController extends Controller
                             'session_id' => $user->stripe_verification_session_id
                         ]
                     ]);
+                }
+                
+                // Se la sessione è verificata, non creare una nuova
+                if ($sessionStatus['success'] && $sessionStatus['status'] === 'verified') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Verifica già completata',
+                        'data' => [
+                            'kyc_status' => $user->kyc_status,
+                            'is_verified' => true
+                        ]
+                    ], 400);
+                }
+                
+                // Se la sessione è fallita, scaduta o in uno stato non valido, resettala automaticamente
+                if ($sessionStatus['success'] && in_array($sessionStatus['status'], ['canceled', 'processing', 'expired'])) {
+                    Log::info('Resetting failed/expired verification session: ' . $user->stripe_verification_session_id . ' (status: ' . $sessionStatus['status'] . ')');
+                    $stripeService->resetVerificationSession($user);
+                    $user->refresh();
+                } elseif (!$sessionStatus['success']) {
+                    // Se non riusciamo a recuperare lo stato, potrebbe essere una sessione invalida
+                    Log::warning('Could not retrieve session status, resetting session: ' . $user->stripe_verification_session_id);
+                    $stripeService->resetVerificationSession($user);
+                    $user->refresh();
                 }
             }
 
@@ -651,6 +676,66 @@ class KycController extends Controller
                 'is_complete' => $result['status'] === 'verified'
             ]
         ]);
+    }
+
+    /**
+     * Cancella/Resetta una sessione di verifica fallita o in corso
+     * Permette all'utente di iniziare una nuova verifica
+     */
+    public function cancelVerification(Request $request): JsonResponse
+    {
+        try {
+            $user = $request->user();
+            $stripeService = new \App\Services\StripeService();
+            
+            if (!$user->stripe_verification_session_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Nessuna sessione di verifica attiva da cancellare'
+                ], 400);
+            }
+            
+            // Verifica lo stato della sessione
+            $sessionStatus = $stripeService->getVerificationSessionStatus($user->stripe_verification_session_id);
+            
+            // Se la sessione è già verificata, non permettere la cancellazione
+            if ($sessionStatus['success'] && $sessionStatus['status'] === 'verified') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Non è possibile cancellare una verifica già completata'
+                ], 400);
+            }
+            
+            // Resetta la sessione
+            $result = $stripeService->resetVerificationSession($user);
+            
+            if (!$result['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Errore nel reset della sessione di verifica',
+                    'error' => $result['error'] ?? 'Errore sconosciuto'
+                ], 500);
+            }
+            
+            Log::info('Verification session cancelled by user: ' . $user->id);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Sessione di verifica cancellata con successo. Puoi iniziare una nuova verifica.',
+                'data' => [
+                    'kyc_status' => $user->fresh()->kyc_status,
+                    'can_start_new' => true
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error cancelling verification: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Errore interno del server',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
