@@ -55,7 +55,8 @@ class StripeService
                 ];
             }
             
-            $session = VerificationSession::create([
+            // Prepara le opzioni per la sessione di verifica
+            $sessionOptions = [
                 'type' => 'document',
                 'metadata' => [
                     'user_id' => $user->id,
@@ -70,8 +71,24 @@ class StripeService
                     ],
                 ],
                 'return_url' => config('app.url') . '/dashboard/kyc',
-                ...$options
-            ]);
+            ];
+
+            // Se l'utente ha una nazionalità configurata, usa quella, altrimenti default IT (Italia)
+            $userCountry = $user->nationality ?? 'IT';
+            
+            // Stripe Identity usa il paese dell'account Stripe come default
+            // Per forzare l'Italia, possiamo aggiungere informazioni nel metadata
+            // Nota: Stripe Identity determina il paese principalmente dall'account Stripe
+            // ma possiamo influenzarlo con le opzioni del documento
+            if ($userCountry === 'IT' || !$user->nationality) {
+                // Per l'Italia, assicuriamoci che i tipi di documento siano appropriati
+                $sessionOptions['options']['document']['allowed_types'] = ['id_card', 'driving_license', 'passport'];
+            }
+
+            // Applica opzioni aggiuntive se fornite
+            $sessionOptions = array_merge_recursive($sessionOptions, $options);
+
+            $session = VerificationSession::create($sessionOptions);
 
             Log::info('Stripe Identity session created successfully: ' . $session->id);
             
