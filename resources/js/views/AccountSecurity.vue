@@ -130,7 +130,22 @@
                     type="text"
                     placeholder="Digita ELIMINA"
                     class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 border border-gray-300 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 sm:text-sm/6 font-gill-sans"
+                    @keyup.enter="deleteAccount"
                   />
+                </div>
+
+                <!-- Messaggio di errore -->
+                <div v-if="errorMessage" class="mt-4 rounded-md bg-red-50 p-4">
+                  <div class="flex">
+                    <div class="flex-shrink-0">
+                      <ExclamationTriangleIcon class="h-5 w-5 text-red-400" />
+                    </div>
+                    <div class="ml-3">
+                      <p class="text-sm font-gill-sans-semibold text-red-800">
+                        {{ errorMessage }}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="mt-6 sm:flex sm:flex-row-reverse gap-3">
@@ -487,11 +502,16 @@ const closeDeleteAccountModal = () => {
 }
 
 const deleteAccount = async () => {
-  if (deleteConfirmation.value !== 'ELIMINA') return
+  if (deleteConfirmation.value !== 'ELIMINA') {
+    errorMessage.value = 'Devi digitare "ELIMINA" per confermare'
+    return
+  }
   
   loading.value = true
+  errorMessage.value = ''
   
   try {
+    console.log('🗑️ Tentativo eliminazione account...')
     const response = await fetch('/api/user/account', {
       method: 'DELETE',
       headers: {
@@ -501,17 +521,28 @@ const deleteAccount = async () => {
       }
     })
 
+    console.log('📡 Risposta ricevuta:', response.status, response.statusText)
+
     if (response.ok) {
+      const data = await response.json()
+      console.log('✅ Account eliminato con successo:', data)
       // Logout e reindirizza alla home
       authStore.logout()
       router.push('/')
     } else {
-      const errorData = await response.json()
-      errorMessage.value = errorData.message || 'Errore durante l\'eliminazione dell\'account'
+      let errorData
+      try {
+        errorData = await response.json()
+        console.error('❌ Errore eliminazione account:', errorData)
+      } catch (e) {
+        errorData = { message: `Errore HTTP ${response.status}: ${response.statusText}` }
+        console.error('❌ Errore parsing risposta:', e)
+      }
+      errorMessage.value = errorData.message || `Errore durante l'eliminazione dell'account (${response.status})`
     }
   } catch (error) {
-    console.error('Errore eliminazione account:', error)
-    errorMessage.value = 'Errore durante l\'eliminazione dell\'account'
+    console.error('❌ Errore eliminazione account:', error)
+    errorMessage.value = `Errore durante l'eliminazione dell'account: ${error.message}`
   } finally {
     loading.value = false
   }

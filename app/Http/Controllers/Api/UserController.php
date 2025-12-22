@@ -8,14 +8,25 @@ use App\Models\UserAddress;
 use App\Models\UserPaymentMethod;
 use App\Models\UserNotification;
 use App\Models\ShippingZone;
+use App\Models\CardListing;
+use App\Models\KycDocument;
+use App\Services\StripeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
+    protected $stripeService;
+
+    public function __construct(StripeService $stripeService)
+    {
+        $this->stripeService = $stripeService;
+    }
+
     /**
      * Ottieni il profilo dell'utente autenticato
      */
@@ -432,28 +443,120 @@ class UserController extends Controller
      */
     public function deleteAccount(Request $request)
     {
-        $request->validate([
-            'password' => 'required|string',
-            'confirmation' => 'required|string|in:DELETE'
-        ]);
-
         $user = $request->user();
 
-        if (!Hash::check($request->password, $user->password)) {
+        if (!$user) {
+            Log::error('Tentativo eliminazione account: utente non autenticato');
             return response()->json([
-                'message' => 'Password non corretta'
-            ], 400);
+                'message' => 'Utente non autenticato'
+            ], 401);
         }
 
-        // Elimina tutti i token
-        $user->tokens()->delete();
+        Log::info('Inizio eliminazione account per utente: ' . $user->id . ' (' . $user->email . ')');
 
-        // Elimina l'utente (cascade eliminerà tutti i dati correlati)
-        $user->delete();
+        try {
+            // 1. Elimina account Stripe Connect se presente
+            if ($user->stripe_account_id) {
+                try {
+                    $result = $this->stripeService->deleteConnectAccount($user->stripe_account_id);
+                    if (!$result['success']) {
+                        Log::warning('Errore eliminazione account Stripe Connect per utente ' . $user->id . ': ' . ($result['error'] ?? 'Errore sconosciuto'));
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Eccezione durante eliminazione account Stripe Connect per utente ' . $user->id . ': ' . $e->getMessage());
+                }
+            }
 
-        return response()->json([
-            'message' => 'Account eliminato con successo'
-        ]);
+            // 2. Elimina file fisici delle carte (immagini delle inserzioni)
+            $cardListings = CardListing::where('seller_id', $user->id)->get();
+            foreach ($cardListings as $listing) {
+                if ($listing->images && is_array($listing->images)) {
+                    foreach ($listing->images as $imagePath) {
+                        if ($imagePath && Storage::disk('public')->exists($imagePath)) {
+                            try {
+                                Storage::disk('public')->delete($imagePath);
+                            } catch (\Exception $e) {
+                                Log::warning('Errore eliminazione immagine inserzione ' . $listing->id . ': ' . $e->getMessage());
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 3. Elimina file fisici KYC (documenti e immagini)
+            $kycDocuments = KycDocument::where('user_id', $user->id)->get();
+            foreach ($kycDocuments as $document) {
+                // Elimina file_path se presente (nuovo formato)
+                if ($document->file_path && Storage::disk('kyc')->exists($document->file_path)) {
+                    try {
+                        Storage::disk('kyc')->delete($document->file_path);
+                    } catch (\Exception $e) {
+                        Log::warning('Errore eliminazione file KYC ' . $document->id . ': ' . $e->getMessage());
+                    }
+                }
+                
+                // Elimina front_image_path se presente (vecchio formato)
+                if ($document->front_image_path && Storage::disk('public')->exists($document->front_image_path)) {
+                    try {
+                        Storage::disk('public')->delete($document->front_image_path);
+                    } catch (\Exception $e) {
+                        Log::warning('Errore eliminazione immagine fronte KYC ' . $document->id . ': ' . $e->getMessage());
+                    }
+                }
+                
+                // Elimina back_image_path se presente (vecchio formato)
+                if ($document->back_image_path && Storage::disk('public')->exists($document->back_image_path)) {
+                    try {
+                        Storage::disk('public')->delete($document->back_image_path);
+                    } catch (\Exception $e) {
+                        Log::warning('Errore eliminazione immagine retro KYC ' . $document->id . ': ' . $e->getMessage());
+                    }
+                }
+            }
+
+            // 4. Elimina avatar se presente
+            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+                try {
+                    Storage::disk('public')->delete($user->avatar);
+                } catch (\Exception $e) {
+                    Log::warning('Errore eliminazione avatar utente ' . $user->id . ': ' . $e->getMessage());
+                }
+            }
+
+            // 5. Elimina tutti i token
+            $user->tokens()->delete();
+
+            // 6. Elimina l'utente (cascade eliminerà automaticamente tutti i dati correlati nel database)
+            // Le foreign key con onDelete('cascade') elimineranno:
+            // - card_listings (seller_id)
+            // - orders (buyer_id, seller_id)
+            // - order_feedbacks (buyer_id, seller_id)
+            // - wishlists (user_id)
+            // - user_addresses (user_id)
+            // - user_payment_methods (user_id)
+            // - user_notifications (user_id)
+            // - kyc_documents (user_id)
+            // - shipping_zones (user_id)
+            // - order_conversations (buyer_id, seller_id)
+            // - order_messages (sender_id)
+            // - availabilities (user_id)
+            
+            Log::info('Eliminazione utente dal database: ' . $user->id);
+            $user->delete();
+            Log::info('Utente eliminato con successo: ' . $user->id);
+
+            return response()->json([
+                'message' => 'Account eliminato con successo'
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Errore durante eliminazione account utente ' . ($user->id ?? 'sconosciuto') . ': ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            
+            return response()->json([
+                'message' => 'Errore durante l\'eliminazione dell\'account: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
