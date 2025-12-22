@@ -548,8 +548,25 @@ class KycController extends Controller
                 }
             }
 
+            // Verifica che l'utente abbia un indirizzo italiano configurato
+            // Stripe determina il paese dai dati utente (indirizzo), quindi è importante che sia IT
+            $userCountry = $user->country ?? null;
+            $defaultAddress = $user->defaultAddress;
+            
+            if ($defaultAddress && $defaultAddress->country) {
+                $userCountry = $defaultAddress->country;
+            }
+            
+            // Se l'utente non ha un paese configurato o non è IT, avvisa
+            if (!$userCountry || $userCountry !== 'IT') {
+                Log::warning('Utente ' . $user->id . ' non ha un indirizzo italiano configurato. Paese: ' . ($userCountry ?? 'non specificato'));
+                
+                // Non blocchiamo il processo, ma avvisiamo che potrebbe esserci un problema
+                // Stripe potrebbe richiedere documenti diversi se il paese non è IT
+            }
+            
             // Crea nuova sessione di verifica
-            Log::info('Creating new verification session for user: ' . $user->id);
+            Log::info('Creating new verification session for user: ' . $user->id . ' (Country: ' . ($userCountry ?? 'IT') . ')');
             $result = $stripeService->createIdentityVerificationSession($user);
             
             if (!$result['success']) {

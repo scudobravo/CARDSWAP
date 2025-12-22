@@ -55,7 +55,30 @@ class StripeService
                 ];
             }
             
+            // IMPORTANTE: Stripe determina il paese dai dati utente (indirizzo)
+            // Assicuriamoci che l'utente abbia un indirizzo italiano configurato
+            $userCountry = $user->country ?? null;
+            
+            // Verifica se l'utente ha un indirizzo predefinito
+            $defaultAddress = $user->defaultAddress;
+            if ($defaultAddress && $defaultAddress->country) {
+                $userCountry = $defaultAddress->country;
+            }
+            
+            // Se non abbiamo un paese, usa IT come default
+            if (!$userCountry) {
+                $userCountry = 'IT';
+                Log::warning('Utente ' . $user->id . ' non ha un paese configurato, usando IT come default');
+            }
+            
+            // Verifica che il paese sia IT (Italia) - Stripe Identity funziona meglio con dati completi
+            if ($userCountry !== 'IT') {
+                Log::warning('Utente ' . $user->id . ' ha paese ' . $userCountry . ' invece di IT. Stripe potrebbe richiedere documenti diversi.');
+            }
+            
             // Prepara le opzioni per la sessione di verifica
+            // Stripe determina automaticamente il paese dai dati utente (indirizzo)
+            // Se l'utente ha un indirizzo italiano, Stripe richiederà documenti italiani e codice fiscale
             $sessionOptions = [
                 'type' => 'document',
                 'metadata' => [
@@ -64,26 +87,19 @@ class StripeService
                 ],
                 'options' => [
                     'document' => [
-                        'allowed_types' => ['driving_license', 'id_card', 'passport'],
+                        // Tipi di documento compatibili con l'Italia: carta d'identità, patente, passaporto
+                        'allowed_types' => ['id_card', 'driving_license', 'passport'],
+                        // require_id_number: true - Stripe richiederà automaticamente il codice fiscale italiano
+                        // se rileva che l'utente è italiano (basandosi sull'indirizzo)
                         'require_id_number' => true,
                         'require_live_capture' => true,
                         'require_matching_selfie' => true,
                     ],
                 ],
                 'return_url' => config('app.url') . '/dashboard/kyc',
+                // Localizzazione italiana per l'interfaccia utente
+                'locale' => 'it-IT',
             ];
-
-            // Se l'utente ha una nazionalità configurata, usa quella, altrimenti default IT (Italia)
-            $userCountry = $user->nationality ?? 'IT';
-            
-            // Stripe Identity usa il paese dell'account Stripe come default
-            // Per forzare l'Italia, possiamo aggiungere informazioni nel metadata
-            // Nota: Stripe Identity determina il paese principalmente dall'account Stripe
-            // ma possiamo influenzarlo con le opzioni del documento
-            if ($userCountry === 'IT' || !$user->nationality) {
-                // Per l'Italia, assicuriamoci che i tipi di documento siano appropriati
-                $sessionOptions['options']['document']['allowed_types'] = ['id_card', 'driving_license', 'passport'];
-            }
 
             // Applica opzioni aggiuntive se fornite
             $sessionOptions = array_merge_recursive($sessionOptions, $options);
