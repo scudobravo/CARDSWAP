@@ -76,97 +76,21 @@ class StripeService
                 Log::warning('Utente ' . $user->id . ' ha paese ' . $userCountry . ' invece di IT. Stripe potrebbe richiedere documenti diversi.');
             }
             
-            // Prepara i dati utente da passare a Stripe
-            // IMPORTANTE: Stripe determina il paese dai dati utente forniti
-            // Dobbiamo passare esplicitamente l'indirizzo italiano tramite provided_details
-            $providedDetails = [];
+            // IMPORTANTE: Stripe Identity NON supporta 'provided_details' nella creazione della VerificationSession
+            // Stripe determina il paese dall'account Stripe principale o dai dati che l'utente inserisce nel form
+            // Il paese viene determinato quando l'utente compila il form di verifica su Stripe
             
-            // Preferisci l'indirizzo predefinito, altrimenti usa i dati del profilo utente
-            $address = $user->defaultAddress;
-            if ($address) {
-                $providedDetails['address'] = [
-                    'line1' => $address->address_line_1,
-                    'line2' => $address->address_line_2 ?? null,
-                    'city' => $address->city,
-                    'postal_code' => $address->postal_code,
-                    'country' => $address->country ?? 'IT',
-                ];
-                if ($address->state_province) {
-                    $providedDetails['address']['state'] = $address->state_province;
-                }
-            } elseif ($user->address || $user->city || $user->country) {
-                // Usa i dati del profilo se non c'è un indirizzo predefinito
-                $providedDetails['address'] = [
-                    'line1' => $user->address ?? '',
-                    'city' => $user->city ?? '',
-                    'postal_code' => $user->postal_code ?? '',
-                    'country' => $user->country ?? 'IT',
-                ];
-            } else {
-                // Se non abbiamo indirizzo, forziamo almeno il paese a IT
-                $providedDetails['address'] = [
-                    'country' => 'IT',
-                ];
-                Log::warning('Utente ' . $user->id . ' non ha indirizzo completo, usando solo paese IT');
-            }
-            
-            // Assicuriamoci che il paese sia sempre IT
-            if (isset($providedDetails['address']['country']) && $providedDetails['address']['country'] !== 'IT') {
-                Log::warning('Forzando paese a IT per utente ' . $user->id . ' (era: ' . $providedDetails['address']['country'] . ')');
-                $providedDetails['address']['country'] = 'IT';
-            } else {
-                $providedDetails['address']['country'] = 'IT';
-            }
-            
-            // Nota: Stripe Identity provided_details supporta solo:
-            // - address (con country, line1, city, postal_code, state)
-            // - dob (date of birth con day, month, year)
-            // NON supporta first_name, last_name direttamente in provided_details
-            
-            // Aggiungi data di nascita se disponibile (supportata da Stripe)
-            if ($user->birth_date) {
-                $providedDetails['dob'] = [
-                    'day' => $user->birth_date->day,
-                    'month' => $user->birth_date->month,
-                    'year' => $user->birth_date->year,
-                ];
-            }
-            
-            // Rimuovi valori null o vuoti per evitare problemi (PRIMA di aggiungere a sessionOptions)
-            $providedDetails = array_filter($providedDetails, function($value) {
-                if (is_array($value)) {
-                    $value = array_filter($value, function($v) {
-                        return $v !== null && $v !== '';
-                    });
-                    return !empty($value);
-                }
-                return $value !== null && $value !== '';
-            }, ARRAY_FILTER_USE_BOTH);
-            
-            // Assicuriamoci che l'indirizzo abbia almeno il paese IT
-            if (!isset($providedDetails['address']) || !is_array($providedDetails['address'])) {
-                $providedDetails['address'] = [];
-            }
-            $providedDetails['address']['country'] = 'IT'; // FORZA SEMPRE IT
-            
-            Log::info('Creating verification session for user ' . $user->id . ' with provided_details: ' . json_encode($providedDetails));
-            Log::info('User country from address: ' . ($providedDetails['address']['country'] ?? 'NOT SET'));
-            
-            // IMPORTANTE: Stripe potrebbe determinare il paese dall'account principale, non da provided_details
-            // Se l'account Stripe principale è configurato per US, Stripe richiederà SSN anche con provided_details
-            // Soluzione: proviamo a NON richiedere require_id_number e lasciare che Stripe lo determini automaticamente
-            // basandosi sul documento caricato dall'utente
+            Log::info('Creating verification session for user ' . $user->id . ' (User country: ' . ($userCountry ?? 'IT') . ')');
             
             // Prepara le opzioni per la sessione di verifica
-            // Stripe determina il paese dai dati utente forniti in provided_details
+            // Stripe determina il paese dall'account principale o dai dati inseriti dall'utente nel form
             $sessionOptions = [
                 'type' => 'document',
                 'metadata' => [
                     'user_id' => $user->id,
                     'user_email' => $user->email,
-                    'user_country' => 'IT', // Aggiungiamo anche nel metadata per sicurezza
+                    'user_country' => $userCountry, // Aggiungiamo nel metadata (non influisce sul paese richiesto)
                 ],
-                'provided_details' => $providedDetails, // FORNISCE ESPLICITAMENTE I DATI UTENTE CON INDIRIZZO ITALIANO
                 'options' => [
                     'document' => [
                         // Tipi di documento compatibili con l'Italia: carta d'identità, patente, passaporto
