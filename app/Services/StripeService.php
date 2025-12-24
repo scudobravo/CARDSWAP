@@ -118,18 +118,12 @@ class StripeService
                 $providedDetails['address']['country'] = 'IT';
             }
             
-            // Aggiungi nome e cognome se disponibili
-            if ($user->first_name || $user->last_name) {
-                $providedDetails['first_name'] = $user->first_name ?? '';
-                $providedDetails['last_name'] = $user->last_name ?? '';
-            } elseif ($user->name) {
-                // Se non abbiamo first_name/last_name, prova a dividere il nome
-                $nameParts = explode(' ', $user->name, 2);
-                $providedDetails['first_name'] = $nameParts[0] ?? '';
-                $providedDetails['last_name'] = $nameParts[1] ?? '';
-            }
+            // Nota: Stripe Identity provided_details supporta solo:
+            // - address (con country, line1, city, postal_code, state)
+            // - dob (date of birth con day, month, year)
+            // NON supporta first_name, last_name direttamente in provided_details
             
-            // Aggiungi data di nascita se disponibile
+            // Aggiungi data di nascita se disponibile (supportata da Stripe)
             if ($user->birth_date) {
                 $providedDetails['dob'] = [
                     'day' => $user->birth_date->day,
