@@ -192,7 +192,10 @@ router.beforeEach(async (to, from, next) => {
     } catch (error) {
       console.error('Errore nel caricamento utente:', error)
       // Se il token non è valido, reindirizza al login solo se non siamo già lì
-      if (to.path !== '/login') {
+      // Ma NON se stiamo già andando verso una pagina pubblica
+      if (to.path !== '/login' && !isPublicPage) {
+        // Rimuovi il token scaduto prima di reindirizzare
+        authStore.logout()
         next('/login')
         return
       }

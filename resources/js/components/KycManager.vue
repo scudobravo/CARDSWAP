@@ -160,15 +160,45 @@ const startKyc = async () => {
   errorMessage.value = ''
   successMessage.value = ''
 
+  const token = localStorage.getItem('token')
+  if (!token) {
+    errorMessage.value = 'Non sei autenticato. Effettua il login.'
+    loading.value = false
+    return
+  }
+
   try {
     const response = await fetch('/api/kyc/start', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': `Bearer ${token}`,
         'Accept': 'application/json',
         'Content-Type': 'application/json'
       }
     })
+
+    // Gestisci errori 401 (non autenticato)
+    if (response.status === 401) {
+      errorMessage.value = 'Sessione scaduta. Effettua nuovamente il login.'
+      // Rimuovi token scaduto
+      localStorage.removeItem('token')
+      // Non fare redirect automatico, lascia che l'utente decida
+      loading.value = false
+      return
+    }
+
+    // Gestisci altri errori HTTP
+    if (!response.ok) {
+      let errorData
+      try {
+        errorData = await response.json()
+      } catch (e) {
+        errorData = { message: `Errore HTTP ${response.status}: ${response.statusText}` }
+      }
+      errorMessage.value = errorData.message || 'Errore nella creazione della sessione di verifica'
+      loading.value = false
+      return
+    }
 
     const data = await response.json()
 
@@ -179,7 +209,8 @@ const startKyc = async () => {
       errorMessage.value = data.message || 'Errore nella creazione della sessione di verifica'
     }
   } catch (error) {
-    errorMessage.value = 'Errore di connessione'
+    console.error('Errore nella creazione sessione KYC:', error)
+    errorMessage.value = 'Errore di connessione. Verifica la tua connessione internet.'
   } finally {
     loading.value = false
   }
