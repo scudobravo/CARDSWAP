@@ -76,21 +76,83 @@ class StripeService
                 Log::warning('Utente ' . $user->id . ' ha paese ' . $userCountry . ' invece di IT. Stripe potrebbe richiedere documenti diversi.');
             }
             
+            // Prepara i dati utente da passare a Stripe
+            // IMPORTANTE: Stripe determina il paese dai dati utente forniti
+            // Dobbiamo passare esplicitamente l'indirizzo italiano tramite provided_details
+            $providedDetails = [];
+            
+            // Preferisci l'indirizzo predefinito, altrimenti usa i dati del profilo utente
+            $address = $user->defaultAddress;
+            if ($address) {
+                $providedDetails['address'] = [
+                    'line1' => $address->address_line_1,
+                    'line2' => $address->address_line_2 ?? null,
+                    'city' => $address->city,
+                    'postal_code' => $address->postal_code,
+                    'country' => $address->country ?? 'IT',
+                ];
+                if ($address->state_province) {
+                    $providedDetails['address']['state'] = $address->state_province;
+                }
+            } elseif ($user->address || $user->city || $user->country) {
+                // Usa i dati del profilo se non c'è un indirizzo predefinito
+                $providedDetails['address'] = [
+                    'line1' => $user->address ?? '',
+                    'city' => $user->city ?? '',
+                    'postal_code' => $user->postal_code ?? '',
+                    'country' => $user->country ?? 'IT',
+                ];
+            } else {
+                // Se non abbiamo indirizzo, forziamo almeno il paese a IT
+                $providedDetails['address'] = [
+                    'country' => 'IT',
+                ];
+                Log::warning('Utente ' . $user->id . ' non ha indirizzo completo, usando solo paese IT');
+            }
+            
+            // Assicuriamoci che il paese sia sempre IT
+            if (isset($providedDetails['address']['country']) && $providedDetails['address']['country'] !== 'IT') {
+                Log::warning('Forzando paese a IT per utente ' . $user->id . ' (era: ' . $providedDetails['address']['country'] . ')');
+                $providedDetails['address']['country'] = 'IT';
+            } else {
+                $providedDetails['address']['country'] = 'IT';
+            }
+            
+            // Aggiungi nome e cognome se disponibili
+            if ($user->first_name || $user->last_name) {
+                $providedDetails['first_name'] = $user->first_name ?? '';
+                $providedDetails['last_name'] = $user->last_name ?? '';
+            } elseif ($user->name) {
+                // Se non abbiamo first_name/last_name, prova a dividere il nome
+                $nameParts = explode(' ', $user->name, 2);
+                $providedDetails['first_name'] = $nameParts[0] ?? '';
+                $providedDetails['last_name'] = $nameParts[1] ?? '';
+            }
+            
+            // Aggiungi data di nascita se disponibile
+            if ($user->birth_date) {
+                $providedDetails['dob'] = [
+                    'day' => $user->birth_date->day,
+                    'month' => $user->birth_date->month,
+                    'year' => $user->birth_date->year,
+                ];
+            }
+            
             // Prepara le opzioni per la sessione di verifica
-            // Stripe determina automaticamente il paese dai dati utente (indirizzo)
-            // Se l'utente ha un indirizzo italiano, Stripe richiederà documenti italiani e codice fiscale
+            // Stripe determina il paese dai dati utente forniti in provided_details
             $sessionOptions = [
                 'type' => 'document',
                 'metadata' => [
                     'user_id' => $user->id,
                     'user_email' => $user->email,
                 ],
+                'provided_details' => $providedDetails, // FORNISCE ESPLICITAMENTE I DATI UTENTE CON INDIRIZZO ITALIANO
                 'options' => [
                     'document' => [
                         // Tipi di documento compatibili con l'Italia: carta d'identità, patente, passaporto
                         'allowed_types' => ['id_card', 'driving_license', 'passport'],
                         // require_id_number: true - Stripe richiederà automaticamente il codice fiscale italiano
-                        // se rileva che l'utente è italiano (basandosi sull'indirizzo)
+                        // se rileva che l'utente è italiano (basandosi sui dati forniti in provided_details)
                         'require_id_number' => true,
                         'require_live_capture' => true,
                         'require_matching_selfie' => true,
@@ -100,6 +162,25 @@ class StripeService
                 // Localizzazione italiana per l'interfaccia utente
                 'locale' => 'it-IT',
             ];
+            
+            // Rimuovi valori null o vuoti per evitare problemi
+            $providedDetails = array_filter($providedDetails, function($value) {
+                if (is_array($value)) {
+                    $value = array_filter($value, function($v) {
+                        return $v !== null && $v !== '';
+                    });
+                    return !empty($value);
+                }
+                return $value !== null && $value !== '';
+            }, ARRAY_FILTER_USE_BOTH);
+            
+            // Assicuriamoci che l'indirizzo abbia almeno il paese
+            if (!isset($providedDetails['address']['country']) || $providedDetails['address']['country'] !== 'IT') {
+                $providedDetails['address']['country'] = 'IT';
+            }
+            
+            Log::info('Creating verification session for user ' . $user->id . ' with provided_details: ' . json_encode($providedDetails));
+            Log::info('User country from address: ' . ($providedDetails['address']['country'] ?? 'NOT SET'));
 
             // Applica opzioni aggiuntive se fornite
             $sessionOptions = array_merge_recursive($sessionOptions, $options);
