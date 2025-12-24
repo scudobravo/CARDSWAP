@@ -185,8 +185,8 @@ class StripeService
                     ],
                 ],
                 'return_url' => config('app.url') . '/dashboard/kyc',
-                // Localizzazione italiana per l'interfaccia utente
-                'locale' => 'it-IT',
+                // Nota: Stripe Identity non supporta il parametro 'locale' nella VerificationSession
+                // La localizzazione viene gestita automaticamente da Stripe in base al paese dell'utente
             ];
 
             // Applica opzioni aggiuntive se fornite
