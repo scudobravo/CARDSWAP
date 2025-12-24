@@ -138,32 +138,7 @@ class StripeService
                 ];
             }
             
-            // Prepara le opzioni per la sessione di verifica
-            // Stripe determina il paese dai dati utente forniti in provided_details
-            $sessionOptions = [
-                'type' => 'document',
-                'metadata' => [
-                    'user_id' => $user->id,
-                    'user_email' => $user->email,
-                ],
-                'provided_details' => $providedDetails, // FORNISCE ESPLICITAMENTE I DATI UTENTE CON INDIRIZZO ITALIANO
-                'options' => [
-                    'document' => [
-                        // Tipi di documento compatibili con l'Italia: carta d'identità, patente, passaporto
-                        'allowed_types' => ['id_card', 'driving_license', 'passport'],
-                        // require_id_number: true - Stripe richiederà automaticamente il codice fiscale italiano
-                        // se rileva che l'utente è italiano (basandosi sui dati forniti in provided_details)
-                        'require_id_number' => true,
-                        'require_live_capture' => true,
-                        'require_matching_selfie' => true,
-                    ],
-                ],
-                'return_url' => config('app.url') . '/dashboard/kyc',
-                // Localizzazione italiana per l'interfaccia utente
-                'locale' => 'it-IT',
-            ];
-            
-            // Rimuovi valori null o vuoti per evitare problemi
+            // Rimuovi valori null o vuoti per evitare problemi (PRIMA di aggiungere a sessionOptions)
             $providedDetails = array_filter($providedDetails, function($value) {
                 if (is_array($value)) {
                     $value = array_filter($value, function($v) {
@@ -174,13 +149,45 @@ class StripeService
                 return $value !== null && $value !== '';
             }, ARRAY_FILTER_USE_BOTH);
             
-            // Assicuriamoci che l'indirizzo abbia almeno il paese
-            if (!isset($providedDetails['address']['country']) || $providedDetails['address']['country'] !== 'IT') {
-                $providedDetails['address']['country'] = 'IT';
+            // Assicuriamoci che l'indirizzo abbia almeno il paese IT
+            if (!isset($providedDetails['address']) || !is_array($providedDetails['address'])) {
+                $providedDetails['address'] = [];
             }
+            $providedDetails['address']['country'] = 'IT'; // FORZA SEMPRE IT
             
             Log::info('Creating verification session for user ' . $user->id . ' with provided_details: ' . json_encode($providedDetails));
             Log::info('User country from address: ' . ($providedDetails['address']['country'] ?? 'NOT SET'));
+            
+            // IMPORTANTE: Stripe potrebbe determinare il paese dall'account principale, non da provided_details
+            // Se l'account Stripe principale è configurato per US, Stripe richiederà SSN anche con provided_details
+            // Soluzione: proviamo a NON richiedere require_id_number e lasciare che Stripe lo determini automaticamente
+            // basandosi sul documento caricato dall'utente
+            
+            // Prepara le opzioni per la sessione di verifica
+            // Stripe determina il paese dai dati utente forniti in provided_details
+            $sessionOptions = [
+                'type' => 'document',
+                'metadata' => [
+                    'user_id' => $user->id,
+                    'user_email' => $user->email,
+                    'user_country' => 'IT', // Aggiungiamo anche nel metadata per sicurezza
+                ],
+                'provided_details' => $providedDetails, // FORNISCE ESPLICITAMENTE I DATI UTENTE CON INDIRIZZO ITALIANO
+                'options' => [
+                    'document' => [
+                        // Tipi di documento compatibili con l'Italia: carta d'identità, patente, passaporto
+                        'allowed_types' => ['id_card', 'driving_license', 'passport'],
+                        // PROVA: disabilitiamo require_id_number e lasciamo che Stripe lo determini dal documento
+                        // Se l'utente carica un documento italiano, Stripe dovrebbe richiedere codice fiscale, non SSN
+                        'require_id_number' => false, // CAMBIATO: false per evitare richiesta SSN forzata
+                        'require_live_capture' => true,
+                        'require_matching_selfie' => true,
+                    ],
+                ],
+                'return_url' => config('app.url') . '/dashboard/kyc',
+                // Localizzazione italiana per l'interfaccia utente
+                'locale' => 'it-IT',
+            ];
 
             // Applica opzioni aggiuntive se fornite
             $sessionOptions = array_merge_recursive($sessionOptions, $options);
