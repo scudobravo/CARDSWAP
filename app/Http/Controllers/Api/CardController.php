@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\CardModel;
 use App\Models\CardListing;
+use App\Models\Player;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -27,7 +28,11 @@ class CardController extends Controller
             }
 
             // Base query for card models with category relationship
-            $query = CardModel::with('category');
+            // For top_players/top_characters sections, also load player relationship
+            $query = CardModel::with('category')->where('is_active', true);
+            if ($section === 'top_players' || $section === 'top_characters') {
+                $query->with('player');
+            }
 
             // Filter by category using the relationship
             if ($category) {
@@ -77,8 +82,9 @@ class CardController extends Controller
             // Apply section-specific logic
             switch ($section) {
                 case 'top_players':
-                    // Get most popular cards (by creation date for now)
-                    $query->orderBy('created_at', 'desc');
+                case 'top_characters':
+                    // For top_players/top_characters, we'll filter after getting cards
+                    // Don't filter here - we'll do it in the grouping logic
                     break;
                 
                 case 'top_trend':
@@ -91,10 +97,66 @@ class CardController extends Controller
                     $query->orderBy('created_at', 'desc');
             }
 
+            // For top_players/top_characters sections, we MUST show all players in the specified order
+            if ($section === 'top_players' || $section === 'top_characters') {
+                $topNames = [
+                    'football' => ['Yamal', 'Messi', 'Cristiano Ronaldo', 'Ronaldo', 'Diego Maradona', 'Rodrigo Mora', 'Estevao Willian', 'Franco Mastantuono', 'Desire Doue', 'Erling Haaland', 'Kylian Mbappe', 'Roberto Lewandowski'],
+                    'basketball' => ['Cooper Flagg', 'Viktor Wembanyama', 'Michael Jordan', 'Anthony Edwards', 'LeBron James', 'Luka Doncic', 'Nikola Jokic', 'Stephen Curry', 'Zaccharie Risacher', 'Kobe Bryant'],
+                    'disney' => ['Mickey Mouse', 'Elsa', 'Donald Duck', 'Genie', 'Stitch', 'Whitesnow', 'Ariel', 'Belle', 'Cinderella', 'Mulan']
+                ];
+
+                $names = $topNames[$category] ?? [];
+                $transformedCards = collect();
+
+                foreach ($names as $index => $name) {
+                    $normalizedName = strtolower(trim($name));
+                    $item = [
+                        'id' => 'top-' . $category . '-' . $index . '-' . time(),
+                        'name' => $name,
+                        'player_name' => $name,
+                        'team' => 'Top ' . ucfirst($category),
+                        'type' => $this->getCategoryType($category),
+                        'description' => "Collezione ufficiale di {$name}",
+                        'price' => '---',
+                        'rating' => '5.0',
+                        'image_url' => null,
+                        'icon_path' => $this->getPlayerIconPath($name, $category),
+                        'listing_id' => null,
+                        'category_slug' => $category,
+                        'slug' => strtolower(str_replace(' ', '-', $name))
+                    ];
+
+                    try {
+                        $player = Player::where('name', 'LIKE', "%{$name}%")->first();
+                        if ($player) {
+                            $item['slug'] = $player->slug;
+                            $card = CardModel::where('player_id', $player->id)->where('is_active', true)->first();
+                            if ($card) {
+                                $item['description'] = $card->description ?? $item['description'];
+                                $item['price'] = $this->getEstimatedPrice($card);
+                                $item['image_url'] = $card->image_url;
+                            }
+                        }
+                    } catch (\Exception $e) {}
+
+                    $transformedCards->push($item);
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'data' => $transformedCards,
+                    'category' => $category,
+                    'section' => $section,
+                    'count' => $transformedCards->count(),
+                    'timestamp' => now()->timestamp
+                ]);
+            }
+
+            // Normal processing for other sections
             $cards = $query->limit($limit)->get();
 
             // Transform data for frontend
-            $transformedCards = $cards->map(function ($card) {
+            $transformedCards = $cards->map(function ($card) use ($section, $category) {
                 return [
                     'id' => $card->id,
                     'name' => $card->name ?? 'Nome non disponibile',
@@ -366,8 +428,251 @@ class CardController extends Controller
     }
 
     /**
+     * Get top player names for a category (exact order for display)
+     */
+    private function getTopPlayerNames(?string $category): array
+    {
+        $topPlayers = [
+            'football' => [
+                'Yamal',
+                'Messi',
+                'Cristiano Ronaldo',
+                'Ronaldo',
+                'Diego Maradona',
+                'Rodrigo Mora',
+                'Estevao Willian',
+                'Franco Mastantuono',
+                'Desire Doue',
+                'Erling Haaland',
+                'Kylian Mbappe',
+                'Roberto Lewandowski',
+            ],
+            'basketball' => [
+                'Cooper Flagg',
+                'Viktor Wembanyama',
+                'Michael Jordan',
+                'Anthony Edwards',
+                'LeBron James',
+                'Luka Doncic',
+                'Nikola Jokic',
+                'Stephen Curry',
+                'Zaccharie Risacher',
+                'Kobe Bryant',
+            ],
+            'disney' => [
+                'Mickey Mouse',
+                'Elsa',
+                'Donald Duck',
+                'Genie',
+                'Stitch',
+                'Whitesnow',
+                'Ariel',
+                'Belle',
+                'Cinderella',
+                'Mulan',
+            ],
+        ];
+
+        return $topPlayers[$category] ?? [];
+    }
+
+    /**
+     * Get player icon path based on player name and category
+     */
+    private function getPlayerIconPath(?string $playerName, ?string $category): ?string
+    {
+        if (!$playerName || !$category) {
+            return null;
+        }
+
+        // Map player names to exact icon file names
+        $iconMaps = [
+            'football' => [
+                'Yamal' => 'LAMINE YAMAL.png',
+                'Lamine Yamal' => 'LAMINE YAMAL.png',
+                'Messi' => 'LIONEL MESSI.png',
+                'Lionel Messi' => 'LIONEL MESSI.png',
+                'Cristiano Ronaldo' => 'Cristiano Ronaldo.png',
+                'Ronaldo' => 'Ronaldo.png',
+                'Diego Maradona' => 'DIEGO MARADONA.png',
+                'Maradona' => 'DIEGO MARADONA.png',
+                'Rodrigo Mora' => 'Rodrigo Mora.png',
+                'Estevao Willian' => 'ESTEVAO WILLIAN.png',
+                'Franco Mastantuono' => 'FRANCO MASTANTUONO.png',
+                'Desire Doue' => 'DESIRE DOUE.png',
+                'Erling Haaland' => 'ERLING HAALAND.png',
+                'Haaland' => 'ERLING HAALAND.png',
+                'Kylian Mbappe' => 'KYLIAN MBAPPE.png',
+                'Kylian Mbappé' => 'KYLIAN MBAPPE.png',
+                'Mbappe' => 'KYLIAN MBAPPE.png',
+                'Roberto Lewandowski' => 'ROBERT LEWANDOWSKI.png',
+                'Robert Lewandowski' => 'ROBERT LEWANDOWSKI.png',
+                'Lewandowski' => 'ROBERT LEWANDOWSKI.png',
+            ],
+            'basketball' => [
+                'Cooper Flagg' => 'Cooper Flagg.png',
+                'Viktor Wembanyama' => 'Viktor Wembanyama.png',
+                'Michael Jordan' => 'Michael Jordan.png',
+                'Anthony Edwards' => 'Anthony Edwards.png',
+                'LeBron James' => 'LeBron James.png',
+                'Luka Doncic' => 'Luka Doncic.png',
+                'Nikola Jokic' => 'Nikola Jokic.png',
+                'Stephen Curry' => 'Stephen Curry.png',
+                'Zaccharie Risacher' => 'Zaccharie Risacher.png',
+                'Kobe Bryant' => 'Kobe Bryant.png',
+            ],
+            'disney' => [
+                'Mickey Mouse' => 'MickeyMouse.png',
+                'Elsa' => 'Elsa.png',
+                'Donald Duck' => 'DonaldDuck.png',
+                'Genie' => 'Genie.png',
+                'Stitch' => 'Stitch.png',
+                'Whitesnow' => 'Whitesnow.png',
+                'Ariel' => 'Ariel.png',
+                'Belle' => 'Belle.png',
+                'Cinderella' => 'Cinderella.png',
+                'Mulan' => 'Mulan.png',
+            ],
+        ];
+
+        $categoryMap = $iconMaps[$category] ?? null;
+        if (!$categoryMap) {
+            return null;
+        }
+
+        // Determine folder name based on category
+        $folderName = 'Top Player - Football';
+        if ($category === 'disney') {
+            $folderName = 'Top Character - Disney';
+        } elseif ($category === 'basketball') {
+            $folderName = 'Top Player - Basketball';
+        }
+
+        // Try exact match first
+        if (isset($categoryMap[$playerName])) {
+            return "/images/icons/{$folderName}/{$categoryMap[$playerName]}";
+        }
+
+        // Try case-insensitive and partial match
+        $playerNameLower = strtolower(trim($playerName));
+        foreach ($categoryMap as $key => $fileName) {
+            if (strtolower($key) === $playerNameLower || 
+                strpos($playerNameLower, strtolower($key)) !== false || 
+                strpos(strtolower($key), $playerNameLower) !== false) {
+                return "/images/icons/{$folderName}/{$fileName}";
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Get team name from card data
      */
+    /**
+     * Order top players by specific priority list
+     */
+    private function orderTopPlayers($cards, $category)
+    {
+        // Define player priority order for each category
+        $playerOrder = [
+            'football' => [
+                'Yamal' => 1,
+                'Lamine Yamal' => 1,
+                'Messi' => 2,
+                'Lionel Messi' => 2,
+                'Cristiano Ronaldo' => 3,
+                'Ronaldo' => 4,
+                'Diego Maradona' => 5,
+                'Maradona' => 5,
+                'Rodrigo Mora' => 6,
+                'Estevao Willian' => 7,
+                'Franco Mastantuono' => 8,
+                'Desire Doue' => 9,
+                'Erling Haaland' => 10,
+                'Haaland' => 10,
+                'Kylian Mbappé' => 11,
+                'Kylian Mbappe' => 11,
+                'Mbappe' => 11,
+                'Roberto Lewandowski' => 12,
+                'Robert Lewandowski' => 12,
+                'Lewandowski' => 12,
+            ],
+            'basketball' => [
+                'Cooper Flagg' => 1,
+                'Viktor Wembanyama' => 2,
+                'Wembanyama' => 2,
+                'Michael Jordan' => 3,
+                'Jordan' => 3,
+                'Anthony Edwards' => 4,
+                'LeBron James' => 5,
+                'Lebron James' => 5,
+                'James' => 5,
+                'Luka Doncic' => 6,
+                'Doncic' => 6,
+                'Nikola Jokic' => 7,
+                'Jokic' => 7,
+                'Stephen Curry' => 8,
+                'Curry' => 8,
+                'Zaccharie Risacher' => 9,
+                'Kobe Bryant' => 10,
+                'Bryant' => 10,
+            ],
+            'disney' => [
+                'Mickey Mouse' => 1,
+                'Mickey' => 1,
+                'Elsa' => 2,
+                'Donald Duck' => 3,
+                'Donald' => 3,
+                'Genie' => 4,
+                'Stitch' => 5,
+                'Whitesnow' => 6,
+                'White Snow' => 6,
+                'Snow White' => 6,
+                'Ariel' => 7,
+                'Belle' => 8,
+                'Cinderella' => 9,
+                'Mulan' => 10,
+            ],
+        ];
+
+        if (!isset($playerOrder[$category])) {
+            return $cards;
+        }
+
+        $orderMap = $playerOrder[$category];
+        $maxPriority = 999; // Default priority for players not in the list
+
+        return $cards->sortBy(function ($card) use ($orderMap, $maxPriority) {
+            $playerName = $card->player->name ?? null;
+            if (!$playerName) {
+                return $maxPriority;
+            }
+
+            // Try exact match first
+            if (isset($orderMap[$playerName])) {
+                return $orderMap[$playerName];
+            }
+
+            // Try case-insensitive match
+            $playerNameLower = strtolower($playerName);
+            foreach ($orderMap as $key => $priority) {
+                if (strtolower($key) === $playerNameLower) {
+                    return $priority;
+                }
+            }
+
+            // Try partial match
+            foreach ($orderMap as $key => $priority) {
+                if (stripos($playerName, $key) !== false || stripos($key, $playerName) !== false) {
+                    return $priority;
+                }
+            }
+
+            return $maxPriority;
+        })->values();
+    }
+
     private function getTeamName($card): string
     {
         // Try to extract team from name or use set name as fallback

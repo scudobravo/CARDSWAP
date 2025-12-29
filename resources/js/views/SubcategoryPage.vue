@@ -526,14 +526,14 @@ const subcategoryName = computed(() => {
 const subcategoryIcon = computed(() => {
   // Mappa i valori delle sottocategorie ai nomi corretti dei file
   const subcategoryMap = {
-    'singles': 'singles',
-    'sealed-packs': 'sealed packs',
-    'sealed-boxes': 'sealed boxes',
-    'lot': 'lot'
+    'singles': 'card',
+    'sealed-packs': 'Pack',
+    'sealed-boxes': 'Box',
+    'lot': 'Lot'
   }
   
   const fileName = subcategoryMap[subcategory.value] || subcategory.value
-  return `/images/icons/sottocategoria ${fileName}.png`
+  return `/images/icons/Sottocategorie/${fileName}.png`
 })
 
 // Sort options

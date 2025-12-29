@@ -38,35 +38,35 @@ const categories = ref([
     name: "Calcio",
     description: "Carte da calcio di tutte le leghe",
     type: "football",
-    icon: "/images/icons/calcio.png"
+    icon: "/images/icons/Categorie/Football.png"
   },
   {
     id: 2,
     name: "Basket",
     description: "Carte da basket NBA e internazionali",
     type: "basketball",
-    icon: "/images/icons/basket.png"
+    icon: "/images/icons/Categorie/Basketball.png"
   },
   {
     id: 3,
     name: "Disney",
     description: "Colleziona le tue carte Disney preferite",
     type: "disney",
-    icon: "/images/icons/Disney.svg"
+    icon: "/images/icons/Categorie/Disney.png"
   },
   {
     id: 4,
     name: "SpongeBob",
     description: "Colleziona le tue carte SpongeBob preferite",
     type: "spongebob",
-    icon: "/images/icons/SpongeBob.svg"
+    icon: "/images/icons/Categorie/Spongebob.png"
   },
   {
     id: 5,
     name: "Labubu",
     description: "Colleziona le tue carte Labubu preferite",
     type: "labubu",
-    icon: "/images/icons/Labubu.svg"
+    icon: "/images/icons/Categorie/Labubu.png"
   }
 ])
 

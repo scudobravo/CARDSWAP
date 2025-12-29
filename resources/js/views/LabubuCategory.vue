@@ -19,7 +19,7 @@
         <div class="flex items-center justify-center space-x-2">
           <!-- Labubu Icon -->
           <div class="flex-shrink-0">
-            <img src="/images/icons/Labubu.svg" alt="Labubu" class="w-24 md:w-48 h-auto" />
+            <img src="/images/icons/Categorie/Labubu.png" alt="Labubu" class="w-24 md:w-48 h-auto" />
           </div>
           
           <!-- Category Info -->
@@ -80,22 +80,22 @@ const productTypes = ref([
   {
     id: 1,
     name: "SINGLES",
-    icon: "/images/icons/sottocategoria singles.png"
+    icon: "/images/icons/Sottocategorie/card.png"
   },
   {
     id: 2,
     name: "SEALED PACKS",
-    icon: "/images/icons/sottocategoria sealed packs.png"
+    icon: "/images/icons/Sottocategorie/Pack.png"
   },
   {
     id: 3,
     name: "SEALED BOXES",
-    icon: "/images/icons/sottocategoria sealed boxes.png"
+    icon: "/images/icons/Sottocategorie/Box.png"
   },
   {
     id: 4,
     name: "LOT",
-    icon: "/images/icons/sottocategoria lot.png"
+    icon: "/images/icons/Sottocategorie/Lot.png"
   }
 ])
 </script>

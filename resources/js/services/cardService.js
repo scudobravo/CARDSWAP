@@ -23,7 +23,8 @@ class CardService {
         params: {
           category,
           section,
-          limit
+          limit,
+          _t: Date.now() // Cache buster
         }
       })
       return response.data
@@ -175,50 +176,18 @@ class CardService {
     const fallbackData = {
       football: {
         top_players: [
-          {
-            id: 'fallback-1',
-            name: "Lionel Messi",
-            team: "Inter Miami",
-            type: "Calcio",
-            description: "Carta ufficiale Panini del campione argentino",
-            price: "€45.00",
-            rating: "4.9",
-            image_url: null,
-            is_fallback: true
-          },
-          {
-            id: 'fallback-2',
-            name: "Cristiano Ronaldo",
-            team: "Al Nassr",
-            type: "Calcio",
-            description: "Carta Topps Chrome del fenomeno portoghese",
-            price: "€38.50",
-            rating: "4.8",
-            image_url: null,
-            is_fallback: true
-          },
-          {
-            id: 'fallback-3',
-            name: "Kylian Mbappé",
-            team: "Real Madrid",
-            type: "Calcio",
-            description: "Carta Panini del giovane talento francese",
-            price: "€32.00",
-            rating: "4.7",
-            image_url: null,
-            is_fallback: true
-          },
-          {
-            id: 'fallback-4',
-            name: "Erling Haaland",
-            team: "Manchester City",
-            type: "Calcio",
-            description: "Carta Topps del bomber norvegese",
-            price: "€28.50",
-            rating: "4.6",
-            image_url: null,
-            is_fallback: true
-          }
+          { id: 'ff-1', name: "Yamal", team: "Top Football", type: "Calcio", description: "Collezione ufficiale", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Player - Football/LAMINE YAMAL.png", is_fallback: true },
+          { id: 'ff-2', name: "Messi", team: "Top Football", type: "Calcio", description: "Collezione ufficiale", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Player - Football/LIONEL MESSI.png", is_fallback: true },
+          { id: 'ff-3', name: "Cristiano Ronaldo", team: "Top Football", type: "Calcio", description: "Collezione ufficiale", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Player - Football/Cristiano Ronaldo.png", is_fallback: true },
+          { id: 'ff-4', name: "Ronaldo", team: "Top Football", type: "Calcio", description: "Collezione ufficiale", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Player - Football/Ronaldo.png", is_fallback: true },
+          { id: 'ff-5', name: "Diego Maradona", team: "Top Football", type: "Calcio", description: "Collezione ufficiale", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Player - Football/DIEGO MARADONA.png", is_fallback: true },
+          { id: 'ff-6', name: "Rodrigo Mora", team: "Top Football", type: "Calcio", description: "Collezione ufficiale", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Player - Football/Rodrigo Mora.png", is_fallback: true },
+          { id: 'ff-7', name: "Estevao Willian", team: "Top Football", type: "Calcio", description: "Collezione ufficiale", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Player - Football/ESTEVAO WILLIAN.png", is_fallback: true },
+          { id: 'ff-8', name: "Franco Mastantuono", team: "Top Football", type: "Calcio", description: "Collezione ufficiale", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Player - Football/FRANCO MASTANTUONO.png", is_fallback: true },
+          { id: 'ff-9', name: "Desire Doue", team: "Top Football", type: "Calcio", description: "Collezione ufficiale", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Player - Football/DESIRE DOUE.png", is_fallback: true },
+          { id: 'ff-10', name: "Erling Haaland", team: "Top Football", type: "Calcio", description: "Collezione ufficiale", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Player - Football/ERLING HAALAND.png", is_fallback: true },
+          { id: 'ff-11', name: "Kylian Mbappe", team: "Top Football", type: "Calcio", description: "Collezione ufficiale", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Player - Football/KYLIAN MBAPPE.png", is_fallback: true },
+          { id: 'ff-12', name: "Roberto Lewandowski", team: "Top Football", type: "Calcio", description: "Collezione ufficiale", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Player - Football/ROBERT LEWANDOWSKI.png", is_fallback: true }
         ],
         top_trend: [
           {
@@ -273,28 +242,16 @@ class CardService {
       },
       basketball: {
         top_players: [
-          {
-            id: 'fallback-9',
-            name: "LeBron James",
-            team: "Los Angeles Lakers",
-            type: "Basketball",
-            description: "Carta Panini del re del basket",
-            price: "€55.00",
-            rating: "4.9",
-            image_url: null,
-            is_fallback: true
-          },
-          {
-            id: 'fallback-10',
-            name: "Stephen Curry",
-            team: "Golden State Warriors",
-            type: "Basketball",
-            description: "Carta Topps del miglior tiratore da tre",
-            price: "€48.00",
-            rating: "4.8",
-            image_url: null,
-            is_fallback: true
-          }
+          { id: 'fb-1', name: "Cooper Flagg", team: "Top Basketball", type: "Basketball", description: "Collezione ufficiale", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Player - Basketball/Cooper Flagg.png", is_fallback: true },
+          { id: 'fb-2', name: "Viktor Wembanyama", team: "Top Basketball", type: "Basketball", description: "Collezione ufficiale", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Player - Basketball/Viktor Wembanyama.png", is_fallback: true },
+          { id: 'fb-3', name: "Michael Jordan", team: "Top Basketball", type: "Basketball", description: "Collezione ufficiale", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Player - Basketball/Michael Jordan.png", is_fallback: true },
+          { id: 'fb-4', name: "Anthony Edwards", team: "Top Basketball", type: "Basketball", description: "Collezione ufficiale", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Player - Basketball/Anthony Edwards.png", is_fallback: true },
+          { id: 'fb-5', name: "LeBron James", team: "Top Basketball", type: "Basketball", description: "Collezione ufficiale", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Player - Basketball/LeBron James.png", is_fallback: true },
+          { id: 'fb-6', name: "Luka Doncic", team: "Top Basketball", type: "Basketball", description: "Collezione ufficiale", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Player - Basketball/Luka Doncic.png", is_fallback: true },
+          { id: 'fb-7', name: "Nikola Jokic", team: "Top Basketball", type: "Basketball", description: "Collezione ufficiale", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Player - Basketball/Nikola Jokic.png", is_fallback: true },
+          { id: 'fb-8', name: "Stephen Curry", team: "Top Basketball", type: "Basketball", description: "Collezione ufficiale", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Player - Basketball/Stephen Curry.png", is_fallback: true },
+          { id: 'fb-9', name: "Zaccharie Risacher", team: "Top Basketball", type: "Basketball", description: "Collezione ufficiale", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Player - Basketball/Zaccharie Risacher.png", is_fallback: true },
+          { id: 'fb-10', name: "Kobe Bryant", team: "Top Basketball", type: "Basketball", description: "Collezione ufficiale", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Player - Basketball/Kobe Bryant.png", is_fallback: true }
         ],
         top_trend: [
           {
@@ -335,6 +292,21 @@ class CardService {
             is_fallback: true
           }
         ]
+      },
+      disney: {
+        top_players: [
+          { id: 'fd-1', name: "Mickey Mouse", team: "Top Disney", type: "Disney", description: "Personaggio iconico", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Character - Disney/MickeyMouse.png", is_fallback: true },
+          { id: 'fd-2', name: "Elsa", team: "Top Disney", type: "Disney", description: "Personaggio iconico", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Character - Disney/Elsa.png", is_fallback: true },
+          { id: 'fd-3', name: "Donald Duck", team: "Top Disney", type: "Disney", description: "Personaggio iconico", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Character - Disney/DonaldDuck.png", is_fallback: true },
+          { id: 'fd-4', name: "Genie", team: "Top Disney", type: "Disney", description: "Personaggio iconico", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Character - Disney/Genie.png", is_fallback: true },
+          { id: 'fd-5', name: "Stitch", team: "Top Disney", type: "Disney", description: "Personaggio iconico", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Character - Disney/Stitch.png", is_fallback: true },
+          { id: 'fd-6', name: "Whitesnow", team: "Top Disney", type: "Disney", description: "Personaggio iconico", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Character - Disney/Whitesnow.png", is_fallback: true },
+          { id: 'fd-7', name: "Ariel", team: "Top Disney", type: "Disney", description: "Personaggio iconico", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Character - Disney/Ariel.png", is_fallback: true },
+          { id: 'fd-8', name: "Belle", team: "Top Disney", type: "Disney", description: "Personaggio iconico", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Character - Disney/Belle.png", is_fallback: true },
+          { id: 'fd-9', name: "Cinderella", team: "Top Disney", type: "Disney", description: "Personaggio iconico", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Character - Disney/Cinderella.png", is_fallback: true },
+          { id: 'fd-10', name: "Mulan", team: "Top Disney", type: "Disney", description: "Personaggio iconico", price: "---", rating: "5.0", image_url: null, icon_path: "/images/icons/Top Character - Disney/Mulan.png", is_fallback: true }
+        ],
+        most_expensive: []
       },
       pokemon: {
         top_players: [

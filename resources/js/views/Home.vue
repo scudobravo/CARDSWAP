@@ -29,12 +29,44 @@
     <!-- Featured Products Section -->
     <section class="py-16 bg-white">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <ProductCarousel 
-          title="Top Player" 
-          :products="topPlayers"
-          category="football"
-          see-all-url="/category/football"
-        />
+        <!-- Football Top Players -->
+        <div class="mb-12">
+          <ProductCarousel 
+            title="Top Player - Calcio" 
+            :products="topPlayers"
+            category="football"
+            section="top_players"
+            :use-dynamic-data="true"
+            see-all-url="/category/football"
+            :limit="20"
+          />
+        </div>
+
+        <!-- Basketball Top Players -->
+        <div class="mb-12">
+          <ProductCarousel 
+            title="Top Player - Basket" 
+            :products="[]"
+            category="basketball"
+            section="top_players"
+            :use-dynamic-data="true"
+            see-all-url="/category/basketball"
+            :limit="20"
+          />
+        </div>
+
+        <!-- Disney Top Characters -->
+        <div>
+          <ProductCarousel 
+            title="Top Character - Disney" 
+            :products="[]"
+            category="disney"
+            section="top_players"
+            :use-dynamic-data="true"
+            see-all-url="/category/disney"
+            :limit="20"
+          />
+        </div>
       </div>
     </section>
     
@@ -118,35 +150,35 @@ const categories = ref([
     name: "Calcio",
     description: "Carte da calcio di tutte le leghe",
     type: "football",
-    icon: "/images/icons/calcio.png"
+    icon: "/images/icons/Categorie/Football.png"
   },
   {
     id: 2,
     name: "Basket",
     description: "Carte da basket NBA e internazionali",
     type: "basketball",
-    icon: "/images/icons/basket.png"
+    icon: "/images/icons/Categorie/Basketball.png"
   },
   {
     id: 3,
     name: "Disney",
     description: "Colleziona le tue carte Disney preferite",
     type: "disney",
-    icon: "/images/icons/Disney.svg"
+    icon: "/images/icons/Categorie/Disney.png"
   },
   {
     id: 4,
     name: "SpongeBob",
     description: "Colleziona le tue carte SpongeBob preferite",
     type: "spongebob",
-    icon: "/images/icons/SpongeBob.svg"
+    icon: "/images/icons/Categorie/Spongebob.png"
   },
   {
     id: 5,
     name: "Labubu",
     description: "Colleziona le tue carte Labubu preferite",
     type: "labubu",
-    icon: "/images/icons/Labubu.svg"
+    icon: "/images/icons/Categorie/Labubu.png"
   }
 ])
 
@@ -156,25 +188,25 @@ const subcategories = ref([
     id: 1,
     name: "Singles",
     description: "Carte singole",
-    icon: "/images/icons/sottocategoria singles.svg"
+    icon: "/images/icons/Sottocategorie/card.png"
   },
   {
     id: 2,
     name: "Sealed Packs",
     description: "Buste sigillate",
-    icon: "/images/icons/sottocategoria sealed packs.svg"
+    icon: "/images/icons/Sottocategorie/Pack.png"
   },
   {
     id: 3,
     name: "Sealed Boxes",
     description: "Scatole sigillate",
-    icon: "/images/icons/sottocategoria sealed boxes.svg"
+    icon: "/images/icons/Sottocategorie/Box.png"
   },
   {
     id: 4,
     name: "Lot",
     description: "Lotti di carte",
-    icon: "/images/icons/sottocategoria lot.svg"
+    icon: "/images/icons/Sottocategorie/Lot.png"
   }
 ])
 

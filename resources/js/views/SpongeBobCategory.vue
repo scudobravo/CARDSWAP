@@ -19,7 +19,7 @@
         <div class="flex items-center justify-center space-x-2">
           <!-- SpongeBob Icon -->
           <div class="flex-shrink-0">
-            <img src="/images/icons/SpongeBob.svg" alt="SpongeBob" class="w-24 md:w-48 h-auto" />
+            <img src="/images/icons/Categorie/Spongebob.png" alt="SpongeBob" class="w-24 md:w-48 h-auto" />
           </div>
           
           <!-- Category Info -->
@@ -100,25 +100,25 @@ const productTypes = ref([
     id: 1,
     name: "SINGLES",
     slug: "singles",
-    icon: "/images/icons/sottocategoria singles.png"
+    icon: "/images/icons/Sottocategorie/card.png"
   },
   {
     id: 2,
     name: "SEALED PACKS",
     slug: "sealed-packs",
-    icon: "/images/icons/sottocategoria sealed packs.png"
+    icon: "/images/icons/Sottocategorie/Pack.png"
   },
   {
     id: 3,
     name: "SEALED BOXES",
     slug: "sealed-boxes",
-    icon: "/images/icons/sottocategoria sealed boxes.png"
+    icon: "/images/icons/Sottocategorie/Box.png"
   },
   {
     id: 4,
     name: "LOT",
     slug: "lot",
-    icon: "/images/icons/sottocategoria lot.png"
+    icon: "/images/icons/Sottocategorie/Lot.png"
   }
 ])
 

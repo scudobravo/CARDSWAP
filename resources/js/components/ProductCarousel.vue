@@ -40,12 +40,13 @@
       <!-- Products container -->
       <div 
         ref="container"
-        class="flex space-x-6 overflow-x-auto scrollbar-hide px-4"
+        class="flex space-x-6 overflow-x-auto scrollbar-hide px-4 py-4"
         @scroll="handleScroll"
+        style="scroll-behavior: smooth; -webkit-overflow-scrolling: touch;"
       >
                     <div 
                       v-for="(product, index) in displayProducts" 
-                      :key="product.id"
+                      :key="product.id + '-' + index"
                       class="flex-shrink-0 w-40 sm:w-60 lg:w-72 group cursor-pointer"
                       @click="goToProduct(product)"
                     >
@@ -56,8 +57,27 @@
                           NEW
                         </div>
                         
-                        <!-- Product background image -->
-                        <div class="w-full h-full rounded-lg overflow-hidden bg-cover bg-center bg-no-repeat relative" 
+                        <!-- Player/Character Icon (for top_players section) -->
+                        <div v-if="shouldShowPlayerIcon" 
+                             class="w-full h-full rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center relative">
+                          <img 
+                            v-if="product.icon_path"
+                            :src="product.icon_path" 
+                            :alt="product.player_name || product.name"
+                            class="w-full h-full object-contain p-4"
+                            @error="(e) => { 
+                              e.target.style.display = 'none' 
+                            }"
+                          />
+                          <div v-else class="text-center text-gray-500 p-4">
+                            <p class="text-sm">Icona non disponibile</p>
+                            <p class="text-xs">{{ product.player_name || product.name }}</p>
+                          </div>
+                        </div>
+                        
+                        <!-- Product background image (for other sections) -->
+                        <div v-else
+                             class="w-full h-full rounded-lg overflow-hidden bg-cover bg-center bg-no-repeat relative" 
                              :class="(product.image_url || product.imageUrl) ? 'bg-gray-300' : 'bg-gray-300'"
                              :style="(product.image_url || product.imageUrl) ? { backgroundImage: `url(${product.image_url || product.imageUrl})` } : {}">
                           <!-- Fallback content when no image -->
@@ -77,7 +97,7 @@
                       <!-- Player Name Below Card -->
                       <div class="mt-3 text-center">
                         <h4 class="text-lg font-futura-bold text-primary group-hover:text-secondary transition-colors duration-300">
-                          {{ product.name }}
+                          {{ shouldShowPlayerIcon && product.player_name ? product.player_name : product.name }}
                         </h4>
                         <!-- <p class="text-sm text-gray-600 font-gill-sans">{{ product.team || product.type || 'Carta da collezione' }}</p> -->
                       </div>
@@ -122,6 +142,10 @@ const props = defineProps({
   seeAllUrl: {
     type: String,
     default: null
+  },
+  limit: {
+    type: Number,
+    default: 8
   }
 })
 
@@ -143,6 +167,11 @@ const scrollWidth = ref(0)
 // Computed
 const canScrollLeft = ref(false)
 const canScrollRight = ref(true)
+
+// Computed property to check if we should show player icon
+const shouldShowPlayerIcon = computed(() => {
+  return (props.section === 'top_players' || props.section === 'top_characters') && (props.category === 'football' || props.category === 'basketball' || props.category === 'disney')
+})
 
 // Computed property for products (dynamic or static)
 const displayProducts = computed(() => {
@@ -196,11 +225,18 @@ const loadDynamicData = async () => {
     const response = await cardService.getCardsByCategory(
       props.category, 
       props.section, 
-      8
+      props.limit
     )
+
+    console.log(`API Response for ${props.category}/${props.section}:`, response)
 
     if (response.success) {
       dynamicProducts.value = response.data
+      console.log(`Loaded ${dynamicProducts.value.length} items for ${props.category}`)
+      // Attendi che Vue finisca il rendering del DOM
+      setTimeout(() => {
+        updateScrollButtons()
+      }, 300)
     } else {
       // Use fallback data if API fails
       dynamicProducts.value = cardService.getFallbackData(props.category, props.section)
@@ -225,8 +261,22 @@ const handleScroll = () => {
 
 const updateScrollButtons = () => {
   if (container.value) {
-    canScrollLeft.value = scrollPosition.value > 0
-    canScrollRight.value = scrollPosition.value < (scrollWidth.value - containerWidth.value - 10)
+    const currentScroll = container.value.scrollLeft
+    const maxScroll = container.value.scrollWidth - container.value.offsetWidth
+    
+    canScrollLeft.value = currentScroll > 5
+    canScrollRight.value = currentScroll < (maxScroll - 5)
+    
+    scrollPosition.value = currentScroll
+    scrollWidth.value = container.value.scrollWidth
+    containerWidth.value = container.value.offsetWidth
+    
+    console.log(`Carousel status (${props.title}):`, {
+      scrollWidth: scrollWidth.value,
+      containerWidth: containerWidth.value,
+      canScrollRight: canScrollRight.value,
+      productsCount: displayProducts.value.length
+    })
   }
 }
 
@@ -304,31 +354,33 @@ const goToProduct = (product) => {
     return
   }
   
-  // Per top players/pokemon (senza listing_id), naviga alla pagina /top/:category/:name
-  // Questo è il caso per le sezioni "Top Player" e "Top Pokemon" nella home
+  // Per top players/characters (senza listing_id), naviga alla pagina /top/:category/:name
+  // Questo è il caso per le sezioni "Top Player" e "Top Characters"
   const typeMap = {
     'Calcio': 'football',
     'Basketball': 'basketball', 
-    'Pokemon': 'pokemon'
+    'Pokemon': 'pokemon',
+    'Disney': 'disney'
   }
   
-  // Determina la categoria
-  let category = props.category || 'football'
-  if (product.type && typeMap[product.type]) {
+  // Determina la categoria - usa category_slug se disponibile, altrimenti props.category
+  let category = product.category_slug || props.category || 'football'
+  if (!category && product.type && typeMap[product.type]) {
     category = typeMap[product.type]
   }
   
-  // Genera lo slug dal nome del giocatore/pokemon
-  const playerSlug = product.name
+  // Genera lo slug dal nome del giocatore/character (usa player_name se disponibile)
+  const displayName = product.player_name || product.name
+  const playerSlug = displayName
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '') // Rimuove caratteri speciali
     .replace(/\s+/g, '-') // Sostituisce spazi con trattini
     .replace(/-+/g, '-') // Rimuove trattini multipli
     .replace(/^-+|-+$/g, '') // Rimuove trattini all'inizio e alla fine
   
-  // Naviga alla pagina dei top players/pokemon
+  // Naviga alla pagina dei top players/characters
   const url = `/top/${category}/${playerSlug}`
-  console.log('Navigating to top player page:', url)
+  console.log('Navigating to top player/character page:', url)
   window.location.href = url
 }
 
@@ -347,6 +399,11 @@ watch(() => [props.category, props.section, props.useDynamicData], () => {
     loadDynamicData()
   }
 }, { immediate: true })
+
+// Watch for changes in displayProducts to update scroll buttons
+watch(displayProducts, () => {
+  setTimeout(updateScrollButtons, 300)
+}, { deep: true })
 
 onMounted(() => {
   updateDimensions()
