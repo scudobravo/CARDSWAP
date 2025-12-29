@@ -210,13 +210,13 @@
             <!-- Card Details -->
             <div class="p-4">
               <h4 class="text-lg font-gill-sans-semibold text-gray-900 truncate">
-                {{ listing.card_model?.name || 'Carta' }}
+                {{ listing.card_model?.player?.name || listing.card_model?.name || 'Carta' }}
               </h4>
               <p class="text-sm text-gray-600 mt-1">
-                {{ listing.card_model?.set_name || 'Set' }} - {{ listing.card_model?.year || 'Anno' }}
+                {{ listing.card_model?.set_name || listing.card_model?.cardSet?.name || 'Set' }} - {{ listing.card_model?.year || 'Anno' }}
               </p>
               <p class="text-sm text-gray-500 mt-1">
-                {{ listing.card_model?.player?.name || 'Giocatore' }} - {{ listing.card_model?.team?.name || 'Squadra' }}
+                {{ listing.card_model?.team?.name || 'Squadra' }}
               </p>
               
               <div class="mt-3 flex items-center justify-between">
@@ -248,10 +248,31 @@
                 </div>
               </div>
               
-              <div class="mt-3">
+              <div class="mt-3 flex flex-wrap gap-2">
+                <!-- Card Number Tag -->
+                <span
+                  v-if="listing.card_model?.card_number_in_set && /^\d+(\/\d+)?$/.test(listing.card_model.card_number_in_set)"
+                  class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-700"
+                >
+                  /{{ listing.card_model.card_number_in_set }}
+                </span>
+                <!-- RELIC Tag -->
+                <span
+                  v-if="listing.card_model?.is_relic"
+                  class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-700"
+                >
+                  RELIC
+                </span>
+                <!-- Condition Tag -->
+                <span
+                  class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-700"
+                >
+                  {{ formatTextualCondition(listing.condition) }}
+                </span>
+                <!-- Status Tag -->
                 <span
                   :class="[
-                    'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+                    'inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium',
                     listing.status === 'active' 
                       ? 'bg-green-100 text-green-800' 
                       : 'bg-gray-100 text-gray-800'
@@ -265,15 +286,15 @@
         </div>
 
         <!-- Desktop List View -->
-        <div v-else-if="viewMode === 'list'" class="space-y-4">
+        <div v-else-if="viewMode === 'list'" class="space-y-3">
           <div
             v-for="listing in listings"
             :key="listing.id"
-            class="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+            class="bg-white hover:shadow-md transition-shadow border border-gray-200 rounded-lg overflow-hidden"
           >
             <div class="flex">
-              <!-- Image Area -->
-              <div class="w-48 h-64 bg-gray-200 overflow-hidden flex-shrink-0 relative">
+              <!-- Image Area - senza padding, completamente visibile -->
+              <div class="w-24 h-32 bg-gray-200 flex-shrink-0">
                 <img 
                   v-if="listing.images && listing.images.length > 0"
                   :src="`/storage/${listing.images[0]}`"
@@ -283,77 +304,83 @@
                 />
                 <div v-else class="w-full h-full flex items-center justify-center bg-gray-200">
                   <div class="text-center">
-                    <div class="w-16 h-16 bg-gray-300 rounded-lg mx-auto mb-2"></div>
-                    <p class="text-xs text-gray-500">Nessuna immagine</p>
+                    <div class="w-8 h-8 bg-gray-300 rounded mx-auto mb-1"></div>
+                    <p class="text-[10px] text-gray-500 leading-tight">Nessuna immagine</p>
                   </div>
                 </div>
               </div>
               
               <!-- Card Details -->
-              <div class="flex-1 p-4 flex flex-col justify-between">
-                <div>
-                  <h4 class="text-lg font-gill-sans-semibold text-gray-900">
-                    {{ listing.card_model?.name || 'Carta' }}
+              <div class="flex-1 p-3 flex flex-col justify-between min-w-0">
+                <!-- Top section: Name, Tags, Details -->
+                <div class="flex-1 min-w-0">
+                  <!-- Player Name - più piccolo -->
+                  <h4 class="text-sm font-gill-sans-semibold text-gray-900 mb-1.5 truncate">
+                    {{ listing.card_model?.player?.name || listing.card_model?.name || 'Carta' }}
                   </h4>
                   
-                  <div class="mt-2 text-sm text-gray-600 space-y-1">
-                    <div class="flex justify-between">
-                      <span>Set:</span>
-                      <span class="font-medium">{{ listing.card_model?.set_name || 'Set' }} - {{ listing.card_model?.year || 'Anno' }}</span>
-                    </div>
-                    <div class="flex justify-between">
-                      <span>Giocatore:</span>
-                      <span class="font-medium">{{ listing.card_model?.player?.name || 'Giocatore' }}</span>
-                    </div>
-                    <div class="flex justify-between">
-                      <span>Squadra:</span>
-                      <span class="font-medium">{{ listing.card_model?.team?.name || 'Squadra' }}</span>
-                    </div>
-                    <div class="flex justify-between">
-                      <span>Condizione:</span>
-                      <span class="font-medium capitalize">{{ formatCondition(listing) }}</span>
-                    </div>
-                    <div class="flex justify-between">
-                      <span>Quantità:</span>
-                      <span class="font-medium">{{ listing.quantity }}</span>
-                    </div>
+                  <!-- Tags - più compatti -->
+                  <div class="flex flex-wrap gap-1.5 mb-2">
+                    <!-- Card Number Tag -->
+                    <span
+                      v-if="listing.card_model?.card_number_in_set && /^\d+(\/\d+)?$/.test(listing.card_model.card_number_in_set)"
+                      class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-700"
+                    >
+                      /{{ listing.card_model.card_number_in_set }}
+                    </span>
+                    <!-- RELIC Tag -->
+                    <span
+                      v-if="listing.card_model?.is_relic"
+                      class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-700"
+                    >
+                      RELIC
+                    </span>
+                    <!-- Condition Tag -->
+                    <span
+                      class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-700"
+                    >
+                      {{ formatTextualCondition(listing.condition) }}
+                    </span>
                   </div>
                   
-                  <div class="mt-3">
-                    <span
-                      :class="[
-                        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                        listing.status === 'active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
-                      ]"
-                    >
-                      {{ listing.status === 'active' ? 'Attiva' : 'Inattiva' }}
-                    </span>
+                  <!-- Details - più compatti -->
+                  <div class="text-xs text-gray-600 space-y-0.5">
+                    <div class="truncate">
+                      <span class="font-medium">Team:</span>
+                      <span class="ml-1">{{ listing.card_model?.team?.name || 'N/A' }}</span>
+                    </div>
+                    <div class="truncate">
+                      <span class="font-medium">Set:</span>
+                      <span class="ml-1">{{ listing.card_model?.set_name || listing.card_model?.cardSet?.name || 'N/A' }}</span>
+                    </div>
+                    <div class="truncate">
+                      <span class="font-medium">Rarity:</span>
+                      <span class="ml-1">{{ listing.card_model?.rarity || 'N/A' }}{{ listing.card_model?.rarity_variation ? ` (${listing.card_model.rarity_variation})` : '' }}</span>
+                    </div>
                   </div>
                 </div>
                 
-                <!-- Price and Actions -->
-                <div class="mt-4 flex items-center justify-between">
-                  <p class="text-lg font-gill-sans-bold text-primary">
+                <!-- Bottom section: Price and Actions -->
+                <div class="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
+                  <p class="text-base font-gill-sans-bold text-gray-900">
                     €{{ formatPriceItaliana(listing.price) }}
                   </p>
                   <div class="flex space-x-2">
                     <button
                       @click="editListing(listing)"
-                      class="text-gray-400 hover:text-gray-600 transition-colors"
+                      class="w-8 h-8 bg-primary rounded flex items-center justify-center hover:bg-primary/90 transition-colors flex-shrink-0"
                       title="Modifica"
                     >
-                      <PencilIcon class="h-5 w-5" />
+                      <PencilIcon class="h-4 w-4 text-white" />
                     </button>
                     <button
                       @click="deleteListing(listing)"
-                      class="text-gray-400 hover:text-red-600 transition-colors"
+                      class="w-8 h-8 bg-red-600 rounded flex items-center justify-center hover:bg-red-700 transition-colors flex-shrink-0"
                       title="Elimina"
                       :disabled="deletingListing === listing.id"
                     >
-                      <TrashIcon v-if="deletingListing !== listing.id" class="h-5 w-5" />
-                      <div v-else class="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600"></div>
+                      <TrashIcon v-if="deletingListing !== listing.id" class="h-4 w-4 text-white" />
+                      <div v-else class="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
                     </button>
                   </div>
                 </div>
@@ -405,7 +432,7 @@ import CreateListingModal from '@/components/listing/CreateListingModal.vue'
 import { PlusIcon, FolderIcon, ExclamationTriangleIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
 import { Squares2X2Icon } from '@heroicons/vue/20/solid'
 import { formatPriceItaliana } from '../utils/priceFormatter'
-import { formatCondition } from '@/utils/conditionFormatter'
+import { formatCondition, formatTextualCondition } from '@/utils/conditionFormatter'
 
 const authStore = useAuthStore()
 const kycCompleted = computed(() => authStore.user?.kyc_status === 'approved')
