@@ -161,23 +161,6 @@
               </select>
             </div>
 
-            <!-- Lingua -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Lingua</label>
-              <select 
-                v-model="bulkData.language"
-                class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm"
-              >
-                <option value="">Seleziona lingua</option>
-                <option value="italian">Italiano</option>
-                <option value="english">Inglese</option>
-                <option value="spanish">Spagnolo</option>
-                <option value="french">Francese</option>
-                <option value="german">Tedesco</option>
-                <option value="portuguese">Portoghese</option>
-              </select>
-            </div>
-
             <!-- Grading Company -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Grading Company</label>
@@ -345,8 +328,7 @@ const isDragOver = ref(false)
 const bulkData = ref({
   price: '1.00',
   quantity: 1,
-  condition: 'mint',
-  language: 'italian',
+  condition: '',
   // Grading
   grading_company: '',
   grading_score: '',
