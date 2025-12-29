@@ -23,6 +23,10 @@ export default defineConfig({
         },
     },
     define: {
-        'import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY': JSON.stringify(process.env.STRIPE_KEY || 'pk_test_51S43mAARmgIGJlKNpNChJnLQDrRhwf2XPjJDPzo3RgV2EdMzM4fYtwAqwRTON338K85Wr7q6vVjskH1b5pUD0QxS00nPKdCkgj'),
+        // La chiave Stripe viene passata tramite meta tag nel blade template
+        // Questo permette di usare sempre la chiave corretta dal .env
+        'import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY': JSON.stringify(
+            process.env.STRIPE_KEY || ''
+        ),
     },
 });

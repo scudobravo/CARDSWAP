@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="stripe-publishable-key" content="{{ config('services.stripe.key') }}">
 
     <title>{{ config('app.name', 'CARDSWAP') }}</title>
     <meta name="description" content="CARDSWAP - La piattaforma definitiva per collezionisti di carte da collezione. Compra e vendi carte in modo sicuro e affidabile.">

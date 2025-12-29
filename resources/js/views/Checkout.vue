@@ -658,7 +658,16 @@ const initializeStripe = async () => {
       })
     }
     
-    stripe.value = window.Stripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
+    // Ottieni la chiave Stripe dal meta tag (sempre aggiornata dal .env) o dal vite config
+    const stripeKey = document.querySelector('meta[name="stripe-publishable-key"]')?.getAttribute('content') 
+                      || import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+    
+    if (!stripeKey) {
+      console.error('Stripe publishable key non trovata!')
+      return
+    }
+    
+    stripe.value = window.Stripe(stripeKey)
     
     // Inizializza Stripe Elements
     if (stripe.value) {
