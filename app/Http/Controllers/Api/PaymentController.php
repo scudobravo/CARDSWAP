@@ -35,7 +35,28 @@ class PaymentController extends Controller
      */
     public function createPayment(Request $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
+        // Trasforma i dati dal formato frontend al formato backend se necessario
+        $requestData = $this->transformRequestData($request->all());
+        
+        // Se la trasformazione ha restituito un errore
+        if (isset($requestData['_error'])) {
+            return response()->json([
+                'success' => false,
+                'message' => $requestData['_error'],
+                'errors' => ['shipping_zone' => [$requestData['_error']]]
+            ], 422);
+        }
+        
+        // Log per debug
+        \Log::info('Payment create request', [
+            'original_data_keys' => array_keys($request->all()),
+            'transformed_data_keys' => array_keys($requestData),
+            'has_sellers' => isset($requestData['sellers']),
+            'has_shipping_address' => isset($requestData['shipping_address']),
+            'sellers_count' => isset($requestData['sellers']) ? count($requestData['sellers']) : 0,
+        ]);
+        
+        $validator = Validator::make($requestData, [
             'sellers' => 'required|array|min:1',
             'sellers.*.seller_id' => 'required|integer|exists:users,id',
             'sellers.*.items' => 'required|array|min:1',
@@ -52,6 +73,13 @@ class PaymentController extends Controller
         ]);
 
         if ($validator->fails()) {
+            \Log::error('Payment validation failed', [
+                'errors' => $validator->errors()->toArray(),
+                'request_data_keys' => array_keys($requestData),
+                'has_sellers' => isset($requestData['sellers']),
+                'has_shipping_address' => isset($requestData['shipping_address']),
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Dati di validazione non validi',
@@ -65,7 +93,7 @@ class PaymentController extends Controller
             $buyer = Auth::user();
             
             // Validazione completa prima del pagamento
-            $validationResult = $this->validateOrderData($request->all(), $buyer);
+            $validationResult = $this->validateOrderData($requestData, $buyer);
             if (!$validationResult['valid']) {
                 return response()->json([
                     'success' => false,
@@ -74,7 +102,7 @@ class PaymentController extends Controller
                 ], 422);
             }
 
-            $orderData = $this->prepareOrderData($request->all(), $buyer);
+            $orderData = $this->prepareOrderData($requestData, $buyer);
             
             // Crea l'ordine nel database
             $order = $this->createOrder($orderData);
@@ -227,6 +255,143 @@ class PaymentController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Trasforma i dati dal formato frontend al formato backend
+     */
+    private function transformRequestData(array $requestData): array
+    {
+        // Se i dati sono già nel formato corretto (sellers), restituiscili così
+        if (isset($requestData['sellers']) && isset($requestData['shipping_address'])) {
+            return $requestData;
+        }
+
+        // Trasforma dal formato frontend (cart_data + address) al formato backend (sellers + shipping_address)
+        if (isset($requestData['cart_data']) && isset($requestData['address'])) {
+            $sellers = [];
+            $cartData = $requestData['cart_data'];
+            $shippingMethods = $requestData['shipping_methods'] ?? [];
+            $selectedShippingZones = $requestData['selected_shipping_zones'] ?? []; // Supporta anche questo formato
+
+            foreach ($cartData as $sellerId => $items) {
+                if (empty($items)) {
+                    continue;
+                }
+
+                $sellerItems = [];
+                
+                foreach ($items as $item) {
+                    $listingId = $item['id'] ?? $item['listing_id'] ?? null;
+                    if (!$listingId) {
+                        continue;
+                    }
+                    
+                    $sellerItems[] = [
+                        'listing_id' => (int) $listingId,
+                        'quantity' => (int) ($item['quantity'] ?? 1),
+                    ];
+                }
+
+                if (empty($sellerItems)) {
+                    continue;
+                }
+
+                // Determina shipping_zone_id
+                $shippingZoneId = null;
+                
+                // Prova prima con selected_shipping_zones (formato cart store)
+                if (isset($selectedShippingZones[$sellerId])) {
+                    $zoneId = $selectedShippingZones[$sellerId];
+                    // Verifica che esista nel database
+                    if (\App\Models\ShippingZone::find($zoneId)) {
+                        $shippingZoneId = (int) $zoneId;
+                    }
+                }
+                
+                // Poi prova con shipping_methods
+                if (!$shippingZoneId && isset($shippingMethods[$sellerId])) {
+                    $methodValue = $shippingMethods[$sellerId];
+                    // Se è numerico, verifica se è un ID zona valido
+                    if (is_numeric($methodValue)) {
+                        $zone = \App\Models\ShippingZone::find((int) $methodValue);
+                        if ($zone) {
+                            $shippingZoneId = $zone->id;
+                        }
+                    }
+                    // Se è un metodo (es: 'standard', 'express') o un ID Shippo, 
+                    // usa la prima zona disponibile per il venditore
+                }
+
+                // Se ancora non abbiamo una zona, usa la prima disponibile dalla prima listing
+                if (!$shippingZoneId && !empty($sellerItems)) {
+                    $firstListing = \App\Models\CardListing::with('shippingZones')->find($sellerItems[0]['listing_id']);
+                    if ($firstListing && $firstListing->shippingZones->isNotEmpty()) {
+                        $shippingZone = $firstListing->shippingZones->first();
+                        $shippingZoneId = $shippingZone->id;
+                    } else {
+                        // Se la listing non ha zone, cerca una zona di default attiva
+                        $defaultZone = \App\Models\ShippingZone::where('is_active', true)->first();
+                        if ($defaultZone) {
+                            $shippingZoneId = $defaultZone->id;
+                        }
+                    }
+                }
+
+                if ($shippingZoneId) {
+                    $sellers[] = [
+                        'seller_id' => (int) $sellerId,
+                        'items' => $sellerItems,
+                        'shipping_zone_id' => $shippingZoneId,
+                    ];
+                } else {
+                    // Log errore se non troviamo una zona
+                    \Log::warning('Shipping zone not found for seller', [
+                        'seller_id' => $sellerId,
+                        'shipping_methods' => $shippingMethods[$sellerId] ?? null,
+                        'selected_shipping_zones' => $selectedShippingZones[$sellerId] ?? null,
+                        'first_listing_id' => $sellerItems[0]['listing_id'] ?? null,
+                    ]);
+                }
+            }
+            
+            // Se non abbiamo trovato nessun venditore valido, restituisci errore
+            if (empty($sellers)) {
+                \Log::error('No valid sellers found after transformation', [
+                    'cart_data_keys' => array_keys($cartData),
+                    'shipping_methods' => $shippingMethods,
+                ]);
+                
+                return [
+                    'sellers' => [],
+                    'shipping_address' => $shippingAddress ?? [],
+                    '_error' => 'Nessuna zona di spedizione disponibile per i venditori selezionati',
+                ];
+            }
+
+            // Trasforma address in shipping_address
+            $address = $requestData['address'];
+            $shippingAddress = [
+                'first_name' => $address['first_name'] ?? '',
+                'last_name' => $address['last_name'] ?? '',
+                'address_line_1' => $address['address_line_1'] ?? $address['address'] ?? '',
+                'address_line_2' => $address['address_line_2'] ?? $address['apartment'] ?? null,
+                'city' => $address['city'] ?? '',
+                'state_province' => $address['state_province'] ?? $address['region'] ?? null,
+                'postal_code' => $address['postal_code'] ?? $address['postalCode'] ?? '',
+                'country' => $address['country'] ?? 'IT',
+                'phone' => $address['phone'] ?? null,
+            ];
+
+            return [
+                'sellers' => $sellers,
+                'shipping_address' => $shippingAddress,
+            ];
+        }
+
+        // Se non riusciamo a trasformare, restituisci i dati originali
+        // La validazione fallirà e mostrerà l'errore appropriato
+        return $requestData;
     }
 
     /**
