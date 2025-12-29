@@ -1300,8 +1300,28 @@ class CardListingController extends Controller
         ])->where('seller_id', Auth::id());
 
         // Filtra per status se specificato
-        if ($request->has('status')) {
+        if ($request->has('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
+        }
+
+        // Ricerca testuale per nome giocatore, squadra, set, nome carta
+        if ($request->has('search') && !empty($request->search)) {
+            $searchTerm = $request->search;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->whereHas('cardModel', function ($subQuery) use ($searchTerm) {
+                    $subQuery->where('name', 'LIKE', "%{$searchTerm}%")
+                        ->orWhereHas('player', function ($playerQuery) use ($searchTerm) {
+                            $playerQuery->where('name', 'LIKE', "%{$searchTerm}%");
+                        })
+                        ->orWhereHas('team', function ($teamQuery) use ($searchTerm) {
+                            $teamQuery->where('name', 'LIKE', "%{$searchTerm}%");
+                        })
+                        ->orWhereHas('cardSet', function ($setQuery) use ($searchTerm) {
+                            $setQuery->where('name', 'LIKE', "%{$searchTerm}%");
+                        })
+                        ->orWhere('set_name', 'LIKE', "%{$searchTerm}%");
+                });
+            });
         }
 
         // Ordinamento

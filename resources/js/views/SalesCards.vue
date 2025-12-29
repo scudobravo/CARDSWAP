@@ -95,35 +95,98 @@
 
     <!-- Listings Grid -->
     <div v-else class="bg-white rounded-lg border border-gray-200">
-      <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-        <h3 class="text-lg font-gill-sans-semibold text-gray-900">
-          Le tue carte in vendita ({{ listings.length }})
-        </h3>
-        
-        <!-- View Toggle -->
-        <div class="flex rounded-md shadow-sm">
-          <button 
-            type="button" 
-            :class="[viewMode === 'grid' ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:text-gray-900', 'px-3 py-2 text-sm font-medium border border-gray-300 rounded-l-md focus:z-10 focus:ring-1 focus:ring-primary focus:border-primary']"
-            @click="viewMode = 'grid'"
-          >
-            <Squares2X2Icon class="size-4" />
-          </button>
-          <button 
-            type="button" 
-            :class="[viewMode === 'list' ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:text-gray-900', 'px-3 py-2 text-sm font-medium border border-gray-300 rounded-r-md focus:z-10 focus:ring-1 focus:ring-primary focus:border-primary']"
-            @click="viewMode = 'list'"
-          >
-            <svg class="size-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
-            </svg>
-          </button>
+      <!-- Header con ricerca e filtri -->
+      <div class="px-6 py-4 border-b border-gray-200">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+          <h3 class="text-lg font-gill-sans-semibold text-gray-900">
+            Le tue carte in vendita ({{ totalListings }})
+          </h3>
+          
+          <!-- View Toggle -->
+          <div class="flex rounded-md shadow-sm">
+            <button 
+              type="button" 
+              :class="[viewMode === 'grid' ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:text-gray-900', 'px-3 py-2 text-sm font-medium border border-gray-300 rounded-l-md focus:z-10 focus:ring-1 focus:ring-primary focus:border-primary']"
+              @click="viewMode = 'grid'"
+            >
+              <Squares2X2Icon class="size-4" />
+            </button>
+            <button 
+              type="button" 
+              :class="[viewMode === 'list' ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:text-gray-900', 'px-3 py-2 text-sm font-medium border border-gray-300 rounded-r-md focus:z-10 focus:ring-1 focus:ring-primary focus:border-primary']"
+              @click="viewMode = 'list'"
+            >
+              <svg class="size-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Barra di ricerca e filtri -->
+        <div class="flex flex-col md:flex-row gap-4">
+          <!-- Campo di ricerca -->
+          <div class="flex-1 relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Cerca per giocatore, squadra, set o nome carta..."
+              class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm font-gill-sans"
+              @input="handleSearchInput"
+            />
+            <button
+              v-if="searchQuery"
+              @click="clearSearch"
+              class="absolute inset-y-0 right-0 pr-3 flex items-center"
+            >
+              <svg class="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Filtro Status -->
+          <div class="md:w-48">
+            <select
+              v-model="statusFilter"
+              @change="handleFilterChange"
+              class="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-primary focus:border-primary rounded-md sm:text-sm font-gill-sans"
+            >
+              <option value="all">Tutte le carte</option>
+              <option value="active">Solo attive</option>
+              <option value="draft">Bozze</option>
+              <option value="sold">Vendute</option>
+            </select>
+          </div>
         </div>
       </div>
       
       <div class="p-6">
+        <!-- Messaggio nessun risultato -->
+        <div v-if="!loading && listings.length === 0" class="text-center py-12">
+          <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <h3 class="text-lg font-gill-sans-semibold text-gray-900 mb-2">Nessun risultato trovato</h3>
+          <p class="text-gray-600 font-gill-sans mb-4">
+            {{ searchQuery ? 'Prova a modificare i termini di ricerca' : 'Non ci sono carte che corrispondono ai filtri selezionati' }}
+          </p>
+          <button
+            v-if="searchQuery || statusFilter !== 'all'"
+            @click="clearFilters"
+            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-gill-sans-semibold rounded-md text-white bg-primary hover:bg-primary/90"
+          >
+            Rimuovi filtri
+          </button>
+        </div>
+
         <!-- Desktop Grid View -->
-        <div v-if="viewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div v-else-if="viewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div
             v-for="listing in listings"
             :key="listing.id"
@@ -202,7 +265,7 @@
         </div>
 
         <!-- Desktop List View -->
-        <div v-if="viewMode === 'list'" class="space-y-4">
+        <div v-else-if="viewMode === 'list'" class="space-y-4">
           <div
             v-for="listing in listings"
             :key="listing.id"
@@ -298,6 +361,27 @@
             </div>
           </div>
         </div>
+
+        <!-- Load More Button -->
+        <div v-if="hasMorePages && !loading && !loadingMore && listings.length > 0" class="text-center mt-8">
+          <button 
+            @click="loadMore"
+            class="inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-sm font-futura-bold rounded-md text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
+          >
+            Carica Altri Risultati
+          </button>
+        </div>
+        
+        <!-- Loading indicator per caricamento incrementale -->
+        <div v-if="loadingMore" class="text-center mt-8 py-4">
+          <div class="flex items-center justify-center space-x-3">
+            <svg class="animate-spin h-6 w-6 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="text-gray-600 font-gill-sans">Caricamento risultati...</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -314,7 +398,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import CreateListingModal from '@/components/listing/CreateListingModal.vue'
@@ -329,19 +413,46 @@ const kycCompleted = computed(() => authStore.user?.kyc_status === 'approved')
 // State
 const listings = ref([])
 const loading = ref(false)
+const loadingMore = ref(false)
 const error = ref(null)
 const deletingListing = ref(null)
 const viewMode = ref('grid')
+const searchQuery = ref('')
+const statusFilter = ref('all')
+const currentPage = ref(1)
+const totalListings = ref(0)
+const hasMorePages = ref(false)
+let searchTimeout = null
 
 // Load listings from API
-const loadListings = async () => {
-  loading.value = true
+const loadListings = async (reset = true) => {
+  if (reset) {
+    loading.value = true
+    currentPage.value = 1
+  } else {
+    loadingMore.value = true
+  }
+  
   error.value = null
   
   try {
-    console.log('🔄 Caricamento inserzioni...')
+    console.log('🔄 Caricamento inserzioni...', { page: currentPage.value, search: searchQuery.value, status: statusFilter.value })
     
-    const response = await fetch('/api/listings/my/listings', {
+    // Costruisci i parametri della query
+    const params = new URLSearchParams({
+      page: currentPage.value.toString(),
+      per_page: '20'
+    })
+    
+    if (statusFilter.value !== 'all') {
+      params.append('status', statusFilter.value)
+    }
+    
+    if (searchQuery.value.trim()) {
+      params.append('search', searchQuery.value.trim())
+    }
+    
+    const response = await fetch(`/api/listings/my/listings?${params.toString()}`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -357,18 +468,70 @@ const loadListings = async () => {
     console.log('✅ Inserzioni caricate:', data)
     
     if (data.success && data.data) {
-      // Filtra solo le inserzioni attive
-      listings.value = data.data.filter(listing => listing.status === 'active')
-      console.log('📊 Numero inserzioni attive:', listings.value.length)
+      if (reset) {
+        listings.value = data.data
+      } else {
+        listings.value.push(...data.data)
+      }
+      
+      // Aggiorna informazioni paginazione
+      totalListings.value = data.pagination?.total || data.data.length
+      hasMorePages.value = data.pagination?.current_page < data.pagination?.last_page
+      
+      console.log('📊 Numero inserzioni:', listings.value.length, 'di', totalListings.value)
     } else {
       throw new Error(data.message || 'Errore nel caricamento delle inserzioni')
     }
   } catch (err) {
     console.error('❌ Errore nel caricamento inserzioni:', err)
     error.value = err.message
-    listings.value = []
+    if (reset) {
+      listings.value = []
+    }
   } finally {
     loading.value = false
+    loadingMore.value = false
+  }
+}
+
+// Handle search input with debounce
+const handleSearchInput = () => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+  
+  searchTimeout = setTimeout(() => {
+    currentPage.value = 1
+    loadListings(true)
+  }, 500)
+}
+
+// Clear search
+const clearSearch = () => {
+  searchQuery.value = ''
+  currentPage.value = 1
+  loadListings(true)
+}
+
+// Handle filter change
+const handleFilterChange = () => {
+  currentPage.value = 1
+  loadListings(true)
+}
+
+// Clear all filters
+const clearFilters = () => {
+  searchQuery.value = ''
+  statusFilter.value = 'all'
+  currentPage.value = 1
+  loadListings(true)
+}
+
+// Load more listings
+const loadMore = () => {
+  if (hasMorePages.value && !loading.value && !loadingMore.value) {
+    currentPage.value++
+    loadListings(false)
   }
 }
 
@@ -405,6 +568,9 @@ const handleListingUpdated = (updatedListing) => {
   }
   
   closeEditModal()
+  
+  // Ricarica per aggiornare il conteggio totale
+  loadListings(true)
 }
 
 // Delete listing function
@@ -436,6 +602,7 @@ const deleteListing = async (listing) => {
     if (data.success) {
       // Rimuovi l'inserzione dalla lista locale
       listings.value = listings.value.filter(l => l.id !== listing.id)
+      totalListings.value = Math.max(0, totalListings.value - 1)
       console.log('📊 Inserzione rimossa dalla lista')
     } else {
       throw new Error(data.message || 'Errore nell\'eliminazione dell\'inserzione')
