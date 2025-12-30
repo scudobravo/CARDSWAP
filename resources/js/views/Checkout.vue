@@ -646,28 +646,50 @@ const saveNewAddress = async () => {
 
 const initializeStripe = async () => {
   try {
+    console.log('🔧 Inizializzazione Stripe...')
+    
     // Carica Stripe.js se non è già caricato
     if (!window.Stripe) {
+      console.log('📦 Caricamento Stripe.js...')
       const script = document.createElement('script')
       script.src = 'https://js.stripe.com/v3/'
       script.async = true
       document.head.appendChild(script)
       
-      await new Promise((resolve) => {
+      await new Promise((resolve, reject) => {
         script.onload = resolve
+        script.onerror = reject
+        // Timeout dopo 10 secondi
+        setTimeout(() => reject(new Error('Timeout caricamento Stripe.js')), 10000)
       })
+      console.log('✅ Stripe.js caricato')
+    } else {
+      console.log('✅ Stripe.js già caricato')
     }
     
     // Ottieni la chiave Stripe dal meta tag (sempre aggiornata dal .env) o dal vite config
-    const stripeKey = document.querySelector('meta[name="stripe-publishable-key"]')?.getAttribute('content') 
-                      || import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+    const metaKey = document.querySelector('meta[name="stripe-publishable-key"]')?.getAttribute('content')
+    const envKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+    const stripeKey = metaKey || envKey
+    
+    console.log('🔑 Chiave Stripe:', {
+      hasMetaKey: !!metaKey,
+      hasEnvKey: !!envKey,
+      keyPrefix: stripeKey ? stripeKey.substring(0, 7) : 'NONE'
+    })
     
     if (!stripeKey) {
-      console.error('Stripe publishable key non trovata!')
+      console.error('❌ Stripe publishable key non trovata!')
+      const errorDiv = document.getElementById('card-errors')
+      if (errorDiv) {
+        errorDiv.textContent = 'Errore: Chiave Stripe non configurata. Contatta il supporto.'
+        errorDiv.classList.add('text-red-600')
+      }
       return
     }
     
     stripe.value = window.Stripe(stripeKey)
+    console.log('✅ Stripe inizializzato')
     
     // Inizializza Stripe Elements
     if (stripe.value) {
@@ -698,25 +720,56 @@ const initializeStripe = async () => {
         },
       })
       
-      // Monta l'elemento quando il DOM è pronto
-      await nextTick()
-      const cardElementDiv = document.getElementById('card-element')
+      console.log('✅ Stripe Elements creato')
+      
+      // Attendi che il DOM sia pronto e che il div esista
+      let attempts = 0
+      const maxAttempts = 10
+      let cardElementDiv = null
+      
+      while (attempts < maxAttempts && !cardElementDiv) {
+        await nextTick()
+        cardElementDiv = document.getElementById('card-element')
+        if (!cardElementDiv) {
+          attempts++
+          await new Promise(resolve => setTimeout(resolve, 100))
+        }
+      }
+      
       if (cardElementDiv) {
+        console.log('✅ Div card-element trovato, montaggio Stripe Elements...')
         cardElement.value.mount('#card-element')
+        console.log('✅ Stripe Elements montato con successo')
         
         // Gestisci errori di validazione
         cardElement.value.on('change', ({error}) => {
           const displayError = document.getElementById('card-errors')
-          if (error) {
-            displayError.textContent = error.message
-          } else {
-            displayError.textContent = ''
+          if (displayError) {
+            if (error) {
+              displayError.textContent = error.message
+              displayError.classList.add('text-red-600')
+            } else {
+              displayError.textContent = ''
+              displayError.classList.remove('text-red-600')
+            }
           }
         })
+      } else {
+        console.error('❌ Div #card-element non trovato dopo', maxAttempts, 'tentativi')
+        const errorDiv = document.getElementById('card-errors')
+        if (errorDiv) {
+          errorDiv.textContent = 'Errore: Impossibile inizializzare il campo carta di credito. Ricarica la pagina.'
+          errorDiv.classList.add('text-red-600')
+        }
       }
     }
   } catch (error) {
-    console.error('Errore nell\'inizializzazione Stripe:', error)
+    console.error('❌ Errore nell\'inizializzazione Stripe:', error)
+    const errorDiv = document.getElementById('card-errors')
+    if (errorDiv) {
+      errorDiv.textContent = `Errore: ${error.message || 'Impossibile inizializzare Stripe. Ricarica la pagina.'}`
+      errorDiv.classList.add('text-red-600')
+    }
   }
 }
 
@@ -935,7 +988,17 @@ const getShippingCostForMethod = (methodId, sellerId = null) => {
 }
 
 const processPayment = async () => {
-  if (!canProcessPayment.value) return
+  if (!canProcessPayment.value) {
+    alert('Completa tutti i campi obbligatori prima di procedere con il pagamento.')
+    return
+  }
+  
+  // Verifica che Stripe Elements sia inizializzato
+  if (!stripe.value || !cardElement.value) {
+    console.error('Stripe Elements non inizializzato')
+    alert('Errore: Il campo carta di credito non è stato inizializzato correttamente. Ricarica la pagina e riprova.')
+    return
+  }
   
   isProcessing.value = true
   
@@ -963,6 +1026,12 @@ const processPayment = async () => {
       payment_method: paymentMethod, // Sempre Stripe
       cart_data: cartStore.getCartData()
     }
+
+    console.log('💳 Invio richiesta pagamento...', {
+      hasAddress: !!paymentData.address,
+      shippingMethods: Object.keys(paymentData.shipping_methods || {}),
+      cartDataKeys: Object.keys(paymentData.cart_data || {})
+    })
 
     // Crea l'ordine e processa il pagamento
     const response = await axios.post('/api/payments/create', paymentData)
@@ -1013,9 +1082,39 @@ const processPayment = async () => {
     }
     
   } catch (error) {
-    console.error('Errore nel pagamento:', error)
+    console.error('❌ Errore nel pagamento:', error)
+    
+    // Gestisci errori specifici
+    let errorMessage = 'Errore nel processamento del pagamento'
+    
+    if (error.response) {
+      // Errore dal server
+      const status = error.response.status
+      const data = error.response.data
+      
+      if (status === 422) {
+        // Errore di validazione
+        const errors = data.errors || {}
+        const errorText = Object.values(errors).flat().join(', ') || data.message || 'Dati non validi'
+        errorMessage = `Errore di validazione: ${errorText}`
+        console.error('Errore 422 - Dettagli:', data)
+      } else if (status === 403) {
+        errorMessage = 'Accesso negato. Verifica di essere autenticato e di aver completato la verifica KYC.'
+      } else if (status === 500) {
+        errorMessage = 'Errore del server. Riprova più tardi o contatta il supporto.'
+      } else {
+        errorMessage = data.message || `Errore ${status}: ${error.message}`
+      }
+    } else if (error.request) {
+      // Richiesta inviata ma nessuna risposta
+      errorMessage = 'Nessuna risposta dal server. Verifica la connessione internet.'
+    } else {
+      // Errore nella configurazione della richiesta
+      errorMessage = error.message || 'Errore nella configurazione della richiesta'
+    }
+    
     // Mostra messaggio di errore all'utente
-    alert('Errore nel processamento del pagamento: ' + error.message)
+    alert(errorMessage)
   } finally {
     isProcessing.value = false
   }
