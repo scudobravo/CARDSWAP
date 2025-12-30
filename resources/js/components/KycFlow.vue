@@ -299,16 +299,71 @@
               </div>
             </div>
 
+            <!-- Messaggio di errore -->
+            <div v-if="stripeError" class="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+                <div class="ml-3 flex-1">
+                  <h4 class="text-sm font-gill-sans-semibold text-red-800 mb-1">Errore</h4>
+                  <p class="text-sm text-red-700 mb-3">{{ stripeError }}</p>
+                  <!-- Link per abilitare Stripe Connect se l'errore è relativo a Connect non abilitato -->
+                  <div v-if="stripeError.includes('Stripe Connect') || stripeError.includes('signed up for Connect') || stripeError.includes('Marketplace')" class="mt-3 space-y-2">
+                    <a 
+                      href="https://dashboard.stripe.com/connect/overview" 
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-flex items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-gill-sans-semibold text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    >
+                      <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                      Configura Stripe Connect Marketplace
+                    </a>
+                    <a 
+                      href="https://docs.stripe.com/connect/marketplace" 
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="block text-xs text-red-600 hover:text-red-800 underline"
+                    >
+                      📖 Leggi la guida completa per configurare il Marketplace
+                    </a>
+                    <p class="text-xs text-red-600 mt-2">
+                      Dopo aver configurato Stripe Connect Marketplace, ricarica questa pagina e riprova.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stato account esistente -->
+            <div v-if="stripeAccountStatus?.charges_enabled && stripeAccountStatus?.payouts_enabled" class="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <CheckIcon class="h-5 w-5 text-green-400" />
+                </div>
+                <div class="ml-3">
+                  <h4 class="text-sm font-gill-sans-semibold text-green-800">Account Stripe già configurato</h4>
+                  <p class="mt-1 text-sm text-green-700">
+                    Il tuo account Stripe Connect è già configurato e pronto per ricevere pagamenti.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div class="text-center">
               <button
                 type="button"
                 @click="setupStripeConnect"
-                :disabled="stripeLoading"
+                :disabled="stripeLoading || (stripeAccountStatus?.charges_enabled && stripeAccountStatus?.payouts_enabled)"
                 class="flex justify-center rounded-md bg-primary px-6 py-3 text-base font-gill-sans-semibold text-white shadow-xs hover:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <CreditCardIcon v-if="!stripeLoading" class="h-5 w-5 mr-2" />
                 <div v-else class="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                {{ stripeLoading ? 'Configurazione in corso...' : 'Configura Stripe Connect' }}
+                {{ stripeLoading ? 'Configurazione in corso...' : (stripeAccountStatus?.charges_enabled ? 'Account già configurato' : 'Configura Stripe Connect') }}
               </button>
             </div>
 
@@ -448,6 +503,9 @@ const documents = reactive({
 
 const stripeLoading = ref(false)
 const submitting = ref(false)
+const stripeAccountStatus = ref(null)
+const stripeError = ref('')
+const onboardingUrl = ref('')
 
 // Computed properties
 const canProceedStep1 = computed(() => {
@@ -504,12 +562,91 @@ const handleAddressDocument = (event) => {
 
 const setupStripeConnect = async () => {
   stripeLoading.value = true
+  stripeError.value = ''
+  
   try {
-    // Simulate Stripe Connect setup
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    nextStep()
+    const token = localStorage.getItem('token')
+    if (!token) {
+      stripeError.value = 'Non sei autenticato. Effettua il login.'
+      stripeLoading.value = false
+      return
+    }
+
+    // Verifica se l'utente ha già un account Stripe
+    let accountId = null
+    
+    // Controlla se esiste già un account
+    const statusResponse = await fetch('/api/stripe/account/status', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    })
+
+    if (statusResponse.ok) {
+      const statusData = await statusResponse.json()
+      accountId = statusData.account_id
+      
+      // Se l'account esiste e può ricevere pagamenti, passa allo step successivo
+      if (statusData.charges_enabled && statusData.payouts_enabled) {
+        stripeAccountStatus.value = {
+          charges_enabled: true,
+          payouts_enabled: true,
+          details_submitted: true
+        }
+        nextStep()
+        stripeLoading.value = false
+        return
+      }
+    }
+
+    // Se non esiste un account, crealo
+    if (!accountId) {
+      const createResponse = await fetch('/api/stripe/account/create', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!createResponse.ok) {
+        const errorData = await createResponse.json()
+        throw new Error(errorData.message || 'Errore nella creazione dell\'account Stripe')
+      }
+
+      const createData = await createResponse.json()
+      accountId = createData.account_id
+    }
+
+    // Genera il link di onboarding
+    const onboardingResponse = await fetch('/api/stripe/account/onboarding', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!onboardingResponse.ok) {
+      const errorData = await onboardingResponse.json()
+      throw new Error(errorData.message || 'Errore nella generazione del link di onboarding')
+    }
+
+    const onboardingData = await onboardingResponse.json()
+    onboardingUrl.value = onboardingData.onboarding_url
+
+    // Reindirizza l'utente a Stripe per completare l'onboarding
+    if (onboardingUrl.value) {
+      window.location.href = onboardingUrl.value
+    } else {
+      throw new Error('Link di onboarding non disponibile')
+    }
   } catch (error) {
     console.error('Error setting up Stripe Connect:', error)
+    stripeError.value = error.message || 'Errore nella configurazione di Stripe Connect'
   } finally {
     stripeLoading.value = false
   }
@@ -548,7 +685,34 @@ onMounted(async () => {
   }
   
   loadExistingUserData()
+  checkStripeAccountStatus()
 })
+
+// Verifica lo stato dell'account Stripe
+const checkStripeAccountStatus = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) return
+
+    const response = await fetch('/api/stripe/account/status', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      stripeAccountStatus.value = {
+        charges_enabled: data.charges_enabled,
+        payouts_enabled: data.payouts_enabled,
+        details_submitted: data.details_submitted
+      }
+    }
+  } catch (error) {
+    console.error('Errore nel controllo stato Stripe:', error)
+  }
+}
 
 // Watch for user changes and reload data
 watch(() => authStore.user, (newUser) => {

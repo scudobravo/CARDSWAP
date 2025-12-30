@@ -30,6 +30,11 @@ class StripeService
             throw new \Exception('Invalid Stripe secret key format');
         }
         
+        // Verifica che in locale si usino chiavi di test
+        if (config('app.env') === 'local' && str_starts_with($stripeSecret, 'sk_live_')) {
+            Log::warning('ATTENZIONE: Stai usando chiavi LIVE in ambiente locale. Usa chiavi TEST (sk_test_...)');
+        }
+        
         Stripe::setApiKey($stripeSecret);
         $this->stripe = new StripeClient($stripeSecret);
     }
@@ -242,9 +247,24 @@ class StripeService
             ];
         } catch (ApiErrorException $e) {
             Log::error('Stripe Connect Account Error: ' . $e->getMessage());
+            
+            // Messaggi di errore più user-friendly
+            $errorMessage = $e->getMessage();
+            
+            if (str_contains($errorMessage, 'signed up for Connect')) {
+                $errorMessage = 'Stripe Connect Marketplace non è abilitato nel tuo account Stripe principale. ' .
+                    'Poiché CardSwap gestisce più venditori, devi configurare Stripe Connect come Marketplace. ' .
+                    'Vai su https://dashboard.stripe.com/connect/overview e segui la guida: https://docs.stripe.com/connect/marketplace';
+            } elseif (str_contains($errorMessage, 'Invalid API Key')) {
+                $errorMessage = 'Chiave API Stripe non valida. Verifica le credenziali nel file .env';
+            } elseif (str_contains($errorMessage, 'rate limit')) {
+                $errorMessage = 'Troppe richieste a Stripe. Riprova tra qualche minuto.';
+            }
+            
             return [
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error' => $errorMessage,
+                'stripe_error_code' => $e->getStripeCode(),
             ];
         }
     }
@@ -268,9 +288,22 @@ class StripeService
             ];
         } catch (ApiErrorException $e) {
             Log::error('Stripe Connect Link Error: ' . $e->getMessage());
+            
+            $errorMessage = $e->getMessage();
+            
+            // Messaggio più chiaro per errore HTTPS in live mode
+            if (str_contains($errorMessage, 'Livemode requests must always be redirected via HTTPS')) {
+                $errorMessage = 'Stai usando chiavi API di PRODUZIONE (live mode) in locale. ' .
+                    'In locale devi usare chiavi di TEST (sk_test_... e pk_test_...). ' .
+                    'Vai su https://dashboard.stripe.com/test/apikeys e copia le chiavi di test nel file .env';
+            } elseif (str_contains($errorMessage, 'HTTPS')) {
+                $errorMessage = 'Stripe richiede HTTPS per le URL di ritorno in live mode. ' .
+                    'In locale, usa chiavi di TEST (sk_test_...) invece di chiavi LIVE (sk_live_...).';
+            }
+            
             return [
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error' => $errorMessage,
             ];
         }
     }

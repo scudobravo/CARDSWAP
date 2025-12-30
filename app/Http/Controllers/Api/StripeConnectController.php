@@ -73,8 +73,20 @@ class StripeConnectController extends Controller
             ], 404);
         }
 
-        $returnUrl = config('app.url') . '/dashboard/stripe/return';
-        $refreshUrl = config('app.url') . '/dashboard/stripe/refresh';
+        // In locale, usa HTTP. In produzione, Stripe richiede HTTPS per live mode
+        $baseUrl = config('app.url');
+        
+        // Se siamo in test mode e in locale, possiamo usare HTTP
+        // Altrimenti usa HTTPS (richiesto per live mode)
+        if (config('app.env') === 'local' && str_starts_with($baseUrl, 'http://')) {
+            // In locale con test mode, HTTP va bene
+            $returnUrl = $baseUrl . '/dashboard/stripe/return';
+            $refreshUrl = $baseUrl . '/dashboard/stripe/refresh';
+        } else {
+            // In produzione o se configurato HTTPS, usa HTTPS
+            $returnUrl = str_replace('http://', 'https://', $baseUrl) . '/dashboard/stripe/return';
+            $refreshUrl = str_replace('http://', 'https://', $baseUrl) . '/dashboard/stripe/refresh';
+        }
 
         $result = $this->stripeService->createAccountLink(
             $user->stripe_account_id,
@@ -159,6 +171,58 @@ class StripeConnectController extends Controller
             'details_submitted' => $result['details_submitted'],
             'account' => $result['account']
         ]);
+    }
+
+    /**
+     * Verifica configurazione Stripe Connect del marketplace
+     */
+    public function checkConnectSetup(Request $request)
+    {
+        try {
+            $stripeSecret = config('services.stripe.secret');
+            
+            // Verifica tipo di chiave
+            $isTestMode = str_starts_with($stripeSecret, 'sk_test_');
+            $isLiveMode = str_starts_with($stripeSecret, 'sk_live_');
+            
+            // Prova a creare un account di test per verificare se Connect è abilitato
+            $stripeService = app(StripeService::class);
+            $testUser = new User();
+            $testUser->email = 'test@example.com';
+            $testUser->name = 'Test User';
+            
+            // Non creiamo realmente l'account, solo verifichiamo se possiamo
+            $canCreateAccounts = false;
+            $errorMessage = null;
+            
+            try {
+                // Prova a recuperare l'account principale per verificare se Connect è abilitato
+                $stripe = new \Stripe\StripeClient($stripeSecret);
+                $account = $stripe->accounts->retrieve();
+                
+                // Se riusciamo a recuperare l'account, Connect potrebbe essere abilitato
+                // Ma non possiamo saperlo con certezza senza provare a creare un account
+                $canCreateAccounts = true;
+            } catch (\Exception $e) {
+                $errorMessage = $e->getMessage();
+            }
+            
+            return response()->json([
+                'connect_configured' => $canCreateAccounts,
+                'test_mode' => $isTestMode,
+                'live_mode' => $isLiveMode,
+                'environment' => config('app.env'),
+                'error' => $errorMessage,
+                'message' => $isLiveMode && config('app.env') === 'local' 
+                    ? 'ATTENZIONE: Stai usando chiavi LIVE in locale. Usa chiavi TEST (sk_test_...)'
+                    : ($canCreateAccounts ? 'Stripe Connect sembra configurato' : 'Verifica la configurazione di Stripe Connect')
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'connect_configured' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

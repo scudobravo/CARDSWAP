@@ -24,19 +24,28 @@
     </div>
 
     <!-- Main Content -->
-    <div class="bg-white rounded-lg border border-gray-200 p-6">
-      <div class="text-center py-12">
-        <CreditCardIcon class="mx-auto h-12 w-12 text-gray-400" />
-        <h3 class="mt-2 text-sm font-gill-sans-semibold text-gray-900">Nessun metodo di pagamento</h3>
-        <p class="mt-1 text-sm text-gray-500">Aggiungi un metodo di pagamento per iniziare a fare acquisti.</p>
-        <div class="mt-6">
-          <button
-            type="button"
-            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-gill-sans-semibold rounded-md text-white bg-primary hover:bg-primary/90"
-          >
-            <PlusIcon class="h-4 w-4 mr-2" />
-            Aggiungi Metodo
-          </button>
+    <div class="space-y-6">
+      <!-- Stripe Connect per Venditori -->
+      <div v-if="isSeller">
+        <StripeConnectManager />
+      </div>
+
+      <!-- Metodi di pagamento per acquisti (placeholder) -->
+      <div class="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 class="text-lg font-futura-bold text-gray-900 mb-4">Metodi di Pagamento per Acquisti</h3>
+        <div class="text-center py-12">
+          <CreditCardIcon class="mx-auto h-12 w-12 text-gray-400" />
+          <h3 class="mt-2 text-sm font-gill-sans-semibold text-gray-900">Nessun metodo di pagamento</h3>
+          <p class="mt-1 text-sm text-gray-500">Aggiungi un metodo di pagamento per iniziare a fare acquisti.</p>
+          <div class="mt-6">
+            <button
+              type="button"
+              class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-gill-sans-semibold rounded-md text-white bg-primary hover:bg-primary/90"
+            >
+              <PlusIcon class="h-4 w-4 mr-2" />
+              Aggiungi Metodo
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -44,6 +53,12 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
+import StripeConnectManager from '@/components/StripeConnectManager.vue'
+import { useAuthStore } from '@/stores/auth'
 import { PlusIcon, CreditCardIcon } from '@heroicons/vue/24/outline'
+
+const authStore = useAuthStore()
+const isSeller = computed(() => authStore.user?.role === 'seller' || authStore.user?.role === 'admin')
 </script>

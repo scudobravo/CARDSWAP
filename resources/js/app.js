@@ -50,6 +50,9 @@ import SettingsLanguage from './views/SettingsLanguage.vue';
 // Import KYC View
 import KycPage from './views/KycPage.vue';
 
+// Import Stripe Connect Views
+import StripeReturn from './views/StripeReturn.vue';
+
 // Import Profile Views
 import ShippingZonesPage from './views/profile/ShippingZonesPage.vue';
 
@@ -122,6 +125,10 @@ const routes = [
     
     // KYC Route
     { path: '/dashboard/kyc', component: KycPage, name: 'kyc' },
+    
+    // Stripe Connect Routes
+    { path: '/dashboard/stripe/return', component: StripeReturn, name: 'stripe.return' },
+    { path: '/dashboard/stripe/refresh', component: StripeReturn, name: 'stripe.refresh' },
     
     // Contact Route
     { path: '/contact', component: Contact, name: 'contact' },

@@ -123,6 +123,21 @@
                 Zone di Spedizione
               </router-link>
             </li>
+            <li v-if="user?.role === 'seller'">
+              <router-link 
+                to="/account/payment-methods" 
+                :class="[
+                  $route.path === '/account/payment-methods' ? 'bg-gray-50 text-primary' : 'text-gray-700 hover:bg-gray-50 hover:text-primary',
+                  'group flex gap-x-3 rounded-md p-2 text-sm/6 font-gill-sans-semibold'
+                ]"
+              >
+                <CreditCardIcon :class="[
+                  $route.path === '/account/payment-methods' ? 'text-primary' : 'text-gray-400 group-hover:text-primary',
+                  'size-6 shrink-0'
+                ]" aria-hidden="true" />
+                Stripe Connect
+              </router-link>
+            </li>
           </ul>
         </li>
 

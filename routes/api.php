@@ -506,6 +506,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Rotte per Stripe Connect
     Route::prefix('stripe')->group(function () {
+        Route::get('/check-setup', [StripeConnectController::class, 'checkConnectSetup']); // Verifica configurazione Connect
         Route::post('/account/create', [StripeConnectController::class, 'createAccount']);
         Route::post('/account/onboarding', [StripeConnectController::class, 'createOnboardingLink']);
         Route::post('/account/login', [StripeConnectController::class, 'createLoginLink']);
