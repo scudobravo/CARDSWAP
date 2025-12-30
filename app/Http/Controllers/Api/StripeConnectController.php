@@ -23,12 +23,9 @@ class StripeConnectController extends Controller
     {
         $user = $request->user();
 
-        // Verifica che l'utente sia un venditore
-        if (!$user->isSeller()) {
-            return response()->json([
-                'message' => 'Solo i venditori possono creare account Stripe Connect'
-            ], 403);
-        }
+        // Permetti a tutti di creare account Stripe Connect
+        // Un utente può voler vendere anche se si è registrato come buyer
+        // Stripe Connect può essere configurato in anticipo
 
         // Verifica se l'utente ha già un account
         if ($user->stripe_account_id) {
@@ -232,12 +229,8 @@ class StripeConnectController extends Controller
     {
         $user = $request->user();
 
-        if (!$user->isSeller()) {
-            return response()->json([
-                'can_receive_payments' => false,
-                'reason' => 'Utente non è un venditore'
-            ]);
-        }
+        // Non richiediamo più che l'utente sia seller
+        // Chiunque può configurare Stripe Connect per vendere in futuro
 
         if (!$user->stripe_account_id) {
             return response()->json([
@@ -270,11 +263,8 @@ class StripeConnectController extends Controller
     {
         $user = $request->user();
 
-        if (!$user->isSeller()) {
-            return response()->json([
-                'message' => 'Solo i venditori possono accedere alla dashboard'
-            ], 403);
-        }
+        // Permetti a tutti di vedere la dashboard Stripe Connect
+        // Non serve essere seller per configurare i pagamenti
 
         $dashboard = [
             'user' => [

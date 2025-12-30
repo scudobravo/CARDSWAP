@@ -2217,6 +2217,13 @@ const createNewSingleListing = async () => {
     console.error('Response status:', response.status)
     console.error('Response statusText:', response.statusText)
     
+    // Gestione specifica per errore Stripe Connect
+    if (errorData.error === 'stripe_connect_required' || errorData.message?.includes('Stripe Connect')) {
+      alert('⚠️ Devi configurare Stripe Connect prima di pubblicare inserzioni.\n\nVai su Account > Metodi di Pagamento per configurarlo.')
+      window.location.href = '/account/payment-methods'
+      return
+    }
+    
     // Gestione specifica per errore KYC
     if (errorData.requires_kyc) {
       alert(`⚠️ Verifica identità richiesta!\n\nPer creare inserzioni devi completare la verifica della tua identità.\n\nClicca OK per essere reindirizzato alla pagina di verifica.`)
@@ -2465,6 +2472,13 @@ const createSealedPackListing = async () => {
         console.error('Risposta non JSON ricevuta:', text.substring(0, 200))
         errorData = { message: `Errore del server (HTTP ${response.status}). Controlla i log per dettagli.` }
       }
+      // Gestione specifica per errore Stripe Connect
+      if (errorData.error === 'stripe_connect_required' || errorData.message?.includes('Stripe Connect')) {
+        alert('⚠️ Devi configurare Stripe Connect prima di pubblicare inserzioni.\n\nVai su Account > Metodi di Pagamento per configurarlo.')
+        window.location.href = '/account/payment-methods'
+        return
+      }
+      
       throw new Error(errorData.message || errorData.error || 'Errore nella creazione inserzione')
     }
     
@@ -2561,6 +2575,13 @@ const createSealedBoxListing = async () => {
         console.error('Risposta non JSON ricevuta:', text.substring(0, 200))
         errorData = { message: `Errore del server (HTTP ${response.status}). Controlla i log per dettagli.` }
       }
+      // Gestione specifica per errore Stripe Connect
+      if (errorData.error === 'stripe_connect_required' || errorData.message?.includes('Stripe Connect')) {
+        alert('⚠️ Devi configurare Stripe Connect prima di pubblicare inserzioni.\n\nVai su Account > Metodi di Pagamento per configurarlo.')
+        window.location.href = '/account/payment-methods'
+        return
+      }
+      
       throw new Error(errorData.message || errorData.error || 'Errore nella creazione inserzione')
     }
     
@@ -2643,6 +2664,13 @@ const createLotListing = async () => {
         console.error('Risposta non JSON ricevuta:', text.substring(0, 200))
         errorData = { message: `Errore del server (HTTP ${response.status}). Controlla i log per dettagli.` }
       }
+      // Gestione specifica per errore Stripe Connect
+      if (errorData.error === 'stripe_connect_required' || errorData.message?.includes('Stripe Connect')) {
+        alert('⚠️ Devi configurare Stripe Connect prima di pubblicare inserzioni.\n\nVai su Account > Metodi di Pagamento per configurarlo.')
+        window.location.href = '/account/payment-methods'
+        return
+      }
+      
       throw new Error(errorData.message || errorData.error || 'Errore nella creazione inserzione')
     }
     

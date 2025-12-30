@@ -2,9 +2,10 @@
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
     <div class="flex items-center justify-between mb-6">
       <div>
-        <h3 class="text-lg font-futura-bold text-gray-900">Configurazione Pagamenti</h3>
+        <h3 class="text-lg font-futura-bold text-gray-900">Configurazione Pagamenti per Vendere</h3>
         <p class="text-sm text-gray-600 mt-1">
-          Configura il tuo account Stripe Connect per ricevere i pagamenti delle tue vendite
+          Configura il tuo account Stripe Connect per ricevere i pagamenti quando vendi carte. 
+          <span class="font-gill-sans-semibold text-gray-700">Non serve per gli acquisti.</span>
         </p>
       </div>
       <div v-if="accountStatus?.charges_enabled && accountStatus?.payouts_enabled" class="flex items-center text-green-600">

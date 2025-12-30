@@ -11,40 +11,30 @@
             Gestisci i tuoi metodi di pagamento per acquisti e vendite
           </p>
         </div>
-        <div class="mt-4 flex md:mt-0 md:ml-4">
-          <button
-            type="button"
-            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-gill-sans-semibold text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-          >
-            <PlusIcon class="h-4 w-4 mr-2" />
-            Aggiungi Metodo
-          </button>
-        </div>
       </div>
     </div>
 
     <!-- Main Content -->
     <div class="space-y-6">
-      <!-- Stripe Connect per Venditori -->
-      <div v-if="isSeller">
-        <StripeConnectManager />
-      </div>
+      <!-- Stripe Connect - Disponibile per tutti (per vendere in futuro) -->
+      <StripeConnectManager />
 
-      <!-- Metodi di pagamento per acquisti (placeholder) -->
+      <!-- Informazioni metodi di pagamento per acquisti -->
       <div class="bg-white rounded-lg border border-gray-200 p-6">
         <h3 class="text-lg font-futura-bold text-gray-900 mb-4">Metodi di Pagamento per Acquisti</h3>
-        <div class="text-center py-12">
-          <CreditCardIcon class="mx-auto h-12 w-12 text-gray-400" />
-          <h3 class="mt-2 text-sm font-gill-sans-semibold text-gray-900">Nessun metodo di pagamento</h3>
-          <p class="mt-1 text-sm text-gray-500">Aggiungi un metodo di pagamento per iniziare a fare acquisti.</p>
-          <div class="mt-6">
-            <button
-              type="button"
-              class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-gill-sans-semibold rounded-md text-white bg-primary hover:bg-primary/90"
-            >
-              <PlusIcon class="h-4 w-4 mr-2" />
-              Aggiungi Metodo
-            </button>
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <CreditCardIcon class="h-5 w-5 text-blue-400" />
+            </div>
+            <div class="ml-3">
+              <h4 class="text-sm font-gill-sans-semibold text-blue-800">Pagamenti durante il checkout</h4>
+              <p class="mt-1 text-sm text-blue-700">
+                I metodi di pagamento vengono gestiti direttamente durante il checkout. 
+                Non è necessario salvare carte di credito in anticipo. 
+                Puoi inserire i dati della carta quando effettui un acquisto.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -53,12 +43,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import StripeConnectManager from '@/components/StripeConnectManager.vue'
-import { useAuthStore } from '@/stores/auth'
-import { PlusIcon, CreditCardIcon } from '@heroicons/vue/24/outline'
-
-const authStore = useAuthStore()
-const isSeller = computed(() => authStore.user?.role === 'seller' || authStore.user?.role === 'admin')
+import { CreditCardIcon } from '@heroicons/vue/24/outline'
 </script>

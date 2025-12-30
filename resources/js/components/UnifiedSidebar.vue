@@ -123,7 +123,7 @@
                 Zone di Spedizione
               </router-link>
             </li>
-            <li v-if="user?.role === 'seller'">
+            <li>
               <router-link 
                 to="/account/payment-methods" 
                 :class="[
@@ -135,7 +135,10 @@
                   $route.path === '/account/payment-methods' ? 'text-primary' : 'text-gray-400 group-hover:text-primary',
                   'size-6 shrink-0'
                 ]" aria-hidden="true" />
-                Stripe Connect
+                <div class="flex flex-col">
+                  <span>Stripe Connect</span>
+                  <span class="text-xs font-gill-sans text-gray-500">Per vendere</span>
+                </div>
               </router-link>
             </li>
           </ul>

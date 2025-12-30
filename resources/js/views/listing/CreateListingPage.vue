@@ -114,11 +114,70 @@
         </div>
       </div>
 
+    <!-- Alert Stripe Connect Obbligatorio -->
+    <div v-if="!stripeConnectConfigured" class="mb-8">
+      <div class="rounded-md bg-red-50 border border-red-200 p-4">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <ExclamationTriangleIcon class="h-5 w-5 text-red-400" />
+          </div>
+          <div class="ml-3 flex-1">
+            <h3 class="text-sm font-gill-sans-semibold text-red-800">
+              ⚠️ Configurazione Stripe Connect Obbligatoria
+            </h3>
+            <div class="mt-2 text-sm text-red-700">
+              <p class="font-gill-sans-semibold mb-2">
+                Non puoi pubblicare inserzioni senza aver configurato Stripe Connect.
+              </p>
+              <p class="mb-3">
+                Stripe Connect è necessario per ricevere i pagamenti quando vendi le tue carte. 
+                Configuralo ora per iniziare a vendere.
+              </p>
+              <div class="mt-4">
+                <router-link
+                  to="/account/payment-methods"
+                  class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-gill-sans-semibold rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  Configura Stripe Connect
+                </router-link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Recent Listings -->
     <div class="bg-white rounded-lg border border-gray-200 p-4 md:p-6">
       <h3 class="text-base md:text-lg leading-6 font-medium text-gray-900 mb-4 font-futura-bold px-1 md:px-0">
         Le tue inserzioni recenti
       </h3>
+      
+      <!-- Alert per inserzioni senza Stripe Connect -->
+      <div v-if="listingsWithoutStripe.length > 0" class="mb-4 rounded-md bg-red-50 border border-red-200 p-4">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <ExclamationTriangleIcon class="h-5 w-5 text-red-400" />
+          </div>
+          <div class="ml-3 flex-1">
+            <h4 class="text-sm font-gill-sans-semibold text-red-800">
+              ⚠️ {{ listingsWithoutStripe.length }} inserzione/i non può/vengono essere pubblicata/e
+            </h4>
+            <p class="mt-1 text-sm text-red-700">
+              Hai {{ listingsWithoutStripe.length }} inserzione/i che non possono essere pubblicate perché Stripe Connect non è configurato. 
+              Configura Stripe Connect per pubblicarle.
+            </p>
+            <div class="mt-3">
+              <router-link
+                to="/account/payment-methods"
+                class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-gill-sans-semibold rounded-md text-red-800 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              >
+                Configura Stripe Connect
+              </router-link>
+            </div>
+          </div>
+        </div>
+      </div>
           
           <div v-if="recentListings && recentListings.length > 0" class="space-y-3 md:space-y-4">
             <div 
@@ -264,7 +323,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import CreateListingModal from '../../components/listing/CreateListingModal.vue'
 import { PlusIcon, ExclamationTriangleIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
@@ -279,6 +338,7 @@ const recentListings = ref([])
 const kycStatus = ref(null)
 const kycCompleted = ref(false)
 const deletingListing = ref(null)
+const stripeConnectConfigured = ref(false)
 
 // Methods
 const checkKycStatus = async () => {
@@ -540,10 +600,43 @@ const goToKyc = () => {
   window.location.href = '/dashboard/kyc'
 }
 
+const checkStripeConnect = async () => {
+  try {
+    const response = await fetch('/api/stripe/account/can-receive-payments', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Accept': 'application/json'
+      }
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      stripeConnectConfigured.value = data.can_receive_payments || false
+    } else {
+      stripeConnectConfigured.value = false
+    }
+  } catch (error) {
+    console.error('Errore nel controllo Stripe Connect:', error)
+    stripeConnectConfigured.value = false
+  }
+}
+
 // Lifecycle
 onMounted(async () => {
   await checkKycStatus()
+  await checkStripeConnect()
   loadStats()
   loadRecentListings()
+})
+
+  // Computed per trovare inserzioni senza Stripe Connect
+  const listingsWithoutStripeComputed = computed(() => {
+  if (!recentListings.value || stripeConnectConfigured.value) {
+    return []
+  }
+  // Restituisce tutte le inserzioni attive/draft che non possono essere pubblicate
+  return recentListings.value.filter(listing => 
+    listing.status === 'draft' || listing.status === 'active'
+  )
 })
 </script>

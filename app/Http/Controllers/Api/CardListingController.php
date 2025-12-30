@@ -355,7 +355,31 @@ class CardListingController extends Controller
                 }
             }
 
-            // Pubblica automaticamente tutte le inserzioni (rimosso requisito KYC)
+            // Verifica che l'utente abbia Stripe Connect configurato prima di pubblicare
+            $user = Auth::user();
+            if (!$user->canReceivePayments()) {
+                // Non pubblicare, lascia in draft
+                $cardListing->update(['status' => 'draft']);
+                
+                DB::commit();
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Devi configurare Stripe Connect prima di pubblicare inserzioni',
+                    'error' => 'stripe_connect_required',
+                    'data' => $cardListing->load([
+                        'cardModel.category',
+                        'cardModel.cardSet',
+                        'cardModel.player',
+                        'cardModel.team',
+                        'cardModel.league',
+                        'seller',
+                        'shippingZones'
+                    ])
+                ], 422);
+            }
+            
+            // Pubblica automaticamente tutte le inserzioni
             $oldStatus = $cardListing->status;
             $cardListing->publish(); // Imposta status a 'active' e published_at
             
@@ -464,8 +488,14 @@ class CardListingController extends Controller
                     $listing->shippingZones()->attach($listingData['shipping_zones']);
                 }
                 
-                // Pubblica automaticamente tutte le inserzioni bulk
-                $listing->publish();
+                // Verifica Stripe Connect prima di pubblicare
+                $user = Auth::user();
+                if ($user->canReceivePayments()) {
+                    $listing->publish();
+                } else {
+                    // Lascia in draft se Stripe Connect non è configurato
+                    $listing->update(['status' => 'draft']);
+                }
                 
                 $listing->load(['cardModel', 'seller', 'shippingZones']);
                 $createdListings[] = $listing;
@@ -1205,8 +1235,31 @@ class CardListingController extends Controller
                 \Log::warning('⚠️ CardListing senza CardModel associato', ['listing_id' => $cardListing->id]);
             }
 
-            // Assicurati che l'inserzione sia pubblicata dopo l'aggiornamento
+            // Verifica che l'utente abbia Stripe Connect configurato prima di pubblicare
+            $user = Auth::user();
             if ($cardListing->status !== 'active') {
+                if (!$user->canReceivePayments()) {
+                    // Non pubblicare, lascia in draft
+                    $cardListing->update(['status' => 'draft']);
+                    
+                    DB::commit();
+                    
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Devi configurare Stripe Connect prima di pubblicare inserzioni',
+                        'error' => 'stripe_connect_required',
+                        'data' => $cardListing->fresh()->load([
+                            'cardModel.category',
+                            'cardModel.cardSet',
+                            'cardModel.player',
+                            'cardModel.team',
+                            'cardModel.league',
+                            'seller',
+                            'shippingZones'
+                        ])
+                    ], 422);
+                }
+                
                 $cardListing->publish();
             }
 
