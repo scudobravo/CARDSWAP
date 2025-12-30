@@ -36,14 +36,15 @@
         <p class="text-red-800">{{ error }}</p>
       </div>
 
-      <!-- Products Grid -->
-      <div v-else-if="products.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-        <ProductCard 
+      <!-- Products List -->
+      <div v-else-if="products.length > 0" class="space-y-4 mb-8">
+        <ProductListItem 
           v-for="product in displayedProducts" 
           :key="product.id || product.listing_id" 
           :product="product"
-          class="cursor-pointer"
+          :category="category"
           @click="goToProduct(product)"
+          @add-to-cart="handleAddToCart"
         />
       </div>
 
@@ -98,7 +99,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import Header from '../components/Header.vue'
 import Footer from '../components/Footer.vue'
-import ProductCard from '../components/ProductCard.vue'
+import ProductListItem from '../components/ProductListItem.vue'
 
 const route = useRoute()
 
@@ -118,7 +119,8 @@ const categoryLabel = computed(() => {
   const labels = {
     'football': 'Calcio',
     'basketball': 'Basket',
-    'pokemon': 'Pokemon'
+    'pokemon': 'Pokemon',
+    'disney': 'Disney'
   }
   return labels[category.value] || category.value
 })
@@ -206,6 +208,12 @@ const goToProduct = (product) => {
     const url = `/${categorySlug}/${slug}`
     window.location.href = url
   }
+}
+
+const handleAddToCart = (product) => {
+  // Gestisci l'aggiunta al carrello
+  console.log('Aggiungi al carrello:', product)
+  // TODO: Implementare la logica di aggiunta al carrello
 }
 
 // Lifecycle
