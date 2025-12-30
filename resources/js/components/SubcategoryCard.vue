@@ -1,20 +1,20 @@
 <template>
   <div class="group relative overflow-hidden rounded-lg bg-white border border-gray-200 text-gray-800 hover:shadow-lg hover:border-gray-300 transition-all duration-300 transform hover:-translate-y-1">
     <!-- Content -->
-    <div class="relative z-10 p-4 h-full flex flex-col justify-center items-center text-center">
+    <div class="relative z-10 p-6 h-full flex flex-col justify-center items-center text-center">
       <!-- Icon -->
-      <div class="mb-3">
-        <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+      <div class="mb-4">
+        <div class="w-20 h-20 flex items-center justify-center">
           <img 
             :src="subcategory.icon" 
             :alt="subcategory.name"
-            class="w-8 h-8 object-contain"
+            class="w-full h-full object-contain"
           />
         </div>
       </div>
       
       <!-- Subcategory name -->
-      <h4 class="text-sm font-futura-bold mb-1 text-primary group-hover:text-secondary transition-colors duration-300">
+      <h4 class="text-base font-futura-bold mb-2 text-primary group-hover:text-secondary transition-colors duration-300">
         {{ subcategory.name }}
       </h4>
       

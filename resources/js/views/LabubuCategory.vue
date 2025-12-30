@@ -41,24 +41,23 @@
         </div>
       </div>
 
-      <!-- Product Type Sections -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
         <div 
           v-for="productType in productTypes" 
           :key="productType.id"
-          class="bg-white rounded-lg shadow-lg p-6 text-center hover:shadow-xl transition-shadow duration-300 cursor-pointer group opacity-50"
+          class="bg-white rounded-lg shadow-lg p-8 text-center hover:shadow-xl transition-shadow duration-300 cursor-pointer group opacity-50"
         >
           <!-- Product Type Icon -->
-          <div class="mb-4">
+          <div class="mb-6 h-24 flex items-center justify-center">
             <img 
               :src="productType.icon" 
               :alt="productType.name"
-              class="w-16 h-16 mx-auto group-hover:scale-110 transition-transform duration-300"
+              class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
             />
           </div>
           
           <!-- Product Type Name -->
-          <h3 class="text-lg font-futura-bold text-primary group-hover:text-secondary transition-colors duration-300">
+          <h3 class="text-xl font-futura-bold text-primary group-hover:text-secondary transition-colors duration-300">
             {{ productType.name }}
           </h3>
         </div>

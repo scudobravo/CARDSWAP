@@ -18,9 +18,9 @@
       <!-- Page Header -->
       <div class="flex items-center justify-between border-b border-gray-200 pb-6">
         <!-- Mobile Layout: H1 con icona su una riga -->
-        <div class="flex items-center space-x-3 lg:space-x-4">
-          <img :src="subcategoryIcon" :alt="subcategoryName" class="w-8 h-8 lg:w-12 lg:h-12" />
-          <h1 class="text-2xl lg:text-4xl font-futura-bold text-primary">{{ subcategoryName }} - {{ categoryName }}</h1>
+        <div class="flex items-center space-x-3 lg:space-x-6">
+          <img :src="subcategoryIcon" :alt="subcategoryName" class="w-12 h-12 lg:w-20 lg:h-20 object-contain" />
+          <h1 class="text-2xl lg:text-5xl font-futura-bold text-primary">{{ subcategoryName }} - {{ categoryName }}</h1>
         </div>
 
         <!-- Desktop Controls -->

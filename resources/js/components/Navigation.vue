@@ -30,7 +30,9 @@
                   <TabPanel v-for="category in navigation.categories" :key="category.name" class="space-y-12 px-4 py-6">
                     <div class="grid grid-cols-2 gap-x-4 gap-y-10">
                       <div v-for="item in category.featured" :key="item.name" class="group relative">
-                        <img :src="item.imageSrc" :alt="item.imageAlt" class="aspect-square w-full rounded-md bg-gray-100 object-cover group-hover:opacity-75" />
+                        <div class="aspect-square w-full rounded-md bg-gray-100 flex items-center justify-center p-4">
+                          <img :src="item.imageSrc" :alt="item.imageAlt" class="w-full h-full object-contain group-hover:opacity-75" />
+                        </div>
                         <router-link :to="item.href" class="mt-6 block text-sm font-medium text-gray-900">
                           <span class="absolute inset-0 z-10" aria-hidden="true" />
                           {{ item.name }}
@@ -137,7 +139,9 @@
                                 <div class="mx-auto max-w-7xl px-8">
                                   <div class="grid grid-cols-4 gap-x-8 gap-y-10 py-16">
                                     <div v-for="item in category.featured" :key="item.name" class="group relative">
-                                      <img :src="item.imageSrc" :alt="item.imageAlt" class="aspect-square w-full rounded-md bg-gray-100 object-cover group-hover:opacity-75" />
+                                      <div class="aspect-square w-full rounded-md bg-gray-100 flex items-center justify-center p-6">
+                                        <img :src="item.imageSrc" :alt="item.imageAlt" class="w-full h-full object-contain group-hover:opacity-75" />
+                                      </div>
                                       <router-link :to="item.href" class="mt-4 block font-medium text-gray-900">
                                         <span class="absolute inset-0 z-10" aria-hidden="true" />
                                         {{ item.name }}

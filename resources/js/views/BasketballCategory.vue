@@ -25,12 +25,12 @@
         <div 
           v-for="productType in productTypes" 
           :key="productType.id"
-          class="bg-white rounded-xl shadow-sm p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:shadow-md transition-all duration-300 group border border-gray-100"
+          class="bg-white rounded-xl shadow-sm p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:shadow-md transition-all duration-300 group border border-gray-100"
         >
-          <div class="w-16 h-16 mb-4 flex items-center justify-center grayscale group-hover:grayscale-0 transition-all duration-300">
-            <img :src="productType.icon" :alt="productType.name" class="w-12 h-12 object-contain" />
+          <div class="w-24 h-24 mb-6 flex items-center justify-center transition-all duration-300">
+            <img :src="productType.icon" :alt="productType.name" class="w-full h-full object-contain" />
           </div>
-          <h3 class="text-lg font-futura-bold text-primary group-hover:text-secondary transition-colors duration-300">
+          <h3 class="text-xl font-futura-bold text-primary group-hover:text-secondary transition-colors duration-300">
             {{ productType.name }}
           </h3>
         </div>

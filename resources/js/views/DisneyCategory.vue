@@ -18,19 +18,18 @@
       </div>
     </div>
 
-    <!-- Product Types Grid -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
         <div 
           v-for="productType in productTypes" 
           :key="productType.id"
           @click="goToProductType(productType)"
-          class="bg-white rounded-xl shadow-sm p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:shadow-md transition-all duration-300 group border border-gray-100"
+          class="bg-white rounded-xl shadow-sm p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:shadow-md transition-all duration-300 group border border-gray-100"
         >
-          <div class="w-16 h-16 mb-4 flex items-center justify-center grayscale group-hover:grayscale-0 transition-all duration-300">
-            <img :src="productType.icon" :alt="productType.name" class="w-12 h-12 object-contain" />
+          <div class="w-24 h-24 mb-6 flex items-center justify-center transition-all duration-300">
+            <img :src="productType.icon" :alt="productType.name" class="w-full h-full object-contain" />
           </div>
-          <h3 class="text-lg font-futura-bold text-primary group-hover:text-secondary transition-colors duration-300">
+          <h3 class="text-xl font-futura-bold text-primary group-hover:text-secondary transition-colors duration-300">
             {{ productType.name }}
           </h3>
         </div>
