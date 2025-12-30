@@ -304,8 +304,13 @@ class PaymentController extends Controller
                 if (isset($selectedShippingZones[$sellerId])) {
                     $zoneId = $selectedShippingZones[$sellerId];
                     // Verifica che esista nel database
-                    if (\App\Models\ShippingZone::find($zoneId)) {
+                    $zone = \App\Models\ShippingZone::find($zoneId);
+                    if ($zone && $zone->is_active) {
                         $shippingZoneId = (int) $zoneId;
+                        \Log::info('Shipping zone found from selected_shipping_zones', [
+                            'seller_id' => $sellerId,
+                            'zone_id' => $shippingZoneId,
+                        ]);
                     }
                 }
                 
@@ -315,57 +320,135 @@ class PaymentController extends Controller
                     // Se è numerico, verifica se è un ID zona valido
                     if (is_numeric($methodValue)) {
                         $zone = \App\Models\ShippingZone::find((int) $methodValue);
-                        if ($zone) {
+                        if ($zone && $zone->is_active) {
                             $shippingZoneId = $zone->id;
+                            \Log::info('Shipping zone found from shipping_methods (numeric)', [
+                                'seller_id' => $sellerId,
+                                'zone_id' => $shippingZoneId,
+                                'method_value' => $methodValue,
+                            ]);
                         }
                     }
                     // Se è un metodo (es: 'standard', 'express') o un ID Shippo, 
-                    // usa la prima zona disponibile per il venditore
+                    // cerca la prima zona disponibile per il venditore o le sue listing
                 }
 
-                // Se ancora non abbiamo una zona, usa la prima disponibile dalla prima listing
+                // Se ancora non abbiamo una zona, cerca dalla prima listing
                 if (!$shippingZoneId && !empty($sellerItems)) {
                     $firstListing = \App\Models\CardListing::with('shippingZones')->find($sellerItems[0]['listing_id']);
                     if ($firstListing && $firstListing->shippingZones->isNotEmpty()) {
-                        $shippingZone = $firstListing->shippingZones->first();
-                        $shippingZoneId = $shippingZone->id;
-                    } else {
-                        // Se la listing non ha zone, cerca una zona di default attiva
-                        $defaultZone = \App\Models\ShippingZone::where('is_active', true)->first();
-                        if ($defaultZone) {
-                            $shippingZoneId = $defaultZone->id;
+                        // Cerca prima una zona attiva
+                        $activeZone = $firstListing->shippingZones->firstWhere('is_active', true);
+                        if ($activeZone) {
+                            $shippingZoneId = $activeZone->id;
+                            \Log::info('Shipping zone found from listing (active)', [
+                                'seller_id' => $sellerId,
+                                'listing_id' => $firstListing->id,
+                                'zone_id' => $shippingZoneId,
+                            ]);
+                        } else {
+                            // Se non c'è una zona attiva, usa la prima disponibile
+                            $shippingZone = $firstListing->shippingZones->first();
+                            $shippingZoneId = $shippingZone->id;
+                            \Log::info('Shipping zone found from listing (first available)', [
+                                'seller_id' => $sellerId,
+                                'listing_id' => $firstListing->id,
+                                'zone_id' => $shippingZoneId,
+                            ]);
                         }
                     }
                 }
 
+                // Se ancora non abbiamo una zona, cerca zone del venditore
+                if (!$shippingZoneId) {
+                    $sellerZone = \App\Models\ShippingZone::where('user_id', $sellerId)
+                        ->where('is_active', true)
+                        ->first();
+                    if ($sellerZone) {
+                        $shippingZoneId = $sellerZone->id;
+                        \Log::info('Shipping zone found from seller zones', [
+                            'seller_id' => $sellerId,
+                            'zone_id' => $shippingZoneId,
+                        ]);
+                    }
+                }
+
+                // Se ancora non abbiamo una zona, cerca zone globali (senza user_id)
+                if (!$shippingZoneId) {
+                    $globalZone = \App\Models\ShippingZone::whereNull('user_id')
+                        ->where('is_active', true)
+                        ->first();
+                    if ($globalZone) {
+                        $shippingZoneId = $globalZone->id;
+                        \Log::info('Shipping zone found from global zones', [
+                            'seller_id' => $sellerId,
+                            'zone_id' => $shippingZoneId,
+                        ]);
+                    }
+                }
+
+                // Ultimo fallback: qualsiasi zona attiva
+                if (!$shippingZoneId) {
+                    $defaultZone = \App\Models\ShippingZone::where('is_active', true)->first();
+                    if ($defaultZone) {
+                        $shippingZoneId = $defaultZone->id;
+                        \Log::warning('Using fallback shipping zone', [
+                            'seller_id' => $sellerId,
+                            'zone_id' => $shippingZoneId,
+                            'shipping_methods' => $shippingMethods[$sellerId] ?? null,
+                            'selected_shipping_zones' => $selectedShippingZones[$sellerId] ?? null,
+                        ]);
+                    }
+                }
+
+                // Se abbiamo una zona, aggiungi il venditore
                 if ($shippingZoneId) {
                     $sellers[] = [
                         'seller_id' => (int) $sellerId,
                         'items' => $sellerItems,
                         'shipping_zone_id' => $shippingZoneId,
                     ];
+                    \Log::info('Seller added to payment request', [
+                        'seller_id' => $sellerId,
+                        'zone_id' => $shippingZoneId,
+                        'items_count' => count($sellerItems),
+                    ]);
                 } else {
-                    // Log errore se non troviamo una zona
-                    \Log::warning('Shipping zone not found for seller', [
+                    // Log errore critico se non troviamo una zona
+                    \Log::error('Shipping zone not found for seller - CRITICAL', [
                         'seller_id' => $sellerId,
                         'shipping_methods' => $shippingMethods[$sellerId] ?? null,
                         'selected_shipping_zones' => $selectedShippingZones[$sellerId] ?? null,
                         'first_listing_id' => $sellerItems[0]['listing_id'] ?? null,
+                        'total_active_zones' => \App\Models\ShippingZone::where('is_active', true)->count(),
                     ]);
                 }
             }
             
-            // Se non abbiamo trovato nessun venditore valido, restituisci errore
+            // Se non abbiamo trovato nessun venditore valido, restituisci errore dettagliato
             if (empty($sellers)) {
                 \Log::error('No valid sellers found after transformation', [
                     'cart_data_keys' => array_keys($cartData),
+                    'cart_data_structure' => array_map(function($items) {
+                        return [
+                            'items_count' => count($items),
+                            'first_item' => $items[0] ?? null,
+                        ];
+                    }, $cartData),
                     'shipping_methods' => $shippingMethods,
+                    'selected_shipping_zones' => $selectedShippingZones,
+                    'total_active_zones' => \App\Models\ShippingZone::where('is_active', true)->count(),
+                    'zones_by_user' => \App\Models\ShippingZone::where('is_active', true)
+                        ->select('user_id', DB::raw('count(*) as count'))
+                        ->groupBy('user_id')
+                        ->get()
+                        ->toArray(),
                 ]);
                 
                 return [
                     'sellers' => [],
                     'shipping_address' => $shippingAddress ?? [],
-                    '_error' => 'Nessuna zona di spedizione disponibile per i venditori selezionati',
+                    '_error' => 'Nessuna zona di spedizione disponibile per i venditori selezionati. Verifica che i venditori abbiano zone di spedizione configurate.',
                 ];
             }
 
