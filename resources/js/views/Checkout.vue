@@ -670,20 +670,31 @@ const initializeStripe = async () => {
     // Ottieni la chiave Stripe dal meta tag (sempre aggiornata dal .env) o dal vite config
     const metaKey = document.querySelector('meta[name="stripe-publishable-key"]')?.getAttribute('content')
     const envKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-    const stripeKey = metaKey || envKey
+    const stripeKey = (metaKey && metaKey.trim() !== '') ? metaKey.trim() : (envKey && envKey.trim() !== '' ? envKey.trim() : null)
     
     console.log('🔑 Chiave Stripe:', {
       hasMetaKey: !!metaKey,
+      metaKeyValue: metaKey ? metaKey.substring(0, 20) + '...' : 'null',
       hasEnvKey: !!envKey,
+      envKeyValue: envKey ? envKey.substring(0, 20) + '...' : 'null',
+      finalKey: stripeKey ? stripeKey.substring(0, 20) + '...' : 'NONE',
       keyPrefix: stripeKey ? stripeKey.substring(0, 7) : 'NONE'
     })
     
-    if (!stripeKey) {
-      console.error('❌ Stripe publishable key non trovata!')
+    if (!stripeKey || stripeKey === 'null' || stripeKey === '') {
+      console.error('❌ Stripe publishable key non trovata!', {
+        metaKey,
+        envKey,
+        allMetaTags: Array.from(document.querySelectorAll('meta')).map(m => ({
+          name: m.getAttribute('name'),
+          content: m.getAttribute('content')?.substring(0, 20)
+        }))
+      })
       const errorDiv = document.getElementById('card-errors')
       if (errorDiv) {
         errorDiv.textContent = 'Errore: Chiave Stripe non configurata. Contatta il supporto.'
         errorDiv.classList.add('text-red-600')
+        errorDiv.style.display = 'block'
       }
       return
     }

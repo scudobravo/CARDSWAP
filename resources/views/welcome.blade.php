@@ -8,6 +8,7 @@
         
         <!-- CSRF Token -->
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        <meta name="stripe-publishable-key" content="{{ config('services.stripe.key') }}">
 
         <!-- Favicon dinamico per dark mode -->
         <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
