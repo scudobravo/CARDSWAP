@@ -684,10 +684,14 @@ class PaymentController extends Controller
 
             // Verifica se il venditore può ricevere pagamenti
             if (!$seller->canSellWithStripe()) {
-                if (!$seller->hasStripeAccount()) {
+                if (!$seller->isSeller()) {
+                    $errors['sellers'][] = "Il venditore {$seller->name} non ha il ruolo di venditore configurato. Contatta il supporto per risolvere il problema.";
+                } elseif (!$seller->hasStripeAccount()) {
                     $errors['sellers'][] = "Il venditore {$seller->name} non ha configurato Stripe Connect. L'inserzione non può essere acquistata finché il venditore non completa la configurazione.";
                 } elseif (!$seller->stripe_charges_enabled || !$seller->stripe_payouts_enabled) {
                     $errors['sellers'][] = "Il venditore {$seller->name} non ha completato la configurazione di Stripe Connect. Deve completare l'onboarding su Stripe per poter ricevere pagamenti. Vai su Account > Metodi di Pagamento per completare la configurazione.";
+                } elseif (!$seller->hasCompletedKyc() && !$seller->hasStripeIdentityVerified()) {
+                    $errors['sellers'][] = "Il venditore {$seller->name} non ha completato la verifica KYC. Deve completare la verifica dell'identità prima di poter vendere.";
                 } else {
                     $errors['sellers'][] = "Il venditore {$seller->name} non può ricevere pagamenti al momento. Contatta il supporto per maggiori informazioni.";
                 }
