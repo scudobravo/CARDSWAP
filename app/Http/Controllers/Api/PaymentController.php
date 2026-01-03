@@ -659,9 +659,38 @@ class PaymentController extends Controller
                 continue;
             }
 
+            // Aggiorna lo stato Stripe Connect da Stripe prima di verificare
+            // Questo assicura che abbiamo lo stato più recente
+            if ($seller->hasStripeAccount()) {
+                try {
+                    $stripeService = app(\App\Services\StripeService::class);
+                    $accountStatus = $stripeService->getConnectAccount($seller->stripe_account_id);
+                    
+                    if ($accountStatus['success']) {
+                        // Aggiorna lo stato locale con i dati più recenti da Stripe
+                        $seller->update([
+                            'stripe_charges_enabled' => $accountStatus['charges_enabled'],
+                            'stripe_payouts_enabled' => $accountStatus['payouts_enabled'],
+                            'stripe_details_submitted' => $accountStatus['details_submitted'],
+                        ]);
+                        // Ricarica il modello per avere i valori aggiornati
+                        $seller->refresh();
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning("Errore nell'aggiornamento stato Stripe per venditore {$seller->id}: " . $e->getMessage());
+                    // Continua con la verifica anche se l'aggiornamento fallisce
+                }
+            }
+
             // Verifica se il venditore può ricevere pagamenti
             if (!$seller->canSellWithStripe()) {
-                $errors['sellers'][] = "Venditore {$seller->name} non può ricevere pagamenti";
+                if (!$seller->hasStripeAccount()) {
+                    $errors['sellers'][] = "Il venditore {$seller->name} non ha configurato Stripe Connect. L'inserzione non può essere acquistata finché il venditore non completa la configurazione.";
+                } elseif (!$seller->stripe_charges_enabled || !$seller->stripe_payouts_enabled) {
+                    $errors['sellers'][] = "Il venditore {$seller->name} non ha completato la configurazione di Stripe Connect. Deve completare l'onboarding su Stripe per poter ricevere pagamenti. Vai su Account > Metodi di Pagamento per completare la configurazione.";
+                } else {
+                    $errors['sellers'][] = "Il venditore {$seller->name} non può ricevere pagamenti al momento. Contatta il supporto per maggiori informazioni.";
+                }
             }
 
             // Verifica zone di spedizione

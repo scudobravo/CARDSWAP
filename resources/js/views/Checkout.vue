@@ -1107,7 +1107,13 @@ const processPayment = async () => {
         // Errore di validazione
         const errors = data.errors || {}
         const errorText = Object.values(errors).flat().join(', ') || data.message || 'Dati non validi'
-        errorMessage = `Errore di validazione: ${errorText}`
+        
+        // Verifica se l'errore è relativo a Stripe Connect del venditore
+        if (errorText.includes('Stripe Connect') || errorText.includes('non può ricevere pagamenti') || errorText.includes('non ha configurato') || errorText.includes('non ha completato')) {
+          errorMessage = `⚠️ Impossibile completare l'acquisto\n\n${errorText}\n\nIl venditore deve configurare Stripe Connect prima di poter vendere. Contatta il supporto se il problema persiste.`
+        } else {
+          errorMessage = `Errore di validazione: ${errorText}`
+        }
         console.error('Errore 422 - Dettagli:', data)
       } else if (status === 403) {
         errorMessage = 'Accesso negato. Verifica di essere autenticato e di aver completato la verifica KYC.'
