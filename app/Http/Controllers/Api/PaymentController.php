@@ -161,10 +161,19 @@ class PaymentController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             
+            // Log dell'errore completo per debugging
+            \Log::error('Errore in createPayment: ' . $e->getMessage(), [
+                'exception' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'user_id' => auth()->id(),
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Errore interno del server',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : 'Si è verificato un errore durante la creazione del pagamento'
             ], 500);
         }
     }
