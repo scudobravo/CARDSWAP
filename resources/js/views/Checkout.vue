@@ -1088,11 +1088,29 @@ const processPayment = async () => {
         }
         
         if (paymentIntent.status === 'succeeded') {
+          // Aggiorna immediatamente lo stato dell'ordine a "confirmed" 
+          // invece di attendere il webhook (che potrebbe essere lento)
+          const orderId = response.data.data?.order_id || response.data.order_id
+          if (orderId) {
+            try {
+              await axios.patch(`/api/orders/${orderId}/status`, {
+                status: 'confirmed'
+              }, {
+                headers: {
+                  'Authorization': `Bearer ${authStore.token}`,
+                  'Accept': 'application/json'
+                }
+              })
+            } catch (err) {
+              console.warn('Impossibile aggiornare stato ordine immediatamente:', err)
+              // Non blocchiamo il flusso, il webhook lo aggiornerà comunque
+            }
+          }
+          
           // Svuota il carrello
           await cartStore.clearCart()
           
           // Redirect alla pagina di conferma
-          const orderId = response.data.data?.order_id || response.data.order_id
           if (orderId) {
             router.push(`/order-confirmation/${orderId}`)
           } else {
