@@ -204,11 +204,15 @@ foreach ($originCountries as $originCode => $originName) {
                 
                 // Crea shipment
                 // Shippo richiede il paese anche quando si usa object_id
-                // Shippo richiede anche mass_unit e weight quando si usa object_id del pacco
+                // Shippo richiede anche mass_unit, weight e dimensioni quando si usa object_id del pacco
                 $parcelPayload = [
                     'object_id' => $parcelObj['object_id'],
                     'mass_unit' => $parcel['mass_unit'],
-                    'weight' => $parcel['weight']
+                    'weight' => $parcel['weight'],
+                    'length' => $parcel['length'],
+                    'width' => $parcel['width'],
+                    'height' => $parcel['height'],
+                    'distance_unit' => $parcel['distance_unit']
                 ];
                 
                 $shipmentPayload = [

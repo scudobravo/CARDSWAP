@@ -264,16 +264,22 @@ class ShippoService
             
             // Prepara payload per shipment
             // Shippo richiede il paese anche quando si usa object_id
-            // Shippo richiede anche mass_unit e weight quando si usa object_id del pacco
+            // Shippo richiede anche mass_unit, weight e dimensioni quando si usa object_id del pacco
             $parcelPayload = [
                 'object_id' => $parcelObj['object_id'],
                 'mass_unit' => $parcel['mass_unit'] ?? $parcelObj['mass_unit'] ?? 'kg',
-                'weight' => $parcel['weight'] ?? $parcelObj['weight'] ?? null
+                'weight' => $parcel['weight'] ?? $parcelObj['weight'] ?? null,
+                'length' => $parcel['length'] ?? $parcelObj['length'] ?? null,
+                'width' => $parcel['width'] ?? $parcelObj['width'] ?? null,
+                'height' => $parcel['height'] ?? $parcelObj['height'] ?? null,
+                'distance_unit' => $parcel['distance_unit'] ?? $parcelObj['distance_unit'] ?? 'cm'
             ];
             
-            // Rimuovi weight se null
-            if ($parcelPayload['weight'] === null) {
-                unset($parcelPayload['weight']);
+            // Rimuovi campi null
+            foreach (['weight', 'length', 'width', 'height'] as $field) {
+                if ($parcelPayload[$field] === null) {
+                    unset($parcelPayload[$field]);
+                }
             }
             
             $shipmentPayload = [
@@ -402,17 +408,23 @@ class ShippoService
 
                 // Crea shipment e calcola tariffe
                 // Shippo richiede il paese anche quando si usa object_id
-                // Shippo richiede anche mass_unit e weight quando si usa object_id del pacco
+                // Shippo richiede anche mass_unit, weight e dimensioni quando si usa object_id del pacco
                 $parcelConfig = config('services.shippo.pricing.default_parcel');
                 $parcelPayload = [
                     'object_id' => $parcel['object_id'],
                     'mass_unit' => $parcelConfig['mass_unit'] ?? $parcel['mass_unit'] ?? 'kg',
-                    'weight' => $parcelConfig['weight'] ?? $parcel['weight'] ?? null
+                    'weight' => $parcelConfig['weight'] ?? $parcel['weight'] ?? null,
+                    'length' => $parcelConfig['length'] ?? $parcel['length'] ?? null,
+                    'width' => $parcelConfig['width'] ?? $parcel['width'] ?? null,
+                    'height' => $parcelConfig['height'] ?? $parcel['height'] ?? null,
+                    'distance_unit' => $parcelConfig['distance_unit'] ?? $parcel['distance_unit'] ?? 'cm'
                 ];
                 
-                // Rimuovi weight se null
-                if ($parcelPayload['weight'] === null) {
-                    unset($parcelPayload['weight']);
+                // Rimuovi campi null
+                foreach (['weight', 'length', 'width', 'height'] as $field) {
+                    if ($parcelPayload[$field] === null) {
+                        unset($parcelPayload[$field]);
+                    }
                 }
                 
                 $shipmentPayload = [
