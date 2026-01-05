@@ -533,6 +533,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/seller/statistics', [OrderController::class, 'getSellerStatistics']);
         Route::get('/{id}', [OrderController::class, 'show']);
         Route::patch('/{id}/status', [OrderController::class, 'updateStatus']);
+        Route::post('/{id}/confirm-payment', [OrderController::class, 'confirmPayment']);
         // Tracking
         Route::get('/{id}/tracking', [TrackingController::class, 'history']);
         Route::post('/{id}/tracking/events', [TrackingController::class, 'addEvent']);

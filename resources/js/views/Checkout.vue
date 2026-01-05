@@ -1093,9 +1093,7 @@ const processPayment = async () => {
           const orderId = response.data.data?.order_id || response.data.order_id
           if (orderId) {
             try {
-              await axios.patch(`/api/orders/${orderId}/status`, {
-                status: 'confirmed'
-              }, {
+              await axios.post(`/api/orders/${orderId}/confirm-payment`, {}, {
                 headers: {
                   'Authorization': `Bearer ${authStore.token}`,
                   'Accept': 'application/json'

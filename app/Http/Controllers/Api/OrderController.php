@@ -157,6 +157,52 @@ class OrderController extends Controller
     }
 
     /**
+     * Conferma il pagamento di un ordine (per acquirenti)
+     */
+    public function confirmPayment($id): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            
+            $order = Order::where('buyer_id', $user->id)->find($id);
+
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ordine non trovato'
+                ], 404);
+            }
+
+            // Aggiorna lo stato solo se è ancora pending_payment
+            if ($order->status === 'pending_payment') {
+                $order->update([
+                    'status' => 'confirmed',
+                    'paid_at' => now()
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Pagamento confermato',
+                    'order' => $order
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Ordine già confermato',
+                'order' => $order
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Errore nella conferma del pagamento',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Aggiorna lo stato di un ordine (solo per venditori)
      */
     public function updateStatus(Request $request, $id): JsonResponse
