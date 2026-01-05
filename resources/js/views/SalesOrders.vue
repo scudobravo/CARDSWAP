@@ -542,16 +542,43 @@ const createShippoLabel = async (order) => {
       throw new Error('Indirizzo di spedizione non trovato')
     }
 
-    // Prepara i dati del venditore
+    // Recupera l'indirizzo del venditore dal database
+    // Prima prova con defaultAddress, poi con il primo indirizzo disponibile
+    let sellerAddress = null
+    
+    if (order.seller?.default_address) {
+      sellerAddress = order.seller.default_address
+    } else if (order.seller?.addresses && order.seller.addresses.length > 0) {
+      sellerAddress = order.seller.addresses[0]
+    } else {
+      // Fallback: usa i campi diretti del User se disponibili
+      if (order.seller?.address || order.seller?.city) {
+        sellerAddress = {
+          address_line_1: order.seller.address || '',
+          city: order.seller.city || '',
+          state_province: order.seller.state_province || '',
+          postal_code: order.seller.postal_code || '',
+          country: order.seller.country || 'IT'
+        }
+      }
+    }
+
+    if (!sellerAddress) {
+      throw new Error('Indirizzo del venditore non trovato. Configura un indirizzo nel tuo profilo prima di creare etichette di spedizione.')
+    }
+
+    // Prepara i dati del venditore per Shippo
     const seller = {
       id: order.seller_id,
       name: order.seller?.name || 'Venditore',
       address: {
-        street1: 'Via Roma 1', // TODO: Ottenere indirizzo reale del venditore
-        city: 'Milano',
-        state: 'MI',
-        zip: '20100',
-        country: 'IT'
+        street1: sellerAddress.address_line_1 || sellerAddress.address || '',
+        street2: sellerAddress.address_line_2 || '',
+        city: sellerAddress.city || '',
+        state: sellerAddress.state_province || sellerAddress.state || '',
+        zip: sellerAddress.postal_code || sellerAddress.zip || '',
+        country: sellerAddress.country || 'IT',
+        phone: sellerAddress.phone || order.seller?.phone || ''
       }
     }
 

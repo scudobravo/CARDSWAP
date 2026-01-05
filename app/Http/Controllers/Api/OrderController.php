@@ -118,7 +118,11 @@ class OrderController extends Controller
             $user = Auth::user();
             
             $query = Order::where('seller_id', $user->id)
-                ->with(['orderItems.cardListing.cardModel', 'buyer']);
+                ->with([
+                    'orderItems.cardListing.cardModel', 
+                    'buyer',
+                    'seller.defaultAddress'
+                ]);
 
             // Filtri
             if ($request->has('status') && !empty($request->status)) {
