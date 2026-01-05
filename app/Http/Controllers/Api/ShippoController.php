@@ -102,6 +102,19 @@ class ShippoController extends Controller
             $result = $this->shippoService->purchaseLabelForOrder($rateObjectId, $orderData);
 
             if ($result['success']) {
+                // Aggiorna lo stato dell'ordine a LABEL_CREATED
+                $order = Order::find($orderData['order_id']);
+                if ($order) {
+                    $order->update([
+                        'status' => 'label_created',
+                        'tracking_number' => $result['tracking_number'],
+                        'carrier_code' => $result['carrier'],
+                        'tracking_url' => $result['tracking_url'],
+                        'label_created_at' => now(),
+                        'shipped_at' => now() // Considera come spedito quando viene creata l'etichetta
+                    ]);
+                }
+
                 return response()->json([
                     'success' => true,
                     'data' => $result

@@ -253,9 +253,9 @@ class ShippoWebhookController extends Controller
             return;
         }
 
-        // Aggiorna stato ordine
+        // Aggiorna stato ordine - spedizione verificata dal corriere
         $order->update([
-            'status' => 'shipped',
+            'status' => 'in_transit_verified', // Nuovo stato: spedizione verificata
             'tracking_status' => 'picked_up',
             'shipped_at' => now()
         ]);
@@ -327,11 +327,12 @@ class ShippoWebhookController extends Controller
             return;
         }
 
-        // Aggiorna stato ordine
+        // Aggiorna stato ordine - consegnato, timer 72h avviato
         $order->update([
-            'status' => 'delivered',
+            'status' => 'delivered_pending_72h', // Nuovo stato: consegnato, in attesa di 72h
             'tracking_status' => 'delivered',
-            'delivered_at' => now()
+            'delivered_at' => now(),
+            'payout_scheduled_at' => now()->addHours(72) // Payout previsto tra 72h
         ]);
 
         // Crea evento di tracking
@@ -340,7 +341,7 @@ class ShippoWebhookController extends Controller
         // Invia notifica al cliente
         $this->sendShippingNotification($order, 'delivered');
 
-        // Avvia timer 72h per rilascio fondi
+        // Avvia timer 72h per rilascio fondi (job schedulato)
         $this->startFundsReleaseTimer($order);
 
         Log::info('Ordine aggiornato: delivered', [
@@ -429,8 +430,10 @@ class ShippoWebhookController extends Controller
      */
     private function startFundsReleaseTimer(Order $order): void
     {
-        // TODO: Implementare job per rilascio fondi dopo 72h
-        // Per ora solo log
+        // Schedula il job per il rilascio fondi dopo 72h
+        \App\Jobs\ReleaseSellerFunds::dispatch($order)
+            ->delay(now()->addHours(72));
+
         Log::info('Timer rilascio fondi avviato', [
             'order_id' => $order->id,
             'release_at' => now()->addHours(72)

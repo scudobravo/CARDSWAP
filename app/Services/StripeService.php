@@ -435,6 +435,31 @@ class StripeService
     }
 
     /**
+     * Rimborsa un pagamento
+     */
+    public function refundPayment(string $paymentIntentId, float $amount, string $reason = 'requested_by_customer'): array
+    {
+        try {
+            $refund = $this->stripe->refunds->create([
+                'payment_intent' => $paymentIntentId,
+                'amount' => (int) round($amount * 100), // Converti in centesimi
+                'reason' => $reason,
+            ]);
+
+            return [
+                'success' => true,
+                'refund' => $refund,
+            ];
+        } catch (ApiErrorException $e) {
+            Log::error('Stripe Refund Error: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Verifica webhook Stripe
      */
     public function verifyWebhook(string $payload, string $signature): bool
@@ -709,16 +734,16 @@ class StripeService
         $order = \App\Models\Order::find($orderId);
         if (!$order) return;
 
-        // Aggiorna stato ordine
+        // Aggiorna stato ordine - FONDI TRATTENUTI, NON TRASFERITI
+        // I fondi vengono trattenuti da CardSwap fino a 72h dopo la consegna
         $order->update([
-            'status' => 'confirmed',
+            'status' => 'paid_funds_held', // Nuovo stato: fondi pagati ma trattenuti
             'paid_at' => now()
         ]);
 
-        // Se è un pagamento multi-venditore, crea i trasferimenti per ogni venditore
-        if (($paymentIntent->metadata->type ?? null) === 'multi_vendor') {
-            $this->createTransfersForMultiVendorOrder($order, $paymentIntent);
-        }
+        // NON creare trasferimenti immediati - i fondi devono essere trattenuti
+        // I trasferimenti verranno creati solo dopo 72h dalla consegna (via webhook Shippo DELIVERED)
+        // Questo previene truffe: il venditore riceve i fondi solo dopo che il pacco è stato consegnato
 
         // Conferma prenotazione quantità
         $reservationId = $paymentIntent->metadata->reservation_id ?? null;

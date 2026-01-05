@@ -14,6 +14,9 @@ class Kernel extends ConsoleKernel
     {
         // Promemoria spedizione ogni ora
         $schedule->command('orders:send-shipment-reminders --hours=24')->hourly();
+        
+        // Controllo etichette non usate (timeout anti-frode) ogni giorno
+        $schedule->job(new \App\Jobs\CheckUnusedLabels())->daily();
     }
 
     /**

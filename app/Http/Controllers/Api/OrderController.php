@@ -176,7 +176,7 @@ class OrderController extends Controller
             // Aggiorna lo stato solo se è ancora pending_payment
             if ($order->status === 'pending_payment') {
                 $order->update([
-                    'status' => 'confirmed',
+                    'status' => 'paid_funds_held', // Nuovo stato: fondi pagati ma trattenuti
                     'paid_at' => now()
                 ]);
 

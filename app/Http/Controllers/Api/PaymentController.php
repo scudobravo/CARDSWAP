@@ -580,6 +580,19 @@ class PaymentController extends Controller
     {
         $orderNumber = 'ORD-' . date('Ymd') . '-' . str_pad(Order::count() + 1, 4, '0', STR_PAD_LEFT);
 
+        // Calcola l'importo del payout per ogni venditore (94% del subtotale)
+        $sellerPayoutAmount = 0;
+        foreach ($orderData['sellers'] as $sellerData) {
+            $sellerSubtotal = 0;
+            foreach ($sellerData['items'] as $itemData) {
+                $listing = \App\Models\CardListing::find($itemData['listing_id']);
+                if ($listing) {
+                    $sellerSubtotal += $listing->price * $itemData['quantity'];
+                }
+            }
+            $sellerPayoutAmount += $sellerSubtotal * 0.94; // 94% del subtotale
+        }
+
         $order = Order::create([
             'order_number' => $orderNumber,
             'buyer_id' => $orderData['buyer']->id,
@@ -591,6 +604,9 @@ class PaymentController extends Controller
             'total_amount' => $orderData['total_amount'],
             'shipping_address' => $orderData['shipping_address'],
             'billing_address' => $orderData['shipping_address'], // Per ora uguale
+            // Nuovi campi per il sistema di trattenuta fondi
+            'seller_payout_amount' => $sellerPayoutAmount,
+            'payout_status' => 'pending_payout' // Fondi trattenuti, in attesa di consegna
         ]);
 
         // Crea gli OrderItem

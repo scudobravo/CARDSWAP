@@ -32,7 +32,16 @@ class Order extends Model
         'stripe_payment_intent_id',
         'paid_at',
         'refunded_at',
-        'refund_reason'
+        'refund_reason',
+        // Nuovi campi per sistema di trattenuta fondi
+        'seller_payout_amount',
+        'payout_status',
+        'payout_scheduled_at',
+        'payout_completed_at',
+        'stripe_transfer_id',
+        'label_created_at',
+        'has_dispute',
+        'dispute_opened_at'
     ];
 
     protected $casts = [
@@ -46,7 +55,14 @@ class Order extends Model
         'delivered_at' => 'datetime',
         'last_shipment_reminder_at' => 'datetime',
         'paid_at' => 'datetime',
-        'refunded_at' => 'datetime'
+        'refunded_at' => 'datetime',
+        // Nuovi cast per sistema di trattenuta fondi
+        'seller_payout_amount' => 'decimal:2',
+        'payout_scheduled_at' => 'datetime',
+        'payout_completed_at' => 'datetime',
+        'label_created_at' => 'datetime',
+        'has_dispute' => 'boolean',
+        'dispute_opened_at' => 'datetime'
     ];
 
     /**
