@@ -344,6 +344,7 @@ const pagination = ref(null)
 const showOrderModal = ref(false)
 const showStatusModal = ref(false)
 const selectedOrder = ref(null)
+const creatingLabel = ref(null)
 
 // Filtri
 const filters = ref({
