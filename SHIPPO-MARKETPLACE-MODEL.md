@@ -144,15 +144,15 @@ php test-shippo-multi-origin.php
 ## 📋 Checklist Azioni
 
 ### Immediate
-- [ ] Verificare quali paesi hanno venditori attivi su CardSwap
-- [ ] Testare disponibilità corrieri per ogni paese di origine
-- [ ] Verificare che il sistema gestisca correttamente indirizzi venditori diversi
+- [x] Verificare quali paesi hanno venditori attivi su CardSwap
+- [x] Testare disponibilità corrieri per ogni paese di origine
+- [x] Verificare che il sistema gestisca correttamente indirizzi venditori diversi
 - [ ] Controllare il flusso di pagamento etichette
 
 ### A Medio Termine
-- [ ] Documentare quali corrieri sono disponibili per ogni paese
-- [ ] Implementare fallback se un corriere non è disponibile
-- [ ] Considerare integrazione "Gray label" se necessario
+- [x] Documentare quali corrieri sono disponibili per ogni paese
+- [ ] Implementare fallback se un corriere non è disponibile (per Italia/USA/Francia/Spagna)
+- [ ] Considerare integrazione "Gray label" per paesi non supportati
 - [ ] Ottimizzare selezione corrieri per costo/tempo
 
 ### A Lungo Termine
@@ -182,7 +182,56 @@ php test-shippo-multi-origin.php
 4. Come funziona esattamente l'integrazione "Gray label"?
 5. Quali sono i costi aggiuntivi per "Gray label"?
 
+## 📊 Risultati Test in Produzione
+
+**Data test**: Gennaio 2025  
+**Ambiente**: Produzione (chiave API LIVE)
+
+### ✅ Paesi con Corrieri Disponibili
+
+#### Germania (DE)
+- ✅ **Deutsche Post** (Maxibrief): €6.50
+- ✅ **DPD DE** (DPD Classic): €10.99
+- **Destinazioni supportate**: Italia
+
+#### Regno Unito (GB)
+- ✅ **DPD UK** (DPD Classic): £18.40-21.88
+- ✅ **DPD UK** (DPD Air Classic): £17.17-34.97
+- ✅ **DPD UK** (DPD Air Express): £28.10-43.13
+- ✅ **DPD UK** (DPD Direct Tracked Mail): £16.03
+- **Destinazioni supportate**: Italia, Stati Uniti, Germania
+
+### ❌ Paesi Senza Corrieri Disponibili
+
+- **Italia (IT)**: Nessuna tariffa disponibile per destinazioni testate
+- **Stati Uniti (US)**: Nessuna tariffa disponibile per destinazioni testate
+- **Francia (FR)**: Nessuna tariffa disponibile per tutte le destinazioni
+- **Spagna (ES)**: Nessuna tariffa disponibile per tutte le destinazioni
+
+### 💡 Conclusioni
+
+1. **Il sistema funziona correttamente**: Tutti gli errori tecnici sono stati risolti
+2. **Limitazioni geografiche confermate**: Come menzionato da Shippo, gli account built-in hanno limitazioni significative
+3. **Alcuni paesi funzionano**: Germania e Regno Unito hanno corrieri disponibili tramite account built-in
+4. **Italia non supportata**: Per venditori italiani, è necessario considerare alternative
+
+### 🎯 Raccomandazioni Finali
+
+1. **Per venditori in Italia**:
+   - Implementare account corrieri locali (Poste Italiane, GLS, ecc.)
+   - Considerare integrazione "Gray label" di Shippo
+   - Usare prezzi fissi per spedizioni domestiche (già implementato)
+
+2. **Per venditori in Germania/UK**:
+   - Il sistema funziona correttamente con account built-in
+   - Monitorare disponibilità corrieri
+
+3. **Per altri paesi**:
+   - Valutare caso per caso
+   - Considerare account corrieri locali
+   - Implementare fallback con prezzi fissi se necessario
+
 ---
 
-**Data analisi**: Gennaio 2025
-**Status**: Da implementare/testare
+**Data analisi**: Gennaio 2025  
+**Status**: ✅ Test completato - Limitazioni geografiche confermate
