@@ -612,50 +612,37 @@ class StripeService
     {
         try {
             $totalAmount = $orderData['total_amount'] * 100; // Converti in centesimi
-            $applicationFee = $orderData['application_fee'] * 100; // Commissione piattaforma
             
-            // Crea il PaymentIntent principale
+            // Per pagamenti multi-venditore, NON possiamo usare application_fee_amount sul PaymentIntent principale
+            // perché Stripe richiede transfer_data[destination] quando si usa application_fee_amount
+            // Invece, creiamo il PaymentIntent senza application_fee e gestiamo i trasferimenti dopo la conferma
+            // La commissione viene calcolata e trattenuta nei trasferimenti (venditore riceve 94%, piattaforma trattiene 6%)
+            
+            // Crea il PaymentIntent principale SENZA application_fee_amount
+            // I trasferimenti verranno creati dopo che il pagamento è confermato (via webhook)
             $paymentIntent = $this->stripe->paymentIntents->create([
                 'amount' => $totalAmount,
                 'currency' => $orderData['currency'] ?? 'eur',
-                'application_fee_amount' => $applicationFee,
                 'metadata' => [
                     'order_id' => $orderData['order_id'],
                     'buyer_id' => $orderData['buyer_id'],
-                    'type' => 'multi_vendor'
+                    'type' => 'multi_vendor',
+                    'application_fee' => $orderData['application_fee'] * 100, // Salva la commissione nei metadata
                 ],
                 'automatic_payment_methods' => [
                     'enabled' => true,
                 ],
             ]);
 
-            // Crea i trasferimenti per ogni venditore
-            // Il venditore riceve solo il 94% del subtotale (senza spedizione)
-            // La spedizione viene gestita tramite Shippo e non viene data al venditore
-            $transfers = [];
-            foreach ($orderData['sellers'] as $seller) {
-                $sellerSubtotal = $seller['amount'] * 100; // Subtotale in centesimi (senza spedizione)
-                $sellerAmount = (int) round($sellerSubtotal * 0.94); // 94% del subtotale
-                
-                $transfer = $this->stripe->transfers->create([
-                    'amount' => $sellerAmount,
-                    'currency' => $orderData['currency'] ?? 'eur',
-                    'destination' => $seller['stripe_account_id'],
-                    'metadata' => [
-                        'order_id' => $orderData['order_id'],
-                        'seller_id' => $seller['seller_id'],
-                        'payment_intent_id' => $paymentIntent->id,
-                    ],
-                ]);
-                
-                $transfers[] = $transfer;
-            }
+            // NOTA: I trasferimenti NON vengono creati qui perché il pagamento non è ancora confermato
+            // Verranno creati automaticamente quando il webhook riceve payment_intent.succeeded
+            // Questo evita il problema "Can only apply an application_fee_amount when using transfer_data[destination]"
 
             return [
                 'success' => true,
                 'payment_intent' => $paymentIntent,
                 'client_secret' => $paymentIntent->client_secret,
-                'transfers' => $transfers,
+                'transfers' => [], // I trasferimenti verranno creati via webhook
             ];
         } catch (ApiErrorException $e) {
             Log::error('Stripe Multi-Vendor Payment Error: ' . $e->getMessage());
@@ -728,6 +715,11 @@ class StripeService
             'paid_at' => now()
         ]);
 
+        // Se è un pagamento multi-venditore, crea i trasferimenti per ogni venditore
+        if (($paymentIntent->metadata->type ?? null) === 'multi_vendor') {
+            $this->createTransfersForMultiVendorOrder($order, $paymentIntent);
+        }
+
         // Conferma prenotazione quantità
         $reservationId = $paymentIntent->metadata->reservation_id ?? null;
         if ($reservationId) {
@@ -736,6 +728,96 @@ class StripeService
 
         // Invia notifiche
         $this->notifyPaymentSuccess($order, $paymentIntent);
+    }
+
+    /**
+     * Crea trasferimenti per ordine multi-venditore
+     */
+    private function createTransfersForMultiVendorOrder(\App\Models\Order $order, object $paymentIntent): void
+    {
+        try {
+            // Carica orderItems con le relazioni necessarie
+            $order->load(['orderItems.cardListing.seller']);
+            
+            // Raggruppa gli orderItems per venditore
+            $sellersData = [];
+            foreach ($order->orderItems as $item) {
+                $listing = $item->cardListing;
+                if (!$listing || !$listing->seller) {
+                    Log::warning("OrderItem {$item->id} non ha listing o seller valido", [
+                        'order_id' => $order->id,
+                        'item_id' => $item->id,
+                    ]);
+                    continue;
+                }
+                
+                $sellerId = $listing->seller_id;
+                if (!isset($sellersData[$sellerId])) {
+                    $seller = $listing->seller;
+                    if (!$seller->stripe_account_id) {
+                        Log::warning("Venditore {$sellerId} non ha Stripe Connect configurato, salto trasferimento", [
+                            'order_id' => $order->id,
+                            'seller_id' => $sellerId,
+                        ]);
+                        continue;
+                    }
+                    
+                    $sellersData[$sellerId] = [
+                        'seller' => $seller,
+                        'amount' => 0,
+                    ];
+                }
+                
+                // Aggiungi il totale dell'item (94% va al venditore, 6% è commissione)
+                $sellersData[$sellerId]['amount'] += $item->total_price;
+            }
+
+            if (empty($sellersData)) {
+                Log::warning("Nessun venditore valido trovato per ordine {$order->id}");
+                return;
+            }
+
+            // Crea trasferimenti per ogni venditore
+            foreach ($sellersData as $sellerData) {
+                $seller = $sellerData['seller'];
+                $sellerSubtotal = $sellerData['amount'];
+                $sellerAmount = (int) round($sellerSubtotal * 0.94 * 100); // 94% del subtotale in centesimi
+                
+                if ($sellerAmount <= 0) {
+                    Log::warning("Importo trasferimento zero per venditore {$seller->id}, salto", [
+                        'order_id' => $order->id,
+                        'seller_id' => $seller->id,
+                        'subtotal' => $sellerSubtotal,
+                    ]);
+                    continue;
+                }
+                
+                $transfer = $this->stripe->transfers->create([
+                    'amount' => $sellerAmount,
+                    'currency' => 'eur',
+                    'destination' => $seller->stripe_account_id,
+                    'metadata' => [
+                        'order_id' => $order->id,
+                        'seller_id' => $seller->id,
+                        'payment_intent_id' => $paymentIntent->id,
+                    ],
+                ]);
+                
+                Log::info("Trasferimento creato per venditore", [
+                    'seller_id' => $seller->id,
+                    'transfer_id' => $transfer->id,
+                    'amount' => $sellerAmount / 100,
+                    'order_id' => $order->id,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Errore nella creazione trasferimenti multi-venditore: ' . $e->getMessage(), [
+                'order_id' => $order->id,
+                'payment_intent_id' => $paymentIntent->id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            // Non blocchiamo il processo, l'ordine è già confermato
+        }
     }
 
     /**

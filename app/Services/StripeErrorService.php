@@ -15,10 +15,17 @@ class StripeErrorService
         $errorCode = $e->getStripeCode();
         $errorType = $e->getStripeParam();
         
+        // getDeclineCode() esiste solo su CardException, non su InvalidRequestException
+        $declineCode = null;
+        if (method_exists($e, 'getDeclineCode')) {
+            $declineCode = $e->getDeclineCode();
+        }
+        
         Log::error('Stripe Error: ' . $e->getMessage(), [
             'code' => $errorCode,
             'type' => $errorType,
-            'decline_code' => $e->getDeclineCode() ?? null
+            'decline_code' => $declineCode,
+            'exception_type' => get_class($e)
         ]);
 
         return match($errorCode) {
@@ -42,7 +49,8 @@ class StripeErrorService
      */
     private function handleCardDeclined(ApiErrorException $e): array
     {
-        $declineCode = $e->getDeclineCode();
+        // getDeclineCode() esiste solo su CardException
+        $declineCode = method_exists($e, 'getDeclineCode') ? $e->getDeclineCode() : null;
         
         return match($declineCode) {
             'generic_decline' => [
