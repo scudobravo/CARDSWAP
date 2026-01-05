@@ -281,6 +281,7 @@ class PaymentController extends Controller
             $sellers = [];
             $cartData = $requestData['cart_data'];
             $shippingMethods = $requestData['shipping_methods'] ?? [];
+            $shippingCosts = $requestData['shipping_costs'] ?? []; // Costi dei metodi selezionati dal frontend
             $selectedShippingZones = $requestData['selected_shipping_zones'] ?? []; // Supporta anche questo formato
 
             foreach ($cartData as $sellerId => $items) {
@@ -412,14 +413,38 @@ class PaymentController extends Controller
 
                 // Se abbiamo una zona, aggiungi il venditore
                 if ($shippingZoneId) {
+                    // Determina il costo di spedizione dal metodo selezionato
+                    $selectedMethod = $shippingMethods[$sellerId] ?? null;
+                    $shippingCost = null;
+                    
+                    // Prova prima a usare il costo inviato dal frontend
+                    if (isset($shippingCosts[$sellerId]) && $shippingCosts[$sellerId] > 0) {
+                        $shippingCost = (float) $shippingCosts[$sellerId];
+                        \Log::info('Using shipping cost from frontend', [
+                            'seller_id' => $sellerId,
+                            'cost' => $shippingCost,
+                        ]);
+                    } elseif ($selectedMethod === 'standard') {
+                        // Se il metodo è 'standard', usa il costo fisso
+                        $shippingCost = 5.00;
+                    } elseif ($selectedMethod === 'express') {
+                        // Se il metodo è 'express', usa il costo fisso
+                        $shippingCost = 16.00;
+                    }
+                    // Se è un ID Shippo e non abbiamo il costo, verrà calcolato dalla zona
+                    
                     $sellers[] = [
                         'seller_id' => (int) $sellerId,
                         'items' => $sellerItems,
                         'shipping_zone_id' => $shippingZoneId,
+                        'selected_shipping_method' => $selectedMethod,
+                        'shipping_cost' => $shippingCost, // Costo dal metodo selezionato, null se da calcolare
                     ];
                     \Log::info('Seller added to payment request', [
                         'seller_id' => $sellerId,
                         'zone_id' => $shippingZoneId,
+                        'selected_method' => $selectedMethod,
+                        'shipping_cost' => $shippingCost,
                         'items_count' => count($sellerItems),
                     ]);
                 } else {
@@ -518,8 +543,14 @@ class PaymentController extends Controller
             }
 
             // Calcola costo spedizione
-            $shippingZone = \App\Models\ShippingZone::find($sellerData['shipping_zone_id']);
-            $shippingCost = $listing->getShippingCostForZone($sellerData['shipping_zone_id']);
+            // Se è stato specificato un costo dal metodo selezionato, usalo
+            if (isset($sellerData['shipping_cost']) && $sellerData['shipping_cost'] !== null) {
+                $shippingCost = (float) $sellerData['shipping_cost'];
+            } else {
+                // Altrimenti calcola dalla zona
+                $shippingZone = \App\Models\ShippingZone::find($sellerData['shipping_zone_id']);
+                $shippingCost = $listing->getShippingCostForZone($sellerData['shipping_zone_id']);
+            }
             $totalShippingCost += $shippingCost;
             $subtotal += $sellerSubtotal;
         }

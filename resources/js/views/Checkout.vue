@@ -1020,6 +1020,16 @@ const processPayment = async () => {
     }
 
     // Prepara i dati per il pagamento con metodi di spedizione per venditore
+    // Invia anche i costi dei metodi selezionati
+    const shippingCosts = {}
+    cartStore.sellers.forEach(seller => {
+      const methodId = selectedShippingMethods.value[seller.id]
+      if (methodId) {
+        const cost = getShippingCostForMethod(methodId, seller.id)
+        shippingCosts[seller.id] = cost
+      }
+    })
+    
     const paymentData = {
       address: selectedAddress.value || {
         first_name: formData.value.firstName,
@@ -1034,6 +1044,7 @@ const processPayment = async () => {
         phone: formData.value.phone
       },
       shipping_methods: selectedShippingMethods.value, // Metodi per venditore
+      shipping_costs: shippingCosts, // Costi dei metodi selezionati
       payment_method: paymentMethod, // Sempre Stripe
       cart_data: cartStore.getCartData()
     }
