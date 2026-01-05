@@ -70,6 +70,18 @@ class OrderController extends Controller
                 $cardModel = $listing->cardModel;
                 $seller = $listing->seller;
 
+                // Formatta l'immagine correttamente
+                $image = null;
+                if ($listing->images && is_array($listing->images) && count($listing->images) > 0) {
+                    $imagePath = $listing->images[0];
+                    // Se l'immagine non inizia con http o /storage/, aggiungi /storage/
+                    if ($imagePath && !str_starts_with($imagePath, 'http') && !str_starts_with($imagePath, '/storage/')) {
+                        $image = '/storage/' . ltrim($imagePath, '/');
+                    } else {
+                        $image = $imagePath;
+                    }
+                }
+
                 return [
                     'id' => $item->id,
                     'name' => $cardModel ? $cardModel->name : 'Prodotto',
@@ -77,7 +89,7 @@ class OrderController extends Controller
                     'price' => $item->price,
                     'quantity' => $item->quantity,
                     'seller_name' => $seller ? $seller->name : 'Venditore',
-                    'image' => $listing->images ? $listing->images[0] : null
+                    'image' => $image
                 ];
             });
 

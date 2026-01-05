@@ -492,7 +492,7 @@ class PaymentController extends Controller
     private function prepareOrderData(array $requestData, User $buyer): array
     {
         $sellers = $requestData['sellers'];
-        $totalAmount = 0;
+        $subtotal = 0;
         $totalShippingCost = 0;
         $orderItems = [];
 
@@ -521,15 +521,22 @@ class PaymentController extends Controller
             $shippingZone = \App\Models\ShippingZone::find($sellerData['shipping_zone_id']);
             $shippingCost = $listing->getShippingCostForZone($sellerData['shipping_zone_id']);
             $totalShippingCost += $shippingCost;
-
-            $totalAmount += $sellerSubtotal + $shippingCost;
+            $subtotal += $sellerSubtotal;
         }
+
+        // Calcola tassa acquirente (costo di gestione): 1.5% sul subtotale
+        $taxAmount = $subtotal * 0.015;
+        
+        // Totale = subtotale + spedizione + tassa acquirente
+        $totalAmount = $subtotal + $totalShippingCost + $taxAmount;
 
         return [
             'buyer' => $buyer,
             'sellers' => $sellers,
+            'subtotal' => $subtotal,
             'total_amount' => $totalAmount,
             'total_shipping_cost' => $totalShippingCost,
+            'tax_amount' => $taxAmount,
             'shipping_address' => $requestData['shipping_address'],
             'order_items' => $orderItems
         ];
@@ -547,9 +554,9 @@ class PaymentController extends Controller
             'buyer_id' => $orderData['buyer']->id,
             'seller_id' => $orderData['sellers'][0]['seller_id'], // Primo venditore come principale
             'status' => 'pending',
-            'subtotal' => $orderData['total_amount'] - $orderData['total_shipping_cost'],
+            'subtotal' => $orderData['subtotal'] ?? ($orderData['total_amount'] - $orderData['total_shipping_cost'] - ($orderData['tax_amount'] ?? 0)),
             'shipping_cost' => $orderData['total_shipping_cost'],
-            'tax_amount' => 0, // Per ora 0
+            'tax_amount' => $orderData['tax_amount'] ?? 0, // Costo di gestione (1.5% sul subtotale)
             'total_amount' => $orderData['total_amount'],
             'shipping_address' => $orderData['shipping_address'],
             'billing_address' => $orderData['shipping_address'], // Per ora uguale
