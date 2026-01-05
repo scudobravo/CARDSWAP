@@ -60,6 +60,27 @@ $testDestinations = [
     'DE' => 'Germania',
 ];
 
+echo "=== Test Preliminare: Creazione Indirizzi ===\n";
+echo "Verifica se la creazione degli indirizzi funziona correttamente...\n\n";
+
+// Test creazione indirizzo semplice
+try {
+    $testAddress = [
+        'name' => 'Test',
+        'street1' => 'Via Roma 1',
+        'city' => 'Milano',
+        'state' => 'MI',
+        'zip' => '20100',
+        'country' => 'IT',
+    ];
+    
+    $testAddr = $shippoService->createAddress($testAddress, false);
+    echo "✅ Creazione indirizzo IT funziona (ID: " . substr($testAddr['object_id'] ?? 'N/A', 0, 20) . ")\n\n";
+} catch (Exception $e) {
+    echo "❌ ERRORE nella creazione indirizzo base: " . substr($e->getMessage(), 0, 200) . "\n";
+    echo "   Questo potrebbe essere il problema principale!\n\n";
+}
+
 echo "=== Test Disponibilità Corrieri per Paese di Origine ===\n\n";
 
 foreach ($originCountries as $originCode => $originName) {
@@ -215,7 +236,7 @@ foreach ($originCountries as $originCode => $originName) {
                 // Cerca di estrarre dettagli dall'errore
                 if (strpos($errorMsg, 'HTTP request returned status code') !== false) {
                     // Estrai il JSON dall'errore se presente
-                    if (preg_match('/\{.*\}/', $errorMsg, $matches)) {
+                    if (preg_match('/\{.*\}/s', $errorMsg, $matches)) {
                         $errorJson = json_decode($matches[0], true);
                         if ($errorJson) {
                             $errorDetails = json_encode($errorJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
@@ -223,19 +244,25 @@ foreach ($originCountries as $originCode => $originName) {
                     }
                 }
                 
+                // Mostra sempre l'errore completo per debug
                 if (strpos($errorMsg, 'No rates found') !== false || 
                     strpos($errorMsg, 'no available rates') !== false ||
                     strpos($errorMsg, 'No carrier accounts') !== false) {
                     echo "    ❌ Nessun corriere disponibile per questa rotta\n";
-                } else if (strpos($errorMsg, 'country') !== false) {
-                    echo "    ❌ Errore validazione indirizzo (paese non riconosciuto?)\n";
                     if ($errorDetails) {
-                        echo "       Dettagli: " . substr($errorDetails, 0, 100) . "...\n";
+                        echo "       " . substr($errorDetails, 0, 300) . "\n";
+                    }
+                } else if (strpos($errorMsg, 'country') !== false || strpos($errorMsg, 'Address') !== false) {
+                    echo "    ❌ Errore validazione indirizzo\n";
+                    echo "       Errore completo: " . substr($errorMsg, 0, 200) . "\n";
+                    if ($errorDetails) {
+                        echo "       Dettagli JSON:\n";
+                        echo "       " . substr($errorDetails, 0, 500) . "\n";
                     }
                 } else {
-                    echo "    ❌ Errore: " . substr($errorMsg, 0, 80) . "\n";
-                    if ($errorDetails && strlen($errorDetails) < 200) {
-                        echo "       " . $errorDetails . "\n";
+                    echo "    ❌ Errore: " . substr($errorMsg, 0, 150) . "\n";
+                    if ($errorDetails) {
+                        echo "       " . substr($errorDetails, 0, 300) . "\n";
                     }
                 }
             }
