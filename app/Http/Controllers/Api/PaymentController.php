@@ -581,6 +581,10 @@ class PaymentController extends Controller
         foreach ($orderData['sellers'] as $sellerData) {
             $seller = User::find($sellerData['seller_id']);
             
+            if (!$seller) {
+                throw new \Exception("Venditore con ID {$sellerData['seller_id']} non trovato");
+            }
+            
             if (!$seller->stripe_account_id) {
                 throw new \Exception("Venditore {$seller->name} non ha un account Stripe configurato");
             }
@@ -588,6 +592,9 @@ class PaymentController extends Controller
             $sellerAmount = 0;
             foreach ($sellerData['items'] as $itemData) {
                 $listing = \App\Models\CardListing::find($itemData['listing_id']);
+                if (!$listing) {
+                    throw new \Exception("Inserzione con ID {$itemData['listing_id']} non trovata");
+                }
                 $sellerAmount += $listing->price * $itemData['quantity'];
             }
 
