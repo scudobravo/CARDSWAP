@@ -234,6 +234,23 @@
                   Dettagli
                 </button>
                 
+                <!-- Pulsante Crea Etichetta Shippo (solo per ordini confermati senza tracking) -->
+                <button 
+                  v-if="order.status === 'confirmed' && !order.tracking_number"
+                  @click="createShippoLabel(order)"
+                  :disabled="creatingLabel === order.id"
+                  class="px-3 py-1 text-sm font-gill-sans-semibold text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span v-if="creatingLabel === order.id" class="flex items-center">
+                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Creando...
+                  </span>
+                  <span v-else>Crea Etichetta</span>
+                </button>
+                
                 <button 
                   v-if="canUpdateStatus(order.status)"
                   @click="openStatusModal(order)"
@@ -507,6 +524,120 @@ const handleStatusUpdated = () => {
   loadOrders()
   closeOrderModal()
   closeStatusModal()
+}
+
+const createShippoLabel = async (order) => {
+  if (!confirm('Vuoi creare l\'etichetta di spedizione Shippo per questo ordine?')) {
+    return
+  }
+
+  creatingLabel.value = order.id
+  error.value = null
+
+  try {
+    // Prima calcola le tariffe per questo ordine
+    const shippingAddress = order.shipping_address
+    if (!shippingAddress) {
+      throw new Error('Indirizzo di spedizione non trovato')
+    }
+
+    // Prepara i dati del venditore
+    const seller = {
+      id: order.seller_id,
+      name: order.seller?.name || 'Venditore',
+      address: {
+        street1: 'Via Roma 1', // TODO: Ottenere indirizzo reale del venditore
+        city: 'Milano',
+        state: 'MI',
+        zip: '20100',
+        country: 'IT'
+      }
+    }
+
+    // Calcola le tariffe
+    const ratesResponse = await fetch('/api/shipping/calculate-rates', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        sellers: [seller],
+        shipping_address: {
+          name: `${shippingAddress.first_name} ${shippingAddress.last_name}`,
+          street1: shippingAddress.address_line_1,
+          city: shippingAddress.city,
+          state: shippingAddress.state_province || shippingAddress.region,
+          zip: shippingAddress.postal_code,
+          country: shippingAddress.country
+        }
+      })
+    })
+
+    if (!ratesResponse.ok) {
+      throw new Error('Errore nel calcolo delle tariffe')
+    }
+
+    const ratesData = await ratesResponse.json()
+    const sellerRates = ratesData.data?.[order.seller_id]?.rates
+
+    if (!sellerRates || sellerRates.length === 0) {
+      throw new Error('Nessuna tariffa disponibile per questo ordine')
+    }
+
+    // Usa la prima tariffa disponibile (o quella più economica)
+    const selectedRate = sellerRates[0]
+
+    // Acquista l'etichetta
+    const labelResponse = await fetch('/api/shipping/purchase-label', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        rate_object_id: selectedRate.object_id,
+        order_id: order.id,
+        seller_id: order.seller_id
+      })
+    })
+
+    if (!labelResponse.ok) {
+      const errorData = await labelResponse.json()
+      throw new Error(errorData.message || 'Errore nella creazione dell\'etichetta')
+    }
+
+    const labelData = await labelResponse.json()
+
+    if (labelData.success) {
+      // Aggiorna l'ordine con il tracking number
+      await fetch(`/api/orders/${order.id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          status: 'shipped',
+          tracking_number: labelData.data.tracking_number
+        })
+      })
+
+      alert(`Etichetta creata con successo!\nTracking: ${labelData.data.tracking_number}\n\nPuoi scaricare l'etichetta dal link fornito.`)
+      loadOrders()
+    } else {
+      throw new Error(labelData.message || 'Errore nella creazione dell\'etichetta')
+    }
+  } catch (err) {
+    console.error('Errore creazione etichetta Shippo:', err)
+    error.value = err.message
+    alert(`Errore: ${err.message}`)
+  } finally {
+    creatingLabel.value = null
+  }
 }
 
 // Lifecycle
