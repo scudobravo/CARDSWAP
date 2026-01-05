@@ -512,7 +512,9 @@ const getPageNumbers = () => {
 }
 
 const canUpdateStatus = (status) => {
-  return ['pending', 'confirmed', 'shipped'].includes(status)
+  // Con il nuovo sistema, gli stati vengono gestiti automaticamente da Shippo
+  // Il venditore può solo creare etichette, non aggiornare manualmente lo stato
+  return false // Disabilitato - gli stati vengono gestiti da Shippo webhook
 }
 
 const viewOrderDetails = (order) => {
