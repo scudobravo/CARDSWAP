@@ -220,7 +220,7 @@ class OrderController extends Controller
             }
 
             $validator = Validator::make($request->all(), [
-                'status' => 'required|string|in:pending,shipped,delivered,cancelled',
+                'status' => 'required|string|in:pending,pending_payment,paid_funds_held,label_created,in_transit_verified,delivered_pending_72h,dispute_hold,completed,confirmed,shipped,delivered,cancelled,refunded',
                 'tracking_number' => 'nullable|string|max:255',
                 'notes' => 'nullable|string|max:1000'
             ]);

@@ -171,6 +171,13 @@ watch(() => formData.status, (newStatus) => {
 const getStatusLabel = (status) => {
   const labels = {
     pending: 'In attesa',
+    pending_payment: 'Pagamento in attesa',
+    paid_funds_held: 'Fondi trattenuti',
+    label_created: 'Etichetta creata',
+    in_transit_verified: 'In transito',
+    delivered_pending_72h: 'Consegnato (72h)',
+    dispute_hold: 'Dispute aperta',
+    completed: 'Completato',
     confirmed: 'Confermato',
     shipped: 'Spedito',
     delivered: 'Consegnato',
@@ -183,6 +190,13 @@ const getStatusLabel = (status) => {
 const getStatusBadgeClass = (status) => {
   const classes = {
     pending: 'bg-yellow-100 text-yellow-800',
+    pending_payment: 'bg-orange-100 text-orange-800',
+    paid_funds_held: 'bg-blue-100 text-blue-800',
+    label_created: 'bg-indigo-100 text-indigo-800',
+    in_transit_verified: 'bg-purple-100 text-purple-800',
+    delivered_pending_72h: 'bg-green-100 text-green-800',
+    dispute_hold: 'bg-red-100 text-red-800',
+    completed: 'bg-emerald-100 text-emerald-800',
     confirmed: 'bg-blue-100 text-blue-800',
     shipped: 'bg-purple-100 text-purple-800',
     delivered: 'bg-green-100 text-green-800',
