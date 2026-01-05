@@ -264,6 +264,18 @@ class ShippoService
             
             // Prepara payload per shipment
             // Shippo richiede il paese anche quando si usa object_id
+            // Shippo richiede anche mass_unit e weight quando si usa object_id del pacco
+            $parcelPayload = [
+                'object_id' => $parcelObj['object_id'],
+                'mass_unit' => $parcel['mass_unit'] ?? $parcelObj['mass_unit'] ?? 'kg',
+                'weight' => $parcel['weight'] ?? $parcelObj['weight'] ?? null
+            ];
+            
+            // Rimuovi weight se null
+            if ($parcelPayload['weight'] === null) {
+                unset($parcelPayload['weight']);
+            }
+            
             $shipmentPayload = [
                 'address_from' => [
                     'object_id' => $from['object_id'],
@@ -273,7 +285,7 @@ class ShippoService
                     'object_id' => $to['object_id'],
                     'country' => $toAddress['country'] ?? $to['country'] ?? null
                 ],
-                'parcels' => [['object_id' => $parcelObj['object_id']]],
+                'parcels' => [$parcelPayload],
             ];
             
             // Rimuovi campi null
@@ -390,6 +402,19 @@ class ShippoService
 
                 // Crea shipment e calcola tariffe
                 // Shippo richiede il paese anche quando si usa object_id
+                // Shippo richiede anche mass_unit e weight quando si usa object_id del pacco
+                $parcelConfig = config('services.shippo.pricing.default_parcel');
+                $parcelPayload = [
+                    'object_id' => $parcel['object_id'],
+                    'mass_unit' => $parcelConfig['mass_unit'] ?? $parcel['mass_unit'] ?? 'kg',
+                    'weight' => $parcelConfig['weight'] ?? $parcel['weight'] ?? null
+                ];
+                
+                // Rimuovi weight se null
+                if ($parcelPayload['weight'] === null) {
+                    unset($parcelPayload['weight']);
+                }
+                
                 $shipmentPayload = [
                     'address_from' => [
                         'object_id' => $fromAddress['object_id'],
@@ -399,7 +424,7 @@ class ShippoService
                         'object_id' => $toAddress['object_id'],
                         'country' => $shippingAddress['country'] ?? $toAddress['country'] ?? null
                     ],
-                    'parcels' => [['object_id' => $parcel['object_id']]],
+                    'parcels' => [$parcelPayload],
                 ];
                 
                 // Rimuovi campi null
