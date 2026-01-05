@@ -38,18 +38,45 @@ class ReleaseSellerFunds implements ShouldQueue
             return;
         }
 
+        Log::info('ReleaseSellerFunds job started', [
+            'order_id' => $order->id,
+            'order_number' => $order->order_number,
+            'current_status' => $order->status,
+            'payout_status' => $order->payout_status,
+            'has_dispute' => $order->has_dispute,
+            'payout_scheduled_at' => $order->payout_scheduled_at,
+            'delivered_at' => $order->delivered_at
+        ]);
+
         // Verifica che l'ordine sia nello stato corretto
         if ($order->status !== 'delivered_pending_72h') {
             Log::warning('Ordine non in stato delivered_pending_72h, salto rilascio fondi', [
                 'order_id' => $order->id,
-                'status' => $order->status
+                'order_number' => $order->order_number,
+                'current_status' => $order->status,
+                'expected_status' => 'delivered_pending_72h'
+            ]);
+            return;
+        }
+
+        // Verifica se il payout è già stato completato (evita duplicati)
+        if ($order->payout_status === 'paid') {
+            Log::warning('Payout already completed for order', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'payout_completed_at' => $order->payout_completed_at,
+                'stripe_transfer_id' => $order->stripe_transfer_id
             ]);
             return;
         }
 
         // Verifica se c'è una dispute aperta
         if ($order->has_dispute) {
-            Log::info('Dispute aperta per ordine, blocco payout', ['order_id' => $order->id]);
+            Log::info('Dispute aperta per ordine, blocco payout', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'dispute_opened_at' => $order->dispute_opened_at
+            ]);
             $order->update([
                 'status' => 'dispute_hold',
                 'payout_status' => 'dispute_hold'

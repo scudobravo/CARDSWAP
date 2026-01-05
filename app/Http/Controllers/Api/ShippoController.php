@@ -99,30 +99,78 @@ class ShippoController extends Controller
                 'seller_id' => $request->input('seller_id'),
             ];
 
+            // Verifica che l'ordine esista e sia in uno stato valido per creare l'etichetta
+            $order = Order::find($orderData['order_id']);
+            if (!$order) {
+                Log::error('Order not found for label purchase', [
+                    'order_id' => $orderData['order_id'],
+                    'seller_id' => $orderData['seller_id'],
+                    'rate_object_id' => $rateObjectId
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ordine non trovato'
+                ], 404);
+            }
+
+            // Verifica che l'ordine sia in uno stato valido per creare l'etichetta
+            $validStatuses = ['paid_funds_held', 'label_created']; // label_created per permettere retry
+            if (!in_array($order->status, $validStatuses)) {
+                Log::warning('Order status not valid for label creation', [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'current_status' => $order->status,
+                    'seller_id' => $orderData['seller_id'],
+                    'valid_statuses' => $validStatuses
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => "Impossibile creare l'etichetta: lo stato dell'ordine non è valido (stato attuale: {$order->status})"
+                ], 400);
+            }
+
+            Log::info('Purchasing Shippo label for order', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'seller_id' => $orderData['seller_id'],
+                'rate_object_id' => $rateObjectId,
+                'current_status' => $order->status
+            ]);
+
             $result = $this->shippoService->purchaseLabelForOrder($rateObjectId, $orderData);
 
             if ($result['success']) {
                 // Aggiorna lo stato dell'ordine a LABEL_CREATED
-                $order = Order::find($orderData['order_id']);
-                if ($order) {
-                    $order->update([
-                        'status' => 'label_created',
-                        'tracking_number' => $result['tracking_number'],
-                        'carrier_code' => $result['carrier'],
-                        'tracking_url' => $result['tracking_url'],
-                        'label_created_at' => now(),
-                        'shipped_at' => now() // Considera come spedito quando viene creata l'etichetta
-                    ]);
-                }
+                $order->update([
+                    'status' => 'label_created',
+                    'tracking_number' => $result['tracking_number'],
+                    'carrier_code' => $result['carrier'],
+                    'tracking_url' => $result['tracking_url'],
+                    'label_created_at' => now(),
+                    'shipped_at' => now() // Considera come spedito quando viene creata l'etichetta
+                ]);
+
+                Log::info('Label created successfully and order updated', [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'tracking_number' => $result['tracking_number'],
+                    'carrier' => $result['carrier']
+                ]);
 
                 return response()->json([
                     'success' => true,
                     'data' => $result
                 ]);
             } else {
+                Log::error('Failed to purchase Shippo label', [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'rate_object_id' => $rateObjectId,
+                    'error' => $result['error'] ?? 'Unknown error'
+                ]);
                 return response()->json([
                     'success' => false,
-                    'message' => $result['error']
+                    'message' => $result['error'] ?? 'Errore nell\'acquisto dell\'etichetta'
                 ], 400);
             }
 

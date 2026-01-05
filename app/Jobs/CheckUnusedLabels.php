@@ -24,17 +24,35 @@ class CheckUnusedLabels implements ShouldQueue
         // ma senza evento CARRIER_ACCEPTED (etichetta mai usata)
         $cutoffDate = now()->subDays(5);
         
+        Log::info('Checking for unused labels (timeout anti-frode)', [
+            'cutoff_date' => $cutoffDate,
+            'checking_status' => 'label_created'
+        ]);
+        
+        // Nota: NON usiamo whereNull('shipped_at') perché quando viene creata l'etichetta
+        // viene impostato shipped_at. Verificheremo invece se ci sono eventi di tracking
         $orders = Order::where('status', 'label_created')
             ->where('label_created_at', '<=', $cutoffDate)
-            ->whereNull('shipped_at') // Non ancora spedito
             ->get();
+        
+        Log::info('Found orders with label_created status older than 5 days', [
+            'count' => $orders->count()
+        ]);
 
         foreach ($orders as $order) {
             // Verifica se c'è un evento di tracking che indica che il corriere ha accettato il pacco
+            // Usa whereIn per evitare problemi con orWhere
             $hasCarrierAccepted = $order->trackingEvents()
-                ->where('status', 'picked_up')
-                ->orWhere('status', 'in_transit')
+                ->whereIn('status', ['picked_up', 'in_transit', 'out_for_delivery'])
                 ->exists();
+            
+            Log::debug('Checking order for unused label', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'label_created_at' => $order->label_created_at,
+                'has_carrier_accepted' => $hasCarrierAccepted,
+                'tracking_events_count' => $order->trackingEvents()->count()
+            ]);
 
             if (!$hasCarrierAccepted) {
                 // Etichetta mai usata - timeout anti-frode

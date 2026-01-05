@@ -253,11 +253,31 @@ class ShippoWebhookController extends Controller
             return;
         }
 
+        // Verifica che l'ordine sia in uno stato valido per essere aggiornato
+        $validStatuses = ['label_created', 'in_transit_verified'];
+        if (!in_array($order->status, $validStatuses)) {
+            Log::warning('Order status not valid for picked_up update', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'current_status' => $order->status,
+                'tracking_number' => $trackingNumber,
+                'valid_statuses' => $validStatuses
+            ]);
+            // Non blocchiamo, ma loggiamo
+        }
+
+        Log::info('Updating order to in_transit_verified from picked_up webhook', [
+            'order_id' => $order->id,
+            'order_number' => $order->order_number,
+            'previous_status' => $order->status,
+            'tracking_number' => $trackingNumber
+        ]);
+
         // Aggiorna stato ordine - spedizione verificata dal corriere
         $order->update([
             'status' => 'in_transit_verified', // Nuovo stato: spedizione verificata
             'tracking_status' => 'picked_up',
-            'shipped_at' => now()
+            'shipped_at' => $order->shipped_at ?? now() // Mantieni la data originale se esiste
         ]);
 
         // Crea evento di tracking
@@ -327,13 +347,49 @@ class ShippoWebhookController extends Controller
             return;
         }
 
+        // Verifica che l'ordine sia in uno stato valido per essere consegnato
+        $validStatuses = ['in_transit_verified', 'delivered_pending_72h', 'label_created']; // label_created per casi edge
+        if (!in_array($order->status, $validStatuses)) {
+            Log::warning('Order status not valid for delivered update', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'current_status' => $order->status,
+                'tracking_number' => $trackingNumber,
+                'valid_statuses' => $validStatuses
+            ]);
+            // Non blocchiamo, ma loggiamo
+        }
+
+        // Verifica se il payout è già stato schedulato (evita duplicati)
+        if ($order->payout_scheduled_at) {
+            Log::info('Payout already scheduled for order, skipping timer setup', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'payout_scheduled_at' => $order->payout_scheduled_at
+            ]);
+        }
+
+        Log::info('Updating order to delivered_pending_72h from delivered webhook', [
+            'order_id' => $order->id,
+            'order_number' => $order->order_number,
+            'previous_status' => $order->status,
+            'tracking_number' => $trackingNumber,
+            'payout_scheduled_at' => $order->payout_scheduled_at ? 'already_set' : now()->addHours(72)->toDateTimeString()
+        ]);
+
         // Aggiorna stato ordine - consegnato, timer 72h avviato
-        $order->update([
+        $updateData = [
             'status' => 'delivered_pending_72h', // Nuovo stato: consegnato, in attesa di 72h
             'tracking_status' => 'delivered',
-            'delivered_at' => now(),
-            'payout_scheduled_at' => now()->addHours(72) // Payout previsto tra 72h
-        ]);
+            'delivered_at' => now()
+        ];
+
+        // Imposta payout_scheduled_at solo se non è già stato impostato
+        if (!$order->payout_scheduled_at) {
+            $updateData['payout_scheduled_at'] = now()->addHours(72); // Payout previsto tra 72h
+        }
+
+        $order->update($updateData);
 
         // Crea evento di tracking
         $this->createTrackingEvent($order, 'delivered', 'Pacco consegnato', $trackingData);

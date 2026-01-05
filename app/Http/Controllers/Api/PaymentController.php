@@ -105,13 +105,44 @@ class PaymentController extends Controller
             $orderData = $this->prepareOrderData($requestData, $buyer);
             
             // Crea l'ordine nel database
+            Log::info('Creating order for payment', [
+                'buyer_id' => $orderData['buyer']->id,
+                'sellers_count' => count($orderData['sellers']),
+                'total_amount' => $orderData['total_amount'],
+                'subtotal' => $orderData['subtotal'],
+                'shipping_cost' => $orderData['total_shipping_cost'],
+                'tax_amount' => $orderData['tax_amount']
+            ]);
+
             $order = $this->createOrder($orderData);
+            
+            Log::info('Order created successfully', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'status' => $order->status,
+                'seller_payout_amount' => $order->seller_payout_amount,
+                'payout_status' => $order->payout_status
+            ]);
             
             // Prepara i dati per Stripe
             $stripeData = $this->prepareStripeData($orderData, $order);
             
+            Log::info('Preparing Stripe payment', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'total_amount' => $stripeData['total_amount'],
+                'sellers_count' => count($stripeData['sellers'])
+            ]);
+            
             // Crea il pagamento con Stripe
             $paymentResult = $this->stripeService->createMultiVendorPayment($stripeData);
+            
+            Log::info('Stripe payment creation result', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'success' => $paymentResult['success'] ?? false,
+                'payment_intent_id' => $paymentResult['payment_intent']->id ?? null
+            ]);
             
             if (!$paymentResult['success']) {
                 DB::rollBack();
@@ -607,6 +638,17 @@ class PaymentController extends Controller
             // Nuovi campi per il sistema di trattenuta fondi
             'seller_payout_amount' => $sellerPayoutAmount,
             'payout_status' => 'pending_payout' // Fondi trattenuti, in attesa di consegna
+        ]);
+
+        Log::info('Order created in database', [
+            'order_id' => $order->id,
+            'order_number' => $order->order_number,
+            'buyer_id' => $order->buyer_id,
+            'seller_id' => $order->seller_id,
+            'status' => $order->status,
+            'total_amount' => $order->total_amount,
+            'seller_payout_amount' => $order->seller_payout_amount,
+            'payout_status' => $order->payout_status
         ]);
 
         // Crea gli OrderItem
