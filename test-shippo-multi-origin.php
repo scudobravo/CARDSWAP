@@ -203,9 +203,16 @@ foreach ($originCountries as $originCode => $originName) {
                 $parcelObj = $shippoService->createParcel($parcel);
                 
                 // Crea shipment
+                // Shippo richiede il paese anche quando si usa object_id
                 $shipmentPayload = [
-                    'address_from' => ['object_id' => $from['object_id']],
-                    'address_to' => ['object_id' => $to['object_id']],
+                    'address_from' => [
+                        'object_id' => $from['object_id'],
+                        'country' => $fromAddress['country']
+                    ],
+                    'address_to' => [
+                        'object_id' => $to['object_id'],
+                        'country' => $toAddress['country']
+                    ],
                     'parcels' => [['object_id' => $parcelObj['object_id']]],
                 ];
                 

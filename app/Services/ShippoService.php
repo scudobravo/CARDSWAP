@@ -263,11 +263,26 @@ class ShippoService
             $parcelObj = $this->createParcel($parcel);
             
             // Prepara payload per shipment
+            // Shippo richiede il paese anche quando si usa object_id
             $shipmentPayload = [
-                'address_from' => ['object_id' => $from['object_id']],
-                'address_to' => ['object_id' => $to['object_id']],
+                'address_from' => [
+                    'object_id' => $from['object_id'],
+                    'country' => $fromAddress['country'] ?? $from['country'] ?? null
+                ],
+                'address_to' => [
+                    'object_id' => $to['object_id'],
+                    'country' => $toAddress['country'] ?? $to['country'] ?? null
+                ],
                 'parcels' => [['object_id' => $parcelObj['object_id']]],
             ];
+            
+            // Rimuovi campi null
+            if ($shipmentPayload['address_from']['country'] === null) {
+                unset($shipmentPayload['address_from']['country']);
+            }
+            if ($shipmentPayload['address_to']['country'] === null) {
+                unset($shipmentPayload['address_to']['country']);
+            }
             
             // Aggiungi carrier accounts specifici se forniti
             if (!empty($carrierAccounts)) {
@@ -374,11 +389,28 @@ class ShippoService
                 ]);
 
                 // Crea shipment e calcola tariffe
-                $shipment = $this->createShipment([
-                    'address_from' => ['object_id' => $fromAddress['object_id']],
-                    'address_to' => ['object_id' => $toAddress['object_id']],
+                // Shippo richiede il paese anche quando si usa object_id
+                $shipmentPayload = [
+                    'address_from' => [
+                        'object_id' => $fromAddress['object_id'],
+                        'country' => $sellerData['address']['country'] ?? $fromAddress['country'] ?? null
+                    ],
+                    'address_to' => [
+                        'object_id' => $toAddress['object_id'],
+                        'country' => $shippingAddress['country'] ?? $toAddress['country'] ?? null
+                    ],
                     'parcels' => [['object_id' => $parcel['object_id']]],
-                ], false);
+                ];
+                
+                // Rimuovi campi null
+                if ($shipmentPayload['address_from']['country'] === null) {
+                    unset($shipmentPayload['address_from']['country']);
+                }
+                if ($shipmentPayload['address_to']['country'] === null) {
+                    unset($shipmentPayload['address_to']['country']);
+                }
+                
+                $shipment = $this->createShipment($shipmentPayload, false);
 
                 // Applica markup e categorizza tariffe
                 $rates = $this->processRates($shipment['rates']);
