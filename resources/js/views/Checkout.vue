@@ -1081,12 +1081,22 @@ const processPayment = async () => {
           await cartStore.clearCart()
           
           // Redirect alla pagina di conferma
-          router.push(`/order-confirmation/${response.data.order_id}`)
+          const orderId = response.data.data?.order_id || response.data.order_id
+          if (orderId) {
+            router.push(`/order-confirmation/${orderId}`)
+          } else {
+            throw new Error('ID ordine non trovato nella risposta')
+          }
         }
       } else {
         // Se non c'è payment_intent, l'ordine è già stato processato
         await cartStore.clearCart()
-        router.push(`/order-confirmation/${response.data.order_id}`)
+        const orderId = response.data.data?.order_id || response.data.order_id
+        if (orderId) {
+          router.push(`/order-confirmation/${orderId}`)
+        } else {
+          throw new Error('ID ordine non trovato nella risposta')
+        }
       }
     } else {
       throw new Error(response.data.message || 'Errore nel processamento dell\'ordine')
