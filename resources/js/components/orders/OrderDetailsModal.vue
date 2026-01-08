@@ -75,19 +75,20 @@
             <!-- Prodotti -->
             <div class="bg-gray-50 rounded-lg p-4">
               <h4 class="text-sm font-gill-sans-semibold text-gray-900 mb-3">Prodotti Ordinati</h4>
-              <div class="space-y-3">
+              <div v-if="getOrderItems(order) && getOrderItems(order).length > 0" class="space-y-3">
                 <div 
-                  v-for="item in order.orderItems" 
+                  v-for="item in getOrderItems(order)" 
                   :key="item.id"
                   class="flex items-center space-x-4 p-3 bg-white rounded-md border border-gray-200"
                 >
                   <!-- Immagine Prodotto -->
                   <div class="flex-shrink-0">
                     <img 
-                      v-if="item.cardListing?.images?.[0]"
-                      :src="item.cardListing.images[0]" 
-                      :alt="item.cardListing.cardModel?.name"
+                      v-if="getItemImage(item)"
+                      :src="getItemImage(item)" 
+                      :alt="getItemName(item)"
                       class="h-16 w-16 object-cover rounded-md"
+                      @error="handleImageError"
                     />
                     <div v-else class="h-16 w-16 bg-gray-200 rounded-md flex items-center justify-center">
                       <PhotoIcon class="h-8 w-8 text-gray-400" />
@@ -97,7 +98,7 @@
                   <!-- Dettagli Prodotto -->
                   <div class="flex-1 min-w-0">
                     <h5 class="text-sm font-gill-sans-semibold text-gray-900 truncate">
-                      {{ item.cardListing?.cardModel?.name || 'Prodotto' }}
+                      {{ getItemName(item) }}
                     </h5>
                     <p class="text-sm text-gray-500">
                       Condizione: {{ getConditionLabel(item.condition) }}
@@ -110,13 +111,16 @@
                   <!-- Prezzo -->
                   <div class="text-right">
                     <p class="text-sm font-gill-sans-semibold text-gray-900">
-                      €{{ item.price }}
+                      €{{ formatPriceItaliana(item.unit_price || item.price || 0) }}
                     </p>
                     <p class="text-xs text-gray-500">
-                      Totale: €{{ formatPriceItaliana(item.price * item.quantity) }}
+                      Totale: €{{ formatPriceItaliana((item.unit_price || item.price || 0) * item.quantity) }}
                     </p>
                   </div>
                 </div>
+              </div>
+              <div v-else class="text-center py-8 text-gray-500">
+                <p>Nessun prodotto trovato per questo ordine</p>
               </div>
             </div>
 
@@ -227,6 +231,42 @@ const getConditionLabel = (condition) => {
     poor: 'Scarsa'
   }
   return labels[condition] || condition
+}
+
+// Helper per gestire sia orderItems che order_items (snake_case vs camelCase)
+const getOrderItems = (order) => {
+  return order.orderItems || order.order_items || []
+}
+
+// Helper per ottenere il nome del prodotto
+const getItemName = (item) => {
+  return item.cardListing?.cardModel?.name || 
+         item.card_listing?.card_model?.name || 
+         item.name || 
+         'Prodotto'
+}
+
+// Helper per ottenere l'immagine del prodotto
+const getItemImage = (item) => {
+  const images = item.cardListing?.images || 
+                 item.card_listing?.images || 
+                 []
+  
+  if (images && images.length > 0) {
+    let imagePath = images[0]
+    // Se l'immagine non inizia con http o /storage/, aggiungi /storage/
+    if (imagePath && !imagePath.startsWith('http') && !imagePath.startsWith('/storage/')) {
+      imagePath = '/storage/' + imagePath.replace(/^\//, '')
+    }
+    return imagePath
+  }
+  return null
+}
+
+// Gestione errore caricamento immagine
+const handleImageError = (event) => {
+  event.target.style.display = 'none'
+  event.target.nextElementSibling?.classList.remove('hidden')
 }
 
 const formatDate = (dateString) => {

@@ -194,31 +194,34 @@
               <!-- Dettagli Prodotti -->
               <div class="mt-3">
                 <div class="flex items-center space-x-4 text-sm text-gray-600">
-                  <span>{{ order.orderItems?.length || 0 }} articoli</span>
+                  <span>{{ getOrderItems(order)?.length || 0 }} articoli</span>
                   <span>•</span>
-                  <span class="font-gill-sans-semibold text-gray-900">€{{ order.total_amount }}</span>
+                  <span class="font-gill-sans-semibold text-gray-900">€{{ formatPriceItaliana(order.total_amount) }}</span>
                 </div>
                 
                 <!-- Lista Prodotti -->
-                <div v-if="order.orderItems" class="mt-2 space-y-1">
+                <div v-if="getOrderItems(order) && getOrderItems(order).length > 0" class="mt-2 space-y-1">
                   <div 
-                    v-for="item in order.orderItems.slice(0, 2)" 
+                    v-for="item in getOrderItemsPreview(order)" 
                     :key="item.id"
                     class="text-sm text-gray-600"
                   >
-                    {{ item.cardListing?.cardModel?.name || 'Prodotto' }} 
+                    {{ item.cardListing?.cardModel?.name || item.card_listing?.card_model?.name || 'Prodotto' }} 
                     <span class="text-gray-400">({{ getConditionLabel(item.condition) }})</span>
                     <span class="text-gray-400">x{{ item.quantity }}</span>
                   </div>
-                  <div v-if="order.orderItems.length > 2" class="text-sm text-gray-400">
-                    +{{ order.orderItems.length - 2 }} altri articoli
+                  <div v-if="getOrderItems(order).length > 2" class="text-sm text-gray-400">
+                    +{{ getOrderItems(order).length - 2 }} altri articoli
                   </div>
+                </div>
+                <div v-else class="mt-2 text-sm text-gray-400 italic">
+                  Nessun prodotto visibile
                 </div>
               </div>
             </div>
 
             <!-- Azioni -->
-            <div class="flex items-center space-x-3">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 mt-4 sm:mt-0">
               <!-- Tracking -->
               <div v-if="order.tracking_number" class="text-sm text-gray-600">
                 <p class="font-gill-sans-semibold">Tracking:</p>
@@ -226,20 +229,20 @@
               </div>
 
               <!-- Pulsanti Azione -->
-              <div class="flex space-x-2">
+              <div class="flex flex-wrap gap-2">
                 <button 
                   @click="viewOrderDetails(order)"
-                  class="px-3 py-1 text-sm font-gill-sans-semibold text-primary bg-primary-light border border-primary rounded-md hover:bg-primary hover:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                  class="px-3 py-1.5 text-sm font-gill-sans-semibold text-primary bg-primary-light border border-primary rounded-md hover:bg-primary hover:text-white focus:outline-none focus:ring-2 focus:ring-primary whitespace-nowrap"
                 >
                   Dettagli
                 </button>
                 
-                <!-- Pulsante Crea Etichetta Shippo (solo per ordini confermati senza tracking) -->
+                <!-- Pulsante Crea Etichetta Shippo (solo per ordini confermati/paid_funds_held senza tracking) -->
                 <button 
-                  v-if="order.status === 'confirmed' && !order.tracking_number"
+                  v-if="(order.status === 'confirmed' || order.status === 'paid_funds_held' || order.status === 'label_created') && !order.tracking_number"
                   @click="createShippoLabel(order)"
                   :disabled="creatingLabel === order.id"
-                  class="px-3 py-1 text-sm font-gill-sans-semibold text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="px-3 py-1.5 text-sm font-gill-sans-semibold text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                 >
                   <span v-if="creatingLabel === order.id" class="flex items-center">
                     <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -254,7 +257,7 @@
                 <button 
                   v-if="canUpdateStatus(order.status)"
                   @click="openStatusModal(order)"
-                  class="px-3 py-1 text-sm font-gill-sans-semibold text-white bg-primary border border-transparent rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary"
+                  class="px-3 py-1.5 text-sm font-gill-sans-semibold text-white bg-primary border border-transparent rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary whitespace-nowrap"
                 >
                   Aggiorna
                 </button>
@@ -490,6 +493,17 @@ const getConditionLabel = (condition) => {
     poor: 'Scarsa'
   }
   return labels[condition] || condition
+}
+
+// Helper per gestire sia orderItems che order_items (snake_case vs camelCase)
+const getOrderItems = (order) => {
+  return order.orderItems || order.order_items || []
+}
+
+// Helper per ottenere preview dei prodotti (primi 2)
+const getOrderItemsPreview = (order) => {
+  const items = getOrderItems(order)
+  return items.slice(0, 2)
 }
 
 const formatDate = (dateString) => {

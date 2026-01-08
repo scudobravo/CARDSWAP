@@ -149,7 +149,8 @@ class OrderController extends Controller
             
             $query = Order::where('seller_id', $user->id)
                 ->with([
-                    'orderItems.cardListing.cardModel', 
+                    'orderItems.cardListing.cardModel',
+                    'orderItems.cardListing.images',
                     'buyer',
                     'seller.defaultAddress'
                 ]);
