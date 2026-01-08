@@ -1032,9 +1032,10 @@ class StripeService
             ]
         ]);
 
-        // Notifica venditori
+        // Notifica venditori e invia email
         $sellers = $order->getSellers();
         foreach ($sellers as $seller) {
+            // Notifica in-app
             $seller->notifications()->create([
                 'type' => 'order_confirmed',
                 'title' => 'Ordine confermato',
@@ -1045,6 +1046,39 @@ class StripeService
                     'buyer_name' => $order->buyer->name
                 ]
             ]);
+
+            // Email al venditore per ogni listing venduta
+            $order->load(['orderItems.cardListing']);
+            foreach ($order->orderItems as $orderItem) {
+                $listing = $orderItem->cardListing;
+                if ($listing && $listing->seller_id === $seller->id) {
+                    try {
+                        Mail::send('emails.listing-sold', [
+                            'user' => $seller,
+                            'listing' => $listing,
+                            'order' => $order
+                        ], function ($message) use ($seller, $order, $listing) {
+                            $message->to($seller->email, (string) $seller->name)
+                                    ->subject('💰 La tua carta è stata venduta! - Ordine #' . $order->order_number);
+                        });
+                        
+                        Log::info('Order confirmation email sent to seller', [
+                            'seller_id' => $seller->id,
+                            'seller_email' => $seller->email,
+                            'order_id' => $order->id,
+                            'order_number' => $order->order_number,
+                            'listing_id' => $listing->id
+                        ]);
+                    } catch (\Throwable $e) {
+                        Log::error('Order confirmation email to seller failed', [
+                            'seller_id' => $seller->id,
+                            'seller_email' => $seller->email,
+                            'order_id' => $order->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+            }
         }
 
         // Email di conferma ordine all'acquirente
@@ -1054,8 +1088,19 @@ class StripeService
                 $message->to($order->buyer->email, (string) $order->buyer->name)
                         ->subject('Conferma ordine #' . $order->order_number);
             });
+            
+            Log::info('Order confirmation email sent to buyer', [
+                'buyer_id' => $order->buyer_id,
+                'buyer_email' => $order->buyer->email,
+                'order_id' => $order->id,
+                'order_number' => $order->order_number
+            ]);
         } catch (\Throwable $e) {
-            Log::error('Order confirmation email failed: ' . $e->getMessage());
+            Log::error('Order confirmation email to buyer failed', [
+                'buyer_id' => $order->buyer_id,
+                'order_id' => $order->id,
+                'error' => $e->getMessage()
+            ]);
         }
     }
 
