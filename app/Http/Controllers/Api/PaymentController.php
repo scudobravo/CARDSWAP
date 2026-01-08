@@ -16,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
 {
@@ -48,7 +49,7 @@ class PaymentController extends Controller
         }
         
         // Log per debug
-        \Log::info('Payment create request', [
+        Log::info('Payment create request', [
             'original_data_keys' => array_keys($request->all()),
             'transformed_data_keys' => array_keys($requestData),
             'has_sellers' => isset($requestData['sellers']),
@@ -73,7 +74,7 @@ class PaymentController extends Controller
         ]);
 
         if ($validator->fails()) {
-            \Log::error('Payment validation failed', [
+            Log::error('Payment validation failed', [
                 'errors' => $validator->errors()->toArray(),
                 'request_data_keys' => array_keys($requestData),
                 'has_sellers' => isset($requestData['sellers']),
@@ -181,25 +182,50 @@ class PaymentController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Pagamento creato con successo',
+                'payment_intent' => [
+                    'id' => $paymentResult['payment_intent']->id,
+                    'client_secret' => $paymentResult['client_secret'],
+                    'status' => $paymentResult['payment_intent']->status
+                ],
                 'data' => [
                     'order_id' => $order->id,
                     'order_number' => $order->order_number,
-                    'client_secret' => $paymentResult['client_secret'],
                     'total_amount' => $order->total_amount
-                ]
+                ],
+                'order_id' => $order->id // Per compatibilità con codice esistente
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
             
             // Log dell'errore completo per debugging
-            \Log::error('Errore in createPayment: ' . $e->getMessage(), [
+            Log::error('Errore in createPayment: ' . $e->getMessage(), [
                 'exception' => get_class($e),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString(),
                 'user_id' => auth()->id(),
             ]);
+            
+            // Verifica se è un errore di database (ENUM non aggiornato, colonne mancanti, ecc.)
+            $isDatabaseError = $e instanceof \Illuminate\Database\QueryException || 
+                              $e instanceof \PDOException ||
+                              str_contains($e->getMessage(), 'SQLSTATE') ||
+                              str_contains($e->getMessage(), 'Data truncated') ||
+                              str_contains($e->getMessage(), 'Unknown column');
+            
+            if ($isDatabaseError) {
+                Log::critical('Errore database durante creazione ordine - possibile migrazione non applicata', [
+                    'error' => $e->getMessage(),
+                    'user_id' => auth()->id(),
+                ]);
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Errore di configurazione del database. Contatta il supporto tecnico.',
+                    'error' => config('app.debug') ? $e->getMessage() : 'Errore di configurazione'
+                ], 500);
+            }
             
             return response()->json([
                 'success' => false,
@@ -348,7 +374,7 @@ class PaymentController extends Controller
                     $zone = \App\Models\ShippingZone::find($zoneId);
                     if ($zone && $zone->is_active) {
                         $shippingZoneId = (int) $zoneId;
-                        \Log::info('Shipping zone found from selected_shipping_zones', [
+                        Log::info('Shipping zone found from selected_shipping_zones', [
                             'seller_id' => $sellerId,
                             'zone_id' => $shippingZoneId,
                         ]);
@@ -363,7 +389,7 @@ class PaymentController extends Controller
                         $zone = \App\Models\ShippingZone::find((int) $methodValue);
                         if ($zone && $zone->is_active) {
                             $shippingZoneId = $zone->id;
-                            \Log::info('Shipping zone found from shipping_methods (numeric)', [
+                            Log::info('Shipping zone found from shipping_methods (numeric)', [
                                 'seller_id' => $sellerId,
                                 'zone_id' => $shippingZoneId,
                                 'method_value' => $methodValue,
@@ -382,7 +408,7 @@ class PaymentController extends Controller
                         $activeZone = $firstListing->shippingZones->firstWhere('is_active', true);
                         if ($activeZone) {
                             $shippingZoneId = $activeZone->id;
-                            \Log::info('Shipping zone found from listing (active)', [
+                            Log::info('Shipping zone found from listing (active)', [
                                 'seller_id' => $sellerId,
                                 'listing_id' => $firstListing->id,
                                 'zone_id' => $shippingZoneId,
@@ -391,7 +417,7 @@ class PaymentController extends Controller
                             // Se non c'è una zona attiva, usa la prima disponibile
                             $shippingZone = $firstListing->shippingZones->first();
                             $shippingZoneId = $shippingZone->id;
-                            \Log::info('Shipping zone found from listing (first available)', [
+                            Log::info('Shipping zone found from listing (first available)', [
                                 'seller_id' => $sellerId,
                                 'listing_id' => $firstListing->id,
                                 'zone_id' => $shippingZoneId,
@@ -407,7 +433,7 @@ class PaymentController extends Controller
                         ->first();
                     if ($sellerZone) {
                         $shippingZoneId = $sellerZone->id;
-                        \Log::info('Shipping zone found from seller zones', [
+                        Log::info('Shipping zone found from seller zones', [
                             'seller_id' => $sellerId,
                             'zone_id' => $shippingZoneId,
                         ]);
@@ -421,7 +447,7 @@ class PaymentController extends Controller
                         ->first();
                     if ($globalZone) {
                         $shippingZoneId = $globalZone->id;
-                        \Log::info('Shipping zone found from global zones', [
+                        Log::info('Shipping zone found from global zones', [
                             'seller_id' => $sellerId,
                             'zone_id' => $shippingZoneId,
                         ]);
@@ -433,7 +459,7 @@ class PaymentController extends Controller
                     $defaultZone = \App\Models\ShippingZone::where('is_active', true)->first();
                     if ($defaultZone) {
                         $shippingZoneId = $defaultZone->id;
-                        \Log::warning('Using fallback shipping zone', [
+                        Log::warning('Using fallback shipping zone', [
                             'seller_id' => $sellerId,
                             'zone_id' => $shippingZoneId,
                             'shipping_methods' => $shippingMethods[$sellerId] ?? null,
@@ -451,7 +477,7 @@ class PaymentController extends Controller
                     // Prova prima a usare il costo inviato dal frontend
                     if (isset($shippingCosts[$sellerId]) && $shippingCosts[$sellerId] > 0) {
                         $shippingCost = (float) $shippingCosts[$sellerId];
-                        \Log::info('Using shipping cost from frontend', [
+                        Log::info('Using shipping cost from frontend', [
                             'seller_id' => $sellerId,
                             'cost' => $shippingCost,
                         ]);
@@ -471,7 +497,7 @@ class PaymentController extends Controller
                         'selected_shipping_method' => $selectedMethod,
                         'shipping_cost' => $shippingCost, // Costo dal metodo selezionato, null se da calcolare
                     ];
-                    \Log::info('Seller added to payment request', [
+                    Log::info('Seller added to payment request', [
                         'seller_id' => $sellerId,
                         'zone_id' => $shippingZoneId,
                         'selected_method' => $selectedMethod,
@@ -480,7 +506,7 @@ class PaymentController extends Controller
                     ]);
                 } else {
                     // Log errore critico se non troviamo una zona
-                    \Log::error('Shipping zone not found for seller - CRITICAL', [
+                    Log::error('Shipping zone not found for seller - CRITICAL', [
                         'seller_id' => $sellerId,
                         'shipping_methods' => $shippingMethods[$sellerId] ?? null,
                         'selected_shipping_zones' => $selectedShippingZones[$sellerId] ?? null,
@@ -492,7 +518,7 @@ class PaymentController extends Controller
             
             // Se non abbiamo trovato nessun venditore valido, restituisci errore dettagliato
             if (empty($sellers)) {
-                \Log::error('No valid sellers found after transformation', [
+                Log::error('No valid sellers found after transformation', [
                     'cart_data_keys' => array_keys($cartData),
                     'cart_data_structure' => array_map(function($items) {
                         return [
@@ -579,8 +605,8 @@ class PaymentController extends Controller
                 $shippingCost = (float) $sellerData['shipping_cost'];
             } else {
                 // Altrimenti calcola dalla zona
-                $shippingZone = \App\Models\ShippingZone::find($sellerData['shipping_zone_id']);
-                $shippingCost = $listing->getShippingCostForZone($sellerData['shipping_zone_id']);
+            $shippingZone = \App\Models\ShippingZone::find($sellerData['shipping_zone_id']);
+            $shippingCost = $listing->getShippingCostForZone($sellerData['shipping_zone_id']);
             }
             $totalShippingCost += $shippingCost;
             $subtotal += $sellerSubtotal;
@@ -789,7 +815,7 @@ class PaymentController extends Controller
                         $seller->refresh();
                     }
                 } catch (\Exception $e) {
-                    \Log::warning("Errore nell'aggiornamento stato Stripe per venditore {$seller->id}: " . $e->getMessage());
+                    Log::warning("Errore nell'aggiornamento stato Stripe per venditore {$seller->id}: " . $e->getMessage());
                     // Continua con la verifica anche se l'aggiornamento fallisce
                 }
             }

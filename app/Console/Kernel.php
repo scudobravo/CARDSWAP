@@ -17,6 +17,9 @@ class Kernel extends ConsoleKernel
         
         // Controllo etichette non usate (timeout anti-frode) ogni giorno
         $schedule->job(new \App\Jobs\CheckUnusedLabels())->daily();
+        
+        // Controllo payout schedulati ogni ora (fallback per job dispatchati con delay)
+        $schedule->job(new \App\Jobs\ProcessScheduledPayouts())->hourly();
     }
 
     /**
