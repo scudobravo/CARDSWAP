@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
@@ -49,6 +50,12 @@ class OrderController extends Controller
         try {
             $user = Auth::user();
             
+            Log::info('Order details requested', [
+                'order_id' => $id,
+                'user_id' => $user->id,
+                'user_email' => $user->email
+            ]);
+            
             $order = Order::where('buyer_id', $user->id)
                 ->with([
                     'orderItems.cardListing.cardModel',
@@ -58,6 +65,11 @@ class OrderController extends Controller
                 ->find($id);
 
             if (!$order) {
+                Log::warning('Order not found for user', [
+                    'order_id' => $id,
+                    'user_id' => $user->id
+                ]);
+                
                 return response()->json([
                     'success' => false,
                     'message' => 'Ordine non trovato'
@@ -93,6 +105,15 @@ class OrderController extends Controller
                 ];
             });
 
+            Log::info('Order details retrieved successfully', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'status' => $order->status,
+                'has_dispute' => $order->has_dispute,
+                'payout_status' => $order->payout_status,
+                'user_id' => $user->id
+            ]);
+
             return response()->json([
                 'success' => true,
                 'order' => $order,
@@ -101,10 +122,19 @@ class OrderController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Errore nel recupero dettagli ordine', [
+                'order_id' => $id,
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Errore nel recupero dell\'ordine',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : 'Si è verificato un errore'
             ], 500);
         }
     }
@@ -228,10 +258,18 @@ class OrderController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Errore nella conferma pagamento', [
+                'order_id' => $id,
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Errore nella conferma del pagamento',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : 'Si è verificato un errore'
             ], 500);
         }
     }
@@ -244,41 +282,19 @@ class OrderController extends Controller
         try {
             $user = Auth::user();
             
-            $order = Order::where('buyer_id', $user->id)->find($id);
-
-            if (!$order) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Ordine non trovato'
-                ], 404);
-            }
-
-            // Valida che l'ordine sia in uno stato valido per aprire dispute
-            // Solo ordini consegnati e in attesa di rilascio fondi (72h)
-            if ($order->status !== 'delivered_pending_72h') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Non è possibile aprire una dispute per questo ordine. Le dispute possono essere aperte solo per ordini consegnati e in attesa di rilascio fondi.',
-                    'current_status' => $order->status
-                ], 400);
-            }
-
-            // Verifica se esiste già una dispute aperta
-            if ($order->has_dispute) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Una dispute è già aperta per questo ordine',
-                    'dispute_opened_at' => $order->dispute_opened_at
-                ], 400);
-            }
-
-            // Valida i dati della richiesta
+            // Valida i dati della richiesta PRIMA di accedere al database
             $validator = Validator::make($request->all(), [
                 'reason' => 'required|string|max:1000',
                 'description' => 'nullable|string|max:5000'
             ]);
 
             if ($validator->fails()) {
+                Log::warning('Validazione dispute fallita', [
+                    'order_id' => $id,
+                    'user_id' => $user->id,
+                    'errors' => $validator->errors()->toArray()
+                ]);
+                
                 return response()->json([
                     'success' => false,
                     'message' => 'Dati di validazione non validi',
@@ -286,37 +302,120 @@ class OrderController extends Controller
                 ], 422);
             }
 
-            // Apre la dispute
-            $order->update([
-                'has_dispute' => true,
-                'dispute_opened_at' => now(),
-                'status' => 'dispute_hold',
-                'payout_status' => 'dispute_hold',
-                'notes' => ($order->notes ?? '') . "\n[DISPUTE APERTA] " . now()->format('Y-m-d H:i:s') . "\nMotivo: " . $request->reason . ($request->description ? "\nDescrizione: " . $request->description : '')
-            ]);
+            // Usa transazione DB con lock pessimistico per evitare race conditions
+            return DB::transaction(function () use ($request, $id, $user) {
+                // Lock pessimistico per evitare race condition con ReleaseSellerFunds
+                $order = Order::where('buyer_id', $user->id)
+                    ->where('id', $id)
+                    ->lockForUpdate()
+                    ->first();
 
-            Log::info('Dispute aperta per ordine', [
-                'order_id' => $order->id,
-                'order_number' => $order->order_number,
-                'buyer_id' => $user->id,
-                'reason' => $request->reason,
-                'dispute_opened_at' => $order->dispute_opened_at
-            ]);
+                if (!$order) {
+                    Log::warning('Tentativo di aprire dispute su ordine non trovato', [
+                        'order_id' => $id,
+                        'user_id' => $user->id
+                    ]);
+                    
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Ordine non trovato'
+                    ], 404);
+                }
 
-            // TODO: Invia notifica email al venditore e all'admin
-            // TODO: Crea notifica in-app per venditore
+                // Valida che l'ordine sia in uno stato valido per aprire dispute
+                // Solo ordini consegnati e in attesa di rilascio fondi (72h)
+                if ($order->status !== 'delivered_pending_72h') {
+                    Log::warning('Tentativo di aprire dispute su ordine in stato non valido', [
+                        'order_id' => $order->id,
+                        'order_number' => $order->order_number,
+                        'buyer_id' => $user->id,
+                        'current_status' => $order->status,
+                        'payout_status' => $order->payout_status
+                    ]);
+                    
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Non è possibile aprire una dispute per questo ordine. Le dispute possono essere aperte solo per ordini consegnati e in attesa di rilascio fondi.',
+                        'current_status' => $order->status
+                    ], 400);
+                }
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Dispute aperta con successo. Il payout al venditore è stato bloccato.',
-                'order' => $order->fresh()
-            ]);
+                // Verifica se il payout è già stato completato
+                if ($order->payout_status === 'paid') {
+                    Log::warning('Tentativo di aprire dispute su ordine già pagato', [
+                        'order_id' => $order->id,
+                        'order_number' => $order->order_number,
+                        'buyer_id' => $user->id,
+                        'payout_status' => $order->payout_status,
+                        'payout_completed_at' => $order->payout_completed_at,
+                        'stripe_transfer_id' => $order->stripe_transfer_id
+                    ]);
+                    
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Non è possibile aprire una dispute per questo ordine. Il pagamento al venditore è già stato completato.',
+                        'payout_completed_at' => $order->payout_completed_at
+                    ], 400);
+                }
+
+                // Verifica se esiste già una dispute aperta
+                if ($order->has_dispute) {
+                    Log::info('Tentativo di aprire dispute già esistente', [
+                        'order_id' => $order->id,
+                        'order_number' => $order->order_number,
+                        'buyer_id' => $user->id,
+                        'dispute_opened_at' => $order->dispute_opened_at
+                    ]);
+                    
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Una dispute è già aperta per questo ordine',
+                        'dispute_opened_at' => $order->dispute_opened_at
+                    ], 400);
+                }
+
+                // Apre la dispute con lock per evitare race conditions
+                $order->update([
+                    'has_dispute' => true,
+                    'dispute_opened_at' => now(),
+                    'status' => 'dispute_hold',
+                    'payout_status' => 'dispute_hold',
+                    'notes' => ($order->notes ?? '') . "\n[DISPUTE APERTA] " . now()->format('Y-m-d H:i:s') . "\nMotivo: " . $request->reason . ($request->description ? "\nDescrizione: " . $request->description : '')
+                ]);
+
+                Log::info('Dispute aperta per ordine con successo', [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'buyer_id' => $user->id,
+                    'buyer_email' => $user->email,
+                    'seller_id' => $order->seller_id,
+                    'reason' => $request->reason,
+                    'description_length' => strlen($request->description ?? ''),
+                    'dispute_opened_at' => $order->dispute_opened_at,
+                    'previous_status' => 'delivered_pending_72h',
+                    'previous_payout_status' => 'pending_payout',
+                    'payout_scheduled_at' => $order->payout_scheduled_at,
+                    'seller_payout_amount' => $order->seller_payout_amount
+                ]);
+
+                // TODO: Invia notifica email al venditore e all'admin
+                // TODO: Crea notifica in-app per venditore
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Dispute aperta con successo. Il payout al venditore è stato bloccato.',
+                    'order' => $order->fresh()
+                ]);
+            });
 
         } catch (\Exception $e) {
             Log::error('Errore nell\'apertura dispute', [
                 'order_id' => $id,
                 'user_id' => auth()->id(),
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
