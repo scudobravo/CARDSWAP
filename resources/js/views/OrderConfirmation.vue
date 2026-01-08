@@ -110,6 +110,29 @@
 
         <!-- Azioni -->
         <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+          <!-- Bottone Apri Dispute (solo per ordini consegnati in attesa di 72h) -->
+          <button 
+            v-if="order.status === 'delivered_pending_72h' && !order.has_dispute"
+            @click="openDisputeModal"
+            class="inline-flex items-center px-4 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            Apri Dispute
+          </button>
+          
+          <!-- Badge Dispute Aperta -->
+          <div 
+            v-if="order.has_dispute"
+            class="inline-flex items-center px-4 py-2 border border-red-300 rounded-md bg-red-50 text-red-700 text-sm font-medium"
+          >
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            Dispute Aperta
+          </div>
+          
           <button @click="goToOrders" 
                   class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -124,6 +147,88 @@
             </svg>
             Torna alla home
           </button>
+        </div>
+        
+        <!-- Modal Dispute -->
+        <div v-if="showDisputeModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+          <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="closeDisputeModal"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="text-lg font-medium text-gray-900">Apri Dispute</h3>
+                  <button @click="closeDisputeModal" class="text-gray-400 hover:text-gray-600">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                  </button>
+                </div>
+                
+                <div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <p class="text-sm text-yellow-800">
+                    <strong>Attenzione:</strong> Aprendo una dispute, il pagamento al venditore verrà bloccato fino alla risoluzione. 
+                    Assicurati di aver tentato di risolvere il problema direttamente con il venditore prima di aprire una dispute.
+                  </p>
+                </div>
+                
+                <form @submit.prevent="submitDispute" class="space-y-4">
+                  <div>
+                    <label for="reason" class="block text-sm font-medium text-gray-700 mb-1">
+                      Motivo della dispute <span class="text-red-500">*</span>
+                    </label>
+                    <select 
+                      id="reason"
+                      v-model="disputeForm.reason"
+                      required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Seleziona un motivo</option>
+                      <option value="Prodotto non conforme">Prodotto non conforme alla descrizione</option>
+                      <option value="Prodotto danneggiato">Prodotto danneggiato o difettoso</option>
+                      <option value="Prodotto mancante">Prodotto mancante o incompleto</option>
+                      <option value="Prodotto sbagliato">Prodotto diverso da quello ordinato</option>
+                      <option value="Problema spedizione">Problema con la spedizione</option>
+                      <option value="Altro">Altro</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
+                      Descrizione dettagliata
+                    </label>
+                    <textarea 
+                      id="description"
+                      v-model="disputeForm.description"
+                      rows="4"
+                      maxlength="5000"
+                      placeholder="Descrivi il problema in dettaglio..."
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    ></textarea>
+                    <p class="mt-1 text-xs text-gray-500">{{ disputeForm.description?.length || 0 }}/5000 caratteri</p>
+                  </div>
+                  
+                  <div class="flex items-center justify-end space-x-3 pt-4">
+                    <button 
+                      type="button"
+                      @click="closeDisputeModal"
+                      class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      Annulla
+                    </button>
+                    <button 
+                      type="submit"
+                      :disabled="!disputeForm.reason || isSubmittingDispute"
+                      class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                      <span v-if="isSubmittingDispute">Invio in corso...</span>
+                      <span v-else>Apri Dispute</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -163,6 +268,12 @@ const order = ref(null)
 const orderItems = ref([])
 const loading = ref(true)
 const error = ref(null)
+const showDisputeModal = ref(false)
+const isSubmittingDispute = ref(false)
+const disputeForm = ref({
+  reason: '',
+  description: ''
+})
 
 const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString('it-IT', {
@@ -242,6 +353,51 @@ const goToOrders = () => {
 
 const goToHome = () => {
   router.push('/')
+}
+
+const openDisputeModal = () => {
+  showDisputeModal.value = true
+}
+
+const closeDisputeModal = () => {
+  showDisputeModal.value = false
+  disputeForm.value = {
+    reason: '',
+    description: ''
+  }
+}
+
+const submitDispute = async () => {
+  if (!disputeForm.value.reason) {
+    return
+  }
+
+  isSubmittingDispute.value = true
+  try {
+    const response = await axios.post(`/api/orders/${order.value.id}/dispute`, {
+      reason: disputeForm.value.reason,
+      description: disputeForm.value.description || null
+    }, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Accept': 'application/json'
+      }
+    })
+
+    if (response.data.success) {
+      // Ricarica i dettagli dell'ordine per aggiornare lo stato
+      await loadOrderDetails()
+      closeDisputeModal()
+      alert('Dispute aperta con successo. Il pagamento al venditore è stato bloccato.')
+    } else {
+      throw new Error(response.data.message || 'Errore nell\'apertura della dispute')
+    }
+  } catch (err) {
+    console.error('Errore nell\'apertura dispute:', err)
+    alert(err.response?.data?.message || err.message || 'Errore nell\'apertura della dispute')
+  } finally {
+    isSubmittingDispute.value = false
+  }
 }
 
 onMounted(() => {

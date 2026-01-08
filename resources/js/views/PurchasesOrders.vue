@@ -114,11 +114,28 @@
             </div>
 
             <!-- Azioni -->
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-3 flex-wrap gap-2">
               <!-- Tracking -->
               <div v-if="order.tracking_number" class="text-sm text-gray-600">
                 <p class="font-gill-sans-semibold">Tracking:</p>
                 <p class="font-mono">{{ order.tracking_number }}</p>
+              </div>
+
+              <!-- Bottone Apri Dispute (solo per ordini consegnati in attesa di 72h) -->
+              <button
+                v-if="order.status === 'delivered_pending_72h' && !order.has_dispute"
+                @click="$router.push(`/order-confirmation/${order.id}`)"
+                class="px-3 py-1 text-sm font-gill-sans-semibold text-red-700 bg-red-50 border border-red-300 rounded-md hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500"
+              >
+                Apri Dispute
+              </button>
+              
+              <!-- Badge Dispute Aperta -->
+              <div
+                v-if="order.has_dispute"
+                class="px-3 py-1 text-sm font-gill-sans-semibold text-red-700 bg-red-50 border border-red-300 rounded-md"
+              >
+                Dispute Aperta
               </div>
 
               <!-- Pulsante Dettagli -->
