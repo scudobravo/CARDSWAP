@@ -82,7 +82,7 @@
                   class="flex items-center space-x-4 p-3 bg-white rounded-md border border-gray-200"
                 >
                   <!-- Immagine Prodotto -->
-                  <div class="flex-shrink-0">
+                  <div class="flex-shrink-0 relative">
                     <img 
                       v-if="getItemImage(item)"
                       :src="getItemImage(item)" 
@@ -91,6 +91,10 @@
                       @error="handleImageError"
                     />
                     <div v-else class="h-16 w-16 bg-gray-200 rounded-md flex items-center justify-center">
+                      <PhotoIcon class="h-8 w-8 text-gray-400" />
+                    </div>
+                    <!-- Placeholder nascosto per gestione errore -->
+                    <div class="hidden h-16 w-16 bg-gray-200 rounded-md flex items-center justify-center absolute inset-0">
                       <PhotoIcon class="h-8 w-8 text-gray-400" />
                     </div>
                   </div>
@@ -114,7 +118,7 @@
                       €{{ formatPriceItaliana(item.unit_price || item.price || 0) }}
                     </p>
                     <p class="text-xs text-gray-500">
-                      Totale: €{{ formatPriceItaliana((item.unit_price || item.price || 0) * item.quantity) }}
+                      Totale: €{{ formatPriceItaliana(item.total_price || (item.unit_price || item.price || 0) * (item.quantity || 1)) }}
                     </p>
                   </div>
                 </div>
@@ -265,8 +269,13 @@ const getItemImage = (item) => {
 
 // Gestione errore caricamento immagine
 const handleImageError = (event) => {
+  // Nascondi l'immagine fallita
   event.target.style.display = 'none'
-  event.target.nextElementSibling?.classList.remove('hidden')
+  // Mostra il placeholder (sibling nel div parent)
+  const placeholder = event.target.parentElement.querySelector('.absolute')
+  if (placeholder) {
+    placeholder.classList.remove('hidden')
+  }
 }
 
 const formatDate = (dateString) => {

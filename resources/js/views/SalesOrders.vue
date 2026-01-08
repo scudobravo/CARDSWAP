@@ -203,12 +203,12 @@
                 <div v-if="getOrderItems(order) && getOrderItems(order).length > 0" class="mt-2 space-y-1">
                   <div 
                     v-for="item in getOrderItemsPreview(order)" 
-                    :key="item.id"
+                    :key="item.id || `item-${item.card_listing_id || item.cardListing?.id || Math.random()}`"
                     class="text-sm text-gray-600"
                   >
-                    {{ item.cardListing?.cardModel?.name || item.card_listing?.card_model?.name || 'Prodotto' }} 
+                    {{ getItemNameFromOrderItem(item) }} 
                     <span class="text-gray-400">({{ getConditionLabel(item.condition) }})</span>
-                    <span class="text-gray-400">x{{ item.quantity }}</span>
+                    <span class="text-gray-400">x{{ item.quantity || 1 }}</span>
                   </div>
                   <div v-if="getOrderItems(order).length > 2" class="text-sm text-gray-400">
                     +{{ getOrderItems(order).length - 2 }} altri articoli
@@ -504,6 +504,14 @@ const getOrderItems = (order) => {
 const getOrderItemsPreview = (order) => {
   const items = getOrderItems(order)
   return items.slice(0, 2)
+}
+
+// Helper per ottenere il nome del prodotto da un order item
+const getItemNameFromOrderItem = (item) => {
+  return item.cardListing?.cardModel?.name || 
+         item.card_listing?.card_model?.name || 
+         item.name || 
+         'Prodotto'
 }
 
 const formatDate = (dateString) => {
