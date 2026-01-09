@@ -629,7 +629,9 @@ const createShippoLabel = async (order) => {
         'Accept': 'application/json'
       },
       body: JSON.stringify({
-        sellers: [seller],
+        sellers: {
+          [order.seller_id]: seller
+        },
         shipping_address: {
           name: `${shippingAddress.first_name} ${shippingAddress.last_name}`,
           street1: shippingAddress.address_line_1,
