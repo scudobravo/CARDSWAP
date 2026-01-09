@@ -377,29 +377,62 @@ class ShippoService
             }
             
             try {
+                Log::info('Preparing addresses for Shippo', [
+                    'seller_id' => $sellerId,
+                    'seller_address' => $sellerData['address'] ?? [],
+                    'shipping_address' => $shippingAddress
+                ]);
+
                 // Crea indirizzo mittente (venditore)
-                $fromAddress = $this->createAddress([
-                    'name' => $sellerData['name'],
-                    'company' => $sellerData['company'] ?? '',
-                    'street1' => $sellerData['address']['street1'],
-                    'city' => $sellerData['address']['city'],
-                    'state' => $sellerData['address']['state'],
-                    'zip' => $sellerData['address']['zip'],
-                    'country' => $sellerData['address']['country'],
-                    'phone' => $sellerData['phone'] ?? '',
-                    'email' => $sellerData['email'] ?? '',
-                ], true);
+                $fromAddressData = [
+                    'name' => $sellerData['name'] ?? 'Venditore',
+                    'street1' => $sellerData['address']['street1'] ?? '',
+                    'city' => $sellerData['address']['city'] ?? '',
+                    'state' => $sellerData['address']['state'] ?? '',
+                    'zip' => $sellerData['address']['zip'] ?? '',
+                    'country' => $sellerData['address']['country'] ?? 'IT',
+                ];
+                
+                // Aggiungi campi opzionali solo se presenti
+                if (!empty($sellerData['company'])) {
+                    $fromAddressData['company'] = $sellerData['company'];
+                }
+                if (!empty($sellerData['phone'])) {
+                    $fromAddressData['phone'] = $sellerData['phone'];
+                }
+                if (!empty($sellerData['email'])) {
+                    $fromAddressData['email'] = $sellerData['email'];
+                }
+                
+                $fromAddress = $this->createAddress($fromAddressData, true);
+                
+                Log::info('From address created', [
+                    'seller_id' => $sellerId,
+                    'address_object_id' => $fromAddress['object_id'] ?? 'N/A',
+                    'validation' => $fromAddress['validation_results'] ?? []
+                ]);
 
                 // Crea indirizzo destinatario
-                $toAddress = $this->createAddress([
-                    'name' => $shippingAddress['name'],
-                    'street1' => $shippingAddress['street1'],
-                    'city' => $shippingAddress['city'],
-                    'state' => $shippingAddress['state'],
-                    'zip' => $shippingAddress['zip'],
-                    'country' => $shippingAddress['country'],
-                    'phone' => $shippingAddress['phone'] ?? '',
-                ], true);
+                $toAddressData = [
+                    'name' => $shippingAddress['name'] ?? 'Destinatario',
+                    'street1' => $shippingAddress['street1'] ?? '',
+                    'city' => $shippingAddress['city'] ?? '',
+                    'state' => $shippingAddress['state'] ?? '',
+                    'zip' => $shippingAddress['zip'] ?? '',
+                    'country' => $shippingAddress['country'] ?? 'IT',
+                ];
+                
+                if (!empty($shippingAddress['phone'])) {
+                    $toAddressData['phone'] = $shippingAddress['phone'];
+                }
+                
+                $toAddress = $this->createAddress($toAddressData, true);
+                
+                Log::info('To address created', [
+                    'seller_id' => $sellerId,
+                    'address_object_id' => $toAddress['object_id'] ?? 'N/A',
+                    'validation' => $toAddress['validation_results'] ?? []
+                ]);
 
                 // Usa configurazione pacco dalla config
                 $parcelConfig = config('services.shippo.pricing.default_parcel');
