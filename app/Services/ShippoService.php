@@ -620,12 +620,45 @@ class ShippoService
                                 // Continua comunque, potrebbe essere un account valido non ancora caricato
                             }
                             
-                            // Per carrier domestici, verifica che sia una rotta domestica
-                            if (($carrierConfig['domestic_only'] ?? false) && $fromCountry === 'IT' && $toCountry === 'IT') {
+                            // Verifica se il carrier supporta la rotta specifica
+                            $supportsRoute = false;
+                            
+                            if ($fromCountry === 'IT' && $toCountry === 'IT') {
+                                // Spedizione domestica IT-IT
+                                // Per IT-IT, i carrier internazionali (Chronopost, Colissimo, ecc.) 
+                                // potrebbero non supportare la rotta domestica
+                                // Usa solo carrier domestici o verifica supporto IT
+                                if (($carrierConfig['domestic_only'] ?? false)) {
+                                    // Carrier domestico - supporta IT-IT
+                                    $supportsRoute = true;
+                                } else {
+                                    // Carrier internazionale - potrebbe non supportare IT-IT
+                                    // Per ora li escludiamo per IT-IT per evitare errori
+                                    // TODO: Verificare se questi carrier supportano realmente IT-IT
+                                    $supportsRoute = false;
+                                    Log::info('Skipping international carrier for IT-IT route', [
+                                        'carrier_code' => $carrierConfig['code'] ?? 'N/A',
+                                        'account_id' => $actualObjectId,
+                                        'reason' => 'International carriers may not support domestic IT-IT shipments'
+                                    ]);
+                                }
+                            } else {
+                                // Spedizione internazionale
+                                if (!($carrierConfig['domestic_only'] ?? false)) {
+                                    // Carrier internazionale - supporta spedizioni internazionali
+                                    $supportsRoute = true;
+                                }
+                            }
+                            
+                            if ($supportsRoute) {
                                 $validCarrierAccountIds[] = $actualObjectId;
-                            } elseif (!($carrierConfig['domestic_only'] ?? false)) {
-                                // Carrier internazionali
-                                $validCarrierAccountIds[] = $actualObjectId;
+                                Log::info('Carrier account added for route', [
+                                    'carrier_code' => $carrierConfig['code'] ?? 'N/A',
+                                    'account_id' => $actualObjectId,
+                                    'from_country' => $fromCountry,
+                                    'to_country' => $toCountry,
+                                    'domestic_only' => $carrierConfig['domestic_only'] ?? false
+                                ]);
                             }
                         }
                     }
