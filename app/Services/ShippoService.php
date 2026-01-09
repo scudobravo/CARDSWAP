@@ -515,16 +515,32 @@ class ShippoService
                 
                 // Recupera i carrier accounts reali da Shippo per validare gli object_id
                 $validCarrierAccountIds = [];
+                $shippoAccountMap = []; // Mappa object_id => carrier info
+                
                 try {
                     $shippoCarrierAccounts = $this->listCarrierAccounts();
                     $shippoAccountIds = [];
                     if (isset($shippoCarrierAccounts['results'])) {
                         foreach ($shippoCarrierAccounts['results'] as $account) {
                             if (isset($account['object_id']) && ($account['active'] ?? false)) {
-                                $shippoAccountIds[] = $account['object_id'];
+                                $objectId = $account['object_id'];
+                                $shippoAccountIds[] = $objectId;
+                                // Normalizza l'object_id (rimuovi trattini per confronto)
+                                $normalizedId = str_replace('-', '', $objectId);
+                                $shippoAccountMap[$normalizedId] = [
+                                    'object_id' => $objectId,
+                                    'carrier' => $account['carrier'] ?? 'N/A',
+                                    'service' => $account['service'] ?? 'N/A'
+                                ];
                             }
                         }
                     }
+                    
+                    Log::info('Carrier accounts retrieved from Shippo', [
+                        'seller_id' => $sellerId,
+                        'total_accounts' => count($shippoAccountIds),
+                        'account_ids' => array_slice($shippoAccountIds, 0, 10) // Primi 10 per logging
+                    ]);
                     
                     // Estrai gli account IDs dei carrier disponibili e valida che siano object_id reali
                     foreach ($availableCarriers as $carrierConfig) {
@@ -548,27 +564,60 @@ class ShippoService
                                 continue;
                             }
                             
-                            // Verifica che esista in Shippo (opzionale, ma meglio controllare)
-                            if (!empty($shippoAccountIds) && !in_array($accountId, $shippoAccountIds)) {
-                                Log::warning('Carrier account not found in Shippo', [
+                            // Normalizza l'account_id per confronto (rimuovi trattini)
+                            $normalizedAccountId = str_replace('-', '', $accountId);
+                            
+                            // Verifica che esista in Shippo confrontando anche versioni normalizzate
+                            $foundInShippo = false;
+                            $actualObjectId = $accountId;
+                            
+                            if (!empty($shippoAccountMap)) {
+                                if (isset($shippoAccountMap[$normalizedAccountId])) {
+                                    $foundInShippo = true;
+                                    $actualObjectId = $shippoAccountMap[$normalizedAccountId]['object_id'];
+                                    Log::info('Carrier account found in Shippo', [
+                                        'carrier_code' => $carrierConfig['code'] ?? 'N/A',
+                                        'config_account_id' => $accountId,
+                                        'shippo_object_id' => $actualObjectId,
+                                        'carrier' => $shippoAccountMap[$normalizedAccountId]['carrier'],
+                                        'service' => $shippoAccountMap[$normalizedAccountId]['service']
+                                    ]);
+                                } else {
+                                    // Prova anche a cercare nell'array originale (potrebbe avere formato diverso)
+                                    foreach ($shippoAccountIds as $shippoId) {
+                                        if (str_replace('-', '', $shippoId) === $normalizedAccountId) {
+                                            $foundInShippo = true;
+                                            $actualObjectId = $shippoId;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Se non trovato in Shippo ma è un UUID valido, usa comunque (potrebbe essere un account non ancora caricato)
+                            if (!empty($shippoAccountMap) && !$foundInShippo) {
+                                Log::warning('Carrier account not found in Shippo, but UUID format is valid', [
                                     'carrier_code' => $carrierConfig['code'] ?? 'N/A',
-                                    'account_id' => $accountId
+                                    'account_id' => $accountId,
+                                    'normalized_id' => $normalizedAccountId
                                 ]);
-                                continue;
+                                // Continua comunque, potrebbe essere un account valido non ancora caricato
                             }
                             
                             // Per carrier domestici, verifica che sia una rotta domestica
                             if (($carrierConfig['domestic_only'] ?? false) && $fromCountry === 'IT' && $toCountry === 'IT') {
-                                $validCarrierAccountIds[] = $accountId;
+                                $validCarrierAccountIds[] = $actualObjectId;
                             } elseif (!($carrierConfig['domestic_only'] ?? false)) {
                                 // Carrier internazionali
-                                $validCarrierAccountIds[] = $accountId;
+                                $validCarrierAccountIds[] = $actualObjectId;
                             }
                         }
                     }
                 } catch (\Exception $e) {
                     Log::warning('Errore recupero carrier accounts da Shippo, uso quelli dalla config', [
                         'error' => $e->getMessage(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
                         'seller_id' => $sellerId
                     ]);
                     
@@ -592,6 +641,12 @@ class ShippoService
                 }
                 
                 $carrierAccountIds = $validCarrierAccountIds;
+                
+                Log::info('Final carrier account IDs to use', [
+                    'seller_id' => $sellerId,
+                    'total_valid_accounts' => count($carrierAccountIds),
+                    'account_ids' => $carrierAccountIds
+                ]);
                 
                 Log::info('Preparing Shippo shipment with carrier accounts', [
                     'seller_id' => $sellerId,
