@@ -162,12 +162,16 @@ class OrderController extends Controller
                 'order_items_count' => $orderItemsCount
             ]);
             
-            // Usa whereHas per trovare ordini che hanno almeno un orderItem con cardListing di questo venditore
-            // Questo gestisce correttamente ordini multi-vendor
-            $query = Order::whereHas('orderItems', function ($q) use ($user) {
-                $q->whereHas('cardListing', function ($q2) use ($user) {
-                    $q2->where('seller_id', $user->id);
-                });
+            // Cerca ordini in due modi:
+            // 1. Ordini dove questo venditore è il venditore principale (seller_id)
+            // 2. Ordini che hanno almeno un orderItem con cardListing di questo venditore (multi-vendor)
+            $query = Order::where(function ($q) use ($user) {
+                $q->where('seller_id', $user->id)
+                  ->orWhereHas('orderItems', function ($q2) use ($user) {
+                      $q2->whereHas('cardListing', function ($q3) use ($user) {
+                          $q3->where('seller_id', $user->id);
+                      });
+                  });
             })
             ->with([
                 'orderItems' => function ($q) use ($user) {
