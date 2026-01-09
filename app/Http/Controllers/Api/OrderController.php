@@ -147,13 +147,29 @@ class OrderController extends Controller
         try {
             $user = Auth::user();
             
-            $query = Order::where('seller_id', $user->id)
-                ->with([
-                    'orderItems.cardListing.cardModel',
-                    'orderItems.cardListing.images',
-                    'buyer',
-                    'seller.defaultAddress'
-                ]);
+            Log::info('getSellerOrders called', [
+                'user_id' => $user->id,
+                'user_email' => $user->email
+            ]);
+            
+            // Usa whereHas per trovare ordini che hanno almeno un orderItem con cardListing di questo venditore
+            // Questo gestisce correttamente ordini multi-vendor
+            $query = Order::whereHas('orderItems.cardListing', function ($q) use ($user) {
+                $q->where('seller_id', $user->id);
+            })
+            ->with([
+                'orderItems' => function ($q) use ($user) {
+                    // Carica solo gli orderItems di questo venditore
+                    $q->whereHas('cardListing', function ($q2) use ($user) {
+                        $q2->where('seller_id', $user->id);
+                    })->with([
+                        'cardListing.cardModel',
+                        'cardListing.images'
+                    ]);
+                },
+                'buyer',
+                'seller.defaultAddress'
+            ]);
 
             // Filtri
             if ($request->has('status') && !empty($request->status)) {
@@ -172,6 +188,12 @@ class OrderController extends Controller
             $perPage = $request->get('per_page', 15);
             $orders = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
+            Log::info('getSellerOrders result', [
+                'user_id' => $user->id,
+                'orders_count' => $orders->count(),
+                'total' => $orders->total()
+            ]);
+
             return response()->json([
                 'success' => true,
                 'data' => $orders,
@@ -179,10 +201,18 @@ class OrderController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Errore in getSellerOrders', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Errore nel recupero degli ordini venditore',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : 'Si è verificato un errore'
             ], 500);
         }
     }
