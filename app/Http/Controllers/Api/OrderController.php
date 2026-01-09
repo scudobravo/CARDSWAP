@@ -152,10 +152,22 @@ class OrderController extends Controller
                 'user_email' => $user->email
             ]);
             
+            // Prima verifica: conta gli orderItems di questo venditore
+            $orderItemsCount = \App\Models\OrderItem::whereHas('cardListing', function ($q) use ($user) {
+                $q->where('seller_id', $user->id);
+            })->count();
+            
+            Log::info('OrderItems count for seller', [
+                'user_id' => $user->id,
+                'order_items_count' => $orderItemsCount
+            ]);
+            
             // Usa whereHas per trovare ordini che hanno almeno un orderItem con cardListing di questo venditore
             // Questo gestisce correttamente ordini multi-vendor
-            $query = Order::whereHas('orderItems.cardListing', function ($q) use ($user) {
-                $q->where('seller_id', $user->id);
+            $query = Order::whereHas('orderItems', function ($q) use ($user) {
+                $q->whereHas('cardListing', function ($q2) use ($user) {
+                    $q2->where('seller_id', $user->id);
+                });
             })
             ->with([
                 'orderItems' => function ($q) use ($user) {
@@ -191,8 +203,22 @@ class OrderController extends Controller
             Log::info('getSellerOrders result', [
                 'user_id' => $user->id,
                 'orders_count' => $orders->count(),
-                'total' => $orders->total()
+                'total' => $orders->total(),
+                'first_order_id' => $orders->first()?->id,
+                'first_order_number' => $orders->first()?->order_number
             ]);
+            
+            // Debug: verifica il primo ordine se esiste
+            if ($orders->count() > 0) {
+                $firstOrder = $orders->first();
+                $firstOrderItems = $firstOrder->orderItems ?? [];
+                Log::info('First order details', [
+                    'order_id' => $firstOrder->id,
+                    'order_number' => $firstOrder->order_number,
+                    'order_items_count' => count($firstOrderItems),
+                    'order_items_ids' => collect($firstOrderItems)->pluck('id')->toArray()
+                ]);
+            }
 
             return response()->json([
                 'success' => true,
