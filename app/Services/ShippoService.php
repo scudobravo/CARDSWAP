@@ -531,9 +531,12 @@ class ShippoService
                         if (isset($carrierConfig['account_id']) && ($carrierConfig['available'] ?? true)) {
                             $accountId = $carrierConfig['account_id'];
                             
-                            // Verifica che sia un object_id valido (UUID formato o presente in Shippo)
-                            // Gli object_id di Shippo sono UUID (32 caratteri esadecimali con trattini)
-                            $isValidObjectId = preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $accountId);
+                            // Verifica che sia un object_id valido (UUID formato Shippo)
+                            // Gli object_id di Shippo sono UUID (32 caratteri esadecimali, con o senza trattini)
+                            // Formato con trattini: 12345678-1234-1234-1234-123456789012
+                            // Formato senza trattini: 12345678123412341234123456789012
+                            $isValidObjectId = preg_match('/^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i', $accountId) 
+                                || preg_match('/^[0-9a-f]{32}$/i', $accountId);
                             
                             // Se non è un UUID, salta (es. 'poste_italiane' che è solo un codice)
                             if (!$isValidObjectId) {
@@ -573,7 +576,9 @@ class ShippoService
                     foreach ($availableCarriers as $carrierConfig) {
                         if (isset($carrierConfig['account_id']) && ($carrierConfig['available'] ?? true)) {
                             $accountId = $carrierConfig['account_id'];
-                            $isValidObjectId = preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $accountId);
+                            // Accetta UUID con o senza trattini, o 32 caratteri esadecimali
+                            $isValidObjectId = preg_match('/^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i', $accountId) 
+                                || preg_match('/^[0-9a-f]{32}$/i', $accountId);
                             
                             if ($isValidObjectId) {
                                 if (($carrierConfig['domestic_only'] ?? false) && $fromCountry === 'IT' && $toCountry === 'IT') {
