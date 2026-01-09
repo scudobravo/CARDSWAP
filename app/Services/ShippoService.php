@@ -453,10 +453,43 @@ class ShippoService
                     unset($shipmentPayload['address_to']['country']);
                 }
                 
+                Log::info('Creating Shippo shipment for rate calculation', [
+                    'seller_id' => $sellerId,
+                    'from_country' => $sellerData['address']['country'] ?? 'N/A',
+                    'to_country' => $shippingAddress['country'] ?? 'N/A',
+                    'from_city' => $sellerData['address']['city'] ?? 'N/A',
+                    'to_city' => $shippingAddress['city'] ?? 'N/A',
+                    'parcel_weight' => $parcelConfig['weight'] ?? 'N/A'
+                ]);
+
                 $shipment = $this->createShipment($shipmentPayload, false);
 
+                Log::info('Shippo shipment created', [
+                    'seller_id' => $sellerId,
+                    'shipment_id' => $shipment['object_id'] ?? 'N/A',
+                    'rates_count' => count($shipment['rates'] ?? []),
+                    'rates' => $shipment['rates'] ?? []
+                ]);
+
                 // Applica markup e categorizza tariffe
-                $rates = $this->processRates($shipment['rates']);
+                $rates = $this->processRates($shipment['rates'] ?? []);
+
+                Log::info('Rates processed', [
+                    'seller_id' => $sellerId,
+                    'processed_rates_count' => count($rates),
+                    'rates' => $rates
+                ]);
+
+                if (empty($rates)) {
+                    Log::warning('No rates available for shipment', [
+                        'seller_id' => $sellerId,
+                        'shipment_id' => $shipment['object_id'] ?? 'N/A',
+                        'from_country' => $sellerData['address']['country'] ?? 'N/A',
+                        'to_country' => $shippingAddress['country'] ?? 'N/A',
+                        'shipment_status' => $shipment['status'] ?? 'N/A',
+                        'shipment_messages' => $shipment['messages'] ?? []
+                    ]);
+                }
 
                 $results[$sellerId] = [
                     'seller' => $sellerData,
