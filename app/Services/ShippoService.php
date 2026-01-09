@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\ShippingZone;
+use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -473,10 +475,10 @@ class ShippoService
                 // Cerca la ShippingZone appropriata per il venditore e la destinazione
                 $shippingZone = null;
                 try {
-                    $seller = \App\Models\User::find($sellerId);
+                    $seller = User::find($sellerId);
                     if ($seller) {
                         // Trova la zona migliore per il paese di destinazione
-                        $shippingZone = \App\Models\ShippingZone::where('user_id', $sellerId)
+                        $shippingZone = ShippingZone::where('user_id', $sellerId)
                             ->where('is_active', true)
                             ->where(function($q) use ($toCountry) {
                                 $q->where('is_worldwide', true)
