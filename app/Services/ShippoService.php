@@ -530,11 +530,27 @@ class ShippoService
                                 $shippoAccountMap[$normalizedId] = [
                                     'object_id' => $objectId,
                                     'carrier' => $account['carrier'] ?? 'N/A',
-                                    'service' => $account['service'] ?? 'N/A'
+                                    'service' => $account['service'] ?? 'N/A',
+                                    'carrier_name' => $account['carrier'] ?? 'N/A',
+                                    'countries' => $account['countries'] ?? []
                                 ];
                             }
                         }
                     }
+                    
+                    Log::info('Carrier accounts retrieved from Shippo', [
+                        'seller_id' => $sellerId,
+                        'total_accounts' => count($shippoAccountIds),
+                        'account_ids' => array_slice($shippoAccountIds, 0, 10), // Primi 10 per logging
+                        'carrier_details' => array_map(function($acc) {
+                            return [
+                                'object_id' => $acc['object_id'] ?? 'N/A',
+                                'carrier' => $acc['carrier'] ?? 'N/A',
+                                'service' => $acc['service'] ?? 'N/A',
+                                'countries' => $acc['countries'] ?? []
+                            ];
+                        }, array_slice($shippoCarrierAccounts['results'] ?? [], 0, 10))
+                    ]);
                     
                     Log::info('Carrier accounts retrieved from Shippo', [
                         'seller_id' => $sellerId,
