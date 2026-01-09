@@ -552,19 +552,6 @@ class ShippoService
                         }, array_slice($shippoCarrierAccounts['results'] ?? [], 0, 10))
                     ]);
                     
-                    Log::info('Carrier accounts retrieved from Shippo', [
-                        'seller_id' => $sellerId,
-                        'total_accounts' => count($shippoAccountIds),
-                        'account_ids' => array_slice($shippoAccountIds, 0, 10), // Primi 10 per logging
-                        'carrier_details' => array_map(function($acc) {
-                            return [
-                                'object_id' => $acc['object_id'] ?? 'N/A',
-                                'carrier' => $acc['carrier'] ?? 'N/A',
-                                'service' => $acc['service'] ?? 'N/A'
-                            ];
-                        }, array_slice($shippoCarrierAccounts['results'] ?? [], 0, 10))
-                    ]);
-                    
                     // Per IT-IT, cerca carrier accounts che potrebbero supportare IT
                     // Cerca carrier che contengono "poste", "italiane", "italy", "it" nel nome
                     $potentialItCarriers = [];
