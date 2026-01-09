@@ -11,6 +11,7 @@ use App\Models\OrderItem;
 use App\Models\User;
 use App\Models\CardListing;
 use App\Models\ShippingZone;
+use App\Events\ListingSold;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -677,7 +678,7 @@ class PaymentController extends Controller
             'payout_status' => $order->payout_status
         ]);
 
-        // Crea gli OrderItem
+        // Crea gli OrderItem e aggiorna disponibilità card listings
         foreach ($orderData['order_items'] as $itemData) {
             OrderItem::create([
                 'order_id' => $order->id,
@@ -687,6 +688,43 @@ class PaymentController extends Controller
                 'total_price' => $itemData['total_price'],
                 'condition' => $itemData['condition']
             ]);
+
+            // Aggiorna la disponibilità della card listing
+            $listing = \App\Models\CardListing::find($itemData['card_listing_id']);
+            if ($listing) {
+                // Decrementa la quantità disponibile
+                $listing->decrement('quantity', $itemData['quantity']);
+                
+                // Ricarica per avere la quantità aggiornata
+                $listing->refresh();
+                
+                // Se la carta è esaurita, marcala come venduta
+                if ($listing->quantity <= 0) {
+                    $listing->markAsSold();
+                    
+                    Log::info('Card listing marked as sold', [
+                        'listing_id' => $listing->id,
+                        'order_id' => $order->id,
+                        'order_number' => $order->order_number,
+                        'quantity_sold' => $itemData['quantity']
+                    ]);
+                    
+                    // Trigger evento per notifiche
+                    event(new \App\Events\ListingSold($listing, $order));
+                } else {
+                    Log::info('Card listing quantity decremented', [
+                        'listing_id' => $listing->id,
+                        'order_id' => $order->id,
+                        'quantity_sold' => $itemData['quantity'],
+                        'remaining_quantity' => $listing->quantity
+                    ]);
+                }
+            } else {
+                Log::warning('Card listing not found when creating order item', [
+                    'card_listing_id' => $itemData['card_listing_id'],
+                    'order_id' => $order->id
+                ]);
+            }
         }
 
         return $order;
