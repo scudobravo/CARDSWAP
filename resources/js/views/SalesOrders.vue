@@ -648,7 +648,14 @@ const createShippoLabel = async (order) => {
     }
 
     const ratesData = await ratesResponse.json()
-    const sellerRates = ratesData.data?.[order.seller_id]?.rates
+    
+    // Verifica se c'è un errore nel risultato
+    const sellerResult = ratesData.data?.[order.seller_id]
+    if (sellerResult?.error) {
+      throw new Error(sellerResult.error)
+    }
+    
+    const sellerRates = sellerResult?.rates
 
     if (!sellerRates || sellerRates.length === 0) {
       throw new Error('Nessuna tariffa disponibile per questo ordine')
