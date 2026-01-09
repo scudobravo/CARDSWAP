@@ -582,17 +582,8 @@ class ShippoService
                             ]);
                             
                             // Aggiungi questi carrier accounts ai validi per IT-IT
-                            foreach ($potentialItCarriers as $itCarrier) {
-                                if (!in_array($itCarrier['object_id'], $validCarrierAccountIds)) {
-                                    $validCarrierAccountIds[] = $itCarrier['object_id'];
-                                    Log::info('Added potential IT-IT carrier account', [
-                                        'seller_id' => $sellerId,
-                                        'object_id' => $itCarrier['object_id'],
-                                        'carrier' => $itCarrier['carrier'],
-                                        'service' => $itCarrier['service']
-                                    ]);
-                                }
-                            }
+                            // NOTA: Non aggiungerli qui, verranno aggiunti nel loop successivo
+                            // quando verranno trovati nella config. Questo evita duplicati.
                         }
                     }
                     
