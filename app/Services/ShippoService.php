@@ -481,24 +481,40 @@ class ShippoService
                 ]);
 
                 if (empty($rates)) {
+                    $errorMessage = 'Nessuna tariffa disponibile per questa destinazione';
+                    $shipmentMessages = $shipment['messages'] ?? [];
+                    
+                    if (!empty($shipmentMessages)) {
+                        $errorMessage .= ': ' . implode(', ', array_column($shipmentMessages, 'text'));
+                    }
+                    
                     Log::warning('No rates available for shipment', [
                         'seller_id' => $sellerId,
                         'shipment_id' => $shipment['object_id'] ?? 'N/A',
                         'from_country' => $sellerData['address']['country'] ?? 'N/A',
                         'to_country' => $shippingAddress['country'] ?? 'N/A',
+                        'from_city' => $sellerData['address']['city'] ?? 'N/A',
+                        'to_city' => $shippingAddress['city'] ?? 'N/A',
                         'shipment_status' => $shipment['status'] ?? 'N/A',
-                        'shipment_messages' => $shipment['messages'] ?? []
+                        'shipment_messages' => $shipmentMessages,
+                        'shipment_rates' => $shipment['rates'] ?? []
                     ]);
+                    
+                    $results[$sellerId] = [
+                        'error' => $errorMessage,
+                        'seller' => $sellerData,
+                        'shipment_id' => $shipment['object_id'] ?? null,
+                    ];
+                } else {
+                    $results[$sellerId] = [
+                        'seller' => $sellerData,
+                        'shipment_id' => $shipment['object_id'],
+                        'rates' => $rates,
+                        'from_address' => $fromAddress,
+                        'to_address' => $toAddress,
+                        'parcel' => $parcel,
+                    ];
                 }
-
-                $results[$sellerId] = [
-                    'seller' => $sellerData,
-                    'shipment_id' => $shipment['object_id'],
-                    'rates' => $rates,
-                    'from_address' => $fromAddress,
-                    'to_address' => $toAddress,
-                    'parcel' => $parcel,
-                ];
 
             } catch (\Exception $e) {
                 Log::error('Errore calcolo tariffe venditore', [

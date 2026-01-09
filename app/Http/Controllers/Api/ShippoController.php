@@ -53,7 +53,28 @@ class ShippoController extends Controller
             $sellers = $request->input('sellers');
             $shippingAddress = $request->input('shipping_address');
 
+            Log::info('calculateRates called', [
+                'sellers_count' => count($sellers),
+                'sellers_keys' => array_keys($sellers),
+                'shipping_address' => $shippingAddress
+            ]);
+
             $rates = $this->shippoService->calculateRatesForOrder($sellers, $shippingAddress);
+
+            Log::info('calculateRates result', [
+                'results_keys' => array_keys($rates),
+                'results' => $rates
+            ]);
+
+            // Verifica se ci sono errori nei risultati
+            foreach ($rates as $sellerId => $result) {
+                if (isset($result['error'])) {
+                    Log::warning('Error in rate calculation for seller', [
+                        'seller_id' => $sellerId,
+                        'error' => $result['error']
+                    ]);
+                }
+            }
 
             return response()->json([
                 'success' => true,
