@@ -554,7 +554,7 @@ class ShippoService
                     
                     // Per IT-IT, cerca carrier accounts che potrebbero supportare IT
                     // Cerca carrier che contengono "poste", "italiane", "italy", "it" nel nome
-                    $potentialItCarriers = [];
+                    $potentialItCarrierIds = []; // Traccia gli ID dei carrier trovati automaticamente
                     if ($fromCountry === 'IT' && $toCountry === 'IT') {
                         foreach ($shippoCarrierAccounts['results'] ?? [] as $account) {
                             if (isset($account['object_id']) && ($account['active'] ?? false)) {
@@ -565,6 +565,7 @@ class ShippoService
                                 // Cerca indicatori di carrier italiani o che supportano IT
                                 if (preg_match('/\b(poste|italiane|italy|italia|it\b)/i', $combined) ||
                                     preg_match('/\b(chronopost|colissimo)\b/i', $combined)) {
+                                    $potentialItCarrierIds[] = $account['object_id'];
                                     $potentialItCarriers[] = [
                                         'object_id' => $account['object_id'],
                                         'carrier' => $account['carrier'] ?? 'N/A',
@@ -662,16 +663,23 @@ class ShippoService
                             
                             if ($fromCountry === 'IT' && $toCountry === 'IT') {
                                 // Spedizione domestica IT-IT
-                                // Per IT-IT, i carrier internazionali (Chronopost, Colissimo, ecc.) 
-                                // potrebbero non supportare la rotta domestica
-                                // Usa solo carrier domestici o verifica supporto IT
+                                // Se questo carrier è stato trovato automaticamente come potenziale IT-IT,
+                                // includilo anche se è marcato come internazionale
+                                $isAutoFoundItCarrier = in_array($actualObjectId, $potentialItCarrierIds ?? []);
+                                
                                 if (($carrierConfig['domestic_only'] ?? false)) {
                                     // Carrier domestico - supporta IT-IT
                                     $supportsRoute = true;
+                                } elseif ($isAutoFoundItCarrier) {
+                                    // Carrier trovato automaticamente come potenziale IT-IT - includilo
+                                    $supportsRoute = true;
+                                    Log::info('Including auto-found IT-IT carrier (even if marked as international)', [
+                                        'carrier_code' => $carrierConfig['code'] ?? 'N/A',
+                                        'account_id' => $actualObjectId,
+                                        'carrier' => $shippoAccountMap[$normalizedAccountId]['carrier'] ?? 'N/A'
+                                    ]);
                                 } else {
-                                    // Carrier internazionale - potrebbe non supportare IT-IT
-                                    // Per ora li escludiamo per IT-IT per evitare errori
-                                    // TODO: Verificare se questi carrier supportano realmente IT-IT
+                                    // Carrier internazionale non trovato automaticamente - escludilo per IT-IT
                                     $supportsRoute = false;
                                     Log::info('Skipping international carrier for IT-IT route', [
                                         'carrier_code' => $carrierConfig['code'] ?? 'N/A',
