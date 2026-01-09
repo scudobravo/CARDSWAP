@@ -555,8 +555,58 @@ class ShippoService
                     Log::info('Carrier accounts retrieved from Shippo', [
                         'seller_id' => $sellerId,
                         'total_accounts' => count($shippoAccountIds),
-                        'account_ids' => array_slice($shippoAccountIds, 0, 10) // Primi 10 per logging
+                        'account_ids' => array_slice($shippoAccountIds, 0, 10), // Primi 10 per logging
+                        'carrier_details' => array_map(function($acc) {
+                            return [
+                                'object_id' => $acc['object_id'] ?? 'N/A',
+                                'carrier' => $acc['carrier'] ?? 'N/A',
+                                'service' => $acc['service'] ?? 'N/A'
+                            ];
+                        }, array_slice($shippoCarrierAccounts['results'] ?? [], 0, 10))
                     ]);
+                    
+                    // Per IT-IT, cerca carrier accounts che potrebbero supportare IT
+                    // Cerca carrier che contengono "poste", "italiane", "italy", "it" nel nome
+                    $potentialItCarriers = [];
+                    if ($fromCountry === 'IT' && $toCountry === 'IT') {
+                        foreach ($shippoCarrierAccounts['results'] ?? [] as $account) {
+                            if (isset($account['object_id']) && ($account['active'] ?? false)) {
+                                $carrierName = strtolower($account['carrier'] ?? '');
+                                $serviceName = strtolower($account['service'] ?? '');
+                                $combined = $carrierName . ' ' . $serviceName;
+                                
+                                // Cerca indicatori di carrier italiani o che supportano IT
+                                if (preg_match('/\b(poste|italiane|italy|italia|it\b)/i', $combined) ||
+                                    preg_match('/\b(chronopost|colissimo)\b/i', $combined)) {
+                                    $potentialItCarriers[] = [
+                                        'object_id' => $account['object_id'],
+                                        'carrier' => $account['carrier'] ?? 'N/A',
+                                        'service' => $account['service'] ?? 'N/A'
+                                    ];
+                                }
+                            }
+                        }
+                        
+                        if (!empty($potentialItCarriers)) {
+                            Log::info('Potential IT-IT carrier accounts found in Shippo', [
+                                'seller_id' => $sellerId,
+                                'carriers' => $potentialItCarriers
+                            ]);
+                            
+                            // Aggiungi questi carrier accounts ai validi per IT-IT
+                            foreach ($potentialItCarriers as $itCarrier) {
+                                if (!in_array($itCarrier['object_id'], $validCarrierAccountIds)) {
+                                    $validCarrierAccountIds[] = $itCarrier['object_id'];
+                                    Log::info('Added potential IT-IT carrier account', [
+                                        'seller_id' => $sellerId,
+                                        'object_id' => $itCarrier['object_id'],
+                                        'carrier' => $itCarrier['carrier'],
+                                        'service' => $itCarrier['service']
+                                    ]);
+                                }
+                            }
+                        }
+                    }
                     
                     // Estrai gli account IDs dei carrier disponibili e valida che siano object_id reali
                     foreach ($availableCarriers as $carrierConfig) {
