@@ -179,8 +179,8 @@ class OrderController extends Controller
                     $q->whereHas('cardListing', function ($q2) use ($user) {
                         $q2->where('seller_id', $user->id);
                     })->with([
-                        'cardListing.cardModel',
-                        'cardListing.images'
+                        'cardListing.cardModel'
+                        // images è un campo JSON, non una relazione, quindi non serve eager loading
                     ]);
                 },
                 'buyer',
