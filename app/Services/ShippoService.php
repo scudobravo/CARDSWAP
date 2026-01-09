@@ -469,6 +469,46 @@ class ShippoService
                 // Determina i carrier accounts disponibili per questa rotta
                 $fromCountry = $sellerData['address']['country'] ?? $fromAddress['country'] ?? 'IT';
                 $toCountry = $shippingAddress['country'] ?? $toAddress['country'] ?? 'IT';
+                
+                // Cerca la ShippingZone appropriata per il venditore e la destinazione
+                $shippingZone = null;
+                try {
+                    $seller = \App\Models\User::find($sellerId);
+                    if ($seller) {
+                        // Trova la zona migliore per il paese di destinazione
+                        $shippingZone = \App\Models\ShippingZone::where('user_id', $sellerId)
+                            ->where('is_active', true)
+                            ->where(function($q) use ($toCountry) {
+                                $q->where('is_worldwide', true)
+                                  ->orWhereJsonContains('included_countries', $toCountry)
+                                  ->orWhere('country_code', $toCountry);
+                            })
+                            ->where(function($q) use ($toCountry) {
+                                $q->whereNull('excluded_countries')
+                                  ->orWhereJsonDoesntContain('excluded_countries', $toCountry);
+                            })
+                            ->orderBy('sort_order')
+                            ->first();
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('Errore ricerca ShippingZone', [
+                        'seller_id' => $sellerId,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+                
+                // Se c'è una ShippingZone con Shippo abilitato, usa quella configurazione
+                if ($shippingZone && $shippingZone->use_shippo_pricing) {
+                    Log::info('Using ShippingZone configuration for Shippo', [
+                        'seller_id' => $sellerId,
+                        'shipping_zone_id' => $shippingZone->id,
+                        'shipping_zone_name' => $shippingZone->name,
+                        'shippo_service_type' => $shippingZone->shippo_service_type,
+                        'shippo_markup' => $shippingZone->shippo_markup
+                    ]);
+                }
+                
+                // Determina i carrier accounts disponibili
                 $availableCarriers = $this->getAvailableCarriers($toCountry);
                 
                 // Estrai gli account IDs dei carrier disponibili
@@ -489,6 +529,9 @@ class ShippoService
                     'seller_id' => $sellerId,
                     'from_country' => $fromCountry,
                     'to_country' => $toCountry,
+                    'shipping_zone_id' => $shippingZone?->id,
+                    'shipping_zone_name' => $shippingZone?->name,
+                    'use_shippo_pricing' => $shippingZone?->use_shippo_pricing ?? false,
                     'available_carriers' => array_keys($availableCarriers),
                     'carrier_account_ids' => $carrierAccountIds
                 ]);
@@ -532,10 +575,64 @@ class ShippoService
                 ]);
 
                 // Applica markup e categorizza tariffe
-                $rates = $this->processRates($shipment['rates'] ?? []);
+                // Se c'è una ShippingZone, usa il suo markup e filtra per service_type
+                $rawRates = $shipment['rates'] ?? [];
+                
+                // Filtra per tipo di servizio se specificato nella ShippingZone
+                if ($shippingZone && $shippingZone->use_shippo_pricing && $shippingZone->shippo_service_type) {
+                    $rawRates = array_filter($rawRates, function($rate) use ($shippingZone) {
+                        $serviceType = $this->categorizeService($rate['servicelevel']['name'] ?? '');
+                        return $serviceType === $shippingZone->shippo_service_type;
+                    });
+                }
+                
+                // Processa le tariffe con markup (usa quello della ShippingZone se disponibile)
+                $markup = $shippingZone && $shippingZone->use_shippo_pricing 
+                    ? ($shippingZone->shippo_markup ?? 1.60) 
+                    : (config('services.shippo.pricing.markup') ?? 1.60);
+                $managementFee = config('services.shippo.pricing.management_fee') ?? 0.90;
+                
+                $processedRates = [];
+                foreach ($rawRates as $rate) {
+                    $originalAmount = floatval($rate['amount']);
+                    $amountWithMarkup = $originalAmount + $markup + $managementFee;
+
+                    $serviceType = $this->categorizeService($rate['servicelevel']['name'] ?? '');
+                    
+                    $processedRates[] = [
+                        'object_id' => $rate['object_id'],
+                        'carrier' => $rate['provider'],
+                        'service_name' => $rate['servicelevel']['name'],
+                        'service_type' => $serviceType,
+                        'original_amount' => $originalAmount,
+                        'amount' => $amountWithMarkup,
+                        'currency' => $rate['currency'],
+                        'estimated_days' => $rate['estimated_days'] ?? null,
+                        'tracking' => $rate['tracking'] ?? false,
+                        'insurance' => $rate['insurance'] ?? false,
+                        'breakdown' => [
+                            'shippo_rate' => $originalAmount,
+                            'markup' => $markup,
+                            'management_fee' => $managementFee,
+                            'total' => $amountWithMarkup
+                        ]
+                    ];
+                }
+
+                // Ordina per prezzo
+                usort($processedRates, function($a, $b) {
+                    return $a['amount'] <=> $b['amount'];
+                });
+                
+                $rates = $processedRates;
 
                 Log::info('Rates processed', [
                     'seller_id' => $sellerId,
+                    'shipping_zone_id' => $shippingZone?->id,
+                    'shippo_service_type_filter' => $shippingZone?->shippo_service_type,
+                    'markup_used' => $markup,
+                    'raw_rates_count' => count($shipment['rates'] ?? []),
+                    'filtered_rates_count' => count($rawRates),
                     'processed_rates_count' => count($rates),
                     'rates' => $rates
                 ]);
