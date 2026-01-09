@@ -178,7 +178,14 @@ class PaymentController extends Controller
                 'status' => 'pending_payment'
             ]);
 
+            // Le card listings sono già state aggiornate in createOrder (dentro la transazione)
+            // Se il commit va a buon fine, le modifiche sono già applicate
             DB::commit();
+            
+            Log::info('Transaction committed - card listings should be updated', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number
+            ]);
 
             return response()->json([
                 'success' => true,
