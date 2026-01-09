@@ -369,7 +369,13 @@ class ShippoService
     {
         $results = [];
         
+        // Gestisce sia array associativo (sellerId => sellerData) che array numerico ([seller])
         foreach ($sellers as $sellerId => $sellerData) {
+            // Se è un array numerico, usa l'ID dal sellerData
+            if (is_numeric($sellerId) && isset($sellerData['id'])) {
+                $sellerId = $sellerData['id'];
+            }
+            
             try {
                 // Crea indirizzo mittente (venditore)
                 $fromAddress = $this->createAddress([
