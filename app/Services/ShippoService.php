@@ -466,33 +466,60 @@ class ShippoService
                     }
                 }
                 
+                // Determina i carrier accounts disponibili per questa rotta
+                $fromCountry = $sellerData['address']['country'] ?? $fromAddress['country'] ?? 'IT';
+                $toCountry = $shippingAddress['country'] ?? $toAddress['country'] ?? 'IT';
+                $availableCarriers = $this->getAvailableCarriers($toCountry);
+                
+                // Estrai gli account IDs dei carrier disponibili
+                $carrierAccountIds = [];
+                foreach ($availableCarriers as $carrierConfig) {
+                    if (isset($carrierConfig['account_id']) && ($carrierConfig['available'] ?? true)) {
+                        // Per carrier domestici, verifica che sia una rotta domestica
+                        if (($carrierConfig['domestic_only'] ?? false) && $fromCountry === 'IT' && $toCountry === 'IT') {
+                            $carrierAccountIds[] = $carrierConfig['account_id'];
+                        } elseif (!($carrierConfig['domestic_only'] ?? false)) {
+                            // Carrier internazionali
+                            $carrierAccountIds[] = $carrierConfig['account_id'];
+                        }
+                    }
+                }
+                
+                Log::info('Preparing Shippo shipment with carrier accounts', [
+                    'seller_id' => $sellerId,
+                    'from_country' => $fromCountry,
+                    'to_country' => $toCountry,
+                    'available_carriers' => array_keys($availableCarriers),
+                    'carrier_account_ids' => $carrierAccountIds
+                ]);
+                
                 $shipmentPayload = [
                     'address_from' => [
                         'object_id' => $fromAddress['object_id'],
-                        'country' => $sellerData['address']['country'] ?? $fromAddress['country'] ?? null
+                        'country' => $fromCountry
                     ],
                     'address_to' => [
                         'object_id' => $toAddress['object_id'],
-                        'country' => $shippingAddress['country'] ?? $toAddress['country'] ?? null
+                        'country' => $toCountry
                     ],
                     'parcels' => [$parcelPayload],
                 ];
                 
-                // Rimuovi campi null
-                if ($shipmentPayload['address_from']['country'] === null) {
-                    unset($shipmentPayload['address_from']['country']);
-                }
-                if ($shipmentPayload['address_to']['country'] === null) {
-                    unset($shipmentPayload['address_to']['country']);
+                // Aggiungi carrier accounts solo se disponibili
+                if (!empty($carrierAccountIds)) {
+                    $shipmentPayload['carrier_accounts'] = $carrierAccountIds;
                 }
                 
                 Log::info('Creating Shippo shipment for rate calculation', [
                     'seller_id' => $sellerId,
-                    'from_country' => $sellerData['address']['country'] ?? 'N/A',
-                    'to_country' => $shippingAddress['country'] ?? 'N/A',
+                    'from_country' => $fromCountry,
+                    'to_country' => $toCountry,
                     'from_city' => $sellerData['address']['city'] ?? 'N/A',
                     'to_city' => $shippingAddress['city'] ?? 'N/A',
-                    'parcel_weight' => $parcelConfig['weight'] ?? 'N/A'
+                    'from_zip' => $sellerData['address']['zip'] ?? 'N/A',
+                    'to_zip' => $shippingAddress['zip'] ?? 'N/A',
+                    'parcel_weight' => $parcelConfig['weight'] ?? 'N/A',
+                    'carrier_accounts_count' => count($carrierAccountIds)
                 ]);
 
                 $shipment = $this->createShipment($shipmentPayload, false);
@@ -517,20 +544,39 @@ class ShippoService
                     $errorMessage = 'Nessuna tariffa disponibile per questa destinazione';
                     $shipmentMessages = $shipment['messages'] ?? [];
                     
-                    if (!empty($shipmentMessages)) {
-                        $errorMessage .= ': ' . implode(', ', array_column($shipmentMessages, 'text'));
+                    // Filtra e formatta i messaggi di errore
+                    $filteredMessages = [];
+                    foreach ($shipmentMessages as $message) {
+                        $text = $message['text'] ?? '';
+                        // Ignora errori di carrier non disponibili (es. DHL Express da fuori USA)
+                        if (stripos($text, "doesn't support shipments from outside") === false && 
+                            stripos($text, "master account doesn't support") === false) {
+                            $filteredMessages[] = $text;
+                        }
+                    }
+                    
+                    // Se ci sono messaggi rilevanti, aggiungili
+                    if (!empty($filteredMessages)) {
+                        $errorMessage .= ': ' . implode(', ', array_unique($filteredMessages));
+                    } else {
+                        // Messaggio generico se non ci sono messaggi rilevanti
+                        $errorMessage .= '. Verifica che il codice postale sia corretto e che ci siano corrieri disponibili per questa destinazione.';
                     }
                     
                     Log::warning('No rates available for shipment', [
                         'seller_id' => $sellerId,
                         'shipment_id' => $shipment['object_id'] ?? 'N/A',
-                        'from_country' => $sellerData['address']['country'] ?? 'N/A',
-                        'to_country' => $shippingAddress['country'] ?? 'N/A',
+                        'from_country' => $fromCountry ?? 'N/A',
+                        'to_country' => $toCountry ?? 'N/A',
                         'from_city' => $sellerData['address']['city'] ?? 'N/A',
                         'to_city' => $shippingAddress['city'] ?? 'N/A',
+                        'from_zip' => $sellerData['address']['zip'] ?? 'N/A',
+                        'to_zip' => $shippingAddress['zip'] ?? 'N/A',
                         'shipment_status' => $shipment['status'] ?? 'N/A',
                         'shipment_messages' => $shipmentMessages,
-                        'shipment_rates' => $shipment['rates'] ?? []
+                        'filtered_messages' => $filteredMessages,
+                        'shipment_rates' => $shipment['rates'] ?? [],
+                        'carrier_accounts_used' => $carrierAccountIds ?? []
                     ]);
                     
                     $results[$sellerId] = [
