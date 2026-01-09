@@ -578,21 +578,41 @@ class OrderController extends Controller
         try {
             $user = Auth::user();
             
+            // Usa whereHas per contare ordini con prodotti di questo venditore (gestisce multi-vendor)
+            $baseQuery = function ($query) use ($user) {
+                return $query->whereHas('orderItems.cardListing', function ($q) use ($user) {
+                    $q->where('seller_id', $user->id);
+                });
+            };
+            
             $stats = [
-                'pending' => Order::where('seller_id', $user->id)->where('status', 'pending')->count(),
-                'shipped' => Order::where('seller_id', $user->id)->where('status', 'shipped')->count(),
-                'delivered' => Order::where('seller_id', $user->id)->where('status', 'delivered')->count(),
-                'cancelled' => Order::where('seller_id', $user->id)->where('status', 'cancelled')->count(),
-                'total_sales' => Order::where('seller_id', $user->id)
-                    ->whereIn('status', ['delivered', 'shipped'])
+                'pending' => Order::whereHas('orderItems.cardListing', function ($q) use ($user) {
+                    $q->where('seller_id', $user->id);
+                })->where('status', 'pending')->count(),
+                'shipped' => Order::whereHas('orderItems.cardListing', function ($q) use ($user) {
+                    $q->where('seller_id', $user->id);
+                })->where('status', 'shipped')->count(),
+                'delivered' => Order::whereHas('orderItems.cardListing', function ($q) use ($user) {
+                    $q->where('seller_id', $user->id);
+                })->where('status', 'delivered')->count(),
+                'cancelled' => Order::whereHas('orderItems.cardListing', function ($q) use ($user) {
+                    $q->where('seller_id', $user->id);
+                })->where('status', 'cancelled')->count(),
+                'total_sales' => Order::whereHas('orderItems.cardListing', function ($q) use ($user) {
+                    $q->where('seller_id', $user->id);
+                })->whereIn('status', ['delivered', 'shipped', 'completed', 'delivered_pending_72h'])
                     ->sum('total_amount'),
-                'total_orders' => Order::where('seller_id', $user->id)->count(),
-                'this_month_orders' => Order::where('seller_id', $user->id)
-                    ->whereMonth('created_at', now()->month)
+                'total_orders' => Order::whereHas('orderItems.cardListing', function ($q) use ($user) {
+                    $q->where('seller_id', $user->id);
+                })->count(),
+                'this_month_orders' => Order::whereHas('orderItems.cardListing', function ($q) use ($user) {
+                    $q->where('seller_id', $user->id);
+                })->whereMonth('created_at', now()->month)
                     ->whereYear('created_at', now()->year)
                     ->count(),
-                'this_month_sales' => Order::where('seller_id', $user->id)
-                    ->whereIn('status', ['delivered', 'shipped'])
+                'this_month_sales' => Order::whereHas('orderItems.cardListing', function ($q) use ($user) {
+                    $q->where('seller_id', $user->id);
+                })->whereIn('status', ['delivered', 'shipped', 'completed', 'delivered_pending_72h'])
                     ->whereMonth('created_at', now()->month)
                     ->whereYear('created_at', now()->year)
                     ->sum('total_amount')
@@ -605,10 +625,18 @@ class OrderController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Errore in getSellerStatistics', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Errore nel recupero delle statistiche',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : 'Si è verificato un errore'
             ], 500);
         }
     }
