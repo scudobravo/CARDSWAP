@@ -672,8 +672,24 @@ class ShippoService
                 ];
                 
                 // Aggiungi carrier accounts solo se disponibili
+                // IMPORTANTE: Se non ci sono carrier accounts validi per IT-IT, 
+                // NON specificare carrier_accounts e lascia che Shippo usi i suoi default
+                // Questo evita errori con carrier non supportati
                 if (!empty($carrierAccountIds)) {
                     $shipmentPayload['carrier_accounts'] = $carrierAccountIds;
+                    Log::info('Using specific carrier accounts for shipment', [
+                        'seller_id' => $sellerId,
+                        'carrier_accounts' => $carrierAccountIds
+                    ]);
+                } else {
+                    Log::warning('No valid carrier accounts found, Shippo will use default carriers', [
+                        'seller_id' => $sellerId,
+                        'from_country' => $fromCountry,
+                        'to_country' => $toCountry,
+                        'available_carriers_from_config' => array_keys($availableCarriers)
+                    ]);
+                    // Non aggiungere carrier_accounts - Shippo userà i suoi default
+                    // Questo potrebbe causare problemi se i default non supportano IT-IT
                 }
                 
                 Log::info('Creating Shippo shipment for rate calculation', [
