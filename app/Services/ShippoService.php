@@ -836,16 +836,43 @@ class ShippoService
                 
                 $shipment = $this->createShipment($shipmentPayload, false);
 
+                // Logging delle rates GREZZE prima di qualsiasi filtro
+                $rawRatesFromShippo = $shipment['rates'] ?? [];
+                Log::info('Shippo shipment created - RAW RATES (before any filtering)', [
+                    'seller_id' => $sellerId,
+                    'shipment_id' => $shipment['object_id'] ?? 'N/A',
+                    'shipment_status' => $shipment['status'] ?? 'N/A',
+                    'rates_count' => count($rawRatesFromShippo),
+                    'raw_rates' => $rawRatesFromShippo,
+                    'raw_rates_details' => array_map(function($rate) {
+                        return [
+                            'object_id' => $rate['object_id'] ?? 'N/A',
+                            'provider' => $rate['provider'] ?? 'N/A',
+                            'servicelevel' => $rate['servicelevel']['name'] ?? 'N/A',
+                            'amount' => $rate['amount'] ?? 'N/A',
+                            'currency' => $rate['currency'] ?? 'N/A',
+                            'estimated_days' => $rate['estimated_days'] ?? 'N/A',
+                            'carrier_account' => $rate['carrier_account'] ?? 'N/A'
+                        ];
+                    }, $rawRatesFromShippo),
+                    'shipment_messages' => $shipment['messages'] ?? [],
+                    'shipment_metadata' => [
+                        'object_created' => $shipment['object_created'] ?? 'N/A',
+                        'object_updated' => $shipment['object_updated'] ?? 'N/A',
+                        'status' => $shipment['status'] ?? 'N/A'
+                    ]
+                ]);
+
                 Log::info('Shippo shipment created', [
                     'seller_id' => $sellerId,
                     'shipment_id' => $shipment['object_id'] ?? 'N/A',
-                    'rates_count' => count($shipment['rates'] ?? []),
-                    'rates' => $shipment['rates'] ?? []
+                    'rates_count' => count($rawRatesFromShippo),
+                    'rates' => $rawRatesFromShippo
                 ]);
 
                 // Applica markup e categorizza tariffe
                 // Se c'è una ShippingZone, usa il suo markup e filtra per service_type
-                $rawRates = $shipment['rates'] ?? [];
+                $rawRates = $rawRatesFromShippo;
                 
                 // Filtra per tipo di servizio se specificato nella ShippingZone
                 if ($shippingZone && $shippingZone->use_shippo_pricing && $shippingZone->shippo_service_type) {
