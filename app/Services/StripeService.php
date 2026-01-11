@@ -653,7 +653,7 @@ class StripeService
                     'order_id' => $orderData['order_id'],
                     'buyer_id' => $orderData['buyer_id'],
                     'type' => 'multi_vendor',
-                    'application_fee' => $orderData['application_fee'] * 100, // Salva la commissione nei metadata
+                    'application_fee' => (int) round($orderData['application_fee'] * 100), // Salva la commissione nei metadata (arrotondato a intero)
                 ],
                 'automatic_payment_methods' => [
                     'enabled' => true,
