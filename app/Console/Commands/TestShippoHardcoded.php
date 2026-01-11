@@ -100,6 +100,7 @@ class TestShippoHardcoded extends Command
             $this->info('🔄 Creazione shipment (SENZA carrier_accounts specificati)...');
             
             // Shipment SENZA carrier_accounts - Shippo userà i suoi default
+            // Usa solo object_id del pacco, non l'intero oggetto (evita problemi con extra: [])
             $shipmentPayload = [
                 'address_from' => [
                     'object_id' => $fromAddress['object_id'],
@@ -109,7 +110,17 @@ class TestShippoHardcoded extends Command
                     'object_id' => $toAddress['object_id'],
                     'country' => 'IT'
                 ],
-                'parcels' => [$parcel],
+                'parcels' => [
+                    [
+                        'object_id' => $parcel['object_id'],
+                        'mass_unit' => $parcelData['mass_unit'],
+                        'weight' => $parcelData['weight'],
+                        'length' => $parcelData['length'],
+                        'width' => $parcelData['width'],
+                        'height' => $parcelData['height'],
+                        'distance_unit' => $parcelData['distance_unit']
+                    ]
+                ],
                 'async' => false
             ];
 
