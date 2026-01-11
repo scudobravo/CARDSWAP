@@ -246,7 +246,10 @@
                   <!-- Metodi di spedizione -->
                   <div v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <label v-for="deliveryMethod in getShippingMethodsForSeller(seller.id)" :key="`${seller.id}-${deliveryMethod.id}`" 
-                           class="group relative flex rounded-lg border border-gray-300 bg-white p-3 has-checked:outline-2 has-checked:-outline-offset-2 has-checked:outline-blue-600">
+                           class="group relative flex rounded-lg border-2 p-3 cursor-pointer transition-all duration-200"
+                           :class="selectedShippingMethods[seller.id] === deliveryMethod.id 
+                             ? 'border-blue-600 bg-blue-50 shadow-md' 
+                             : 'border-gray-300 bg-white hover:border-blue-400 hover:bg-gray-50'">
                       <input 
                         type="radio" 
                         :name="`delivery-method-${seller.id}`" 
@@ -255,12 +258,26 @@
                         class="absolute inset-0 appearance-none focus:outline-none" 
                       />
                       <div class="flex-1">
-                        <span class="block text-sm font-medium text-gray-900">{{ deliveryMethod.title }}</span>
-                        <span class="mt-1 block text-xs text-gray-500">{{ deliveryMethod.turnaround }}</span>
-                        <span class="mt-2 block text-sm font-medium text-gray-900">{{ deliveryMethod.price }}</span>
+                        <span class="block text-sm font-medium" 
+                              :class="selectedShippingMethods[seller.id] === deliveryMethod.id ? 'text-blue-900' : 'text-gray-900'">
+                          {{ deliveryMethod.title }}
+                        </span>
+                        <span class="mt-1 block text-xs" 
+                              :class="selectedShippingMethods[seller.id] === deliveryMethod.id ? 'text-blue-700' : 'text-gray-500'">
+                          {{ deliveryMethod.turnaround }}
+                        </span>
+                        <span class="mt-2 block text-sm font-semibold" 
+                              :class="selectedShippingMethods[seller.id] === deliveryMethod.id ? 'text-blue-900' : 'text-gray-900'">
+                          {{ deliveryMethod.price }}
+                        </span>
                         <span v-if="deliveryMethod.carrier" class="mt-1 block text-xs text-gray-400">{{ deliveryMethod.carrier }}</span>
                       </div>
-                      <CheckCircleIcon class="invisible size-4 text-blue-600 group-has-checked:visible" aria-hidden="true" />
+                      <CheckCircleIcon 
+                        class="size-5 flex-shrink-0 transition-opacity duration-200" 
+                        :class="selectedShippingMethods[seller.id] === deliveryMethod.id 
+                          ? 'text-blue-600 opacity-100' 
+                          : 'text-gray-400 opacity-0'" 
+                        aria-hidden="true" />
                     </label>
                   </div>
                 </fieldset>
@@ -739,7 +756,7 @@ const initializeStripe = async () => {
       let cardElementDiv = null
       
       while (attempts < maxAttempts && !cardElementDiv) {
-        await nextTick()
+      await nextTick()
         cardElementDiv = document.getElementById('card-element')
         if (!cardElementDiv) {
           attempts++
@@ -756,11 +773,11 @@ const initializeStripe = async () => {
         cardElement.value.on('change', ({error}) => {
           const displayError = document.getElementById('card-errors')
           if (displayError) {
-            if (error) {
-              displayError.textContent = error.message
+          if (error) {
+            displayError.textContent = error.message
               displayError.classList.add('text-red-600')
-            } else {
-              displayError.textContent = ''
+          } else {
+            displayError.textContent = ''
               displayError.classList.remove('text-red-600')
             }
           }
