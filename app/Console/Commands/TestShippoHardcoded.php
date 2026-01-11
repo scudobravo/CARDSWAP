@@ -281,9 +281,10 @@ class TestShippoHardcoded extends Command
 
             if ($chronopostId || $colissimoId) {
                 $carrierAccountIds = array_filter([$chronopostId, $colissimoId]);
+                $specificCarrierAccountIds = array_values($carrierAccountIds);
                 
                 $shipmentPayloadWithCarriers = $shipmentPayload;
-                $shipmentPayloadWithCarriers['carrier_accounts'] = array_values($carrierAccountIds);
+                $shipmentPayloadWithCarriers['carrier_accounts'] = $specificCarrierAccountIds;
                 
                 $this->line('  Carrier accounts: ' . implode(', ', $carrierAccountIds));
                 $this->newLine();
