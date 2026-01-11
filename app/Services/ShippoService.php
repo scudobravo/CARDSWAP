@@ -790,6 +790,7 @@ class ShippoService
                     // Non aggiungere carrier_accounts - Shippo userà i suoi default
                 }
                 
+                // Logging dettagliato del payload completo per debug IT-IT
                 Log::info('Creating Shippo shipment for rate calculation', [
                     'seller_id' => $sellerId,
                     'from_country' => $fromCountry,
@@ -800,6 +801,37 @@ class ShippoService
                     'to_zip' => $shippingAddress['zip'] ?? 'N/A',
                     'parcel_weight' => $parcelConfig['weight'] ?? 'N/A',
                     'carrier_accounts_count' => count($carrierAccountIds)
+                ]);
+                
+                // Logging completo del payload per verifica formato dati
+                Log::info('Shippo shipment payload (complete)', [
+                    'seller_id' => $sellerId,
+                    'payload' => $shipmentPayload,
+                    'address_from_details' => [
+                        'object_id' => $fromAddress['object_id'] ?? 'N/A',
+                        'country' => $fromCountry,
+                        'city' => $sellerData['address']['city'] ?? 'N/A',
+                        'zip' => $sellerData['address']['zip'] ?? 'N/A',
+                        'state' => $sellerData['address']['state'] ?? 'N/A',
+                        'street1' => $sellerData['address']['street1'] ?? 'N/A'
+                    ],
+                    'address_to_details' => [
+                        'object_id' => $toAddress['object_id'] ?? 'N/A',
+                        'country' => $toCountry,
+                        'city' => $shippingAddress['city'] ?? 'N/A',
+                        'zip' => $shippingAddress['zip'] ?? 'N/A',
+                        'state' => $shippingAddress['state'] ?? 'N/A',
+                        'street1' => $shippingAddress['street1'] ?? 'N/A'
+                    ],
+                    'parcel_details' => [
+                        'weight' => $parcelConfig['weight'] ?? 'N/A',
+                        'mass_unit' => $parcelConfig['mass_unit'] ?? 'N/A',
+                        'length' => $parcelConfig['length'] ?? 'N/A',
+                        'width' => $parcelConfig['width'] ?? 'N/A',
+                        'height' => $parcelConfig['height'] ?? 'N/A',
+                        'distance_unit' => $parcelConfig['distance_unit'] ?? 'N/A'
+                    ],
+                    'carrier_accounts' => $carrierAccountIds
                 ]);
                 
                 $shipment = $this->createShipment($shipmentPayload, false);
