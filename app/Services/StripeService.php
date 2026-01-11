@@ -686,8 +686,9 @@ class StripeService
     public function createSingleVendorPayment(array $paymentData): array
     {
         try {
-            $amount = $paymentData['amount'] * 100; // Converti in centesimi
-            $applicationFee = $paymentData['application_fee'] * 100; // Commissione piattaforma
+            // Converti in centesimi e arrotonda a intero (Stripe richiede interi)
+            $amount = (int) round($paymentData['amount'] * 100);
+            $applicationFee = (int) round($paymentData['application_fee'] * 100); // Commissione piattaforma (arrotondato a intero)
             
             $paymentIntent = $this->stripe->paymentIntents->create([
                 'amount' => $amount,
