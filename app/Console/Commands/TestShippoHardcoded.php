@@ -182,20 +182,51 @@ class TestShippoHardcoded extends Command
                 'async' => false
             ];
 
-            $this->line('📋 Payload shipment:');
-            $this->line(json_encode($shipmentPayload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-            $this->newLine();
+                    $this->line('📋 Payload shipment:');
+                    $this->line(json_encode($shipmentPayload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+                    $this->newLine();
+                    
+                    // Logging dettagliato del payload
+                    Log::info('Test Shippo hardcoded - Shipment payload (complete)', [
+                        'test_type' => 'hardcoded_no_carriers',
+                        'payload' => $shipmentPayload,
+                        'from' => $fromAddressData,
+                        'to' => $toAddressData,
+                        'parcel' => $parcelData
+                    ]);
 
-            $shipment = $shippoService->createShipment($shipmentPayload, false);
+                    $shipment = $shippoService->createShipment($shipmentPayload, false);
 
             $this->info('✅ Shipment creato: ' . ($shipment['object_id'] ?? 'N/A'));
             $this->line('  Status: ' . ($shipment['status'] ?? 'N/A'));
             $this->newLine();
 
-            // Rates grezze
-            $rawRates = $shipment['rates'] ?? [];
-            $this->info('📊 Rates grezze da Shippo (prima di qualsiasi filtro):');
-            $this->line('  Count: ' . count($rawRates));
+                    // Rates grezze
+                    $rawRates = $shipment['rates'] ?? [];
+                    
+                    // Logging dettagliato delle rates grezze
+                    Log::info('Test Shippo hardcoded - RAW RATES (before any filtering)', [
+                        'test_type' => 'hardcoded_no_carriers',
+                        'shipment_id' => $shipment['object_id'] ?? 'N/A',
+                        'shipment_status' => $shipment['status'] ?? 'N/A',
+                        'rates_count' => count($rawRates),
+                        'raw_rates' => $rawRates,
+                        'raw_rates_details' => array_map(function($rate) {
+                            return [
+                                'object_id' => $rate['object_id'] ?? 'N/A',
+                                'provider' => $rate['provider'] ?? 'N/A',
+                                'servicelevel' => $rate['servicelevel']['name'] ?? 'N/A',
+                                'amount' => $rate['amount'] ?? 'N/A',
+                                'currency' => $rate['currency'] ?? 'N/A',
+                                'estimated_days' => $rate['estimated_days'] ?? 'N/A',
+                                'carrier_account' => $rate['carrier_account'] ?? 'N/A'
+                            ];
+                        }, $rawRates),
+                        'shipment_messages' => $shipment['messages'] ?? []
+                    ]);
+                    
+                    $this->info('📊 Rates grezze da Shippo (prima di qualsiasi filtro):');
+                    $this->line('  Count: ' . count($rawRates));
             
             if (count($rawRates) > 0) {
                 $this->line('  Rates:');
