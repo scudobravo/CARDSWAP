@@ -45,14 +45,16 @@ class ShippoService
     private function get(string $path, array $query = []): array
     {
         try {
-            $response = $this->client()->get($this->baseUrl . $path, $query);
+            $response = $this->client()->timeout(30)->get($this->baseUrl . $path, $query);
             $response->throw();
             return $response->json();
         } catch (\Exception $e) {
             Log::error('Shippo API Error', [
                 'path' => $path,
                 'query' => $query,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'response_status' => $response->status() ?? null,
+                'response_body' => $response->body() ?? null
             ]);
             throw $e;
         }
