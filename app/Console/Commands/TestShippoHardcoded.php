@@ -72,9 +72,28 @@ class TestShippoHardcoded extends Command
         try {
             $this->info('🔄 Creazione indirizzi...');
             
-            // Crea indirizzi
-            $fromAddress = $shippoService->createAddress($fromAddressData, true);
-            $toAddress = $shippoService->createAddress($toAddressData, true);
+            // Crea indirizzi con gestione errori dettagliata
+            try {
+                $this->line('  Creando indirizzo FROM...');
+                $fromAddress = $shippoService->createAddress($fromAddressData, true);
+                $this->line('  ✅ Indirizzo FROM creato: ' . ($fromAddress['object_id'] ?? 'N/A'));
+            } catch (\Exception $e) {
+                $this->error('  ❌ Errore creazione indirizzo FROM:');
+                $this->error('    ' . $e->getMessage());
+                $this->error('    File: ' . $e->getFile() . ':' . $e->getLine());
+                throw $e;
+            }
+            
+            try {
+                $this->line('  Creando indirizzo TO...');
+                $toAddress = $shippoService->createAddress($toAddressData, true);
+                $this->line('  ✅ Indirizzo TO creato: ' . ($toAddress['object_id'] ?? 'N/A'));
+            } catch (\Exception $e) {
+                $this->error('  ❌ Errore creazione indirizzo TO:');
+                $this->error('    ' . $e->getMessage());
+                $this->error('    File: ' . $e->getFile() . ':' . $e->getLine());
+                throw $e;
+            }
 
             $this->info('✅ Indirizzi creati:');
             $this->line('  From address ID: ' . ($fromAddress['object_id'] ?? 'N/A'));
