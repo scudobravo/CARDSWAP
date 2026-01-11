@@ -27,6 +27,10 @@ class TestShippoHardcoded extends Command
      */
     public function handle()
     {
+        // Aumenta timeout per chiamate API
+        set_time_limit(120);
+        ini_set('max_execution_time', '120');
+        
         $this->info('🧪 Test Shippo API con dati hardcoded per IT-IT');
         $this->newLine();
 
