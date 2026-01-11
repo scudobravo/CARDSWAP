@@ -359,10 +359,20 @@ class StripeService
     public function createPaymentWithSplit(array $paymentData): array
     {
         try {
+            // Converti in centesimi e arrotonda a intero (Stripe richiede interi)
+            // Se amount è già in centesimi (int), non viene modificato
+            // Se amount è in euro (float), viene convertito
+            $amount = is_float($paymentData['amount']) 
+                ? (int) round($paymentData['amount'] * 100) 
+                : (int) $paymentData['amount'];
+            $applicationFee = is_float($paymentData['application_fee'] ?? 0) 
+                ? (int) round($paymentData['application_fee'] * 100) 
+                : (int) ($paymentData['application_fee'] ?? 0);
+            
             $paymentIntent = $this->stripe->paymentIntents->create([
-                'amount' => $paymentData['amount'], // in centesimi
+                'amount' => $amount,
                 'currency' => $paymentData['currency'] ?? 'eur',
-                'application_fee_amount' => $paymentData['application_fee'], // commissione piattaforma
+                'application_fee_amount' => $applicationFee,
                 'transfer_data' => [
                     'destination' => $paymentData['seller_account_id'], // account venditore
                 ],
