@@ -288,9 +288,41 @@ class TestShippoHardcoded extends Command
                 $this->line('  Carrier accounts: ' . implode(', ', $carrierAccountIds));
                 $this->newLine();
                 
+                // Logging dettagliato del payload con carrier specifici
+                Log::info('Test Shippo hardcoded - Shipment payload (complete) with specific carriers', [
+                    'test_type' => 'hardcoded_with_carriers',
+                    'payload' => $shipmentPayloadWithCarriers,
+                    'carrier_accounts' => $specificCarrierAccountIds,
+                    'from' => $fromAddressData,
+                    'to' => $toAddressData,
+                    'parcel' => $parcelData
+                ]);
+                
                 $shipment2 = $shippoService->createShipment($shipmentPayloadWithCarriers, false);
                 
                 $rawRates2 = $shipment2['rates'] ?? [];
+                
+                // Logging dettagliato delle rates grezze con carrier specifici
+                Log::info('Test Shippo hardcoded - RAW RATES (before any filtering) with specific carriers', [
+                    'test_type' => 'hardcoded_with_carriers',
+                    'shipment_id' => $shipment2['object_id'] ?? 'N/A',
+                    'shipment_status' => $shipment2['status'] ?? 'N/A',
+                    'carrier_accounts_used' => $specificCarrierAccountIds,
+                    'rates_count' => count($rawRates2),
+                    'raw_rates' => $rawRates2,
+                    'raw_rates_details' => array_map(function($rate) {
+                        return [
+                            'object_id' => $rate['object_id'] ?? 'N/A',
+                            'provider' => $rate['provider'] ?? 'N/A',
+                            'servicelevel' => $rate['servicelevel']['name'] ?? 'N/A',
+                            'amount' => $rate['amount'] ?? 'N/A',
+                            'currency' => $rate['currency'] ?? 'N/A',
+                            'estimated_days' => $rate['estimated_days'] ?? 'N/A',
+                            'carrier_account' => $rate['carrier_account'] ?? 'N/A'
+                        ];
+                    }, $rawRates2),
+                    'shipment_messages' => $shipment2['messages'] ?? []
+                ]);
                 $this->info('📊 Rates con carrier accounts specifici:');
                 $this->line('  Count: ' . count($rawRates2));
                 
