@@ -27,14 +27,16 @@ class ShippoService
     private function post(string $path, array $payload): array
     {
         try {
-            $response = $this->client()->post($this->baseUrl . $path, $payload);
+            $response = $this->client()->timeout(30)->post($this->baseUrl . $path, $payload);
             $response->throw();
             return $response->json();
         } catch (\Exception $e) {
             Log::error('Shippo API Error', [
                 'path' => $path,
                 'payload' => $payload,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'response_status' => $response->status() ?? null,
+                'response_body' => $response->body() ?? null
             ]);
             throw $e;
         }
