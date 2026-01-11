@@ -116,8 +116,15 @@ class TestShippoHardcoded extends Command
             $this->newLine();
 
             $this->info('🔄 Creazione pacco...');
-            $parcel = $shippoService->createParcel($parcelData);
-            $this->info('✅ Pacco creato: ' . ($parcel['object_id'] ?? 'N/A'));
+            try {
+                $parcel = $shippoService->createParcel($parcelData);
+                $this->info('✅ Pacco creato: ' . ($parcel['object_id'] ?? 'N/A'));
+            } catch (\Exception $e) {
+                $this->error('❌ Errore creazione pacco:');
+                $this->error('  ' . $e->getMessage());
+                $this->error('  File: ' . $e->getFile() . ':' . $e->getLine());
+                throw $e;
+            }
             $this->newLine();
 
             $this->info('🔄 Creazione shipment (SENZA carrier_accounts specificati)...');
