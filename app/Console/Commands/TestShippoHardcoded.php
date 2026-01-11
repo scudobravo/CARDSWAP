@@ -79,23 +79,51 @@ class TestShippoHardcoded extends Command
             // Crea indirizzi con gestione errori dettagliata
             try {
                 $this->line('  Creando indirizzo FROM...');
+                if (ob_get_level() > 0) {
+                    ob_flush();
+                }
+                flush();
                 $fromAddress = $shippoService->createAddress($fromAddressData, true);
                 $this->line('  ✅ Indirizzo FROM creato: ' . ($fromAddress['object_id'] ?? 'N/A'));
+                if (ob_get_level() > 0) {
+                    ob_flush();
+                }
+                flush();
             } catch (\Exception $e) {
                 $this->error('  ❌ Errore creazione indirizzo FROM:');
                 $this->error('    ' . $e->getMessage());
                 $this->error('    File: ' . $e->getFile() . ':' . $e->getLine());
+                Log::error('Errore creazione indirizzo FROM nel test', [
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString()
+                ]);
                 throw $e;
             }
             
             try {
                 $this->line('  Creando indirizzo TO...');
+                if (ob_get_level() > 0) {
+                    ob_flush();
+                }
+                flush();
                 $toAddress = $shippoService->createAddress($toAddressData, true);
                 $this->line('  ✅ Indirizzo TO creato: ' . ($toAddress['object_id'] ?? 'N/A'));
+                if (ob_get_level() > 0) {
+                    ob_flush();
+                }
+                flush();
             } catch (\Exception $e) {
                 $this->error('  ❌ Errore creazione indirizzo TO:');
                 $this->error('    ' . $e->getMessage());
                 $this->error('    File: ' . $e->getFile() . ':' . $e->getLine());
+                Log::error('Errore creazione indirizzo TO nel test', [
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString()
+                ]);
                 throw $e;
             }
 
