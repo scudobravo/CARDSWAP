@@ -636,7 +636,8 @@ class StripeService
     public function createMultiVendorPayment(array $orderData): array
     {
         try {
-            $totalAmount = $orderData['total_amount'] * 100; // Converti in centesimi
+            // Converti in centesimi e arrotonda a intero (Stripe richiede interi)
+            $totalAmount = (int) round($orderData['total_amount'] * 100);
             
             // Per pagamenti multi-venditore, NON possiamo usare application_fee_amount sul PaymentIntent principale
             // perché Stripe richiede transfer_data[destination] quando si usa application_fee_amount
