@@ -208,6 +208,20 @@ class RecoverLabelUrlsFromShippo extends Command
                                 return 1;
                             }
                             
+                            // Formatta shipping_address come si aspetta ShippoService
+                            // Deve avere: name, street1, city, state, zip, country
+                            $formattedShippingAddress = [
+                                'name' => $shippingAddress['name'] ?? $order->buyer->name ?? 'Destinatario',
+                                'street1' => $shippingAddress['street1'] ?? $shippingAddress['address_line_1'] ?? '',
+                                'street2' => $shippingAddress['street2'] ?? $shippingAddress['address_line_2'] ?? null,
+                                'city' => $shippingAddress['city'] ?? '',
+                                'state' => $shippingAddress['state'] ?? $shippingAddress['state_province'] ?? '',
+                                'zip' => $shippingAddress['zip'] ?? $shippingAddress['postal_code'] ?? '',
+                                'country' => $shippingAddress['country'] ?? 'IT',
+                            ];
+                            
+                            $this->line("  Shipping address formattato: " . json_encode($formattedShippingAddress));
+                            
                             // Prepara sellers per ShippoService
                             $sellersData = [];
                             foreach ($sellers as $seller) {
@@ -234,7 +248,13 @@ class RecoverLabelUrlsFromShippo extends Command
                                         'phone' => $sellerAddress->phone ?? null,
                                     ]
                                 ];
+                                
+                                $this->line("  Seller {$seller->id} address: " . json_encode($sellersData[$seller->id]['address']));
                             }
+                            
+                            // Ricalcola tariffe
+                            $this->line("  Chiamata calculateRatesForOrder...");
+                            $ratesResult = $shippoService->calculateRatesForOrder($sellersData, $formattedShippingAddress);
                             
                             // Ricalcola tariffe
                             $this->line("  Chiamata calculateRatesForOrder...");
