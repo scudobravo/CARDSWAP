@@ -48,7 +48,20 @@ class RecoverLabelUrlsFromShippo extends Command
             
             try {
                 $this->line("  Chiamata API Shippo per recuperare transazione...");
+                
+                // Verifica che il metodo esista
+                if (!method_exists($shippoService, 'getTransaction')) {
+                    $this->error("  ❌ Metodo getTransaction non trovato in ShippoService");
+                    return 1;
+                }
+                
                 $transaction = $shippoService->getTransaction($transactionId);
+                
+                if (empty($transaction)) {
+                    $this->error("  ❌ Risposta vuota da Shippo");
+                    return 1;
+                }
+                
                 $this->line("  ✅ Risposta ricevuta da Shippo");
                 
                 // Log dettagliato per debug
