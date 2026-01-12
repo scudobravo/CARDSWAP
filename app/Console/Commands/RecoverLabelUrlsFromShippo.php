@@ -65,8 +65,20 @@ class RecoverLabelUrlsFromShippo extends Command
                 $this->line("  ✅ Risposta ricevuta da Shippo");
                 
                 // Log dettagliato per debug
-                $this->line("  Status transazione: " . ($transaction['status'] ?? 'N/A'));
+                $status = $transaction['status'] ?? 'N/A';
+                $this->line("  Status transazione: {$status}");
                 $this->line("  Object state: " . ($transaction['object_state'] ?? 'N/A'));
+                
+                // Se la transazione ha errori, mostra i messaggi
+                if ($status === 'ERROR' && !empty($transaction['messages'])) {
+                    $this->error("  ❌ Transazione in errore! Messaggi:");
+                    foreach ($transaction['messages'] as $message) {
+                        $source = $message['source'] ?? 'N/A';
+                        $text = $message['text'] ?? 'N/A';
+                        $code = $message['code'] ?? '';
+                        $this->error("    - [{$source}] {$text}" . ($code ? " (code: {$code})" : ""));
+                    }
+                }
                 
                 // Cerca label_url in vari possibili campi
                 $labelUrl = $transaction['label_url'] ?? null;
@@ -74,11 +86,14 @@ class RecoverLabelUrlsFromShippo extends Command
                 // Se è vuoto, potrebbe essere una stringa vuota
                 if (empty($labelUrl) && isset($transaction['label_url'])) {
                     $this->warn("  ⚠️  label_url presente ma vuoto nella risposta Shippo");
+                    if ($status === 'ERROR') {
+                        $this->error("  ❌ La transazione è in errore, quindi l'etichetta non è stata generata");
+                    }
                 }
                 
                 // Verifica se la transazione è ancora in elaborazione
-                if (($transaction['status'] ?? '') === 'QUEUED' || ($transaction['status'] ?? '') === 'WAITING') {
-                    $this->warn("  ⚠️  Transazione ancora in elaborazione (status: {$transaction['status']})");
+                if ($status === 'QUEUED' || $status === 'WAITING') {
+                    $this->warn("  ⚠️  Transazione ancora in elaborazione (status: {$status})");
                     $this->info("  💡 Riprova tra qualche minuto");
                 }
                 
