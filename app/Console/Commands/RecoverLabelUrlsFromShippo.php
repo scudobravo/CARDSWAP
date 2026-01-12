@@ -148,11 +148,123 @@ class RecoverLabelUrlsFromShippo extends Command
                                 return 1;
                             }
                             
+                            // Prova prima con il rate esistente
                             $this->line("  Rate object_id: {$rateObjectId}");
+                            $this->line("  Tentativo con rate esistente...");
+                            
+                            try {
+                                $newTransaction = $shippoService->buyLabel($rateObjectId, 'PNG');
+                                $newStatus = $newTransaction['status'] ?? 'N/A';
+                                $newLabelUrl = $newTransaction['label_url'] ?? null;
+                                
+                                if ($newStatus === 'SUCCESS' && $newLabelUrl) {
+                                    $this->info("  ✅ Etichetta creata con successo usando rate esistente!");
+                                    $this->info("  ✅ Label URL: {$newLabelUrl}");
+                                    
+                                    if (!$dryRun) {
+                                        $carrier = (is_array($newTransaction['rate'] ?? null) ? ($newTransaction['rate']['provider'] ?? null) : null) ?? $order->carrier_code;
+                                        $order->update([
+                                            'label_url' => $newLabelUrl,
+                                            'tracking_number' => $newTransaction['tracking_number'] ?? $order->tracking_number,
+                                            'carrier_code' => $carrier,
+                                            'status' => 'label_created',
+                                            'label_created_at' => now()
+                                        ]);
+                                        $this->info("  ✅ Ordine #{$order->order_number} aggiornato con nuovo label_url");
+                                    } else {
+                                        $this->info("  [DRY-RUN] Aggiornerebbe ordine #{$order->order_number} con label_url: {$newLabelUrl}");
+                                    }
+                                    return 0;
+                                } else {
+                                    $this->warn("  ⚠️  Rate esistente non utilizzabile (status: {$newStatus})");
+                                    if (!empty($newTransaction['messages'])) {
+                                        foreach ($newTransaction['messages'] as $msg) {
+                                            $this->warn("    - " . ($msg['text'] ?? 'N/A'));
+                                        }
+                                    }
+                                    $this->line("  🔄 Ricalcolo tariffe per ottenere nuovo rate...");
+                                }
+                            } catch (\Exception $e) {
+                                $this->warn("  ⚠️  Errore con rate esistente: {$e->getMessage()}");
+                                $this->line("  🔄 Ricalcolo tariffe per ottenere nuovo rate...");
+                            }
+                            
+                            // Se il rate esistente non funziona, ricalcola le tariffe
+                            $this->line("  📦 Ricalcolo tariffe per ordine #{$order->order_number}...");
+                            
+                            // Carica relazioni necessarie
+                            $order->load(['orderItems.cardListing.seller', 'buyer']);
+                            
+                            // Prepara dati per ricalcolo tariffe
+                            $sellers = $order->getSellers();
+                            if ($sellers->isEmpty()) {
+                                $this->error("  ❌ Nessun venditore trovato per l'ordine");
+                                return 1;
+                            }
+                            
+                            $shippingAddress = $order->shipping_address;
+                            if (empty($shippingAddress)) {
+                                $this->error("  ❌ Indirizzo di spedizione non trovato nell'ordine");
+                                return 1;
+                            }
+                            
+                            // Prepara sellers per ShippoService
+                            $sellersData = [];
+                            foreach ($sellers as $seller) {
+                                // Cerca indirizzo del venditore
+                                $sellerAddress = $seller->addresses()->where('is_shipping', true)->first() 
+                                    ?? $seller->addresses()->where('is_default', true)->first()
+                                    ?? $seller->addresses()->first();
+                                
+                                if (!$sellerAddress) {
+                                    $this->error("  ❌ Indirizzo venditore non trovato per {$seller->name}");
+                                    return 1;
+                                }
+                                
+                                $sellersData[$seller->id] = [
+                                    'id' => $seller->id,
+                                    'name' => $seller->name,
+                                    'address' => [
+                                        'street1' => $sellerAddress->address_line_1 ?? '',
+                                        'street2' => $sellerAddress->address_line_2 ?? null,
+                                        'city' => $sellerAddress->city ?? '',
+                                        'state' => $sellerAddress->state_province ?? '',
+                                        'zip' => $sellerAddress->postal_code ?? '',
+                                        'country' => $sellerAddress->country ?? 'IT',
+                                        'phone' => $sellerAddress->phone ?? null,
+                                    ]
+                                ];
+                            }
+                            
+                            // Ricalcola tariffe
+                            $ratesResult = $shippoService->calculateRatesForOrder($sellersData, $shippingAddress);
+                            
+                            if (empty($ratesResult) || empty($ratesResult[array_key_first($ratesResult)]['rates'])) {
+                                $this->error("  ❌ Nessuna tariffa disponibile dopo ricalcolo");
+                                return 1;
+                            }
+                            
+                            // Prendi la prima tariffa disponibile
+                            $firstSellerId = array_key_first($ratesResult);
+                            $rates = $ratesResult[$firstSellerId]['rates'] ?? [];
+                            if (empty($rates)) {
+                                $this->error("  ❌ Nessuna tariffa disponibile per il venditore");
+                                return 1;
+                            }
+                            
+                            $newRate = $rates[0]; // Prendi la prima tariffa
+                            $newRateObjectId = $newRate['object_id'] ?? null;
+                            
+                            if (!$newRateObjectId) {
+                                $this->error("  ❌ Rate object_id non trovato nelle nuove tariffe");
+                                return 1;
+                            }
+                            
+                            $this->line("  ✅ Nuovo rate object_id: {$newRateObjectId}");
                             $this->line("  Creazione nuova transazione con formato PNG...");
                             
                             // Crea nuova transazione con PNG
-                            $newTransaction = $shippoService->buyLabel($rateObjectId, 'PNG');
+                            $newTransaction = $shippoService->buyLabel($newRateObjectId, 'PNG');
                             $newStatus = $newTransaction['status'] ?? 'N/A';
                             $newLabelUrl = $newTransaction['label_url'] ?? null;
                             
@@ -163,10 +275,11 @@ class RecoverLabelUrlsFromShippo extends Command
                                 $this->info("  ✅ Label URL: {$newLabelUrl}");
                                 
                                 if (!$dryRun) {
+                                    $carrier = (is_array($newTransaction['rate'] ?? null) ? ($newTransaction['rate']['provider'] ?? null) : null) ?? $order->carrier_code;
                                     $order->update([
                                         'label_url' => $newLabelUrl,
                                         'tracking_number' => $newTransaction['tracking_number'] ?? $order->tracking_number,
-                                        'carrier_code' => $newTransaction['rate']['provider'] ?? $order->carrier_code,
+                                        'carrier_code' => $carrier,
                                         'status' => 'label_created',
                                         'label_created_at' => now()
                                     ]);
