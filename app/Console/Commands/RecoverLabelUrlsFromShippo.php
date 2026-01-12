@@ -41,12 +41,10 @@ class RecoverLabelUrlsFromShippo extends Command
         }
 
         $this->info('Inizio recupero label_url da Shippo...');
-        ob_flush(); flush();
 
         // Se specificato transaction_id, recupera direttamente da Shippo
         if ($transactionId) {
             $this->info("Recupero label_url per transaction_id: {$transactionId}");
-            ob_flush(); flush();
             
             try {
                 $transaction = $shippoService->getTransaction($transactionId);
@@ -54,7 +52,6 @@ class RecoverLabelUrlsFromShippo extends Command
                 
                 if ($labelUrl) {
                     $this->info("✅ Label URL trovato: {$labelUrl}");
-                    ob_flush(); flush();
                     
                     // Se c'è un order_id nei log, prova ad associarlo
                     if ($orderId) {
@@ -63,20 +60,16 @@ class RecoverLabelUrlsFromShippo extends Command
                             if (!$dryRun) {
                                 $order->update(['label_url' => $labelUrl]);
                                 $this->info("✅ Aggiornato ordine #{$order->order_number} con label_url");
-                                ob_flush(); flush();
                             } else {
                                 $this->info("  [DRY-RUN] Aggiornerebbe ordine #{$order->order_number} con label_url: {$labelUrl}");
-                                ob_flush(); flush();
                             }
                         }
                     }
                 } else {
                     $this->warn("⚠️  Label URL non trovato nella transazione");
-                    ob_flush(); flush();
                 }
             } catch (\Exception $e) {
                 $this->error("❌ Errore recupero transazione: {$e->getMessage()}");
-                ob_flush(); flush();
             }
             
             return 0;
@@ -92,7 +85,6 @@ class RecoverLabelUrlsFromShippo extends Command
 
         $orders = $query->get();
         $this->info("Trovati {$orders->count()} ordini con etichetta creata ma senza label_url");
-        ob_flush(); flush();
 
         if ($orders->isEmpty()) {
             $this->info('✅ Nessun ordine da recuperare');
@@ -105,7 +97,6 @@ class RecoverLabelUrlsFromShippo extends Command
 
         foreach ($orders as $order) {
             $this->line("📦 Ordine #{$order->order_number} (ID: {$order->id})");
-            ob_flush(); flush();
 
             // Cerca transaction_id nei log per questo ordine
             // Cerca nei log recenti (ultimi 7 giorni)
@@ -119,13 +110,11 @@ class RecoverLabelUrlsFromShippo extends Command
                 if ($logContent && preg_match('/"transaction_id":"([^"]+)"/', $logContent, $matches)) {
                     $transactionId = $matches[1];
                     $this->line("  Transaction ID trovato nei log: {$transactionId}");
-                    ob_flush(); flush();
                 }
             }
 
             if (!$transactionId) {
                 $this->warn("  ⚠️  Transaction ID non trovato nei log per questo ordine");
-                ob_flush(); flush();
                 $notFound++;
                 continue;
             }
@@ -137,26 +126,21 @@ class RecoverLabelUrlsFromShippo extends Command
 
                 if ($labelUrl) {
                     $this->info("  ✅ Label URL recuperato: {$labelUrl}");
-                    ob_flush(); flush();
 
                     if (!$dryRun) {
                         $order->update(['label_url' => $labelUrl]);
                         $this->info("  ✅ Ordine aggiornato");
-                        ob_flush(); flush();
                         $recovered++;
                     } else {
                         $this->info("  [DRY-RUN] Aggiornerebbe con: {$labelUrl}");
-                        ob_flush(); flush();
                         $recovered++;
                     }
                 } else {
                     $this->warn("  ⚠️  Label URL non presente nella transazione Shippo");
-                    ob_flush(); flush();
                     $notFound++;
                 }
             } catch (\Exception $e) {
                 $this->error("  ❌ Errore: {$e->getMessage()}");
-                ob_flush(); flush();
                 $errors++;
 
                 Log::error('Errore recupero label_url da Shippo', [
@@ -173,7 +157,6 @@ class RecoverLabelUrlsFromShippo extends Command
             $this->warn("⚠️  Modalità DRY-RUN: nessuna modifica è stata applicata");
         }
         $this->info('✅ Completato!');
-        ob_flush(); flush();
         
         $this->table(
             ['Risultato', 'Conteggio'],
