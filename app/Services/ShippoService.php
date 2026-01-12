@@ -1257,19 +1257,34 @@ class ShippoService
             $transaction = $this->buyLabel($rateObjectId);
             
             Log::info('Etichetta acquistata', [
-                'transaction_id' => $transaction['object_id'],
-                'tracking_number' => $transaction['tracking_number'],
-                'label_url' => $transaction['label_url'],
+                'transaction_id' => $transaction['object_id'] ?? 'N/A',
+                'tracking_number' => $transaction['tracking_number'] ?? 'N/A',
+                'label_url' => $transaction['label_url'] ?? 'N/A',
                 'order_id' => $orderData['order_id'] ?? null,
+                'transaction_keys' => array_keys($transaction), // Log per debug
             ]);
+
+            // Estrai il carrier dalla rate o dalla transaction
+            // Shippo può restituire tracking_provider, carrier, o provider
+            $carrier = $transaction['tracking_provider'] 
+                ?? $transaction['carrier'] 
+                ?? $transaction['rate']['provider'] 
+                ?? $transaction['rate']['carrier']
+                ?? 'poste_italiane'; // Fallback per Poste Italiane
+
+            // Estrai tracking_url da vari possibili campi
+            $trackingUrl = $transaction['tracking_url_provider'] 
+                ?? $transaction['tracking_url'] 
+                ?? $transaction['rate']['tracking_url']
+                ?? null;
 
             return [
                 'success' => true,
-                'transaction_id' => $transaction['object_id'],
-                'tracking_number' => $transaction['tracking_number'],
-                'tracking_url' => $transaction['tracking_url_provider'],
-                'label_url' => $transaction['label_url'],
-                'carrier' => $transaction['tracking_provider'],
+                'transaction_id' => $transaction['object_id'] ?? null,
+                'tracking_number' => $transaction['tracking_number'] ?? null,
+                'tracking_url' => $trackingUrl,
+                'label_url' => $transaction['label_url'] ?? null,
+                'carrier' => $carrier,
                 'estimated_delivery' => $transaction['eta'] ?? null,
             ];
 
