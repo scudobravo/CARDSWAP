@@ -152,42 +152,54 @@ class RecoverLabelUrlsFromShippo extends Command
                             $this->line("  Rate object_id: {$rateObjectId}");
                             $this->line("  Tentativo con rate esistente...");
                             
-                            try {
-                                $newTransaction = $shippoService->buyLabel($rateObjectId, 'PNG');
-                                $newStatus = $newTransaction['status'] ?? 'N/A';
-                                $newLabelUrl = $newTransaction['label_url'] ?? null;
-                                
-                                if ($newStatus === 'SUCCESS' && $newLabelUrl) {
-                                    $this->info("  ✅ Etichetta creata con successo usando rate esistente!");
-                                    $this->info("  ✅ Label URL: {$newLabelUrl}");
+                            // Prova prima con PNG, poi con ZPL se PNG fallisce
+                            $formatsToTry = ['PNG', 'ZPL'];
+                            $labelCreated = false;
+                            
+                            foreach ($formatsToTry as $format) {
+                                try {
+                                    $this->line("  Tentativo con formato {$format}...");
+                                    $newTransaction = $shippoService->buyLabel($rateObjectId, $format);
+                                    $newStatus = $newTransaction['status'] ?? 'N/A';
+                                    $newLabelUrl = $newTransaction['label_url'] ?? null;
                                     
-                                    if (!$dryRun) {
-                                        $carrier = (is_array($newTransaction['rate'] ?? null) ? ($newTransaction['rate']['provider'] ?? null) : null) ?? $order->carrier_code;
-                                        $order->update([
-                                            'label_url' => $newLabelUrl,
-                                            'tracking_number' => $newTransaction['tracking_number'] ?? $order->tracking_number,
-                                            'carrier_code' => $carrier,
-                                            'status' => 'label_created',
-                                            'label_created_at' => now()
-                                        ]);
-                                        $this->info("  ✅ Ordine #{$order->order_number} aggiornato con nuovo label_url");
+                                    if ($newStatus === 'SUCCESS' && $newLabelUrl) {
+                                        $this->info("  ✅ Etichetta creata con successo usando rate esistente e formato {$format}!");
+                                        $this->info("  ✅ Label URL: {$newLabelUrl}");
+                                        
+                                        if (!$dryRun) {
+                                            $carrier = (is_array($newTransaction['rate'] ?? null) ? ($newTransaction['rate']['provider'] ?? null) : null) ?? $order->carrier_code;
+                                            $order->update([
+                                                'label_url' => $newLabelUrl,
+                                                'tracking_number' => $newTransaction['tracking_number'] ?? $order->tracking_number,
+                                                'carrier_code' => $carrier,
+                                                'status' => 'label_created',
+                                                'label_created_at' => now()
+                                            ]);
+                                            $this->info("  ✅ Ordine #{$order->order_number} aggiornato con nuovo label_url");
+                                        } else {
+                                            $this->info("  [DRY-RUN] Aggiornerebbe ordine #{$order->order_number} con label_url: {$newLabelUrl}");
+                                        }
+                                        $labelCreated = true;
+                                        break; // Esci dal loop se ha successo
                                     } else {
-                                        $this->info("  [DRY-RUN] Aggiornerebbe ordine #{$order->order_number} con label_url: {$newLabelUrl}");
-                                    }
-                                    return 0;
-                                } else {
-                                    $this->warn("  ⚠️  Rate esistente non utilizzabile (status: {$newStatus})");
-                                    if (!empty($newTransaction['messages'])) {
-                                        foreach ($newTransaction['messages'] as $msg) {
-                                            $this->warn("    - " . ($msg['text'] ?? 'N/A'));
+                                        $this->warn("  ⚠️  Formato {$format} fallito (status: {$newStatus})");
+                                        if (!empty($newTransaction['messages'])) {
+                                            foreach ($newTransaction['messages'] as $msg) {
+                                                $this->warn("    - " . ($msg['text'] ?? 'N/A'));
+                                            }
                                         }
                                     }
-                                    $this->line("  🔄 Ricalcolo tariffe per ottenere nuovo rate...");
+                                } catch (\Exception $e) {
+                                    $this->warn("  ⚠️  Errore con formato {$format}: {$e->getMessage()}");
                                 }
-                            } catch (\Exception $e) {
-                                $this->warn("  ⚠️  Errore con rate esistente: {$e->getMessage()}");
-                                $this->line("  🔄 Ricalcolo tariffe per ottenere nuovo rate...");
                             }
+                            
+                            if ($labelCreated) {
+                                return 0;
+                            }
+                            
+                            $this->line("  🔄 Tutti i formati falliti, ricalcolo tariffe per ottenere nuovo rate...");
                             
                             // Se il rate esistente non funziona, ricalcola le tariffe
                             $this->line("  📦 Ricalcolo tariffe per ordine #{$order->order_number}...");
