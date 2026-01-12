@@ -701,7 +701,25 @@ const createShippoLabel = async (order) => {
         })
       })
 
-      alert(`Etichetta creata con successo!\nTracking: ${labelData.data.tracking_number}\n\nPuoi scaricare l'etichetta dal link fornito.`)
+      // Mostra messaggio con link cliccabile all'etichetta
+      const trackingNumber = labelData.data.tracking_number || 'N/A'
+      const labelUrl = labelData.data.label_url
+      
+      let message = `Etichetta creata con successo!\n\nTracking: ${trackingNumber}\n\n`
+      
+      if (labelUrl) {
+        // Se c'è un link, apri una finestra di dialogo con il link cliccabile
+        const userConfirmed = confirm(
+          `Etichetta creata con successo!\n\nTracking: ${trackingNumber}\n\nVuoi aprire il link per scaricare l'etichetta?`
+        )
+        if (userConfirmed) {
+          window.open(labelUrl, '_blank')
+        }
+      } else {
+        // Se non c'è link, mostra solo il messaggio
+        alert(message + 'L\'etichetta è stata creata. Controlla i dettagli dell\'ordine per il link.')
+      }
+      
       loadOrders()
     } else {
       throw new Error(labelData.message || 'Errore nella creazione dell\'etichetta')
