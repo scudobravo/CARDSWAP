@@ -112,9 +112,16 @@ class ShippoService
 
     /**
      * Acquista un'etichetta di spedizione
+     * Per Poste Italiane, usa PNG invece di PDF (PDF non supportato)
      */
-    public function buyLabel(string $rateObjectId, string $labelFileType = 'PDF'): array
+    public function buyLabel(string $rateObjectId, string $labelFileType = null): array
     {
+        // Se non specificato, usa PNG come default (supportato da tutti i carrier incluso Poste Italiane)
+        // PDF non è supportato da Poste Italiane
+        if ($labelFileType === null) {
+            $labelFileType = 'PNG';
+        }
+        
         return $this->post('transactions', [
             'rate' => $rateObjectId,
             'label_file_type' => $labelFileType,
