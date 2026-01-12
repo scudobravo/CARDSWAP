@@ -47,7 +47,9 @@ class RecoverLabelUrlsFromShippo extends Command
             $this->info("Recupero label_url per transaction_id: {$transactionId}");
             
             try {
+                $this->line("  Chiamata API Shippo per recuperare transazione...");
                 $transaction = $shippoService->getTransaction($transactionId);
+                $this->line("  ✅ Risposta ricevuta da Shippo");
                 
                 // Log dettagliato per debug
                 $this->line("  Status transazione: " . ($transaction['status'] ?? 'N/A'));
@@ -91,6 +93,17 @@ class RecoverLabelUrlsFromShippo extends Command
                 }
             } catch (\Exception $e) {
                 $this->error("❌ Errore recupero transazione: {$e->getMessage()}");
+                $this->error("  File: {$e->getFile()}:{$e->getLine()}");
+                $this->error("  Trace: " . substr($e->getTraceAsString(), 0, 500));
+                
+                Log::error('Errore recupero transazione Shippo nel comando', [
+                    'transaction_id' => $transactionId,
+                    'order_id' => $orderId,
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString()
+                ]);
             }
             
             return 0;
