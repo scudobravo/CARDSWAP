@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Order;
+use App\Models\ShippingZone;
 use App\Services\ShippoService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
