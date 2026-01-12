@@ -131,10 +131,18 @@ class RecoverLabelUrlsFromShippo extends Command
                             }
                             
                             // Recupera il rate_object_id dalla transazione
-                            $rateObjectId = $transaction['rate']['object_id'] ?? null;
+                            // Il rate può essere un oggetto completo o solo un object_id (stringa)
+                            $rateObjectId = null;
+                            if (is_array($transaction['rate'] ?? null)) {
+                                $rateObjectId = $transaction['rate']['object_id'] ?? null;
+                            } elseif (is_string($transaction['rate'] ?? null)) {
+                                // Se è una stringa, è direttamente l'object_id
+                                $rateObjectId = $transaction['rate'];
+                            }
                             
                             if (!$rateObjectId) {
                                 $this->error("  ❌ Rate object_id non trovato nella transazione");
+                                $this->line("  💡 Struttura rate: " . json_encode($transaction['rate'] ?? 'N/A'));
                                 $this->line("  💡 Dovrai ricalcolare le tariffe manualmente");
                                 return 1;
                             }
