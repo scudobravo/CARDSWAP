@@ -415,66 +415,83 @@ class RecoverLabelUrlsFromShippo extends Command
                             }
                             
                             $this->line("  ✅ Nuovo rate object_id: {$newRateObjectId}");
-                            $this->line("  Creazione nuova transazione con formato PNG...");
                             
-                            // Crea nuova transazione con PNG
-                            $buyLabelPayload = [
-                                'rate' => $newRateObjectId,
-                                'label_file_type' => 'PNG',
-                                'async' => false
-                            ];
+                            // Prova formati supportati da Poste Italiane (PDF_4X6, PDF_SINGLE_8X11, PDF)
+                            // PNG non è supportato da Poste Italiane
+                            $formatsToTry = ['PDF_4X6', 'PDF_SINGLE_8X11', 'PDF'];
+                            $labelCreated = false;
                             
-                            Log::info('RecoverLabelUrls: buyLabel con nuovo rate payload', [
-                                'order_id' => $orderId,
-                                'order_number' => $order->order_number,
-                                'new_rate_object_id' => $newRateObjectId,
-                                'payload' => $buyLabelPayload
-                            ]);
-                            
-                            $newTransaction = $shippoService->buyLabel($newRateObjectId, 'PNG');
-                            
-                            // Log risposta completa buyLabel con nuovo rate
-                            Log::info('RecoverLabelUrls: buyLabel con nuovo rate response', [
-                                'order_id' => $orderId,
-                                'order_number' => $order->order_number,
-                                'new_rate_object_id' => $newRateObjectId,
-                                'status' => $newTransaction['status'] ?? 'N/A',
-                                'label_url' => $newTransaction['label_url'] ?? null,
-                                'tracking_number' => $newTransaction['tracking_number'] ?? null,
-                                'transaction_id' => $newTransaction['object_id'] ?? null,
-                                'full_response' => $newTransaction,
-                                'response_keys' => array_keys($newTransaction ?? [])
-                            ]);
-                            
-                            $newStatus = $newTransaction['status'] ?? 'N/A';
-                            $newLabelUrl = $newTransaction['label_url'] ?? null;
-                            
-                            $this->line("  Status nuova transazione: {$newStatus}");
-                            
-                            if ($newStatus === 'SUCCESS' && $newLabelUrl) {
-                                $this->info("  ✅ Nuova etichetta creata con successo!");
-                                $this->info("  ✅ Label URL: {$newLabelUrl}");
+                            foreach ($formatsToTry as $format) {
+                                $this->line("  Creazione nuova transazione con formato {$format}...");
                                 
-                                if (!$dryRun) {
-                                    $carrier = (is_array($newTransaction['rate'] ?? null) ? ($newTransaction['rate']['provider'] ?? null) : null) ?? $order->carrier_code;
-                                    $order->update([
-                                        'label_url' => $newLabelUrl,
-                                        'tracking_number' => $newTransaction['tracking_number'] ?? $order->tracking_number,
-                                        'carrier_code' => $carrier,
-                                        'status' => 'label_created',
-                                        'label_created_at' => now()
+                                $buyLabelPayload = [
+                                    'rate' => $newRateObjectId,
+                                    'label_file_type' => $format,
+                                    'async' => false
+                                ];
+                                
+                                Log::info('RecoverLabelUrls: buyLabel con nuovo rate payload', [
+                                    'order_id' => $orderId,
+                                    'order_number' => $order->order_number,
+                                    'new_rate_object_id' => $newRateObjectId,
+                                    'format' => $format,
+                                    'payload' => $buyLabelPayload
+                                ]);
+                                
+                                try {
+                                    $newTransaction = $shippoService->buyLabel($newRateObjectId, $format);
+                                    
+                                    // Log risposta completa buyLabel con nuovo rate
+                                    Log::info('RecoverLabelUrls: buyLabel con nuovo rate response', [
+                                        'order_id' => $orderId,
+                                        'order_number' => $order->order_number,
+                                        'new_rate_object_id' => $newRateObjectId,
+                                        'format' => $format,
+                                        'status' => $newTransaction['status'] ?? 'N/A',
+                                        'label_url' => $newTransaction['label_url'] ?? null,
+                                        'tracking_number' => $newTransaction['tracking_number'] ?? null,
+                                        'transaction_id' => $newTransaction['object_id'] ?? null,
+                                        'full_response' => $newTransaction,
+                                        'response_keys' => array_keys($newTransaction ?? [])
                                     ]);
-                                    $this->info("  ✅ Ordine #{$order->order_number} aggiornato con nuovo label_url");
-                                } else {
-                                    $this->info("  [DRY-RUN] Aggiornerebbe ordine #{$order->order_number} con label_url: {$newLabelUrl}");
-                                }
-                            } else {
-                                $this->error("  ❌ Nuova transazione fallita o label_url vuoto");
-                                if (!empty($newTransaction['messages'])) {
-                                    foreach ($newTransaction['messages'] as $msg) {
-                                        $this->error("    - " . ($msg['text'] ?? 'N/A'));
+                                    
+                                    $newStatus = $newTransaction['status'] ?? 'N/A';
+                                    $newLabelUrl = $newTransaction['label_url'] ?? null;
+                                    
+                                    if ($newStatus === 'SUCCESS' && $newLabelUrl) {
+                                        $this->info("  ✅ Nuova etichetta creata con successo con formato {$format}!");
+                                        $this->info("  ✅ Label URL: {$newLabelUrl}");
+                                        
+                                        if (!$dryRun) {
+                                            $carrier = (is_array($newTransaction['rate'] ?? null) ? ($newTransaction['rate']['provider'] ?? null) : null) ?? $order->carrier_code;
+                                            $order->update([
+                                                'label_url' => $newLabelUrl,
+                                                'tracking_number' => $newTransaction['tracking_number'] ?? $order->tracking_number,
+                                                'carrier_code' => $carrier,
+                                                'status' => 'label_created',
+                                                'label_created_at' => now()
+                                            ]);
+                                            $this->info("  ✅ Ordine #{$order->order_number} aggiornato con nuovo label_url");
+                                        } else {
+                                            $this->info("  [DRY-RUN] Aggiornerebbe ordine #{$order->order_number} con label_url: {$newLabelUrl}");
+                                        }
+                                        $labelCreated = true;
+                                        break; // Esci dal loop se ha successo
+                                    } else {
+                                        $this->warn("  ⚠️  Formato {$format} fallito (status: {$newStatus})");
+                                        if (!empty($newTransaction['messages'])) {
+                                            foreach ($newTransaction['messages'] as $msg) {
+                                                $this->warn("    - " . ($msg['text'] ?? 'N/A'));
+                                            }
+                                        }
                                     }
+                                } catch (\Exception $e) {
+                                    $this->warn("  ⚠️  Errore con formato {$format}: {$e->getMessage()}");
                                 }
+                            }
+                            
+                            if (!$labelCreated) {
+                                $this->error("  ❌ Tutti i formati falliti per il nuovo rate");
                             }
                         } catch (\Exception $e) {
                             $this->error("  ❌ Errore creazione nuova transazione: {$e->getMessage()}");
