@@ -272,15 +272,48 @@ class RecoverLabelUrlsFromShippo extends Command
                             
                             // Formatta shipping_address come si aspetta ShippoService
                             // Deve avere: name, street1, city, state, zip, country
+                            // IMPORTANTE: Verifica tutti i possibili formati di salvataggio
                             $formattedShippingAddress = [
-                                'name' => $shippingAddress['name'] ?? $order->buyer->name ?? 'Destinatario',
-                                'street1' => $shippingAddress['street1'] ?? $shippingAddress['address_line_1'] ?? '',
-                                'street2' => $shippingAddress['street2'] ?? $shippingAddress['address_line_2'] ?? null,
+                                'name' => $shippingAddress['name'] 
+                                    ?? (($shippingAddress['first_name'] ?? '') . ' ' . ($shippingAddress['last_name'] ?? ''))
+                                    ?? $order->buyer->name 
+                                    ?? 'Destinatario',
+                                'street1' => $shippingAddress['street1'] 
+                                    ?? $shippingAddress['address_line_1'] 
+                                    ?? $shippingAddress['address']
+                                    ?? '',
+                                'street2' => $shippingAddress['street2'] 
+                                    ?? $shippingAddress['address_line_2'] 
+                                    ?? null,
                                 'city' => $shippingAddress['city'] ?? '',
-                                'state' => $shippingAddress['state'] ?? $shippingAddress['state_province'] ?? '',
-                                'zip' => $shippingAddress['zip'] ?? $shippingAddress['postal_code'] ?? '',
+                                'state' => $shippingAddress['state'] 
+                                    ?? $shippingAddress['state_province'] 
+                                    ?? $shippingAddress['province']
+                                    ?? '',
+                                'zip' => $shippingAddress['zip'] 
+                                    ?? $shippingAddress['postal_code'] 
+                                    ?? $shippingAddress['zip_code']
+                                    ?? '',
                                 'country' => $shippingAddress['country'] ?? 'IT',
                             ];
+                            
+                            // Valida che i campi obbligatori non siano vuoti
+                            if (empty($formattedShippingAddress['street1']) || 
+                                empty($formattedShippingAddress['city']) || 
+                                empty($formattedShippingAddress['zip'])) {
+                                $this->error("  ❌ Indirizzo di spedizione incompleto:");
+                                $this->error("    street1: " . ($formattedShippingAddress['street1'] ?: 'VUOTO'));
+                                $this->error("    city: " . ($formattedShippingAddress['city'] ?: 'VUOTO'));
+                                $this->error("    zip: " . ($formattedShippingAddress['zip'] ?: 'VUOTO'));
+                                $this->line("  Indirizzo originale: " . json_encode($shippingAddress));
+                                Log::error('RecoverLabelUrls: Indirizzo di spedizione incompleto', [
+                                    'order_id' => $orderId,
+                                    'order_number' => $order->order_number,
+                                    'original_shipping_address' => $shippingAddress,
+                                    'formatted_shipping_address' => $formattedShippingAddress
+                                ]);
+                                return 1;
+                            }
                             
                             $this->line("  Shipping address formattato: " . json_encode($formattedShippingAddress));
                             
