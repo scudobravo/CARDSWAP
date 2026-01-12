@@ -313,12 +313,30 @@ class ShippoService
                 'parcels' => [$parcelPayload],
             ];
             
-            // Rimuovi campi null/vuoti per evitare errori
+            // Rimuovi solo campi opzionali vuoti (state può essere opzionale per alcuni paesi)
+            // NON rimuovere: street1, city, zip, country (obbligatori)
+            // Rimuovi solo state se vuoto (opzionale per alcuni paesi)
             foreach (['address_from', 'address_to'] as $addrKey) {
-                foreach (['name', 'street1', 'city', 'state', 'zip', 'country'] as $field) {
-                    if (empty($shipmentPayload[$addrKey][$field]) && $shipmentPayload[$addrKey][$field] !== '0') {
-                        unset($shipmentPayload[$addrKey][$field]);
-                    }
+                if (empty($shipmentPayload[$addrKey]['state']) && $shipmentPayload[$addrKey]['state'] !== '0') {
+                    unset($shipmentPayload[$addrKey]['state']);
+                }
+                // Rimuovi name solo se vuoto (opzionale)
+                if (empty($shipmentPayload[$addrKey]['name'])) {
+                    unset($shipmentPayload[$addrKey]['name']);
+                }
+                // Assicurati che i campi obbligatori non siano null
+                // Se sono vuoti, mantieni almeno stringa vuota (Shippo validerà)
+                if ($shipmentPayload[$addrKey]['street1'] === null) {
+                    $shipmentPayload[$addrKey]['street1'] = '';
+                }
+                if ($shipmentPayload[$addrKey]['city'] === null) {
+                    $shipmentPayload[$addrKey]['city'] = '';
+                }
+                if ($shipmentPayload[$addrKey]['zip'] === null) {
+                    $shipmentPayload[$addrKey]['zip'] = '';
+                }
+                if ($shipmentPayload[$addrKey]['country'] === null) {
+                    unset($shipmentPayload[$addrKey]['country']); // Country può essere null se non specificato
                 }
             }
             
@@ -413,6 +431,11 @@ class ShippoService
                     'country' => $sellerData['address']['country'] ?? 'IT',
                 ];
                 
+                // Aggiungi street2 solo se presente (apartment/suite/unit number)
+                if (!empty($sellerData['address']['street2'])) {
+                    $fromAddressData['street2'] = $sellerData['address']['street2'];
+                }
+                
                 // Aggiungi campi opzionali solo se presenti
                 if (!empty($sellerData['company'])) {
                     $fromAddressData['company'] = $sellerData['company'];
@@ -441,6 +464,11 @@ class ShippoService
                     'zip' => $shippingAddress['zip'] ?? '',
                     'country' => $shippingAddress['country'] ?? 'IT',
                 ];
+                
+                // Aggiungi street2 solo se presente (apartment/suite/unit number)
+                if (!empty($shippingAddress['street2'])) {
+                    $toAddressData['street2'] = $shippingAddress['street2'];
+                }
                 
                 if (!empty($shippingAddress['phone'])) {
                     $toAddressData['phone'] = $shippingAddress['phone'];
@@ -750,12 +778,6 @@ class ShippoService
                                         'reason' => 'International carriers may not support domestic IT-IT shipments'
                                     ]);
                                 }
-                            } else {
-                                // Spedizione internazionale
-                                if (!($carrierConfig['domestic_only'] ?? false)) {
-                                    // Carrier internazionale - supporta spedizioni internazionali
-                                    $supportsRoute = true;
-                                }
                             }
                             
                             if ($supportsRoute) {
@@ -840,6 +862,7 @@ class ShippoService
                 
                 // Prepara payload shipment con tutti i campi obbligatori degli indirizzi
                 // Shippo richiede: street1, city, zip, country (state opzionale per alcuni paesi)
+                // street2 opzionale (solo se c'è apartment/suite/unit number)
                 // Anche se abbiamo object_id, includiamo i dati completi per sicurezza
                 $shipmentPayload = [
                     'address_from' => [
@@ -863,13 +886,29 @@ class ShippoService
                     'parcels' => [$parcelPayload],
                 ];
                 
-                // Rimuovi campi vuoti/null per evitare errori
+                // Aggiungi street2 solo se presente (opzionale)
+                if (!empty($fromAddressData['street2'] ?? $sellerData['address']['street2'] ?? null)) {
+                    $shipmentPayload['address_from']['street2'] = $fromAddressData['street2'] ?? $sellerData['address']['street2'];
+                }
+                if (!empty($toAddressData['street2'] ?? $shippingAddress['street2'] ?? null)) {
+                    $shipmentPayload['address_to']['street2'] = $toAddressData['street2'] ?? $shippingAddress['street2'];
+                }
+                
+                // Rimuovi solo campi opzionali vuoti
+                // NON rimuovere mai: street1, city, zip, country (obbligatori per Shippo)
+                // Rimuovi solo state se vuoto (opzionale per alcuni paesi)
+                // Rimuovi name se vuoto (opzionale)
                 foreach (['address_from', 'address_to'] as $addrKey) {
-                    foreach (['street1', 'city', 'state', 'zip'] as $field) {
-                        if (empty($shipmentPayload[$addrKey][$field])) {
-                            unset($shipmentPayload[$addrKey][$field]);
-                        }
+                    // Rimuovi state solo se vuoto (opzionale)
+                    if (empty($shipmentPayload[$addrKey]['state'])) {
+                        unset($shipmentPayload[$addrKey]['state']);
                     }
+                    // Rimuovi name solo se vuoto (opzionale)
+                    if (empty($shipmentPayload[$addrKey]['name'])) {
+                        unset($shipmentPayload[$addrKey]['name']);
+                    }
+                    // I campi obbligatori (street1, city, zip, country) devono sempre essere presenti
+                    // Anche se vuoti, li lasciamo così Shippo può validarli e restituire errori chiari
                 }
                 
                 // Aggiungi carrier accounts solo se disponibili
