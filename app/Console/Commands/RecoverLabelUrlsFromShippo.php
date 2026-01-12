@@ -288,15 +288,29 @@ class RecoverLabelUrlsFromShippo extends Command
                                 return 1;
                             }
                             
+                            // Verifica se c'è un errore nel risultato
+                            if (isset($sellerResult['error'])) {
+                                $this->error("  ❌ Errore nel calcolo tariffe: " . $sellerResult['error']);
+                                Log::error('Ricalcolo tariffe fallito - errore nel risultato', [
+                                    'order_id' => $order->id,
+                                    'seller_id' => $firstSellerId,
+                                    'error' => $sellerResult['error'],
+                                    'seller_result' => $sellerResult
+                                ]);
+                                return 1;
+                            }
+                            
                             $rates = $sellerResult['rates'] ?? [];
                             $this->line("  Rates count: " . count($rates));
+                            $this->line("  Seller result keys: " . json_encode(array_keys($sellerResult)));
                             
                             if (empty($rates)) {
                                 $this->error("  ❌ Nessuna tariffa disponibile per il venditore");
                                 Log::error('Ricalcolo tariffe fallito - nessuna tariffa', [
                                     'order_id' => $order->id,
                                     'seller_result_keys' => array_keys($sellerResult),
-                                    'seller_result' => $sellerResult
+                                    'seller_result' => $sellerResult,
+                                    'ratesResult' => $ratesResult
                                 ]);
                                 return 1;
                             }
