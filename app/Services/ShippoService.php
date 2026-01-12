@@ -290,6 +290,7 @@ class ShippoService
             
             // Prepara payload shipment con tutti i campi obbligatori degli indirizzi
             // Shippo richiede: street1, city, zip, country (state opzionale per alcuni paesi)
+            // street2 opzionale (solo se c'è apartment/suite/unit number)
             // Anche se abbiamo object_id, includiamo i dati completi per sicurezza
             $shipmentPayload = [
                 'address_from' => [
@@ -313,9 +314,18 @@ class ShippoService
                 'parcels' => [$parcelPayload],
             ];
             
-            // Rimuovi solo campi opzionali vuoti (state può essere opzionale per alcuni paesi)
-            // NON rimuovere: street1, city, zip, country (obbligatori)
+            // Aggiungi street2 solo se presente (opzionale)
+            if (!empty($fromAddress['street2'] ?? $from['street2'] ?? null)) {
+                $shipmentPayload['address_from']['street2'] = $fromAddress['street2'] ?? $from['street2'];
+            }
+            if (!empty($toAddress['street2'] ?? $to['street2'] ?? null)) {
+                $shipmentPayload['address_to']['street2'] = $toAddress['street2'] ?? $to['street2'];
+            }
+            
+            // Rimuovi solo campi opzionali vuoti
+            // NON rimuovere mai: street1, city, zip, country (obbligatori per Shippo)
             // Rimuovi solo state se vuoto (opzionale per alcuni paesi)
+            // Rimuovi name se vuoto (opzionale)
             foreach (['address_from', 'address_to'] as $addrKey) {
                 if (empty($shipmentPayload[$addrKey]['state']) && $shipmentPayload[$addrKey]['state'] !== '0') {
                     unset($shipmentPayload[$addrKey]['state']);
@@ -324,20 +334,12 @@ class ShippoService
                 if (empty($shipmentPayload[$addrKey]['name'])) {
                     unset($shipmentPayload[$addrKey]['name']);
                 }
-                // Assicurati che i campi obbligatori non siano null
-                // Se sono vuoti, mantieni almeno stringa vuota (Shippo validerà)
-                if ($shipmentPayload[$addrKey]['street1'] === null) {
-                    $shipmentPayload[$addrKey]['street1'] = '';
-                }
-                if ($shipmentPayload[$addrKey]['city'] === null) {
-                    $shipmentPayload[$addrKey]['city'] = '';
-                }
-                if ($shipmentPayload[$addrKey]['zip'] === null) {
-                    $shipmentPayload[$addrKey]['zip'] = '';
-                }
+                // Rimuovi country solo se null (non dovrebbe mai essere null, ma per sicurezza)
                 if ($shipmentPayload[$addrKey]['country'] === null) {
-                    unset($shipmentPayload[$addrKey]['country']); // Country può essere null se non specificato
+                    unset($shipmentPayload[$addrKey]['country']);
                 }
+                // I campi obbligatori (street1, city, zip) devono sempre essere presenti
+                // Anche se vuoti, li lasciamo così Shippo può validarli e restituire errori chiari
             }
             
             // Aggiungi carrier accounts specifici se forniti
