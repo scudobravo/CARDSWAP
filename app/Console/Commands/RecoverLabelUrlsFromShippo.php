@@ -57,14 +57,35 @@ class RecoverLabelUrlsFromShippo extends Command
                     return 1;
                 }
                 
+                // Log payload chiamata getTransaction
+                Log::info('RecoverLabelUrls: getTransaction payload', [
+                    'order_id' => $orderId,
+                    'transaction_id' => $transactionId
+                ]);
+                
                 $transaction = $shippoService->getTransaction($transactionId);
+                
+                // Log risposta completa getTransaction
+                Log::info('RecoverLabelUrls: getTransaction response', [
+                    'order_id' => $orderId,
+                    'transaction_id' => $transactionId,
+                    'status' => $transaction['status'] ?? 'N/A',
+                    'label_url' => $transaction['label_url'] ?? null,
+                    'rate' => $transaction['rate'] ?? null,
+                    'full_response' => $transaction,
+                    'response_keys' => array_keys($transaction ?? [])
+                ]);
                 
                 if (empty($transaction)) {
                     $this->error("  ❌ Risposta vuota da Shippo");
+                    Log::error('RecoverLabelUrls: getTransaction response vuota', [
+                        'order_id' => $orderId,
+                        'transaction_id' => $transactionId
+                    ]);
                     return 1;
                 }
                 
-                $this->line("  ✅ Risposta ricevuta da Shippo");
+                $this->line("  ✅ Risposta ricevata da Shippo");
                 
                 // Log dettagliato per debug
                 $status = $transaction['status'] ?? 'N/A';
@@ -159,7 +180,36 @@ class RecoverLabelUrlsFromShippo extends Command
                             foreach ($formatsToTry as $format) {
                                 try {
                                     $this->line("  Tentativo con formato {$format}...");
+                                    
+                                    // Log payload chiamata buyLabel
+                                    $buyLabelPayload = [
+                                        'rate' => $rateObjectId,
+                                        'label_file_type' => $format,
+                                        'async' => false
+                                    ];
+                                    Log::info('RecoverLabelUrls: buyLabel payload', [
+                                        'order_id' => $orderId,
+                                        'transaction_id' => $transactionId,
+                                        'rate_object_id' => $rateObjectId,
+                                        'format' => $format,
+                                        'payload' => $buyLabelPayload
+                                    ]);
+                                    
                                     $newTransaction = $shippoService->buyLabel($rateObjectId, $format);
+                                    
+                                    // Log risposta completa buyLabel
+                                    Log::info('RecoverLabelUrls: buyLabel response', [
+                                        'order_id' => $orderId,
+                                        'transaction_id' => $transactionId,
+                                        'rate_object_id' => $rateObjectId,
+                                        'format' => $format,
+                                        'status' => $newTransaction['status'] ?? 'N/A',
+                                        'label_url' => $newTransaction['label_url'] ?? null,
+                                        'tracking_number' => $newTransaction['tracking_number'] ?? null,
+                                        'full_response' => $newTransaction,
+                                        'response_keys' => array_keys($newTransaction ?? [])
+                                    ]);
+                                    
                                     $newStatus = $newTransaction['status'] ?? 'N/A';
                                     $newLabelUrl = $newTransaction['label_url'] ?? null;
                                     
@@ -339,7 +389,34 @@ class RecoverLabelUrlsFromShippo extends Command
                             $this->line("  Creazione nuova transazione con formato PNG...");
                             
                             // Crea nuova transazione con PNG
+                            $buyLabelPayload = [
+                                'rate' => $newRateObjectId,
+                                'label_file_type' => 'PNG',
+                                'async' => false
+                            ];
+                            
+                            Log::info('RecoverLabelUrls: buyLabel con nuovo rate payload', [
+                                'order_id' => $orderId,
+                                'order_number' => $order->order_number,
+                                'new_rate_object_id' => $newRateObjectId,
+                                'payload' => $buyLabelPayload
+                            ]);
+                            
                             $newTransaction = $shippoService->buyLabel($newRateObjectId, 'PNG');
+                            
+                            // Log risposta completa buyLabel con nuovo rate
+                            Log::info('RecoverLabelUrls: buyLabel con nuovo rate response', [
+                                'order_id' => $orderId,
+                                'order_number' => $order->order_number,
+                                'new_rate_object_id' => $newRateObjectId,
+                                'status' => $newTransaction['status'] ?? 'N/A',
+                                'label_url' => $newTransaction['label_url'] ?? null,
+                                'tracking_number' => $newTransaction['tracking_number'] ?? null,
+                                'transaction_id' => $newTransaction['object_id'] ?? null,
+                                'full_response' => $newTransaction,
+                                'response_keys' => array_keys($newTransaction ?? [])
+                            ]);
+                            
                             $newStatus = $newTransaction['status'] ?? 'N/A';
                             $newLabelUrl = $newTransaction['label_url'] ?? null;
                             
