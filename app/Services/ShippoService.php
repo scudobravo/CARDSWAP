@@ -288,24 +288,38 @@ class ShippoService
                 }
             }
             
+            // Prepara payload shipment con tutti i campi obbligatori degli indirizzi
+            // Shippo richiede: street1, city, zip, country (state opzionale per alcuni paesi)
+            // Anche se abbiamo object_id, includiamo i dati completi per sicurezza
             $shipmentPayload = [
                 'address_from' => [
                     'object_id' => $from['object_id'],
+                    'name' => $fromAddress['name'] ?? $from['name'] ?? '',
+                    'street1' => $fromAddress['street1'] ?? $from['street1'] ?? '',
+                    'city' => $fromAddress['city'] ?? $from['city'] ?? '',
+                    'state' => $fromAddress['state'] ?? $from['state'] ?? '',
+                    'zip' => $fromAddress['zip'] ?? $from['zip'] ?? '',
                     'country' => $fromAddress['country'] ?? $from['country'] ?? null
                 ],
                 'address_to' => [
                     'object_id' => $to['object_id'],
+                    'name' => $toAddress['name'] ?? $to['name'] ?? '',
+                    'street1' => $toAddress['street1'] ?? $to['street1'] ?? '',
+                    'city' => $toAddress['city'] ?? $to['city'] ?? '',
+                    'state' => $toAddress['state'] ?? $to['state'] ?? '',
+                    'zip' => $toAddress['zip'] ?? $to['zip'] ?? '',
                     'country' => $toAddress['country'] ?? $to['country'] ?? null
                 ],
                 'parcels' => [$parcelPayload],
             ];
             
-            // Rimuovi campi null
-            if ($shipmentPayload['address_from']['country'] === null) {
-                unset($shipmentPayload['address_from']['country']);
-            }
-            if ($shipmentPayload['address_to']['country'] === null) {
-                unset($shipmentPayload['address_to']['country']);
+            // Rimuovi campi null/vuoti per evitare errori
+            foreach (['address_from', 'address_to'] as $addrKey) {
+                foreach (['name', 'street1', 'city', 'state', 'zip', 'country'] as $field) {
+                    if (empty($shipmentPayload[$addrKey][$field]) && $shipmentPayload[$addrKey][$field] !== '0') {
+                        unset($shipmentPayload[$addrKey][$field]);
+                    }
+                }
             }
             
             // Aggiungi carrier accounts specifici se forniti
@@ -824,17 +838,39 @@ class ShippoService
                     'carrier_account_ids' => $carrierAccountIds
                 ]);
                 
+                // Prepara payload shipment con tutti i campi obbligatori degli indirizzi
+                // Shippo richiede: street1, city, zip, country (state opzionale per alcuni paesi)
+                // Anche se abbiamo object_id, includiamo i dati completi per sicurezza
                 $shipmentPayload = [
                     'address_from' => [
                         'object_id' => $fromAddress['object_id'],
+                        'name' => $fromAddressData['name'] ?? $sellerData['name'] ?? 'Venditore',
+                        'street1' => $fromAddressData['street1'] ?? $sellerData['address']['street1'] ?? '',
+                        'city' => $fromAddressData['city'] ?? $sellerData['address']['city'] ?? '',
+                        'state' => $fromAddressData['state'] ?? $sellerData['address']['state'] ?? '',
+                        'zip' => $fromAddressData['zip'] ?? $sellerData['address']['zip'] ?? '',
                         'country' => $fromCountry
                     ],
                     'address_to' => [
                         'object_id' => $toAddress['object_id'],
+                        'name' => $toAddressData['name'] ?? $shippingAddress['name'] ?? 'Destinatario',
+                        'street1' => $toAddressData['street1'] ?? $shippingAddress['street1'] ?? '',
+                        'city' => $toAddressData['city'] ?? $shippingAddress['city'] ?? '',
+                        'state' => $toAddressData['state'] ?? $shippingAddress['state'] ?? '',
+                        'zip' => $toAddressData['zip'] ?? $shippingAddress['zip'] ?? '',
                         'country' => $toCountry
                     ],
                     'parcels' => [$parcelPayload],
                 ];
+                
+                // Rimuovi campi vuoti/null per evitare errori
+                foreach (['address_from', 'address_to'] as $addrKey) {
+                    foreach (['street1', 'city', 'state', 'zip'] as $field) {
+                        if (empty($shipmentPayload[$addrKey][$field])) {
+                            unset($shipmentPayload[$addrKey][$field]);
+                        }
+                    }
+                }
                 
                 // Aggiungi carrier accounts solo se disponibili
                 // IMPORTANTE: Per spedizioni IT-IT, se non ci sono carrier accounts validi,
