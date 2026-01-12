@@ -203,6 +203,14 @@ class ShippoService
     }
 
     /**
+     * Recupera una transazione Shippo per ID
+     */
+    public function getTransaction(string $transactionId): array
+    {
+        return $this->get("transactions/{$transactionId}");
+    }
+
+    /**
      * Ottieni corrieri disponibili per un paese specifico
      */
     public function getAvailableCarriers(string $destinationCountry): array

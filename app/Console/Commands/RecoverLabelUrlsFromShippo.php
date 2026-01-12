@@ -1,0 +1,193 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\Order;
+use App\Services\ShippoService;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+
+class RecoverLabelUrlsFromShippo extends Command
+{
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'orders:recover-label-urls 
+                            {--order-id= : Recupera label_url per un ordine specifico}
+                            {--transaction-id= : Recupera label_url usando un transaction_id specifico}
+                            {--dry-run : Mostra solo cosa verrebbe recuperato senza aggiornare}';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Recupera label_url da Shippo per ordini che hanno etichette create ma non hanno label_url salvato';
+
+    /**
+     * Execute the console command.
+     */
+    public function handle(ShippoService $shippoService)
+    {
+        $dryRun = $this->option('dry-run');
+        $orderId = $this->option('order-id');
+        $transactionId = $this->option('transaction-id');
+
+        if ($dryRun) {
+            $this->warn('🔍 Modalità DRY-RUN: nessuna modifica verrà applicata');
+        }
+
+        $this->info('Inizio recupero label_url da Shippo...');
+        ob_flush(); flush();
+
+        // Se specificato transaction_id, recupera direttamente da Shippo
+        if ($transactionId) {
+            $this->info("Recupero label_url per transaction_id: {$transactionId}");
+            ob_flush(); flush();
+            
+            try {
+                $transaction = $shippoService->getTransaction($transactionId);
+                $labelUrl = $transaction['label_url'] ?? null;
+                
+                if ($labelUrl) {
+                    $this->info("✅ Label URL trovato: {$labelUrl}");
+                    ob_flush(); flush();
+                    
+                    // Se c'è un order_id nei log, prova ad associarlo
+                    if ($orderId) {
+                        $order = Order::find($orderId);
+                        if ($order) {
+                            if (!$dryRun) {
+                                $order->update(['label_url' => $labelUrl]);
+                                $this->info("✅ Aggiornato ordine #{$order->order_number} con label_url");
+                                ob_flush(); flush();
+                            } else {
+                                $this->info("  [DRY-RUN] Aggiornerebbe ordine #{$order->order_number} con label_url: {$labelUrl}");
+                                ob_flush(); flush();
+                            }
+                        }
+                    }
+                } else {
+                    $this->warn("⚠️  Label URL non trovato nella transazione");
+                    ob_flush(); flush();
+                }
+            } catch (\Exception $e) {
+                $this->error("❌ Errore recupero transazione: {$e->getMessage()}");
+                ob_flush(); flush();
+            }
+            
+            return 0;
+        }
+
+        // Altrimenti, cerca ordini con label_created ma senza label_url
+        $query = Order::where('status', 'label_created')
+            ->whereNull('label_url');
+
+        if ($orderId) {
+            $query->where('id', $orderId);
+        }
+
+        $orders = $query->get();
+        $this->info("Trovati {$orders->count()} ordini con etichetta creata ma senza label_url");
+        ob_flush(); flush();
+
+        if ($orders->isEmpty()) {
+            $this->info('✅ Nessun ordine da recuperare');
+            return 0;
+        }
+
+        $recovered = 0;
+        $errors = 0;
+        $notFound = 0;
+
+        foreach ($orders as $order) {
+            $this->line("📦 Ordine #{$order->order_number} (ID: {$order->id})");
+            ob_flush(); flush();
+
+            // Cerca transaction_id nei log per questo ordine
+            // Cerca nei log recenti (ultimi 7 giorni)
+            $logFile = storage_path('logs/laravel.log');
+            $transactionId = null;
+            
+            if (file_exists($logFile)) {
+                // Cerca nei log per questo order_id
+                $logContent = shell_exec("tail -n 5000 {$logFile} | grep -E 'Etichetta acquistata.*order_id.*{$order->id}|transaction_id.*order_id.*{$order->id}' | tail -n 1");
+                
+                if ($logContent && preg_match('/"transaction_id":"([^"]+)"/', $logContent, $matches)) {
+                    $transactionId = $matches[1];
+                    $this->line("  Transaction ID trovato nei log: {$transactionId}");
+                    ob_flush(); flush();
+                }
+            }
+
+            if (!$transactionId) {
+                $this->warn("  ⚠️  Transaction ID non trovato nei log per questo ordine");
+                ob_flush(); flush();
+                $notFound++;
+                continue;
+            }
+
+            try {
+                // Recupera la transazione da Shippo
+                $transaction = $shippoService->getTransaction($transactionId);
+                $labelUrl = $transaction['label_url'] ?? null;
+
+                if ($labelUrl) {
+                    $this->info("  ✅ Label URL recuperato: {$labelUrl}");
+                    ob_flush(); flush();
+
+                    if (!$dryRun) {
+                        $order->update(['label_url' => $labelUrl]);
+                        $this->info("  ✅ Ordine aggiornato");
+                        ob_flush(); flush();
+                        $recovered++;
+                    } else {
+                        $this->info("  [DRY-RUN] Aggiornerebbe con: {$labelUrl}");
+                        ob_flush(); flush();
+                        $recovered++;
+                    }
+                } else {
+                    $this->warn("  ⚠️  Label URL non presente nella transazione Shippo");
+                    ob_flush(); flush();
+                    $notFound++;
+                }
+            } catch (\Exception $e) {
+                $this->error("  ❌ Errore: {$e->getMessage()}");
+                ob_flush(); flush();
+                $errors++;
+
+                Log::error('Errore recupero label_url da Shippo', [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'transaction_id' => $transactionId,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        $this->newLine();
+        if ($dryRun) {
+            $this->warn("⚠️  Modalità DRY-RUN: nessuna modifica è stata applicata");
+        }
+        $this->info('✅ Completato!');
+        ob_flush(); flush();
+        
+        $this->table(
+            ['Risultato', 'Conteggio'],
+            [
+                ['Label URL recuperati', $recovered],
+                ['Non trovati', $notFound],
+                ['Errori', $errors],
+            ]
+        );
+
+        if ($dryRun) {
+            $this->warn("Esegui senza --dry-run per applicare le modifiche");
+        }
+
+        return 0;
+    }
+}
