@@ -1032,11 +1032,32 @@ class ShippoService
                 $rawRates = $rawRatesFromShippo;
                 
                 // Filtra per tipo di servizio se specificato nella ShippingZone
+                // IMPORTANTE: Se dopo il filtro non ci sono rates, usa tutte le rates disponibili
+                // Questo evita di perdere rates valide quando la categorizzazione non corrisponde perfettamente
                 if ($shippingZone && $shippingZone->use_shippo_pricing && $shippingZone->shippo_service_type) {
-                    $rawRates = array_filter($rawRates, function($rate) use ($shippingZone) {
+                    $filteredRates = array_filter($rawRates, function($rate) use ($shippingZone) {
                         $serviceType = $this->categorizeService($rate['servicelevel']['name'] ?? '');
                         return $serviceType === $shippingZone->shippo_service_type;
                     });
+                    
+                    // Se il filtro ha prodotto almeno una rate, usala
+                    // Altrimenti usa tutte le rates disponibili (fallback)
+                    if (!empty($filteredRates)) {
+                        $rawRates = $filteredRates;
+                    } else {
+                        // Nessuna rate corrisponde al filtro, usa tutte le rates disponibili
+                        Log::warning('No rates match shippo_service_type filter, using all available rates', [
+                            'seller_id' => $sellerId,
+                            'shipping_zone_id' => $shippingZone->id,
+                            'requested_service_type' => $shippingZone->shippo_service_type,
+                            'available_rates' => array_map(function($rate) {
+                                return [
+                                    'service_name' => $rate['servicelevel']['name'] ?? 'N/A',
+                                    'categorized_as' => $this->categorizeService($rate['servicelevel']['name'] ?? '')
+                                ];
+                            }, $rawRates)
+                        ]);
+                    }
                 }
                 
                 // Processa le tariffe con markup (usa quello della ShippingZone se disponibile)
