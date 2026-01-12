@@ -237,18 +237,47 @@ class RecoverLabelUrlsFromShippo extends Command
                             }
                             
                             // Ricalcola tariffe
+                            $this->line("  Chiamata calculateRatesForOrder...");
                             $ratesResult = $shippoService->calculateRatesForOrder($sellersData, $shippingAddress);
                             
-                            if (empty($ratesResult) || empty($ratesResult[array_key_first($ratesResult)]['rates'])) {
-                                $this->error("  ❌ Nessuna tariffa disponibile dopo ricalcolo");
+                            // Log per debug
+                            $this->line("  Struttura ratesResult: " . json_encode(array_keys($ratesResult ?? [])));
+                            
+                            if (empty($ratesResult)) {
+                                $this->error("  ❌ ratesResult vuoto");
+                                Log::error('Ricalcolo tariffe fallito - ratesResult vuoto', [
+                                    'order_id' => $order->id,
+                                    'sellers_data' => array_keys($sellersData),
+                                    'shipping_address' => $shippingAddress
+                                ]);
                                 return 1;
                             }
                             
                             // Prendi la prima tariffa disponibile
                             $firstSellerId = array_key_first($ratesResult);
-                            $rates = $ratesResult[$firstSellerId]['rates'] ?? [];
+                            $this->line("  First seller ID: {$firstSellerId}");
+                            
+                            $sellerResult = $ratesResult[$firstSellerId] ?? null;
+                            if (!$sellerResult) {
+                                $this->error("  ❌ Risultato venditore non trovato");
+                                Log::error('Ricalcolo tariffe fallito - seller result non trovato', [
+                                    'order_id' => $order->id,
+                                    'first_seller_id' => $firstSellerId,
+                                    'available_keys' => array_keys($ratesResult)
+                                ]);
+                                return 1;
+                            }
+                            
+                            $rates = $sellerResult['rates'] ?? [];
+                            $this->line("  Rates count: " . count($rates));
+                            
                             if (empty($rates)) {
                                 $this->error("  ❌ Nessuna tariffa disponibile per il venditore");
+                                Log::error('Ricalcolo tariffe fallito - nessuna tariffa', [
+                                    'order_id' => $order->id,
+                                    'seller_result_keys' => array_keys($sellerResult),
+                                    'seller_result' => $sellerResult
+                                ]);
                                 return 1;
                             }
                             
