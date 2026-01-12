@@ -168,6 +168,7 @@ class ShippoController extends Controller
                     'tracking_number' => $result['tracking_number'],
                     'carrier_code' => $result['carrier'],
                     'tracking_url' => $result['tracking_url'],
+                    'label_url' => $result['label_url'] ?? null, // Salva il link dell'etichetta
                     'label_created_at' => now(),
                     'shipped_at' => now() // Considera come spedito quando viene creata l'etichetta
                 ]);

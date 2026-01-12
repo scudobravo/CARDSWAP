@@ -50,6 +50,17 @@
                     <span class="font-gill-sans-semibold">Tracking:</span> 
                     <span class="font-mono">{{ order.tracking_number }}</span>
                   </p>
+                  <p v-if="order.label_url">
+                    <span class="font-gill-sans-semibold">Link Etichetta:</span> 
+                    <a 
+                      :href="order.label_url" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      class="text-blue-600 hover:text-blue-800 underline ml-1"
+                    >
+                      Scarica etichetta
+                    </a>
+                  </p>
                   <p v-if="order.shipped_at">
                     <span class="font-gill-sans-semibold">Spedito il:</span> {{ formatDate(order.shipped_at) }}
                   </p>

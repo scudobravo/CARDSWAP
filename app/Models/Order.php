@@ -25,6 +25,7 @@ class Order extends Model
         'tracking_number',
         'carrier_code',
         'tracking_url',
+        'label_url',
         'shipped_at',
         'delivered_at',
         'last_shipment_reminder_at',
