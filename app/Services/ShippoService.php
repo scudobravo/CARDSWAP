@@ -481,18 +481,33 @@ class ShippoService
                 ]);
 
                 // Crea indirizzo destinatario
+                // IMPORTANTE: Gestisce sia formato standard (street1, zip, state) che formato DB (address_line_1, postal_code, state_province)
                 $toAddressData = [
-                    'name' => $shippingAddress['name'] ?? 'Destinatario',
-                    'street1' => $shippingAddress['street1'] ?? '',
+                    'name' => $shippingAddress['name'] 
+                        ?? (($shippingAddress['first_name'] ?? '') . ' ' . ($shippingAddress['last_name'] ?? ''))
+                        ?? 'Destinatario',
+                    'street1' => $shippingAddress['street1'] 
+                        ?? $shippingAddress['address_line_1'] 
+                        ?? $shippingAddress['address']
+                        ?? '',
                     'city' => $shippingAddress['city'] ?? '',
-                    'state' => $shippingAddress['state'] ?? '',
-                    'zip' => $shippingAddress['zip'] ?? '',
+                    'state' => $shippingAddress['state'] 
+                        ?? $shippingAddress['state_province'] 
+                        ?? $shippingAddress['province']
+                        ?? '',
+                    'zip' => $shippingAddress['zip'] 
+                        ?? $shippingAddress['postal_code'] 
+                        ?? $shippingAddress['zip_code']
+                        ?? '',
                     'country' => $shippingAddress['country'] ?? 'IT',
                 ];
                 
                 // Aggiungi street2 solo se presente (apartment/suite/unit number)
-                if (!empty($shippingAddress['street2'])) {
-                    $toAddressData['street2'] = $shippingAddress['street2'];
+                $street2 = $shippingAddress['street2'] 
+                    ?? $shippingAddress['address_line_2'] 
+                    ?? null;
+                if (!empty($street2)) {
+                    $toAddressData['street2'] = $street2;
                 }
                 
                 if (!empty($shippingAddress['phone'])) {

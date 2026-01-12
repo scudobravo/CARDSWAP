@@ -351,10 +351,6 @@ class RecoverLabelUrlsFromShippo extends Command
                             $this->line("  Chiamata calculateRatesForOrder...");
                             $ratesResult = $shippoService->calculateRatesForOrder($sellersData, $formattedShippingAddress);
                             
-                            // Ricalcola tariffe
-                            $this->line("  Chiamata calculateRatesForOrder...");
-                            $ratesResult = $shippoService->calculateRatesForOrder($sellersData, $shippingAddress);
-                            
                             // Log per debug
                             $this->line("  Struttura ratesResult: " . json_encode(array_keys($ratesResult ?? [])));
                             
