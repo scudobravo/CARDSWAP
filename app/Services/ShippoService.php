@@ -45,7 +45,7 @@ class ShippoService
     private function get(string $path, array $query = []): array
     {
         try {
-            $response = $this->client()->timeout(30)->get($this->baseUrl . $path, $query);
+            $response = $this->client()->timeout(120)->get($this->baseUrl . $path, $query);
             $response->throw();
             return $response->json();
         } catch (\Exception $e) {
