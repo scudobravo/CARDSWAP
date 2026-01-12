@@ -48,7 +48,27 @@ class RecoverLabelUrlsFromShippo extends Command
             
             try {
                 $transaction = $shippoService->getTransaction($transactionId);
+                
+                // Log dettagliato per debug
+                $this->line("  Status transazione: " . ($transaction['status'] ?? 'N/A'));
+                $this->line("  Object state: " . ($transaction['object_state'] ?? 'N/A'));
+                
+                // Cerca label_url in vari possibili campi
                 $labelUrl = $transaction['label_url'] ?? null;
+                
+                // Se è vuoto, potrebbe essere una stringa vuota
+                if (empty($labelUrl) && isset($transaction['label_url'])) {
+                    $this->warn("  ⚠️  label_url presente ma vuoto nella risposta Shippo");
+                }
+                
+                // Verifica se la transazione è ancora in elaborazione
+                if (($transaction['status'] ?? '') === 'QUEUED' || ($transaction['status'] ?? '') === 'WAITING') {
+                    $this->warn("  ⚠️  Transazione ancora in elaborazione (status: {$transaction['status']})");
+                    $this->info("  💡 Riprova tra qualche minuto");
+                }
+                
+                // Mostra tutte le chiavi disponibili per debug
+                $this->line("  Chiavi disponibili nella transazione: " . implode(', ', array_keys($transaction)));
                 
                 if ($labelUrl) {
                     $this->info("✅ Label URL trovato: {$labelUrl}");
@@ -67,6 +87,7 @@ class RecoverLabelUrlsFromShippo extends Command
                     }
                 } else {
                     $this->warn("⚠️  Label URL non trovato nella transazione");
+                    $this->line("  💡 Verifica lo status della transazione su Shippo dashboard");
                 }
             } catch (\Exception $e) {
                 $this->error("❌ Errore recupero transazione: {$e->getMessage()}");
