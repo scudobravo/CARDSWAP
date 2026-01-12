@@ -118,7 +118,70 @@ class RecoverLabelUrlsFromShippo extends Command
                     }
                 } else {
                     $this->warn("⚠️  Label URL non trovato nella transazione");
-                    $this->line("  💡 Verifica lo status della transazione su Shippo dashboard");
+                    
+                    // Se la transazione è in errore e --recreate è specificato, prova a ricreare con PNG
+                    if ($status === 'ERROR' && $this->option('recreate') && $orderId) {
+                        $this->info("  🔄 Tentativo di ricreare etichetta con formato PNG...");
+                        
+                        try {
+                            $order = Order::find($orderId);
+                            if (!$order) {
+                                $this->error("  ❌ Ordine non trovato");
+                                return 1;
+                            }
+                            
+                            // Recupera il rate_object_id dalla transazione
+                            $rateObjectId = $transaction['rate']['object_id'] ?? null;
+                            
+                            if (!$rateObjectId) {
+                                $this->error("  ❌ Rate object_id non trovato nella transazione");
+                                $this->line("  💡 Dovrai ricalcolare le tariffe manualmente");
+                                return 1;
+                            }
+                            
+                            $this->line("  Rate object_id: {$rateObjectId}");
+                            $this->line("  Creazione nuova transazione con formato PNG...");
+                            
+                            // Crea nuova transazione con PNG
+                            $newTransaction = $shippoService->buyLabel($rateObjectId, 'PNG');
+                            $newStatus = $newTransaction['status'] ?? 'N/A';
+                            $newLabelUrl = $newTransaction['label_url'] ?? null;
+                            
+                            $this->line("  Status nuova transazione: {$newStatus}");
+                            
+                            if ($newStatus === 'SUCCESS' && $newLabelUrl) {
+                                $this->info("  ✅ Nuova etichetta creata con successo!");
+                                $this->info("  ✅ Label URL: {$newLabelUrl}");
+                                
+                                if (!$dryRun) {
+                                    $order->update([
+                                        'label_url' => $newLabelUrl,
+                                        'tracking_number' => $newTransaction['tracking_number'] ?? $order->tracking_number,
+                                        'carrier_code' => $newTransaction['rate']['provider'] ?? $order->carrier_code,
+                                        'status' => 'label_created',
+                                        'label_created_at' => now()
+                                    ]);
+                                    $this->info("  ✅ Ordine #{$order->order_number} aggiornato con nuovo label_url");
+                                } else {
+                                    $this->info("  [DRY-RUN] Aggiornerebbe ordine #{$order->order_number} con label_url: {$newLabelUrl}");
+                                }
+                            } else {
+                                $this->error("  ❌ Nuova transazione fallita o label_url vuoto");
+                                if (!empty($newTransaction['messages'])) {
+                                    foreach ($newTransaction['messages'] as $msg) {
+                                        $this->error("    - " . ($msg['text'] ?? 'N/A'));
+                                    }
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            $this->error("  ❌ Errore creazione nuova transazione: {$e->getMessage()}");
+                        }
+                    } else {
+                        $this->line("  💡 Verifica lo status della transazione su Shippo dashboard");
+                        if ($status === 'ERROR') {
+                            $this->line("  💡 Usa --recreate per tentare di ricreare l'etichetta con PNG");
+                        }
+                    }
                 }
             } catch (\Exception $e) {
                 $this->error("❌ Errore recupero transazione: {$e->getMessage()}");
