@@ -61,6 +61,7 @@ return [
         'carriers' => [
             'domestic' => [
                 // Poste Italiane per spedizioni domestiche IT → IT
+                // Object ID fornito da Shippo Support: a25aee94fb0f4e86ab160ecb29b55420
                 'poste_italiane' => [
                     'name' => 'Poste Italiane',
                     'code' => 'poste_italiane',
@@ -68,7 +69,7 @@ return [
                     'countries' => ['IT'],
                     'priority' => 1,
                     'available' => true,
-                    'account_id' => 'poste_italiane' // ID del corriere in Shippo
+                    'account_id' => 'a25aee94fb0f4e86ab160ecb29b55420' // UUID reale da Shippo
                 ]
             ],
             'international' => [

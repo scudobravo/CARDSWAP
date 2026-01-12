@@ -658,14 +658,68 @@ class ShippoService
                             
                             if ($fromCountry === 'IT' && $toCountry === 'IT') {
                                 // Spedizione domestica IT-IT
-                                // Se questo carrier è stato trovato automaticamente come potenziale IT-IT,
-                                // includilo anche se è marcato come internazionale
+                                // Per IT→IT, usiamo SOLO Poste Italiane (come indicato da Shippo Support)
+                                // Object ID Poste Italiane: a25aee94fb0f4e86ab160ecb29b55420
+                                $posteItalianeId = 'a25aee94fb0f4e86ab160ecb29b55420';
+                                $normalizedPosteId = str_replace('-', '', $posteItalianeId);
+                                $normalizedActualId = str_replace('-', '', $actualObjectId);
+                                
+                                if ($normalizedActualId === $normalizedPosteId || 
+                                    ($carrierConfig['domestic_only'] ?? false)) {
+                                    // Solo Poste Italiane per IT-IT
+                                    $supportsRoute = true;
+                                    Log::info('Including Poste Italiane for IT-IT route', [
+                                        'seller_id' => $sellerId,
+                                        'carrier_code' => $carrierConfig['code'] ?? 'N/A',
+                                        'account_id' => $actualObjectId
+                                    ]);
+                                } else {
+                                    // Escludi tutti gli altri carrier per IT-IT
+                                    Log::info('Skipping non-Poste Italiane carrier for IT-IT route', [
+                                        'seller_id' => $sellerId,
+                                        'carrier_code' => $carrierConfig['code'] ?? 'N/A',
+                                        'account_id' => $actualObjectId,
+                                        'reason' => 'Only Poste Italiane supports IT-IT shipments'
+                                    ]);
+                                }
+                            } elseif ($fromCountry === 'IT' && $toCountry !== 'IT') {
+                                // Spedizione internazionale dall'Italia (IT→US, IT→EU, ecc.)
+                                // Shippo NON ha carrier accounts preconfigurati per internazionali dall'Italia
+                                // Dobbiamo usare carrier accounts propri (DHL, UPS, FedEx) se configurati
+                                // Per ora, escludiamo i carrier Shippo che non supportano IT→esterno
+                                // (Chronopost, Colissimo, Deutsche Post, Correos, CouriersPlease non supportano IT→esterno)
+                                
+                                // Se il carrier è marcato come internazionale ma NON è uno dei carrier Shippo standard,
+                                // potrebbe essere un carrier account proprio connesso dall'utente
+                                $isShippoStandardCarrier = in_array($carrierConfig['code'] ?? '', [
+                                    'chronopost', 'colissimo', 'deutsche_post', 'correos', 'couriersplease'
+                                ]);
+                                
+                                if (!$isShippoStandardCarrier) {
+                                    // Potrebbe essere un carrier account proprio (DHL, UPS, FedEx, ecc.)
+                                    // Includilo se è disponibile
+                                    $supportsRoute = true;
+                                    Log::info('Including custom carrier account for IT→international route', [
+                                        'seller_id' => $sellerId,
+                                        'carrier_code' => $carrierConfig['code'] ?? 'N/A',
+                                        'account_id' => $actualObjectId,
+                                        'note' => 'Custom carrier account (may be DHL, UPS, FedEx, etc.)'
+                                    ]);
+                                } else {
+                                    // Escludi i carrier Shippo standard che non supportano IT→esterno
+                                    Log::info('Skipping Shippo standard carrier for IT→international route', [
+                                        'seller_id' => $sellerId,
+                                        'carrier_code' => $carrierConfig['code'] ?? 'N/A',
+                                        'account_id' => $actualObjectId,
+                                        'reason' => 'Shippo standard carriers do not support international shipments from Italy'
+                                    ]);
+                                }
+                            } else {
+                                // Altre rotte (non IT→IT, non IT→esterno)
+                                // Mantieni la logica originale
                                 $isAutoFoundItCarrier = in_array($actualObjectId, $potentialItCarrierIds ?? []);
                                 
                                 if (($carrierConfig['domestic_only'] ?? false)) {
-                                    // Carrier domestico - supporta IT-IT
-                                    $supportsRoute = true;
-                                } elseif ($isAutoFoundItCarrier) {
                                     // Carrier trovato automaticamente come potenziale IT-IT - includilo
                                     $supportsRoute = true;
                                     Log::info('Including auto-found IT-IT carrier (even if marked as international)', [
@@ -719,10 +773,32 @@ class ShippoService
                                 || preg_match('/^[0-9a-f]{32}$/i', $accountId);
                             
                             if ($isValidObjectId) {
-                                if (($carrierConfig['domestic_only'] ?? false) && $fromCountry === 'IT' && $toCountry === 'IT') {
-                                    $validCarrierAccountIds[] = $accountId;
-                                } elseif (!($carrierConfig['domestic_only'] ?? false)) {
-                                    $validCarrierAccountIds[] = $accountId;
+                                if ($fromCountry === 'IT' && $toCountry === 'IT') {
+                                    // Per IT→IT, usa SOLO Poste Italiane
+                                    $posteItalianeId = 'a25aee94fb0f4e86ab160ecb29b55420';
+                                    $normalizedPosteId = str_replace('-', '', $posteItalianeId);
+                                    $normalizedAccountId = str_replace('-', '', $accountId);
+                                    
+                                    if ($normalizedAccountId === $normalizedPosteId || 
+                                        ($carrierConfig['domestic_only'] ?? false)) {
+                                        $validCarrierAccountIds[] = $accountId;
+                                    }
+                                } elseif ($fromCountry === 'IT' && $toCountry !== 'IT') {
+                                    // Per IT→esterno, escludi i carrier Shippo standard
+                                    // Includi solo carrier accounts propri (DHL, UPS, FedEx, ecc.) se configurati
+                                    $isShippoStandardCarrier = in_array($carrierConfig['code'] ?? '', [
+                                        'chronopost', 'colissimo', 'deutsche_post', 'correos', 'couriersplease'
+                                    ]);
+                                    
+                                    if (!$isShippoStandardCarrier) {
+                                        // Carrier account proprio - includilo
+                                        $validCarrierAccountIds[] = $accountId;
+                                    }
+                                } else {
+                                    // Altre rotte - logica originale
+                                    if (!($carrierConfig['domestic_only'] ?? false)) {
+                                        $validCarrierAccountIds[] = $accountId;
+                                    }
                                 }
                             }
                         }
