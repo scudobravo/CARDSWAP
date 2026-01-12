@@ -218,6 +218,14 @@ class ShippoService
     }
 
     /**
+     * Lista tutte le transazioni Shippo (con filtri opzionali)
+     */
+    public function listTransactions(array $query = []): array
+    {
+        return $this->get('transactions', $query);
+    }
+
+    /**
      * Ottieni corrieri disponibili per un paese specifico
      */
     public function getAvailableCarriers(string $destinationCountry): array

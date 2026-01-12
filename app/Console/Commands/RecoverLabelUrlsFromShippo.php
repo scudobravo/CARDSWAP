@@ -18,6 +18,7 @@ class RecoverLabelUrlsFromShippo extends Command
     protected $signature = 'orders:recover-label-urls 
                             {--order-id= : Recupera label_url per un ordine specifico}
                             {--transaction-id= : Recupera label_url usando un transaction_id specifico}
+                            {--recreate : Se la transazione è in errore, ricrea una nuova con PNG}
                             {--dry-run : Mostra solo cosa verrebbe recuperato senza aggiornare}';
 
     /**
