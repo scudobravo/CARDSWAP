@@ -53,5 +53,29 @@ Thumbs.db
 
 # Test files
 /coverage/
-/.phpunit.result.cachebackup_before_reset.sql
+.phpunit.result.cache
 backup_before_reset.sql
+backup_*.sql
+
+# Env backup (keep .env out of repo)
+.env.backup.*
+
+# Script one-off / test (non parte del deploy)
+/check_*.php
+/check_*.sql
+/test_*.php
+/test-*.php
+/analyze_cards.php
+/count_cards.php
+/delete_and_reimport.php
+/fix_*.sql
+/update_rarities*.php
+/public/test-*.html
+
+# File accidentalmente creati in root (echo/typo)
+/LeBron
+/Lionel
+/Pokemon
+/Football
+/Football*
+/Pokemon*
