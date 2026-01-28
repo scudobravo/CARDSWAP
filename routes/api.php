@@ -677,68 +677,18 @@ Route::middleware('auth:sanctum')->prefix('user')->group(function () {
 // ============================================
 
 // Shippo endpoints (DEPRECATI - NON usati da CardSwap V1)
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/shipping/purchase-label', [App\Http\Controllers\Api\ShippoController::class, 'purchaseLabel'])
-        ->middleware(function ($request, $next) {
-            \Illuminate\Support\Facades\Log::warning('Shippo endpoint called - Shippo is deprecated and not used by CardSwap Shipping V1', [
-                'endpoint' => '/shipping/purchase-label',
-                'note' => 'CardSwap V1 does not require automatic Shippo label purchase'
-            ]);
-            return $next($request);
-        });
-    
-    Route::get('/shipping/tracking', [App\Http\Controllers\Api\ShippoController::class, 'getTracking'])
-        ->middleware(function ($request, $next) {
-            \Illuminate\Support\Facades\Log::warning('Shippo endpoint called - Shippo is deprecated and not used by CardSwap Shipping V1', [
-                'endpoint' => '/shipping/tracking',
-                'note' => 'CardSwap V1 uses AfterShip exclusively for tracking'
-            ]);
-            return $next($request);
-        });
-    
-    Route::post('/shipping/validate-address', [App\Http\Controllers\Api\ShippoController::class, 'validateAddress'])
-        ->middleware(function ($request, $next) {
-            \Illuminate\Support\Facades\Log::warning('Shippo endpoint called - Shippo is deprecated and not used by CardSwap Shipping V1', [
-                'endpoint' => '/shipping/validate-address'
-            ]);
-            return $next($request);
-        });
-    
-    Route::post('/shipping/schedule-pickup', [App\Http\Controllers\Api\ShippoController::class, 'schedulePickup'])
-        ->middleware(function ($request, $next) {
-            \Illuminate\Support\Facades\Log::warning('Shippo endpoint called - Shippo is deprecated and not used by CardSwap Shipping V1', [
-                'endpoint' => '/shipping/schedule-pickup'
-            ]);
-            return $next($request);
-        });
-    
-    Route::post('/shipping/refund-label', [App\Http\Controllers\Api\ShippoController::class, 'refundLabel'])
-        ->middleware(function ($request, $next) {
-            \Illuminate\Support\Facades\Log::warning('Shippo endpoint called - Shippo is deprecated and not used by CardSwap Shipping V1', [
-                'endpoint' => '/shipping/refund-label'
-            ]);
-            return $next($request);
-        });
-    
-    Route::get('/shipping/carrier-accounts', [App\Http\Controllers\Api\ShippoController::class, 'getCarrierAccounts'])
-        ->middleware(function ($request, $next) {
-            \Illuminate\Support\Facades\Log::warning('Shippo endpoint called - Shippo is deprecated and not used by CardSwap Shipping V1', [
-                'endpoint' => '/shipping/carrier-accounts',
-                'note' => 'CardSwap V1 uses shipping_price_tables to determine available methods'
-            ]);
-            return $next($request);
-        });
+Route::middleware(['auth:sanctum', 'log.shippo.deprecated'])->group(function () {
+    Route::post('/shipping/purchase-label', [App\Http\Controllers\Api\ShippoController::class, 'purchaseLabel']);
+    Route::get('/shipping/tracking', [App\Http\Controllers\Api\ShippoController::class, 'getTracking']);
+    Route::post('/shipping/validate-address', [App\Http\Controllers\Api\ShippoController::class, 'validateAddress']);
+    Route::post('/shipping/schedule-pickup', [App\Http\Controllers\Api\ShippoController::class, 'schedulePickup']);
+    Route::post('/shipping/refund-label', [App\Http\Controllers\Api\ShippoController::class, 'refundLabel']);
+    Route::get('/shipping/carrier-accounts', [App\Http\Controllers\Api\ShippoController::class, 'getCarrierAccounts']);
 });
 
 // Shippo webhook (DISABILITATO - CardSwap V1 usa AfterShip)
 Route::post('/webhooks/shippo', [App\Http\Controllers\Api\ShippoWebhookController::class, 'handleWebhook'])
-    ->middleware(function ($request, $next) {
-        \Illuminate\Support\Facades\Log::error('Shippo webhook called - Shippo is deprecated and not used by CardSwap Shipping V1', [
-            'endpoint' => '/webhooks/shippo',
-            'note' => 'CardSwap V1 uses AfterShip webhook exclusively for tracking'
-        ]);
-        return $next($request);
-    });
+    ->middleware('log.shippo.deprecated:error');
 
 // Contact form (no auth required)
 Route::post('/contact', [App\Http\Controllers\Api\ContactController::class, 'sendMessage']);

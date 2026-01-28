@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\CheckRole::class,
             'require.kyc' => \App\Http\Middleware\RequireKyc::class,
             'check.availability' => \App\Http\Middleware\CheckAvailability::class,
+            'log.shippo.deprecated' => \App\Http\Middleware\LogShippoDeprecated::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
