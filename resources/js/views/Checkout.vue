@@ -243,38 +243,57 @@
                     </div>
                   </div>
                   
-                  <!-- Metodi di spedizione -->
+                  <!-- Messaggio errore se nessuna opzione disponibile -->
+                  <div v-else-if="getShippingMethodsForSeller(seller.id).length === 0" 
+                       class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p class="text-sm text-yellow-800">
+                      ⚠️ Nessuna opzione di spedizione disponibile per questo venditore e paese.
+                    </p>
+                  </div>
+                  
+                  <!-- Metodi di spedizione CardSwap V1 -->
                   <div v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <label v-for="deliveryMethod in getShippingMethodsForSeller(seller.id)" :key="`${seller.id}-${deliveryMethod.id}`" 
+                    <label v-for="option in getShippingMethodsForSeller(seller.id)" 
+                           :key="`${seller.id}-${option.shipping_method}`" 
                            class="group relative flex rounded-lg border-2 p-3 cursor-pointer transition-all duration-200"
-                           :class="selectedShippingMethods[seller.id] === deliveryMethod.id 
+                           :class="selectedShippingMethods[seller.id] === option.shipping_method 
                              ? 'border-blue-600 bg-blue-50 shadow-md' 
                              : 'border-gray-300 bg-white hover:border-blue-400 hover:bg-gray-50'">
                       <input 
                         type="radio" 
                         :name="`delivery-method-${seller.id}`" 
-                        :value="deliveryMethod.id" 
+                        :value="option.shipping_method" 
                         v-model="selectedShippingMethods[seller.id]"
                         class="absolute inset-0 appearance-none focus:outline-none" 
                       />
                       <div class="flex-1">
-                        <span class="block text-sm font-medium" 
-                              :class="selectedShippingMethods[seller.id] === deliveryMethod.id ? 'text-blue-900' : 'text-gray-900'">
-                          {{ deliveryMethod.title }}
-                        </span>
+                        <div class="flex items-center justify-between">
+                          <span class="block text-sm font-medium" 
+                                :class="selectedShippingMethods[seller.id] === option.shipping_method ? 'text-blue-900' : 'text-gray-900'">
+                            {{ option.label }}
+                          </span>
+                          <span v-if="option.insurance_required && option.insurance_available" 
+                                class="ml-2 px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded">
+                            Assicurata
+                          </span>
+                        </div>
                         <span class="mt-1 block text-xs" 
-                              :class="selectedShippingMethods[seller.id] === deliveryMethod.id ? 'text-blue-700' : 'text-gray-500'">
-                          {{ deliveryMethod.turnaround }}
+                              :class="selectedShippingMethods[seller.id] === option.shipping_method ? 'text-blue-700' : 'text-gray-500'">
+                          {{ option.package_bucket_label }}
                         </span>
-                        <span class="mt-2 block text-sm font-semibold" 
-                              :class="selectedShippingMethods[seller.id] === deliveryMethod.id ? 'text-blue-900' : 'text-gray-900'">
-                          {{ deliveryMethod.price }}
-                        </span>
-                        <span v-if="deliveryMethod.carrier" class="mt-1 block text-xs text-gray-400">{{ deliveryMethod.carrier }}</span>
+                        <div class="mt-2 flex items-baseline justify-between">
+                          <span class="text-sm font-semibold" 
+                                :class="selectedShippingMethods[seller.id] === option.shipping_method ? 'text-blue-900' : 'text-gray-900'">
+                            €{{ formatPriceItaliana(option.total_price) }}
+                          </span>
+                          <span v-if="option.insurance_fee > 0" class="ml-2 text-xs text-gray-500">
+                            (spedizione: €{{ formatPriceItaliana(option.price) }} + assicurazione: €{{ formatPriceItaliana(option.insurance_fee) }})
+                          </span>
+                        </div>
                       </div>
                       <CheckCircleIcon 
                         class="size-5 flex-shrink-0 transition-opacity duration-200" 
-                        :class="selectedShippingMethods[seller.id] === deliveryMethod.id 
+                        :class="selectedShippingMethods[seller.id] === option.shipping_method 
                           ? 'text-blue-600 opacity-100' 
                           : 'text-gray-400 opacity-0'" 
                         aria-hidden="true" />
@@ -484,8 +503,9 @@ const formData = ref({
   paymentMethod: 'stripe'
 })
 
-// Metodi di spedizione (dinamici da SHIPPO)
-const deliveryMethods = ref({})
+// Metodi di spedizione (CardSwap V1)
+const deliveryMethods = ref({}) // seller_id -> array di opzioni
+const shippingData = ref({}) // seller_id -> { package_bucket, logistic_units_total, options }
 const loadingShippingRates = ref(false)
 
 // Metodo di pagamento fisso: Stripe
@@ -885,15 +905,14 @@ watch(() => userAddresses.value, (newAddresses) => {
   }
 }, { immediate: true })
 
-// Watcher per calcolare i prezzi SHIPPO quando cambia l'indirizzo
+// Watcher per calcolare i prezzi CardSwap V1 quando cambia l'indirizzo
 watch([
   () => formData.value.country,
-  () => formData.value.city,
-  () => formData.value.postalCode,
   () => cartStore.sellers.length
 ], () => {
-  // Calcola i prezzi solo se abbiamo tutti i dati necessari
-  if (formData.value.country && formData.value.city && formData.value.postalCode && cartStore.sellers.length > 0) {
+  // Calcola i prezzi solo se abbiamo il paese e ci sono venditori
+  // CardSwap V1 richiede solo country_code, non serve city/postalCode per il calcolo
+  if (formData.value.country && cartStore.sellers.length > 0) {
     calculateShippingRates()
   }
 }, { deep: true })
@@ -904,7 +923,7 @@ const getShippingMethodsForSeller = (sellerId) => {
   return deliveryMethods.value[sellerId] || []
 }
 
-// Calcola i prezzi di spedizione usando SHIPPO
+// Calcola i prezzi di spedizione usando CardSwap Shipping V1
 const calculateShippingRates = async () => {
   if (!formData.value.country || !formData.value.city || !formData.value.postalCode) {
     return
@@ -913,31 +932,22 @@ const calculateShippingRates = async () => {
   try {
     loadingShippingRates.value = true
     
-    // Prepara i dati dei venditori
+    // Prepara i dati dei venditori con items dal carrello
     const sellers = cartStore.sellers.map(seller => ({
-      id: seller.id,
-      name: seller.name,
-      address: {
-        street1: 'Via Roma 1', // TODO: Ottenere indirizzo reale del venditore
-        city: 'Milano',
-        state: 'MI',
-        zip: '20100',
-        country: 'IT'
-      }
+      seller_id: seller.id,
+      items: seller.items.map(item => ({
+        listing_id: item.id,
+        quantity: item.quantity
+      }))
     }))
 
-    // Prepara l'indirizzo di spedizione
+    // Prepara l'indirizzo di spedizione (solo country_code richiesto)
     const shippingAddress = {
-      name: `${formData.value.firstName} ${formData.value.lastName}`,
-      street1: formData.value.address,
-      city: formData.value.city,
-      state: formData.value.region,
-      zip: formData.value.postalCode,
-      country: formData.value.country
+      country_code: formData.value.country
     }
 
-    // Chiama l'API SHIPPO
-    const response = await axios.post('/api/shipping/calculate-rates', {
+    // Chiama l'API CardSwap Shipping V1
+    const response = await axios.post('/api/shipping/v1/calculate-rates', {
       sellers,
       shipping_address: shippingAddress
     })
@@ -945,70 +955,84 @@ const calculateShippingRates = async () => {
     if (response.data.success) {
       // Processa i risultati per ogni venditore
       const newDeliveryMethods = {}
+      const newShippingData = {}
       
       Object.entries(response.data.data).forEach(([sellerId, sellerData]) => {
-        if (sellerData.rates && sellerData.rates.length > 0) {
-          newDeliveryMethods[sellerId] = sellerData.rates.map(rate => ({
-            id: rate.object_id,
-            title: rate.service_name,
-            turnaround: `${rate.estimated_days || '3-7'} giorni lavorativi`,
-            price: `€${formatPriceItaliana(rate.amount)}`,
-            service_type: rate.service_type,
-            carrier: rate.carrier,
-            original_amount: rate.original_amount
+        // Verifica se c'è un errore
+        if (sellerData.error) {
+          console.error(`Errore per venditore ${sellerId}:`, sellerData.error)
+          newDeliveryMethods[sellerId] = []
+          return
+        }
+
+        // Salva i dati completi per questo venditore
+        newShippingData[sellerId] = {
+          package_bucket: sellerData.package_bucket,
+          package_bucket_label: sellerData.package_bucket_label,
+          logistic_units_total: sellerData.logistic_units_total,
+          subtotal: sellerData.subtotal
+        }
+
+        // Processa le opzioni di spedizione
+        if (sellerData.options && sellerData.options.length > 0) {
+          newDeliveryMethods[sellerId] = sellerData.options.map(option => ({
+            key: option.shipping_method,
+            shipping_method: option.shipping_method,
+            label: option.label,
+            price: option.price,
+            total_price: option.total_price,
+            insurance_available: option.insurance_available,
+            insurance_required: option.insurance_required,
+            insurance_fee: option.insurance_fee,
+            package_bucket: option.package_bucket,
+            package_bucket_label: option.package_bucket_label
           }))
         } else {
-          // Fallback ai prezzi fissi se SHIPPO non restituisce tariffe
-          newDeliveryMethods[sellerId] = [
-            { id: 'standard', title: 'Standard', turnaround: '4-10 giorni lavorativi', price: '€5.00' },
-            { id: 'express', title: 'Express', turnaround: '2-5 giorni lavorativi', price: '€16.00' }
-          ]
+          // Nessuna opzione disponibile
+          newDeliveryMethods[sellerId] = []
         }
       })
       
       deliveryMethods.value = newDeliveryMethods
+      shippingData.value = newShippingData
       
       // Seleziona automaticamente il metodo più economico per ogni venditore
       Object.keys(newDeliveryMethods).forEach(sellerId => {
         if (!selectedShippingMethods.value[sellerId] && newDeliveryMethods[sellerId].length > 0) {
-          selectedShippingMethods.value[sellerId] = newDeliveryMethods[sellerId][0].id
+          // Seleziona la prima opzione (già ordinata per prezzo dal backend)
+          selectedShippingMethods.value[sellerId] = newDeliveryMethods[sellerId][0].shipping_method
         }
       })
     }
   } catch (error) {
-    console.error('Errore calcolo tariffe SHIPPO:', error)
+    console.error('Errore calcolo tariffe CardSwap V1:', error)
     
-    // Fallback ai prezzi fissi in caso di errore
-    const fallbackMethods = [
-      { id: 'standard', title: 'Standard', turnaround: '4-10 giorni lavorativi', price: '€5.00' },
-      { id: 'express', title: 'Express', turnaround: '2-5 giorni lavorativi', price: '€16.00' }
-    ]
-    
+    // In caso di errore, mostra messaggio e non imposta fallback
+    // L'utente non potrà procedere senza opzioni valide
     cartStore.sellers.forEach(seller => {
-      deliveryMethods.value[seller.id] = fallbackMethods
-      if (!selectedShippingMethods.value[seller.id]) {
-        selectedShippingMethods.value[seller.id] = 'standard'
-      }
+      deliveryMethods.value[seller.id] = []
+      shippingData.value[seller.id] = null
     })
   } finally {
     loadingShippingRates.value = false
   }
 }
 
-const getShippingCostForMethod = (methodId, sellerId = null) => {
+const getShippingCostForMethod = (shippingMethod, sellerId = null) => {
   // Se abbiamo un sellerId, cerca nei metodi specifici del venditore
   if (sellerId && deliveryMethods.value[sellerId]) {
-    const method = deliveryMethods.value[sellerId].find(m => m.id === methodId)
+    const method = deliveryMethods.value[sellerId].find(m => m.shipping_method === shippingMethod)
     if (method) {
-      return normalizePrice(method.price)
+      // Usa total_price che include già eventuale assicurazione
+      return normalizePrice(method.total_price)
     }
   }
   
   // Fallback: cerca in tutti i metodi
   for (const sellerMethods of Object.values(deliveryMethods.value)) {
-    const method = sellerMethods.find(m => m.id === methodId)
+    const method = sellerMethods.find(m => m.shipping_method === shippingMethod)
     if (method) {
-      return normalizePrice(method.price)
+      return normalizePrice(method.total_price)
     }
   }
   
@@ -1036,14 +1060,30 @@ const processPayment = async () => {
       await saveNewAddress()
     }
 
-    // Prepara i dati per il pagamento con metodi di spedizione per venditore
-    // Invia anche i costi dei metodi selezionati
+    // Prepara i dati per il pagamento con metodi di spedizione CardSwap V1
+    // Costruisce shippingSelections per ogni venditore
+    const shippingSelections = []
     const shippingCosts = {}
+    
     cartStore.sellers.forEach(seller => {
-      const methodId = selectedShippingMethods.value[seller.id]
-      if (methodId) {
-        const cost = getShippingCostForMethod(methodId, seller.id)
-        shippingCosts[seller.id] = cost
+      const shippingMethod = selectedShippingMethods.value[seller.id]
+      if (shippingMethod) {
+        // Trova l'opzione selezionata per ottenere tutti i dettagli
+        const selectedOption = deliveryMethods.value[seller.id]?.find(
+          opt => opt.shipping_method === shippingMethod
+        )
+        
+        if (selectedOption) {
+          shippingSelections.push({
+            seller_id: seller.id,
+            shipping_method: selectedOption.shipping_method,
+            price: selectedOption.price,
+            insurance_fee: selectedOption.insurance_fee || 0
+          })
+          
+          // Mantieni anche shipping_costs per backward compatibility
+          shippingCosts[seller.id] = selectedOption.total_price
+        }
       }
     })
     
@@ -1060,8 +1100,9 @@ const processPayment = async () => {
         postal_code: formData.value.postalCode,
         phone: formData.value.phone
       },
-      shipping_methods: selectedShippingMethods.value, // Metodi per venditore
-      shipping_costs: shippingCosts, // Costi dei metodi selezionati
+      shipping_methods: selectedShippingMethods.value, // Metodi per venditore (backward compatibility)
+      shipping_costs: shippingCosts, // Costi totali (backward compatibility)
+      shipping_selections: shippingSelections, // Nuovo formato CardSwap V1
       payment_method: paymentMethod, // Sempre Stripe
       cart_data: cartStore.getCartData()
     }
@@ -1214,13 +1255,10 @@ onMounted(async () => {
 })
 
 // Inizializza i metodi di spedizione per ogni venditore
+// Non imposta default qui, verrà fatto dopo il calcolo delle tariffe
 const initializeShippingMethods = () => {
-  cartStore.sellers.forEach(seller => {
-    if (!selectedShippingMethods.value[seller.id]) {
-      // Seleziona il metodo standard come default
-      selectedShippingMethods.value[seller.id] = 'standard'
-    }
-  })
+  // Reset delle selezioni quando cambiano i venditori
+  selectedShippingMethods.value = {}
 }
 
 onUnmounted(() => {

@@ -132,8 +132,9 @@ export default {
         const response = await axios.get('/api/shipping-zones')
         shippingZones.value = response.data.data || []
         
-        // Calcola i prezzi SHIPPO per ogni zona
-        await calculateShippoPrices()
+        // LEGACY PRICING RIMOSSO: calculateShippoPrices() non più usato
+        // Le zone di spedizione ora sono solo per struttura geografica (UX)
+        // Il pricing viene calcolato da CardSwap Shipping V1 nel checkout
         
       } catch (err) {
         console.error('Errore caricamento zone spedizione:', err)
@@ -143,29 +144,18 @@ export default {
       }
     }
 
-    // Calcola i prezzi SHIPPO per le zone
-    const calculateShippoPrices = async () => {
-      if (!props.listingId) return
-
-      try {
-        for (const zone of shippingZones.value) {
-          if (zone.use_shippo_pricing) {
-            try {
-              const response = await axios.post('/api/shipping-zones/calculate-price', {
-                zone_id: zone.id,
-                listing_id: props.listingId
-              })
-              zone.shippo_price = response.data.price
-            } catch (err) {
-              console.warn(`Errore calcolo prezzo per zona ${zone.id}:`, err)
-              zone.shippo_price = null
-            }
-          }
-        }
-      } catch (err) {
-        console.error('Errore calcolo prezzi SHIPPO:', err)
-      }
-    }
+    // ============================================
+    // METODO LEGACY PRICING RIMOSSO
+    // ============================================
+    // calculateShippoPrices() - RIMOSSO definitivamente
+    // 
+    // Questo metodo chiamava /api/shipping-zones/calculate-price (endpoint legacy rimosso).
+    // 
+    // Le shipping_zones ora sono SOLO per struttura geografica (raggruppamento paesi).
+    // Il pricing viene calcolato ESCLUSIVAMENTE da CardSwap Shipping V1:
+    // - POST /api/shipping/v1/calculate-rates (nel checkout)
+    // - shipping_price_tables, shipping_price_table_rates, shipping_price_table_insured
+    // ============================================
 
     // Gestisce il cambio di opzione
     const handleOptionChange = () => {

@@ -8,10 +8,13 @@ use App\Services\AvailabilityService;
 use App\Services\StripeErrorService;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderShipping;
 use App\Models\User;
 use App\Models\CardListing;
 use App\Models\ShippingZone;
 use App\Events\ListingSold;
+use App\Enums\ShippingMethod;
+use App\Enums\ShippingPackageBucket;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -58,13 +61,13 @@ class PaymentController extends Controller
             'sellers_count' => isset($requestData['sellers']) ? count($requestData['sellers']) : 0,
         ]);
         
-        $validator = Validator::make($requestData, [
+        // Regole di validazione - CardSwap Shipping V1 obbligatorio
+        $validationRules = [
             'sellers' => 'required|array|min:1',
             'sellers.*.seller_id' => 'required|integer|exists:users,id',
             'sellers.*.items' => 'required|array|min:1',
             'sellers.*.items.*.listing_id' => 'required|integer|exists:card_listings,id',
             'sellers.*.items.*.quantity' => 'required|integer|min:1',
-            'sellers.*.shipping_zone_id' => 'required|integer|exists:shipping_zones,id',
             'shipping_address' => 'required|array',
             'shipping_address.first_name' => 'required|string|max:255',
             'shipping_address.last_name' => 'required|string|max:255',
@@ -72,7 +75,19 @@ class PaymentController extends Controller
             'shipping_address.city' => 'required|string|max:255',
             'shipping_address.postal_code' => 'required|string|max:10',
             'shipping_address.country' => 'required|string|max:2',
+            // CardSwap Shipping V1 - obbligatorio
+            'shipping_selections' => 'required|array|min:1',
+            'shipping_selections.*.seller_id' => 'required|integer|exists:users,id',
+            'shipping_selections.*.shipping_method' => 'required|string',
+            'shipping_selections.*.price' => 'required|numeric|min:0',
+            'shipping_selections.*.insurance_fee' => 'required|numeric|min:0',
+        ];
+        
+        Log::info('Payment request with CardSwap V1 shipping_selections', [
+            'selections_count' => isset($requestData['shipping_selections']) ? count($requestData['shipping_selections']) : 0
         ]);
+
+        $validator = Validator::make($requestData, $validationRules);
 
         if ($validator->fails()) {
             Log::error('Payment validation failed', [
@@ -212,7 +227,7 @@ class PaymentController extends Controller
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
             ]);
             
             // Verifica se è un errore di database (ENUM non aggiornato, colonne mancanti, ecc.)
@@ -225,7 +240,7 @@ class PaymentController extends Controller
             if ($isDatabaseError) {
                 Log::critical('Errore database durante creazione ordine - possibile migrazione non applicata', [
                     'error' => $e->getMessage(),
-                    'user_id' => auth()->id(),
+                    'user_id' => Auth::id(),
                 ]);
                 
                 return response()->json([
@@ -333,242 +348,50 @@ class PaymentController extends Controller
 
     /**
      * Trasforma i dati dal formato frontend al formato backend
+     * 
+     * Usa ESCLUSIVAMENTE CardSwap Shipping V1 (shipping_selections obbligatorio).
+     * NON supporta più il sistema legacy basato su shipping_zones.
      */
     private function transformRequestData(array $requestData): array
     {
-        // Se i dati sono già nel formato corretto (sellers), restituiscili così
+        // Se i dati sono già nel formato corretto (sellers), verifica se ha shipping_selections
         if (isset($requestData['sellers']) && isset($requestData['shipping_address'])) {
+            // Verifica che shipping_selections sia presente
+            if (!isset($requestData['shipping_selections']) || empty($requestData['shipping_selections'])) {
+                Log::error('PaymentController::transformRequestData - shipping_selections mancante', [
+                    'has_shipping_selections' => isset($requestData['shipping_selections']),
+                    'sellers_count' => count($requestData['sellers'] ?? [])
+                ]);
+                return [
+                    'sellers' => $requestData['sellers'] ?? [],
+                    'shipping_address' => $requestData['shipping_address'] ?? [],
+                    '_error' => 'Metodo di spedizione mancante. Ricarica il checkout.'
+                ];
+            }
+            
+            // Se ha shipping_selections, aggiungili ai sellers
+            $this->attachShippingSelectionsToSellers($requestData);
             return $requestData;
         }
 
         // Trasforma dal formato frontend (cart_data + address) al formato backend (sellers + shipping_address)
         if (isset($requestData['cart_data']) && isset($requestData['address'])) {
-            $sellers = [];
-            $cartData = $requestData['cart_data'];
-            $shippingMethods = $requestData['shipping_methods'] ?? [];
-            $shippingCosts = $requestData['shipping_costs'] ?? []; // Costi dei metodi selezionati dal frontend
-            $selectedShippingZones = $requestData['selected_shipping_zones'] ?? []; // Supporta anche questo formato
-
-            foreach ($cartData as $sellerId => $items) {
-                if (empty($items)) {
-                    continue;
-                }
-
-                $sellerItems = [];
-                
-                foreach ($items as $item) {
-                    $listingId = $item['id'] ?? $item['listing_id'] ?? null;
-                    if (!$listingId) {
-                        continue;
-                    }
-                    
-                    $sellerItems[] = [
-                        'listing_id' => (int) $listingId,
-                        'quantity' => (int) ($item['quantity'] ?? 1),
-                    ];
-                }
-
-                if (empty($sellerItems)) {
-                    continue;
-                }
-
-                // Determina shipping_zone_id
-                $shippingZoneId = null;
-                
-                // Prova prima con selected_shipping_zones (formato cart store)
-                if (isset($selectedShippingZones[$sellerId])) {
-                    $zoneId = $selectedShippingZones[$sellerId];
-                    // Verifica che esista nel database
-                    $zone = \App\Models\ShippingZone::find($zoneId);
-                    if ($zone && $zone->is_active) {
-                        $shippingZoneId = (int) $zoneId;
-                        Log::info('Shipping zone found from selected_shipping_zones', [
-                            'seller_id' => $sellerId,
-                            'zone_id' => $shippingZoneId,
-                        ]);
-                    }
-                }
-                
-                // Poi prova con shipping_methods
-                if (!$shippingZoneId && isset($shippingMethods[$sellerId])) {
-                    $methodValue = $shippingMethods[$sellerId];
-                    // Se è numerico, verifica se è un ID zona valido
-                    if (is_numeric($methodValue)) {
-                        $zone = \App\Models\ShippingZone::find((int) $methodValue);
-                        if ($zone && $zone->is_active) {
-                            $shippingZoneId = $zone->id;
-                            Log::info('Shipping zone found from shipping_methods (numeric)', [
-                                'seller_id' => $sellerId,
-                                'zone_id' => $shippingZoneId,
-                                'method_value' => $methodValue,
-                            ]);
-                        }
-                    }
-                    // Se è un metodo (es: 'standard', 'express') o un ID Shippo, 
-                    // cerca la prima zona disponibile per il venditore o le sue listing
-                }
-
-                // Se ancora non abbiamo una zona, cerca dalla prima listing
-                if (!$shippingZoneId && !empty($sellerItems)) {
-                    $firstListing = \App\Models\CardListing::with('shippingZones')->find($sellerItems[0]['listing_id']);
-                    if ($firstListing && $firstListing->shippingZones->isNotEmpty()) {
-                        // Cerca prima una zona attiva
-                        $activeZone = $firstListing->shippingZones->firstWhere('is_active', true);
-                        if ($activeZone) {
-                            $shippingZoneId = $activeZone->id;
-                            Log::info('Shipping zone found from listing (active)', [
-                                'seller_id' => $sellerId,
-                                'listing_id' => $firstListing->id,
-                                'zone_id' => $shippingZoneId,
-                            ]);
-                        } else {
-                            // Se non c'è una zona attiva, usa la prima disponibile
-                            $shippingZone = $firstListing->shippingZones->first();
-                            $shippingZoneId = $shippingZone->id;
-                            Log::info('Shipping zone found from listing (first available)', [
-                                'seller_id' => $sellerId,
-                                'listing_id' => $firstListing->id,
-                                'zone_id' => $shippingZoneId,
-                            ]);
-                        }
-                    }
-                }
-
-                // Se ancora non abbiamo una zona, cerca zone del venditore
-                if (!$shippingZoneId) {
-                    $sellerZone = \App\Models\ShippingZone::where('user_id', $sellerId)
-                        ->where('is_active', true)
-                        ->first();
-                    if ($sellerZone) {
-                        $shippingZoneId = $sellerZone->id;
-                        Log::info('Shipping zone found from seller zones', [
-                            'seller_id' => $sellerId,
-                            'zone_id' => $shippingZoneId,
-                        ]);
-                    }
-                }
-
-                // Se ancora non abbiamo una zona, cerca zone globali (senza user_id)
-                if (!$shippingZoneId) {
-                    $globalZone = \App\Models\ShippingZone::whereNull('user_id')
-                        ->where('is_active', true)
-                        ->first();
-                    if ($globalZone) {
-                        $shippingZoneId = $globalZone->id;
-                        Log::info('Shipping zone found from global zones', [
-                            'seller_id' => $sellerId,
-                            'zone_id' => $shippingZoneId,
-                        ]);
-                    }
-                }
-
-                // Ultimo fallback: qualsiasi zona attiva
-                if (!$shippingZoneId) {
-                    $defaultZone = \App\Models\ShippingZone::where('is_active', true)->first();
-                    if ($defaultZone) {
-                        $shippingZoneId = $defaultZone->id;
-                        Log::warning('Using fallback shipping zone', [
-                            'seller_id' => $sellerId,
-                            'zone_id' => $shippingZoneId,
-                            'shipping_methods' => $shippingMethods[$sellerId] ?? null,
-                            'selected_shipping_zones' => $selectedShippingZones[$sellerId] ?? null,
-                        ]);
-                    }
-                }
-
-                // Se abbiamo una zona, aggiungi il venditore
-                if ($shippingZoneId) {
-                    // Determina il costo di spedizione dal metodo selezionato
-                    $selectedMethod = $shippingMethods[$sellerId] ?? null;
-                    $shippingCost = null;
-                    
-                    // Prova prima a usare il costo inviato dal frontend
-                    if (isset($shippingCosts[$sellerId]) && $shippingCosts[$sellerId] > 0) {
-                        $shippingCost = (float) $shippingCosts[$sellerId];
-                        Log::info('Using shipping cost from frontend', [
-                            'seller_id' => $sellerId,
-                            'cost' => $shippingCost,
-                        ]);
-                    } elseif ($selectedMethod === 'standard') {
-                        // Se il metodo è 'standard', usa il costo fisso
-                        $shippingCost = 5.00;
-                    } elseif ($selectedMethod === 'express') {
-                        // Se il metodo è 'express', usa il costo fisso
-                        $shippingCost = 16.00;
-                    }
-                    // Se è un ID Shippo e non abbiamo il costo, verrà calcolato dalla zona
-                    
-                    $sellers[] = [
-                        'seller_id' => (int) $sellerId,
-                        'items' => $sellerItems,
-                        'shipping_zone_id' => $shippingZoneId,
-                        'selected_shipping_method' => $selectedMethod,
-                        'shipping_cost' => $shippingCost, // Costo dal metodo selezionato, null se da calcolare
-                    ];
-                    Log::info('Seller added to payment request', [
-                        'seller_id' => $sellerId,
-                        'zone_id' => $shippingZoneId,
-                        'selected_method' => $selectedMethod,
-                        'shipping_cost' => $shippingCost,
-                        'items_count' => count($sellerItems),
-                    ]);
-                } else {
-                    // Log errore critico se non troviamo una zona
-                    Log::error('Shipping zone not found for seller - CRITICAL', [
-                        'seller_id' => $sellerId,
-                        'shipping_methods' => $shippingMethods[$sellerId] ?? null,
-                        'selected_shipping_zones' => $selectedShippingZones[$sellerId] ?? null,
-                        'first_listing_id' => $sellerItems[0]['listing_id'] ?? null,
-                        'total_active_zones' => \App\Models\ShippingZone::where('is_active', true)->count(),
-                    ]);
-                }
-            }
-            
-            // Se non abbiamo trovato nessun venditore valido, restituisci errore dettagliato
-            if (empty($sellers)) {
-                Log::error('No valid sellers found after transformation', [
-                    'cart_data_keys' => array_keys($cartData),
-                    'cart_data_structure' => array_map(function($items) {
-                        return [
-                            'items_count' => count($items),
-                            'first_item' => $items[0] ?? null,
-                        ];
-                    }, $cartData),
-                    'shipping_methods' => $shippingMethods,
-                    'selected_shipping_zones' => $selectedShippingZones,
-                    'total_active_zones' => \App\Models\ShippingZone::where('is_active', true)->count(),
-                    'zones_by_user' => \App\Models\ShippingZone::where('is_active', true)
-                        ->select('user_id', DB::raw('count(*) as count'))
-                        ->groupBy('user_id')
-                        ->get()
-                        ->toArray(),
+            // Verifica che shipping_selections sia presente (obbligatorio)
+            if (!isset($requestData['shipping_selections']) || empty($requestData['shipping_selections'])) {
+                Log::error('PaymentController::transformRequestData - shipping_selections mancante per cart_data', [
+                    'has_shipping_selections' => isset($requestData['shipping_selections']),
+                    'has_cart_data' => isset($requestData['cart_data']),
+                    'has_address' => isset($requestData['address'])
                 ]);
-                
                 return [
                     'sellers' => [],
-                    'shipping_address' => $shippingAddress ?? [],
-                    '_error' => 'Nessuna zona di spedizione disponibile per i venditori selezionati. Verifica che i venditori abbiano zone di spedizione configurate.',
+                    'shipping_address' => [],
+                    '_error' => 'Metodo di spedizione mancante. Ricarica il checkout.'
                 ];
             }
-
-            // Trasforma address in shipping_address
-            $address = $requestData['address'];
-            $shippingAddress = [
-                'first_name' => $address['first_name'] ?? '',
-                'last_name' => $address['last_name'] ?? '',
-                'address_line_1' => $address['address_line_1'] ?? $address['address'] ?? '',
-                'address_line_2' => $address['address_line_2'] ?? $address['apartment'] ?? null,
-                'city' => $address['city'] ?? '',
-                'state_province' => $address['state_province'] ?? $address['region'] ?? null,
-                'postal_code' => $address['postal_code'] ?? $address['postalCode'] ?? '',
-                'country' => $address['country'] ?? 'IT',
-                'phone' => $address['phone'] ?? null,
-            ];
-
-            return [
-                'sellers' => $sellers,
-                'shipping_address' => $shippingAddress,
-            ];
+            
+            Log::info('Transforming request data with CardSwap V1 shipping_selections');
+            return $this->transformRequestDataWithCardSwapV1($requestData);
         }
 
         // Se non riusciamo a trasformare, restituisci i dati originali
@@ -577,7 +400,151 @@ class PaymentController extends Controller
     }
 
     /**
+     * Trasforma i dati usando CardSwap V1 shipping_selections
+     */
+    private function transformRequestDataWithCardSwapV1(array $requestData): array
+    {
+        $cartData = $requestData['cart_data'];
+        $shippingSelections = $requestData['shipping_selections'] ?? [];
+        $sellers = [];
+        
+        // Crea una mappa shipping_selections per seller_id
+        $selectionsMap = [];
+        foreach ($shippingSelections as $selection) {
+            $selectionsMap[$selection['seller_id']] = $selection;
+        }
+
+        foreach ($cartData as $sellerId => $items) {
+            if (empty($items)) {
+                continue;
+            }
+
+            $sellerItems = [];
+            foreach ($items as $item) {
+                $listingId = $item['id'] ?? $item['listing_id'] ?? null;
+                if (!$listingId) {
+                    continue;
+                }
+                
+                $sellerItems[] = [
+                    'listing_id' => (int) $listingId,
+                    'quantity' => (int) ($item['quantity'] ?? 1),
+                ];
+            }
+
+            if (empty($sellerItems)) {
+                continue;
+            }
+
+            // Verifica che esista shipping_selection per questo seller
+            if (!isset($selectionsMap[$sellerId])) {
+                Log::error('Shipping selection missing for seller in CardSwap V1', [
+                    'seller_id' => $sellerId,
+                    'available_selections' => array_keys($selectionsMap)
+                ]);
+                continue;
+            }
+
+            $selection = $selectionsMap[$sellerId];
+            
+            // Valida shipping_method
+            if (!ShippingMethod::isValidIncludingVirtual($selection['shipping_method'])) {
+                Log::error('Invalid shipping_method in CardSwap V1 selection', [
+                    'seller_id' => $sellerId,
+                    'shipping_method' => $selection['shipping_method']
+                ]);
+                continue;
+            }
+
+            // Calcola shipping_cost totale (price + insurance_fee)
+            $shippingCost = (float) $selection['price'] + (float) ($selection['insurance_fee'] ?? 0);
+
+            $sellers[] = [
+                'seller_id' => (int) $sellerId,
+                'items' => $sellerItems,
+                // CardSwap V1 fields
+                'shipping_method' => $selection['shipping_method'],
+                'shipping_cost' => $shippingCost,
+                'shipping_price' => (float) $selection['price'],
+                'insurance_fee' => (float) ($selection['insurance_fee'] ?? 0),
+                // Legacy fields (nullable per backward compatibility)
+                'shipping_zone_id' => null,
+                'selected_shipping_method' => null,
+            ];
+
+            Log::info('Seller added with CardSwap V1 shipping', [
+                'seller_id' => $sellerId,
+                'shipping_method' => $selection['shipping_method'],
+                'shipping_cost' => $shippingCost,
+                'items_count' => count($sellerItems),
+            ]);
+        }
+
+        if (empty($sellers)) {
+            Log::error('No valid sellers found after CardSwap V1 transformation', [
+                'cart_data_keys' => array_keys($cartData),
+                'selections_count' => count($shippingSelections)
+            ]);
+            
+            return [
+                'sellers' => [],
+                'shipping_address' => [],
+                '_error' => 'Nessuna selezione di spedizione valida trovata per i venditori selezionati.',
+            ];
+        }
+
+        // Trasforma address in shipping_address
+        $address = $requestData['address'];
+        $shippingAddress = [
+            'first_name' => $address['first_name'] ?? '',
+            'last_name' => $address['last_name'] ?? '',
+            'address_line_1' => $address['address_line_1'] ?? $address['address'] ?? '',
+            'address_line_2' => $address['address_line_2'] ?? $address['apartment'] ?? null,
+            'city' => $address['city'] ?? '',
+            'state_province' => $address['state_province'] ?? $address['region'] ?? null,
+            'postal_code' => $address['postal_code'] ?? $address['postalCode'] ?? '',
+            'country' => $address['country'] ?? 'IT',
+            'phone' => $address['phone'] ?? null,
+        ];
+
+        return [
+            'sellers' => $sellers,
+            'shipping_address' => $shippingAddress,
+            'shipping_selections' => $shippingSelections, // Mantieni per riferimento
+        ];
+    }
+
+    /**
+     * Attacca shipping_selections ai sellers quando i dati sono già nel formato corretto
+     */
+    private function attachShippingSelectionsToSellers(array &$requestData): void
+    {
+        if (!isset($requestData['shipping_selections']) || !is_array($requestData['shipping_selections'])) {
+            return;
+        }
+
+        $selectionsMap = [];
+        foreach ($requestData['shipping_selections'] as $selection) {
+            $selectionsMap[$selection['seller_id']] = $selection;
+        }
+
+        foreach ($requestData['sellers'] as &$sellerData) {
+            $sellerId = $sellerData['seller_id'];
+            if (isset($selectionsMap[$sellerId])) {
+                $selection = $selectionsMap[$sellerId];
+                $sellerData['shipping_method'] = $selection['shipping_method'];
+                $sellerData['shipping_cost'] = (float) $selection['price'] + (float) ($selection['insurance_fee'] ?? 0);
+                $sellerData['shipping_price'] = (float) $selection['price'];
+                $sellerData['insurance_fee'] = (float) ($selection['insurance_fee'] ?? 0);
+            }
+        }
+    }
+
+    /**
      * Prepara i dati dell'ordine
+     * 
+     * Usa ESCLUSIVAMENTE CardSwap Shipping V1 (shipping_selections).
+     * NON supporta più il sistema legacy basato su shipping_zones.
      */
     private function prepareOrderData(array $requestData, User $buyer): array
     {
@@ -585,6 +552,22 @@ class PaymentController extends Controller
         $subtotal = 0;
         $totalShippingCost = 0;
         $orderItems = [];
+        
+        // Verifica che shipping_selections sia presente
+        if (!isset($requestData['shipping_selections']) || empty($requestData['shipping_selections'])) {
+            Log::error('PaymentController::prepareOrderData - shipping_selections mancante', [
+                'has_shipping_selections' => isset($requestData['shipping_selections']),
+                'sellers_count' => count($sellers),
+                'buyer_id' => $buyer->id
+            ]);
+            throw new \Exception('Metodo di spedizione mancante. Ricarica il checkout.');
+        }
+
+        Log::info('PaymentController::prepareOrderData - Using CardSwap Shipping V1', [
+            'sellers_count' => count($sellers),
+            'shipping_selections_count' => count($requestData['shipping_selections']),
+            'buyer_id' => $buyer->id
+        ]);
 
         foreach ($sellers as $sellerData) {
             $seller = User::find($sellerData['seller_id']);
@@ -607,15 +590,33 @@ class PaymentController extends Controller
                 ];
             }
 
-            // Calcola costo spedizione
-            // Se è stato specificato un costo dal metodo selezionato, usalo
-            if (isset($sellerData['shipping_cost']) && $sellerData['shipping_cost'] !== null) {
-                $shippingCost = (float) $sellerData['shipping_cost'];
-            } else {
-                // Altrimenti calcola dalla zona
-            $shippingZone = \App\Models\ShippingZone::find($sellerData['shipping_zone_id']);
-            $shippingCost = $listing->getShippingCostForZone($sellerData['shipping_zone_id']);
+            // CardSwap V1: usa shipping_cost già calcolato (price + insurance_fee)
+            // NON ricalcolare, fidati del risultato del CardSwapShippingController
+            if (!isset($sellerData['shipping_cost']) || $sellerData['shipping_cost'] === null) {
+                Log::error('CardSwap V1 shipping_cost missing for seller', [
+                    'seller_id' => $sellerData['seller_id'],
+                    'has_shipping_method' => isset($sellerData['shipping_method']),
+                    'has_shipping_price' => isset($sellerData['shipping_price']),
+                    'has_insurance_fee' => isset($sellerData['insurance_fee'])
+                ]);
+                throw new \Exception("Costo di spedizione mancante per venditore {$seller->name}. Ricarica il checkout.");
             }
+
+            $shippingCost = (float) $sellerData['shipping_cost'];
+            
+            // Calcola package_bucket e logistic_units_total per questo venditore
+            $bucketData = $this->calculatePackageBucketForSeller($sellerData['items']);
+            $sellerData['package_bucket'] = $bucketData['bucket'];
+            $sellerData['logistic_units_total'] = $bucketData['logistic_units_total'];
+            
+            Log::info('Using CardSwap V1 shipping cost', [
+                'seller_id' => $sellerData['seller_id'],
+                'shipping_cost' => $shippingCost,
+                'shipping_method' => $sellerData['shipping_method'] ?? null,
+                'package_bucket' => $sellerData['package_bucket'],
+                'logistic_units_total' => $sellerData['logistic_units_total']
+            ]);
+            
             $totalShippingCost += $shippingCost;
             $subtotal += $sellerSubtotal;
         }
@@ -634,7 +635,8 @@ class PaymentController extends Controller
             'total_shipping_cost' => $totalShippingCost,
             'tax_amount' => $taxAmount,
             'shipping_address' => $requestData['shipping_address'],
-            'order_items' => $orderItems
+            'order_items' => $orderItems,
+            'use_cardswap_v1' => true, // Sempre true ora
         ];
     }
 
@@ -658,20 +660,22 @@ class PaymentController extends Controller
             $sellerPayoutAmount += $sellerSubtotal * 0.94; // 94% del subtotale
         }
 
+        // Crea l'ordine (senza campi shipping_method, package_bucket, logistic_units_total)
+        // Questi dati vengono salvati nella tabella order_shippings (uno per ogni seller)
         $order = Order::create([
             'order_number' => $orderNumber,
             'buyer_id' => $orderData['buyer']->id,
             'seller_id' => $orderData['sellers'][0]['seller_id'], // Primo venditore come principale
             'status' => 'pending',
             'subtotal' => $orderData['subtotal'] ?? ($orderData['total_amount'] - $orderData['total_shipping_cost'] - ($orderData['tax_amount'] ?? 0)),
-            'shipping_cost' => $orderData['total_shipping_cost'],
+            'shipping_cost' => $orderData['total_shipping_cost'], // Totale spedizione (somma di tutti i seller)
             'tax_amount' => $orderData['tax_amount'] ?? 0, // Costo di gestione (1.5% sul subtotale)
             'total_amount' => $orderData['total_amount'],
             'shipping_address' => $orderData['shipping_address'],
             'billing_address' => $orderData['shipping_address'], // Per ora uguale
             // Nuovi campi per il sistema di trattenuta fondi
             'seller_payout_amount' => $sellerPayoutAmount,
-            'payout_status' => 'pending_payout' // Fondi trattenuti, in attesa di consegna
+            'payout_status' => 'pending_payout', // Fondi trattenuti, in attesa di consegna
         ]);
 
         Log::info('Order created in database', [
@@ -682,8 +686,51 @@ class PaymentController extends Controller
             'status' => $order->status,
             'total_amount' => $order->total_amount,
             'seller_payout_amount' => $order->seller_payout_amount,
-            'payout_status' => $order->payout_status
+            'payout_status' => $order->payout_status,
+            'shipping_cost' => $order->shipping_cost,
+            'use_cardswap_v1' => $orderData['use_cardswap_v1'] ?? false
         ]);
+
+        // Salva i dati di spedizione CardSwap V1 per OGNI seller nella tabella order_shippings
+        if ($orderData['use_cardswap_v1'] ?? false) {
+            foreach ($orderData['sellers'] as $sellerData) {
+                $sellerId = $sellerData['seller_id'];
+                
+                // Verifica che i dati CardSwap V1 siano presenti
+                if (!isset($sellerData['shipping_method']) || 
+                    !isset($sellerData['package_bucket']) || 
+                    !isset($sellerData['logistic_units_total'])) {
+                    Log::warning('CardSwap V1 shipping data missing for seller', [
+                        'order_id' => $order->id,
+                        'seller_id' => $sellerId,
+                        'has_shipping_method' => isset($sellerData['shipping_method']),
+                        'has_package_bucket' => isset($sellerData['package_bucket']),
+                        'has_logistic_units_total' => isset($sellerData['logistic_units_total'])
+                    ]);
+                    continue;
+                }
+
+                OrderShipping::create([
+                    'order_id' => $order->id,
+                    'seller_id' => $sellerId,
+                    'shipping_method' => $sellerData['shipping_method'],
+                    'package_bucket' => $sellerData['package_bucket'],
+                    'logistic_units_total' => $sellerData['logistic_units_total'],
+                    'shipping_price' => $sellerData['shipping_price'] ?? null,
+                    'insurance_fee' => $sellerData['insurance_fee'] ?? 0.00,
+                ]);
+
+                Log::info('OrderShipping created for seller', [
+                    'order_id' => $order->id,
+                    'seller_id' => $sellerId,
+                    'shipping_method' => $sellerData['shipping_method'],
+                    'package_bucket' => $sellerData['package_bucket'],
+                    'logistic_units_total' => $sellerData['logistic_units_total'],
+                    'shipping_price' => $sellerData['shipping_price'] ?? null,
+                    'insurance_fee' => $sellerData['insurance_fee'] ?? 0.00,
+                ]);
+            }
+        }
 
         // Crea gli OrderItem e aggiorna disponibilità card listings
         foreach ($orderData['order_items'] as $itemData) {
@@ -775,7 +822,8 @@ class PaymentController extends Controller
                 $sellerAmount += $listing->price * $itemData['quantity'];
             }
 
-            // La spedizione viene gestita tramite Shippo e non viene data al venditore
+            // NOTA: Shippo è DEPRECATO - CardSwap V1 NON usa Shippo per spedizione
+            // La spedizione viene gestita tramite CardSwap Shipping V1 (shipping_price_tables)
             // Il venditore riceve solo il 94% del subtotale
             $totalSellerAmount += $sellerAmount; // Solo subtotale, senza spedizione
 
@@ -798,8 +846,8 @@ class PaymentController extends Controller
         
         // NOTA: Oltre a queste commissioni, ci saranno anche:
         // - Trattenuta Stripe: ~3,5% + 0,30€ (dedotta automaticamente da Stripe sul totale pagato)
-        // - Trattenuta Shippo: costo spedizione (dedotta quando viene creato il label di spedizione)
-        // Il netto per CardSwap sarà: 6% + 1,5% + spedizione - costi Stripe - costi Shippo
+        // NOTA: Shippo è DEPRECATO - CardSwap V1 NON usa Shippo
+        // Il netto per CardSwap sarà: 6% + 1,5% + spedizione - costi Stripe
 
         return [
             'order_id' => $order->id,
@@ -844,7 +892,53 @@ class PaymentController extends Controller
             }
         }
 
-        // Verifica venditori e zone di spedizione
+        // Verifica che shipping_selections sia presente (CardSwap V1 obbligatorio)
+        if (!isset($requestData['shipping_selections']) || empty($requestData['shipping_selections'])) {
+            Log::error('PaymentController::validateOrderData - shipping_selections mancante', [
+                'has_shipping_selections' => isset($requestData['shipping_selections']),
+                'sellers_count' => count($sellers),
+                'buyer_id' => $buyer->id
+            ]);
+            $errors['shipping'][] = 'Metodo di spedizione mancante. Ricarica il checkout.';
+            return [
+                'valid' => false,
+                'errors' => $errors
+            ];
+        }
+
+        // Validazione CardSwap V1
+        $shippingSelections = $requestData['shipping_selections'];
+        $sellerIdsInOrder = array_column($sellers, 'seller_id');
+        
+        // Verifica che ogni seller abbia una shipping_selection
+        foreach ($sellers as $sellerData) {
+            $sellerId = $sellerData['seller_id'];
+            $selection = collect($shippingSelections)->firstWhere('seller_id', $sellerId);
+            
+            if (!$selection) {
+                $errors['shipping'][] = "Selezione di spedizione mancante per venditore {$sellerId}";
+                continue;
+            }
+            
+            // Valida shipping_method
+            if (!ShippingMethod::isValidIncludingVirtual($selection['shipping_method'])) {
+                $errors['shipping'][] = "Metodo di spedizione non valido per venditore {$sellerId}: {$selection['shipping_method']}";
+            }
+            
+            // Verifica che seller_id corrisponda
+            if ($selection['seller_id'] != $sellerId) {
+                $errors['shipping'][] = "Seller ID non corrispondente nella selezione spedizione per venditore {$sellerId}";
+            }
+        }
+        
+        // Verifica che non ci siano shipping_selections per seller non presenti nell'ordine
+        foreach ($shippingSelections as $selection) {
+            if (!in_array($selection['seller_id'], $sellerIdsInOrder)) {
+                $errors['shipping'][] = "Selezione di spedizione per venditore {$selection['seller_id']} non presente nell'ordine";
+            }
+        }
+
+        // Verifica venditori e zone di spedizione (legacy o validazioni comuni)
         foreach ($sellers as $sellerData) {
             $seller = User::find($sellerData['seller_id']);
             if (!$seller) {
@@ -890,19 +984,9 @@ class PaymentController extends Controller
                 }
             }
 
-            // Verifica zone di spedizione
-            $shippingZone = ShippingZone::find($sellerData['shipping_zone_id']);
-            if (!$shippingZone) {
-                $errors['shipping'][] = "Zona di spedizione non trovata per venditore {$seller->name}";
-                continue;
-            }
+            // NOTA: Validazione shipping_zones rimossa - ora usiamo solo CardSwap Shipping V1
 
-            // Verifica se il venditore può usare questa zona
-            if (!$shippingZone->canBeUsedBySeller($seller)) {
-                $errors['shipping'][] = "Venditore {$seller->name} non può usare questa zona di spedizione";
-            }
-
-            // Verifica prezzi e calcoli
+            // Verifica prezzi e calcoli (comune a entrambi i sistemi)
             $sellerSubtotal = 0;
             foreach ($sellerData['items'] as $itemData) {
                 $listing = CardListing::find($itemData['listing_id']);
@@ -919,14 +1003,6 @@ class PaymentController extends Controller
                 // Verifica prezzo
                 $itemTotal = $listing->price * $itemData['quantity'];
                 $sellerSubtotal += $itemTotal;
-            }
-
-            // Verifica calcolo spedizione
-            try {
-                $orderWeight = $shippingZone->calculateOrderWeight($sellerData['items']);
-                $shippingCost = $shippingZone->calculateShippingCost($sellerSubtotal, $orderWeight);
-            } catch (\Exception $e) {
-                $errors['shipping'][] = "Errore calcolo spedizione per venditore {$seller->name}: " . $e->getMessage();
             }
         }
 
@@ -946,6 +1022,8 @@ class PaymentController extends Controller
 
     /**
      * Prepara il riepilogo dettagliato dell'ordine
+     * 
+     * Usa ESCLUSIVAMENTE CardSwap Shipping V1 (shipping_cost dai sellers).
      */
     private function prepareOrderSummary(array $orderData): array
     {
@@ -973,9 +1051,8 @@ class PaymentController extends Controller
                 ];
             }
 
-            $shippingZone = ShippingZone::find($sellerData['shipping_zone_id']);
-            $orderWeight = $shippingZone->calculateOrderWeight($sellerData['items']);
-            $shippingCost = $shippingZone->calculateShippingCost($sellerSubtotal, $orderWeight);
+            // CardSwap V1: usa shipping_cost dai sellers (già calcolato)
+            $shippingCost = $sellerData['shipping_cost'] ?? 0;
             $totalShippingCost += $shippingCost;
 
             $sellerTotal = $sellerSubtotal + $shippingCost;
@@ -987,11 +1064,8 @@ class PaymentController extends Controller
                 'items' => $items,
                 'subtotal' => $sellerSubtotal,
                 'shipping_cost' => $shippingCost,
-                'shipping_zone' => [
-                    'id' => $shippingZone->id,
-                    'name' => $shippingZone->name,
-                    'delivery_days' => $shippingZone->delivery_days_min . '-' . $shippingZone->delivery_days_max
-                ],
+                'shipping_method' => $sellerData['shipping_method'] ?? null,
+                'package_bucket' => $sellerData['package_bucket'] ?? null,
                 'total' => $sellerTotal
             ];
         }
@@ -1005,5 +1079,93 @@ class PaymentController extends Controller
             'item_count' => count($orderData['order_items']),
             'seller_count' => count($sellers)
         ];
+    }
+
+    /**
+     * Calcola package_bucket e logistic_units_total per un venditore
+     * 
+     * Usa la stessa logica di CardSwapShippingController::calculatePackageBucket()
+     * 
+     * @param array $items Array di items con listing_id e quantity
+     * @return array{ bucket: string, logistic_units_total: float }
+     */
+    private function calculatePackageBucketForSeller(array $items): array
+    {
+        $singleCardQty = 0;
+        $packQty = 0;
+        $boxQty = 0;
+
+        foreach ($items as $itemData) {
+            $listing = CardListing::find($itemData['listing_id']);
+            if (!$listing) {
+                continue;
+            }
+
+            // Mappa listing_type a category_type (stessa logica di CardSwapShippingController)
+            $categoryType = $this->mapListingTypeToCategoryType($listing->listing_type ?? 'single');
+            $quantity = (int) $itemData['quantity'];
+
+            switch ($categoryType) {
+                case 'SINGLE_CARD':
+                    $singleCardQty += $quantity;
+                    break;
+                case 'PACK':
+                    $packQty += $quantity;
+                    break;
+                case 'BOX':
+                    $boxQty += $quantity;
+                    break;
+            }
+        }
+
+        // Pesi unitari secondo specifica CardSwap V1
+        $singleCardWeight = 0.2;
+        $packWeight = 0.5;
+        $boxWeight = 2.0;
+
+        // Verifica se LETTER è consentita
+        $isOnlySingleCards = ($packQty === 0 && $boxQty === 0);
+        $canUseLetter = $isOnlySingleCards && $singleCardQty <= 5;
+
+        if ($canUseLetter) {
+            return [
+                'bucket' => ShippingPackageBucket::LETTER,
+                'logistic_units_total' => $singleCardQty * $singleCardWeight,
+            ];
+        }
+
+        // Calcola total_units per determinare bucket
+        $totalUnits = ($singleCardQty * $singleCardWeight) + 
+                      ($packQty * $packWeight) + 
+                      ($boxQty * $boxWeight);
+
+        // Determina bucket basato su total_units
+        if ($totalUnits <= 1.0) {
+            $bucket = ShippingPackageBucket::PARCEL_S;
+        } elseif ($totalUnits <= 4.0) {
+            $bucket = ShippingPackageBucket::PARCEL_M;
+        } else {
+            $bucket = ShippingPackageBucket::PARCEL_L;
+        }
+
+        return [
+            'bucket' => $bucket,
+            'logistic_units_total' => $totalUnits,
+        ];
+    }
+
+    /**
+     * Mappa listing_type a category_type (stessa logica di CardSwapShippingController)
+     */
+    private function mapListingTypeToCategoryType(string $listingType): string
+    {
+        return match ($listingType) {
+            'single' => 'SINGLE_CARD',
+            'sealed-pack' => 'PACK',
+            'sealed-box' => 'BOX',
+            'bulk' => 'SINGLE_CARD',
+            'lot' => 'SINGLE_CARD',
+            default => 'SINGLE_CARD',
+        };
     }
 }

@@ -534,9 +534,10 @@ const getPageNumbers = () => {
 }
 
 const canUpdateStatus = (status) => {
-  // Con il nuovo sistema, gli stati vengono gestiti automaticamente da Shippo
-  // Il venditore può solo creare etichette, non aggiornare manualmente lo stato
-  return false // Disabilitato - gli stati vengono gestiti da Shippo webhook
+  // NOTA: Shippo è DEPRECATO - CardSwap V1 usa AfterShip per il tracking
+  // Gli stati vengono gestiti automaticamente da AfterShip webhook
+  // Il venditore può inserire tracking manualmente o usare AfterShip
+  return false // Disabilitato - gli stati vengono gestiti da AfterShip webhook
 }
 
 const viewOrderDetails = (order) => {
@@ -620,7 +621,22 @@ const createShippoLabel = async (order) => {
       }
     }
 
-    // Calcola le tariffe
+    // ============================================
+    // SHIPPO ENDPOINT DISABILITATO
+    // ============================================
+    // Shippo è DEPRECATO e NON fa parte di CardSwap Shipping V1.
+    // 
+    // CardSwap V1 usa ESCLUSIVAMENTE:
+    // - POST /api/shipping/v1/calculate-rates per il pricing
+    // - AfterShip per il tracking
+    // 
+    // Questo endpoint Shippo è DISABILITATO.
+    // ============================================
+    console.error('SalesOrders: Shippo endpoint is deprecated and not used by CardSwap Shipping V1. This feature is disabled.')
+    throw new Error('Shippo is deprecated and not used by CardSwap Shipping V1. Use CardSwap Shipping V1 for pricing and AfterShip for tracking.')
+    
+    // CODICE ORIGINALE DISABILITATO - NON ESEGUITO
+    /*
     const ratesResponse = await fetch('/api/shipping/calculate-rates', {
       method: 'POST',
       headers: {
@@ -724,8 +740,9 @@ const createShippoLabel = async (order) => {
     } else {
       throw new Error(labelData.message || 'Errore nella creazione dell\'etichetta')
     }
+    */
   } catch (err) {
-    console.error('Errore creazione etichetta Shippo:', err)
+    console.error('Errore: Shippo is deprecated and not used by CardSwap Shipping V1', err)
     error.value = err.message
     alert(`Errore: ${err.message}`)
   } finally {

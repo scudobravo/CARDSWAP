@@ -99,6 +99,16 @@ class Order extends Model
     }
 
     /**
+     * Dati di spedizione CardSwap V1 per ogni seller
+     * 
+     * Un ordine multi-seller avrà più record OrderShipping (uno per seller)
+     */
+    public function orderShippings(): HasMany
+    {
+        return $this->hasMany(OrderShipping::class);
+    }
+
+    /**
      * Feedback ricevuti per questo ordine
      */
     public function feedbacks(): HasMany

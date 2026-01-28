@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class CheckoutController extends Controller
@@ -333,9 +334,14 @@ class CheckoutController extends Controller
                 $subtotal += $item['unit_price'] * $item['quantity'];
             }
             
-            // Calcola spedizione per venditore usando il metodo selezionato
-            $sellerShippingMethod = $shippingMethods[$sellerId] ?? 'standard';
-            $shipping += $this->calculateShippingCost($sellerShippingMethod);
+            // LEGACY: Metodo hardcoded rimosso - ora usa CardSwap Shipping V1
+            // Il checkout attivo usa PaymentController che richiede shipping_selections
+            Log::warning('CheckoutController::calculateTotal - Legacy method called', [
+                'seller_id' => $sellerId,
+                'note' => 'CheckoutController is legacy. Use PaymentController with CardSwap Shipping V1.'
+            ]);
+            // Fallback temporaneo per compatibilità (da rimuovere in futuro)
+            $shipping += 5.00; // Valore placeholder - NON usare in produzione
         }
 
         $tax = $subtotal * 0.015; // 1.5% Commissione acquirente (copre parzialmente i costi Stripe)
@@ -360,7 +366,13 @@ class CheckoutController extends Controller
             $subtotal += $item['unit_price'] * $item['quantity'];
         }
 
-        $shipping = $this->calculateShippingCost($deliveryMethod);
+        // LEGACY: Metodo hardcoded rimosso - ora usa CardSwap Shipping V1
+        Log::warning('CheckoutController::calculateSellerTotal - Legacy method called', [
+            'delivery_method' => $deliveryMethod,
+            'note' => 'CheckoutController is legacy. Use PaymentController with CardSwap Shipping V1.'
+        ]);
+        // Fallback temporaneo per compatibilità (da rimuovere in futuro)
+        $shipping = 5.00; // Valore placeholder - NON usare in produzione
         $tax = $subtotal * 0.015; // 1.5% Commissione acquirente (copre parzialmente i costi Stripe)
         $total = $subtotal + $shipping + $tax;
 
@@ -372,17 +384,20 @@ class CheckoutController extends Controller
         ];
     }
 
-    /**
-     * Calcola il costo di spedizione
-     */
-    private function calculateShippingCost(string $deliveryMethod): float
-    {
-        return match ($deliveryMethod) {
-            'standard' => 5.00,
-            'express' => 16.00,
-            default => 5.00
-        };
-    }
+    // ============================================
+    // METODO LEGACY PRICING RIMOSSO
+    // ============================================
+    // calculateShippingCost() - RIMOSSO definitivamente
+    // 
+    // Questo metodo usava valori hardcoded (5.00/16.00) per standard/express.
+    // 
+    // Il checkout ora usa ESCLUSIVAMENTE CardSwap Shipping V1:
+    // - POST /api/shipping/v1/calculate-rates
+    // - shipping_selections obbligatorio nel PaymentController
+    // 
+    // NOTA: CheckoutController è legacy e non più usato nel flusso attivo.
+    // PaymentController è il controller principale per il checkout.
+    // ============================================
 
     /**
      * Salva l'indirizzo di spedizione

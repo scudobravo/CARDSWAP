@@ -10,97 +10,53 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * @deprecated ShippoController è DEPRECATO e NON fa parte di CardSwap Shipping V1.
+ * 
+ * Shippo NON viene più utilizzato per:
+ * - Pricing (usa CardSwap Shipping V1: POST /api/shipping/v1/calculate-rates)
+ * - Checkout (usa PaymentController con shipping_selections)
+ * - Tracking (usa AfterShip - vedi TrackingController)
+ * - Post-ordine (usa AfterShip webhook)
+ * 
+ * Tutti gli endpoint di questo controller sono deprecati e NON fanno parte del flusso CardSwap V1.
+ * 
+ * Messaggio standard: "Shippo is deprecated and not used by CardSwap Shipping V1"
+ */
 class ShippoController extends Controller
 {
     private ShippoService $shippoService;
 
     public function __construct(ShippoService $shippoService)
     {
+        Log::warning('ShippoController is deprecated and not used by CardSwap Shipping V1', [
+            'controller' => 'ShippoController',
+            'note' => 'Shippo is no longer part of CardSwap V1. Use CardSwap Shipping V1 for pricing and AfterShip for tracking.'
+        ]);
         $this->shippoService = $shippoService;
     }
 
-    /**
-     * Calcola tariffe di spedizione per il checkout
-     */
-    public function calculateRates(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'sellers' => 'required|array',
-            'sellers.*.id' => 'required|integer',
-            'sellers.*.name' => 'required|string',
-            'sellers.*.address' => 'required|array',
-            'sellers.*.address.street1' => 'required|string',
-            'sellers.*.address.city' => 'required|string',
-            'sellers.*.address.state' => 'required|string',
-            'sellers.*.address.zip' => 'required|string',
-            'sellers.*.address.country' => 'required|string',
-            'shipping_address' => 'required|array',
-            'shipping_address.name' => 'required|string',
-            'shipping_address.street1' => 'required|string',
-            'shipping_address.city' => 'required|string',
-            'shipping_address.state' => 'required|string',
-            'shipping_address.zip' => 'required|string',
-            'shipping_address.country' => 'required|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            $sellers = $request->input('sellers');
-            $shippingAddress = $request->input('shipping_address');
-
-            Log::info('calculateRates called', [
-                'sellers_count' => count($sellers),
-                'sellers_keys' => array_keys($sellers),
-                'shipping_address' => $shippingAddress
-            ]);
-
-            $rates = $this->shippoService->calculateRatesForOrder($sellers, $shippingAddress);
-
-            Log::info('calculateRates result', [
-                'results_keys' => array_keys($rates),
-                'results' => $rates
-            ]);
-
-            // Verifica se ci sono errori nei risultati
-            foreach ($rates as $sellerId => $result) {
-                if (isset($result['error'])) {
-                    Log::warning('Error in rate calculation for seller', [
-                        'seller_id' => $sellerId,
-                        'error' => $result['error']
-                    ]);
-                }
-            }
-
-            return response()->json([
-                'success' => true,
-                'data' => $rates
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Errore calcolo tariffe Shippo', [
-                'error' => $e->getMessage(),
-                'request' => $request->all()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Errore nel calcolo delle tariffe di spedizione',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
+    // ============================================
+    // ENDPOINT LEGACY PRICING RIMOSSO
+    // ============================================
+    // calculateRates() - RIMOSSO definitivamente
+    // 
+    // Usa invece POST /api/shipping/v1/calculate-rates per CardSwap Shipping V1.
+    // ============================================
 
     /**
+     * @deprecated Shippo NON fa parte di CardSwap Shipping V1
+     * 
      * Acquista etichetta di spedizione
+     * 
+     * NOTA: CardSwap V1 NON richiede acquisto automatico di etichette Shippo.
+     * Le etichette vengono gestite manualmente dal venditore o tramite AfterShip.
      */
     public function purchaseLabel(Request $request): JsonResponse
     {
+        Log::warning('ShippoController::purchaseLabel called - Shippo is deprecated and not used by CardSwap Shipping V1', [
+            'request_data' => $request->all()
+        ]);
         $validator = Validator::make($request->all(), [
             'rate_object_id' => 'required|string',
             'order_id' => 'required|integer',
@@ -212,10 +168,18 @@ class ShippoController extends Controller
     }
 
     /**
+     * @deprecated Shippo NON fa parte di CardSwap Shipping V1
+     * 
      * Ottieni tracking di una spedizione
+     * 
+     * NOTA: CardSwap V1 usa ESCLUSIVAMENTE AfterShip per il tracking.
+     * Vedi TrackingController e AfterShip webhook.
      */
     public function getTracking(Request $request): JsonResponse
     {
+        Log::warning('ShippoController::getTracking called - Shippo is deprecated and not used by CardSwap Shipping V1', [
+            'request_data' => $request->all()
+        ]);
         $validator = Validator::make($request->all(), [
             'carrier' => 'required|string',
             'tracking_number' => 'required|string',
@@ -255,10 +219,15 @@ class ShippoController extends Controller
     }
 
     /**
+     * @deprecated Shippo NON fa parte di CardSwap Shipping V1
+     * 
      * Valida un indirizzo
      */
     public function validateAddress(Request $request): JsonResponse
     {
+        Log::warning('ShippoController::validateAddress called - Shippo is deprecated and not used by CardSwap Shipping V1', [
+            'request_data' => $request->all()
+        ]);
         $validator = Validator::make($request->all(), [
             'name' => 'required|string',
             'street1' => 'required|string',
@@ -302,10 +271,15 @@ class ShippoController extends Controller
     }
 
     /**
+     * @deprecated Shippo NON fa parte di CardSwap Shipping V1
+     * 
      * Programma un ritiro
      */
     public function schedulePickup(Request $request): JsonResponse
     {
+        Log::warning('ShippoController::schedulePickup called - Shippo is deprecated and not used by CardSwap Shipping V1', [
+            'request_data' => $request->all()
+        ]);
         $validator = Validator::make($request->all(), [
             'carrier_account' => 'required|string',
             'address' => 'required|array',
@@ -346,10 +320,15 @@ class ShippoController extends Controller
     }
 
     /**
+     * @deprecated Shippo NON fa parte di CardSwap Shipping V1
+     * 
      * Rimborsa un'etichetta
      */
     public function refundLabel(Request $request): JsonResponse
     {
+        Log::warning('ShippoController::refundLabel called - Shippo is deprecated and not used by CardSwap Shipping V1', [
+            'request_data' => $request->all()
+        ]);
         $validator = Validator::make($request->all(), [
             'transaction_id' => 'required|string',
         ]);
@@ -385,10 +364,13 @@ class ShippoController extends Controller
     }
 
     /**
+     * @deprecated Shippo NON fa parte di CardSwap Shipping V1
+     * 
      * Lista carrier accounts disponibili
      */
     public function getCarrierAccounts(): JsonResponse
     {
+        Log::warning('ShippoController::getCarrierAccounts called - Shippo is deprecated and not used by CardSwap Shipping V1');
         try {
             $carriers = $this->shippoService->listCarrierAccounts();
 

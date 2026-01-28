@@ -7,6 +7,19 @@ use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * @deprecated ShippoService è DEPRECATO e NON fa parte di CardSwap Shipping V1.
+ * 
+ * Shippo NON viene più utilizzato per:
+ * - Pricing (usa CardSwap Shipping V1: shipping_price_tables)
+ * - Checkout (usa POST /api/shipping/v1/calculate-rates)
+ * - Tracking (usa AfterShip - vedi TrackingController)
+ * - Post-ordine (usa AfterShip webhook)
+ * 
+ * Questo servizio è mantenuto solo per compatibilità legacy e sarà rimosso in futuro.
+ * 
+ * Messaggio standard: "Shippo is deprecated and not used by CardSwap Shipping V1"
+ */
 class ShippoService
 {
     private string $baseUrl = 'https://api.goshippo.com/';
@@ -14,6 +27,10 @@ class ShippoService
 
     public function __construct()
     {
+        Log::warning('ShippoService is deprecated and not used by CardSwap Shipping V1', [
+            'service' => 'ShippoService',
+            'note' => 'Shippo is no longer part of CardSwap V1. Use CardSwap Shipping V1 for pricing and AfterShip for tracking.'
+        ]);
         $this->apiKey = config('services.shippo.key');
     }
 
@@ -77,6 +94,8 @@ class ShippoService
     }
 
     /**
+     * @deprecated Shippo NON fa parte di CardSwap Shipping V1
+     * 
      * Crea e valida un indirizzo
      */
     public function createAddress(array $address, bool $validate = false): array
@@ -86,6 +105,8 @@ class ShippoService
     }
 
     /**
+     * @deprecated Shippo NON fa parte di CardSwap Shipping V1
+     * 
      * Valida un indirizzo senza salvarlo
      */
     public function validateAddress(array $address): array
@@ -94,6 +115,8 @@ class ShippoService
     }
 
     /**
+     * @deprecated Shippo NON fa parte di CardSwap Shipping V1
+     * 
      * Crea un pacco con dimensioni e peso
      */
     public function createParcel(array $parcel): array
@@ -102,6 +125,8 @@ class ShippoService
     }
 
     /**
+     * @deprecated Shippo NON fa parte di CardSwap Shipping V1
+     * 
      * Crea uno shipment e calcola le tariffe
      */
     public function createShipment(array $payload, bool $async = false): array
@@ -111,8 +136,13 @@ class ShippoService
     }
 
     /**
+     * @deprecated Shippo NON fa parte di CardSwap Shipping V1
+     * 
      * Acquista un'etichetta di spedizione
      * Per Poste Italiane, usa PNG invece di PDF (PDF non supportato)
+     * 
+     * NOTA: CardSwap V1 NON richiede acquisto automatico di etichette Shippo.
+     * Le etichette vengono gestite manualmente dal venditore o tramite AfterShip.
      */
     public function buyLabel(string $rateObjectId, string $labelFileType = null): array
     {
@@ -130,7 +160,12 @@ class ShippoService
     }
 
     /**
+     * @deprecated Shippo NON fa parte di CardSwap Shipping V1
+     * 
      * Ottieni tracking di una spedizione
+     * 
+     * NOTA: CardSwap V1 usa ESCLUSIVAMENTE AfterShip per il tracking.
+     * Vedi TrackingController e AfterShip webhook.
      */
     public function getTracking(string $carrier, string $trackingNumber): array
     {
@@ -202,6 +237,8 @@ class ShippoService
     }
 
     /**
+     * @deprecated Shippo NON fa parte di CardSwap Shipping V1
+     * 
      * Lista carrier accounts
      */
     public function listCarrierAccounts(): array
@@ -226,7 +263,11 @@ class ShippoService
     }
 
     /**
+     * @deprecated Shippo NON fa parte di CardSwap Shipping V1
+     * 
      * Ottieni corrieri disponibili per un paese specifico
+     * 
+     * NOTA: CardSwap V1 usa shipping_price_tables per determinare i metodi disponibili.
      */
     public function getAvailableCarriers(string $destinationCountry): array
     {
@@ -277,7 +318,12 @@ class ShippoService
     }
 
     /**
+     * @deprecated Shippo NON fa parte di CardSwap Shipping V1
+     * 
      * Calcola tariffe usando Shippo per Poste Italiane e altri corrieri
+     * 
+     * NOTA: CardSwap V1 usa ESCLUSIVAMENTE shipping_price_tables per il pricing.
+     * Vedi CardSwapShippingController::calculateRates()
      */
     public function calculateShippoRates(array $fromAddress, array $toAddress, array $parcel, array $carrierAccounts = []): array
     {
@@ -425,800 +471,20 @@ class ShippoService
         return false;
     }
 
-    /**
-     * Calcola tariffe per un ordine multi-venditore
-     */
-    public function calculateRatesForOrder(array $sellers, array $shippingAddress): array
-    {
-        $results = [];
-        
-        // Gestisce sia array associativo (sellerId => sellerData) che array numerico ([seller])
-        foreach ($sellers as $sellerId => $sellerData) {
-            // Se è un array numerico, usa l'ID dal sellerData
-            if (is_numeric($sellerId) && isset($sellerData['id'])) {
-                $sellerId = $sellerData['id'];
-            }
-            
-            try {
-                Log::info('Preparing addresses for Shippo', [
-                    'seller_id' => $sellerId,
-                    'seller_address' => $sellerData['address'] ?? [],
-                    'shipping_address' => $shippingAddress
-                ]);
-
-                // Crea indirizzo mittente (venditore)
-                $fromAddressData = [
-                    'name' => $sellerData['name'] ?? 'Venditore',
-                    'street1' => $sellerData['address']['street1'] ?? '',
-                    'city' => $sellerData['address']['city'] ?? '',
-                    'state' => $sellerData['address']['state'] ?? '',
-                    'zip' => $sellerData['address']['zip'] ?? '',
-                    'country' => $sellerData['address']['country'] ?? 'IT',
-                ];
-                
-                // Aggiungi street2 solo se presente (apartment/suite/unit number)
-                if (!empty($sellerData['address']['street2'])) {
-                    $fromAddressData['street2'] = $sellerData['address']['street2'];
-                }
-                
-                // Aggiungi campi opzionali solo se presenti
-                if (!empty($sellerData['company'])) {
-                    $fromAddressData['company'] = $sellerData['company'];
-                }
-                if (!empty($sellerData['phone'])) {
-                    $fromAddressData['phone'] = $sellerData['phone'];
-                }
-                if (!empty($sellerData['email'])) {
-                    $fromAddressData['email'] = $sellerData['email'];
-                }
-                
-                $fromAddress = $this->createAddress($fromAddressData, true);
-                
-                Log::info('From address created', [
-                    'seller_id' => $sellerId,
-                    'address_object_id' => $fromAddress['object_id'] ?? 'N/A',
-                    'validation' => $fromAddress['validation_results'] ?? []
-                ]);
-
-                // Crea indirizzo destinatario
-                // IMPORTANTE: Gestisce sia formato standard (street1, zip, state) che formato DB (address_line_1, postal_code, state_province)
-                $toAddressData = [
-                    'name' => $shippingAddress['name'] 
-                        ?? (($shippingAddress['first_name'] ?? '') . ' ' . ($shippingAddress['last_name'] ?? ''))
-                        ?? 'Destinatario',
-                    'street1' => $shippingAddress['street1'] 
-                        ?? $shippingAddress['address_line_1'] 
-                        ?? $shippingAddress['address']
-                        ?? '',
-                    'city' => $shippingAddress['city'] ?? '',
-                    'state' => $shippingAddress['state'] 
-                        ?? $shippingAddress['state_province'] 
-                        ?? $shippingAddress['province']
-                        ?? '',
-                    'zip' => $shippingAddress['zip'] 
-                        ?? $shippingAddress['postal_code'] 
-                        ?? $shippingAddress['zip_code']
-                        ?? '',
-                    'country' => $shippingAddress['country'] ?? 'IT',
-                ];
-                
-                // Aggiungi street2 solo se presente (apartment/suite/unit number)
-                $street2 = $shippingAddress['street2'] 
-                    ?? $shippingAddress['address_line_2'] 
-                    ?? null;
-                if (!empty($street2)) {
-                    $toAddressData['street2'] = $street2;
-                }
-                
-                if (!empty($shippingAddress['phone'])) {
-                    $toAddressData['phone'] = $shippingAddress['phone'];
-                }
-                
-                $toAddress = $this->createAddress($toAddressData, true);
-                
-                Log::info('To address created', [
-                    'seller_id' => $sellerId,
-                    'address_object_id' => $toAddress['object_id'] ?? 'N/A',
-                    'validation' => $toAddress['validation_results'] ?? []
-                ]);
-
-                // Usa configurazione pacco dalla config
-                $parcelConfig = config('services.shippo.pricing.default_parcel');
-                $parcel = $this->createParcel([
-                    'length' => (string) $parcelConfig['length'],
-                    'width' => (string) $parcelConfig['width'],
-                    'height' => (string) $parcelConfig['height'],
-                    'distance_unit' => $parcelConfig['distance_unit'],
-                    'weight' => (string) $parcelConfig['weight'],
-                    'mass_unit' => $parcelConfig['mass_unit'],
-                ]);
-
-                // Crea shipment e calcola tariffe
-                // Shippo richiede il paese anche quando si usa object_id
-                // Shippo richiede anche mass_unit, weight e dimensioni quando si usa object_id del pacco
-                $parcelConfig = config('services.shippo.pricing.default_parcel');
-                $parcelPayload = [
-                    'object_id' => $parcel['object_id'],
-                    'mass_unit' => $parcelConfig['mass_unit'] ?? $parcel['mass_unit'] ?? 'kg',
-                    'weight' => $parcelConfig['weight'] ?? $parcel['weight'] ?? null,
-                    'length' => $parcelConfig['length'] ?? $parcel['length'] ?? null,
-                    'width' => $parcelConfig['width'] ?? $parcel['width'] ?? null,
-                    'height' => $parcelConfig['height'] ?? $parcel['height'] ?? null,
-                    'distance_unit' => $parcelConfig['distance_unit'] ?? $parcel['distance_unit'] ?? 'cm'
-                ];
-                
-                // Rimuovi campi null
-                foreach (['weight', 'length', 'width', 'height'] as $field) {
-                    if ($parcelPayload[$field] === null) {
-                        unset($parcelPayload[$field]);
-                    }
-                }
-                
-                // Determina i carrier accounts disponibili per questa rotta
-                $fromCountry = $sellerData['address']['country'] ?? $fromAddress['country'] ?? 'IT';
-                $toCountry = $shippingAddress['country'] ?? $toAddress['country'] ?? 'IT';
-                
-                // Cerca la ShippingZone appropriata per il venditore e la destinazione
-                $shippingZone = null;
-                try {
-                    $seller = User::find($sellerId);
-                    if ($seller) {
-                        // Trova la zona migliore per il paese di destinazione
-                        $shippingZone = ShippingZone::where('user_id', $sellerId)
-                            ->where('is_active', true)
-                            ->where(function($q) use ($toCountry) {
-                                $q->where('is_worldwide', true)
-                                  ->orWhereJsonContains('included_countries', $toCountry)
-                                  ->orWhere('country_code', $toCountry);
-                            })
-                            ->where(function($q) use ($toCountry) {
-                                $q->whereNull('excluded_countries')
-                                  ->orWhereJsonDoesntContain('excluded_countries', $toCountry);
-                            })
-                            ->orderBy('sort_order')
-                            ->first();
-                    }
-                } catch (\Exception $e) {
-                    Log::warning('Errore ricerca ShippingZone', [
-                        'seller_id' => $sellerId,
-                        'error' => $e->getMessage()
-                    ]);
-                }
-                
-                // Se c'è una ShippingZone con Shippo abilitato, usa quella configurazione
-                if ($shippingZone && $shippingZone->use_shippo_pricing) {
-                    Log::info('Using ShippingZone configuration for Shippo', [
-                        'seller_id' => $sellerId,
-                        'shipping_zone_id' => $shippingZone->id,
-                        'shipping_zone_name' => $shippingZone->name,
-                        'shippo_service_type' => $shippingZone->shippo_service_type,
-                        'shippo_markup' => $shippingZone->shippo_markup
-                    ]);
-                }
-                
-                // Determina i carrier accounts disponibili
-                $availableCarriers = $this->getAvailableCarriers($toCountry);
-                
-                // Recupera i carrier accounts reali da Shippo per validare gli object_id
-                $validCarrierAccountIds = [];
-                $shippoAccountMap = []; // Mappa object_id => carrier info
-                
-                try {
-                    $shippoCarrierAccounts = $this->listCarrierAccounts();
-                    $shippoAccountIds = [];
-                    if (isset($shippoCarrierAccounts['results'])) {
-                        foreach ($shippoCarrierAccounts['results'] as $account) {
-                            if (isset($account['object_id']) && ($account['active'] ?? false)) {
-                                $objectId = $account['object_id'];
-                                $shippoAccountIds[] = $objectId;
-                                // Normalizza l'object_id (rimuovi trattini per confronto)
-                                $normalizedId = str_replace('-', '', $objectId);
-                                $shippoAccountMap[$normalizedId] = [
-                                    'object_id' => $objectId,
-                                    'carrier' => $account['carrier'] ?? 'N/A',
-                                    'service' => $account['service'] ?? 'N/A',
-                                    'carrier_name' => $account['carrier'] ?? 'N/A',
-                                    'countries' => $account['countries'] ?? []
-                                ];
-                            }
-                        }
-                    }
-                    
-                    Log::info('Carrier accounts retrieved from Shippo', [
-                        'seller_id' => $sellerId,
-                        'total_accounts' => count($shippoAccountIds),
-                        'account_ids' => array_slice($shippoAccountIds, 0, 10), // Primi 10 per logging
-                        'carrier_details' => array_map(function($acc) {
-                            return [
-                                'object_id' => $acc['object_id'] ?? 'N/A',
-                                'carrier' => $acc['carrier'] ?? 'N/A',
-                                'service' => $acc['service'] ?? 'N/A',
-                                'countries' => $acc['countries'] ?? []
-                            ];
-                        }, array_slice($shippoCarrierAccounts['results'] ?? [], 0, 10))
-                    ]);
-                    
-                    // Per IT-IT, cerca carrier accounts che potrebbero supportare IT
-                    // Cerca carrier che contengono "poste", "italiane", "italy", "it" nel nome
-                    $potentialItCarrierIds = []; // Traccia gli ID dei carrier trovati automaticamente
-                    if ($fromCountry === 'IT' && $toCountry === 'IT') {
-                        foreach ($shippoCarrierAccounts['results'] ?? [] as $account) {
-                            if (isset($account['object_id']) && ($account['active'] ?? false)) {
-                                $carrierName = strtolower($account['carrier'] ?? '');
-                                $serviceName = strtolower($account['service'] ?? '');
-                                $combined = $carrierName . ' ' . $serviceName;
-                                
-                                // Cerca indicatori di carrier italiani o che supportano IT
-                                if (preg_match('/\b(poste|italiane|italy|italia|it\b)/i', $combined) ||
-                                    preg_match('/\b(chronopost|colissimo)\b/i', $combined)) {
-                                    $potentialItCarrierIds[] = $account['object_id'];
-                                    $potentialItCarriers[] = [
-                                        'object_id' => $account['object_id'],
-                                        'carrier' => $account['carrier'] ?? 'N/A',
-                                        'service' => $account['service'] ?? 'N/A'
-                                    ];
-                                }
-                            }
-                        }
-                        
-                        if (!empty($potentialItCarriers)) {
-                            Log::info('Potential IT-IT carrier accounts found in Shippo', [
-                                'seller_id' => $sellerId,
-                                'carriers' => $potentialItCarriers
-                            ]);
-                            
-                            // Aggiungi questi carrier accounts ai validi per IT-IT
-                            // NOTA: Non aggiungerli qui, verranno aggiunti nel loop successivo
-                            // quando verranno trovati nella config. Questo evita duplicati.
-                        }
-                    }
-                    
-                    // Estrai gli account IDs dei carrier disponibili e valida che siano object_id reali
-                    foreach ($availableCarriers as $carrierConfig) {
-                        if (isset($carrierConfig['account_id']) && ($carrierConfig['available'] ?? true)) {
-                            $accountId = $carrierConfig['account_id'];
-                            
-                            // Verifica che sia un object_id valido (UUID formato Shippo)
-                            // Gli object_id di Shippo sono UUID (32 caratteri esadecimali, con o senza trattini)
-                            // Formato con trattini: 12345678-1234-1234-1234-123456789012
-                            // Formato senza trattini: 12345678123412341234123456789012
-                            $isValidObjectId = preg_match('/^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i', $accountId) 
-                                || preg_match('/^[0-9a-f]{32}$/i', $accountId);
-                            
-                            // Se non è un UUID, salta (es. 'poste_italiane' che è solo un codice)
-                            if (!$isValidObjectId) {
-                                Log::warning('Skipping invalid carrier account_id', [
-                                    'carrier_code' => $carrierConfig['code'] ?? 'N/A',
-                                    'account_id' => $accountId,
-                                    'reason' => 'Not a valid UUID format'
-                                ]);
-                                continue;
-                            }
-                            
-                            // Normalizza l'account_id per confronto (rimuovi trattini)
-                            $normalizedAccountId = str_replace('-', '', $accountId);
-                            
-                            // Verifica che esista in Shippo confrontando anche versioni normalizzate
-                            $foundInShippo = false;
-                            $actualObjectId = $accountId;
-                            
-                            if (!empty($shippoAccountMap)) {
-                                if (isset($shippoAccountMap[$normalizedAccountId])) {
-                                    $foundInShippo = true;
-                                    $actualObjectId = $shippoAccountMap[$normalizedAccountId]['object_id'];
-                                    Log::info('Carrier account found in Shippo', [
-                                        'carrier_code' => $carrierConfig['code'] ?? 'N/A',
-                                        'config_account_id' => $accountId,
-                                        'shippo_object_id' => $actualObjectId,
-                                        'carrier' => $shippoAccountMap[$normalizedAccountId]['carrier'],
-                                        'service' => $shippoAccountMap[$normalizedAccountId]['service']
-                                    ]);
-                                } else {
-                                    // Prova anche a cercare nell'array originale (potrebbe avere formato diverso)
-                                    foreach ($shippoAccountIds as $shippoId) {
-                                        if (str_replace('-', '', $shippoId) === $normalizedAccountId) {
-                                            $foundInShippo = true;
-                                            $actualObjectId = $shippoId;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            // Se non trovato in Shippo ma è un UUID valido, usa comunque (potrebbe essere un account non ancora caricato)
-                            if (!empty($shippoAccountMap) && !$foundInShippo) {
-                                Log::warning('Carrier account not found in Shippo, but UUID format is valid', [
-                                    'carrier_code' => $carrierConfig['code'] ?? 'N/A',
-                                    'account_id' => $accountId,
-                                    'normalized_id' => $normalizedAccountId
-                                ]);
-                                // Continua comunque, potrebbe essere un account valido non ancora caricato
-                            }
-                            
-                            // Verifica se il carrier supporta la rotta specifica
-                            $supportsRoute = false;
-                            
-                            if ($fromCountry === 'IT' && $toCountry === 'IT') {
-                                // Spedizione domestica IT-IT
-                                // Per IT→IT, usiamo SOLO Poste Italiane (come indicato da Shippo Support)
-                                // Object ID Poste Italiane: a25aee94fb0f4e86ab160ecb29b55420
-                                $posteItalianeId = 'a25aee94fb0f4e86ab160ecb29b55420';
-                                $normalizedPosteId = str_replace('-', '', $posteItalianeId);
-                                $normalizedActualId = str_replace('-', '', $actualObjectId);
-                                
-                                if ($normalizedActualId === $normalizedPosteId || 
-                                    ($carrierConfig['domestic_only'] ?? false)) {
-                                    // Solo Poste Italiane per IT-IT
-                                    $supportsRoute = true;
-                                    Log::info('Including Poste Italiane for IT-IT route', [
-                                        'seller_id' => $sellerId,
-                                        'carrier_code' => $carrierConfig['code'] ?? 'N/A',
-                                        'account_id' => $actualObjectId
-                                    ]);
-                                } else {
-                                    // Escludi tutti gli altri carrier per IT-IT
-                                    Log::info('Skipping non-Poste Italiane carrier for IT-IT route', [
-                                        'seller_id' => $sellerId,
-                                        'carrier_code' => $carrierConfig['code'] ?? 'N/A',
-                                        'account_id' => $actualObjectId,
-                                        'reason' => 'Only Poste Italiane supports IT-IT shipments'
-                                    ]);
-                                }
-                            } elseif ($fromCountry === 'IT' && $toCountry !== 'IT') {
-                                // Spedizione internazionale dall'Italia (IT→US, IT→EU, ecc.)
-                                // Shippo NON ha carrier accounts preconfigurati per internazionali dall'Italia
-                                // Dobbiamo usare carrier accounts propri (DHL, UPS, FedEx) se configurati
-                                // Per ora, escludiamo i carrier Shippo che non supportano IT→esterno
-                                // (Chronopost, Colissimo, Deutsche Post, Correos, CouriersPlease non supportano IT→esterno)
-                                
-                                // Se il carrier è marcato come internazionale ma NON è uno dei carrier Shippo standard,
-                                // potrebbe essere un carrier account proprio connesso dall'utente
-                                $isShippoStandardCarrier = in_array($carrierConfig['code'] ?? '', [
-                                    'chronopost', 'colissimo', 'deutsche_post', 'correos', 'couriersplease'
-                                ]);
-                                
-                                if (!$isShippoStandardCarrier) {
-                                    // Potrebbe essere un carrier account proprio (DHL, UPS, FedEx, ecc.)
-                                    // Includilo se è disponibile
-                                    $supportsRoute = true;
-                                    Log::info('Including custom carrier account for IT→international route', [
-                                        'seller_id' => $sellerId,
-                                        'carrier_code' => $carrierConfig['code'] ?? 'N/A',
-                                        'account_id' => $actualObjectId,
-                                        'note' => 'Custom carrier account (may be DHL, UPS, FedEx, etc.)'
-                                    ]);
-                                } else {
-                                    // Escludi i carrier Shippo standard che non supportano IT→esterno
-                                    Log::info('Skipping Shippo standard carrier for IT→international route', [
-                                        'seller_id' => $sellerId,
-                                        'carrier_code' => $carrierConfig['code'] ?? 'N/A',
-                                        'account_id' => $actualObjectId,
-                                        'reason' => 'Shippo standard carriers do not support international shipments from Italy'
-                                    ]);
-                                }
-                            } else {
-                                // Altre rotte (non IT→IT, non IT→esterno)
-                                // Mantieni la logica originale
-                                $isAutoFoundItCarrier = in_array($actualObjectId, $potentialItCarrierIds ?? []);
-                                
-                                if (($carrierConfig['domestic_only'] ?? false)) {
-                                    // Carrier trovato automaticamente come potenziale IT-IT - includilo
-                                    $supportsRoute = true;
-                                    Log::info('Including auto-found IT-IT carrier (even if marked as international)', [
-                                        'carrier_code' => $carrierConfig['code'] ?? 'N/A',
-                                        'account_id' => $actualObjectId,
-                                        'carrier' => $shippoAccountMap[$normalizedAccountId]['carrier'] ?? 'N/A'
-                                    ]);
-                                } else {
-                                    // Carrier internazionale non trovato automaticamente - escludilo per IT-IT
-                                    $supportsRoute = false;
-                                    Log::info('Skipping international carrier for IT-IT route', [
-                                        'carrier_code' => $carrierConfig['code'] ?? 'N/A',
-                                        'account_id' => $actualObjectId,
-                                        'reason' => 'International carriers may not support domestic IT-IT shipments'
-                                    ]);
-                                }
-                            }
-                            
-                            if ($supportsRoute) {
-                                $validCarrierAccountIds[] = $actualObjectId;
-                                Log::info('Carrier account added for route', [
-                                    'carrier_code' => $carrierConfig['code'] ?? 'N/A',
-                                    'account_id' => $actualObjectId,
-                                    'from_country' => $fromCountry,
-                                    'to_country' => $toCountry,
-                                    'domestic_only' => $carrierConfig['domestic_only'] ?? false
-                                ]);
-                            }
-                        }
-                    }
-                } catch (\Exception $e) {
-                    Log::warning('Errore recupero carrier accounts da Shippo, uso quelli dalla config', [
-                        'error' => $e->getMessage(),
-                        'file' => $e->getFile(),
-                        'line' => $e->getLine(),
-                        'seller_id' => $sellerId
-                    ]);
-                    
-                    // Fallback: usa solo quelli che sembrano UUID validi
-                    foreach ($availableCarriers as $carrierConfig) {
-                        if (isset($carrierConfig['account_id']) && ($carrierConfig['available'] ?? true)) {
-                            $accountId = $carrierConfig['account_id'];
-                            // Accetta UUID con o senza trattini, o 32 caratteri esadecimali
-                            $isValidObjectId = preg_match('/^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i', $accountId) 
-                                || preg_match('/^[0-9a-f]{32}$/i', $accountId);
-                            
-                            if ($isValidObjectId) {
-                                if ($fromCountry === 'IT' && $toCountry === 'IT') {
-                                    // Per IT→IT, usa SOLO Poste Italiane
-                                    $posteItalianeId = 'a25aee94fb0f4e86ab160ecb29b55420';
-                                    $normalizedPosteId = str_replace('-', '', $posteItalianeId);
-                                    $normalizedAccountId = str_replace('-', '', $accountId);
-                                    
-                                    if ($normalizedAccountId === $normalizedPosteId || 
-                                        ($carrierConfig['domestic_only'] ?? false)) {
-                                        $validCarrierAccountIds[] = $accountId;
-                                    }
-                                } elseif ($fromCountry === 'IT' && $toCountry !== 'IT') {
-                                    // Per IT→esterno, escludi i carrier Shippo standard
-                                    // Includi solo carrier accounts propri (DHL, UPS, FedEx, ecc.) se configurati
-                                    $isShippoStandardCarrier = in_array($carrierConfig['code'] ?? '', [
-                                        'chronopost', 'colissimo', 'deutsche_post', 'correos', 'couriersplease'
-                                    ]);
-                                    
-                                    if (!$isShippoStandardCarrier) {
-                                        // Carrier account proprio - includilo
-                                        $validCarrierAccountIds[] = $accountId;
-                                    }
-                                } else {
-                                    // Altre rotte - logica originale
-                                    if (!($carrierConfig['domestic_only'] ?? false)) {
-                                        $validCarrierAccountIds[] = $accountId;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                $carrierAccountIds = $validCarrierAccountIds;
-                
-                Log::info('Final carrier account IDs to use', [
-                    'seller_id' => $sellerId,
-                    'total_valid_accounts' => count($carrierAccountIds),
-                    'account_ids' => $carrierAccountIds
-                ]);
-                
-                Log::info('Preparing Shippo shipment with carrier accounts', [
-                    'seller_id' => $sellerId,
-                    'from_country' => $fromCountry,
-                    'to_country' => $toCountry,
-                    'shipping_zone_id' => $shippingZone?->id,
-                    'shipping_zone_name' => $shippingZone?->name,
-                    'use_shippo_pricing' => $shippingZone?->use_shippo_pricing ?? false,
-                    'available_carriers' => array_keys($availableCarriers),
-                    'carrier_account_ids' => $carrierAccountIds
-                ]);
-                
-                // Prepara payload shipment con tutti i campi obbligatori degli indirizzi
-                // Shippo richiede: street1, city, zip, country (state opzionale per alcuni paesi)
-                // street2 opzionale (solo se c'è apartment/suite/unit number)
-                // Anche se abbiamo object_id, includiamo i dati completi per sicurezza
-                $shipmentPayload = [
-                    'address_from' => [
-                        'object_id' => $fromAddress['object_id'],
-                        'name' => $fromAddressData['name'] ?? $sellerData['name'] ?? 'Venditore',
-                        'street1' => $fromAddressData['street1'] ?? $sellerData['address']['street1'] ?? '',
-                        'city' => $fromAddressData['city'] ?? $sellerData['address']['city'] ?? '',
-                        'state' => $fromAddressData['state'] ?? $sellerData['address']['state'] ?? '',
-                        'zip' => $fromAddressData['zip'] ?? $sellerData['address']['zip'] ?? '',
-                        'country' => $fromCountry
-                    ],
-                    'address_to' => [
-                        'object_id' => $toAddress['object_id'],
-                        'name' => $toAddressData['name'] ?? $shippingAddress['name'] ?? 'Destinatario',
-                        'street1' => $toAddressData['street1'] ?? $shippingAddress['street1'] ?? '',
-                        'city' => $toAddressData['city'] ?? $shippingAddress['city'] ?? '',
-                        'state' => $toAddressData['state'] ?? $shippingAddress['state'] ?? '',
-                        'zip' => $toAddressData['zip'] ?? $shippingAddress['zip'] ?? '',
-                        'country' => $toCountry
-                    ],
-                    'parcels' => [$parcelPayload],
-                ];
-                
-                // Aggiungi street2 solo se presente (opzionale)
-                if (!empty($fromAddressData['street2'] ?? $sellerData['address']['street2'] ?? null)) {
-                    $shipmentPayload['address_from']['street2'] = $fromAddressData['street2'] ?? $sellerData['address']['street2'];
-                }
-                if (!empty($toAddressData['street2'] ?? $shippingAddress['street2'] ?? null)) {
-                    $shipmentPayload['address_to']['street2'] = $toAddressData['street2'] ?? $shippingAddress['street2'];
-                }
-                
-                // Rimuovi solo campi opzionali vuoti
-                // NON rimuovere mai: street1, city, zip, country (obbligatori per Shippo)
-                // Rimuovi solo state se vuoto (opzionale per alcuni paesi)
-                // Rimuovi name se vuoto (opzionale)
-                foreach (['address_from', 'address_to'] as $addrKey) {
-                    // Rimuovi state solo se vuoto (opzionale)
-                    if (empty($shipmentPayload[$addrKey]['state'])) {
-                        unset($shipmentPayload[$addrKey]['state']);
-                    }
-                    // Rimuovi name solo se vuoto (opzionale)
-                    if (empty($shipmentPayload[$addrKey]['name'])) {
-                        unset($shipmentPayload[$addrKey]['name']);
-                    }
-                    // I campi obbligatori (street1, city, zip, country) devono sempre essere presenti
-                    // Anche se vuoti, li lasciamo così Shippo può validarli e restituire errori chiari
-                }
-                
-                // Aggiungi carrier accounts solo se disponibili
-                // IMPORTANTE: Per spedizioni IT-IT, se non ci sono carrier accounts validi,
-                // NON specificare carrier_accounts e lascia che Shippo usi i suoi default
-                // Questo evita errori con carrier non supportati
-                if (!empty($carrierAccountIds)) {
-                    $shipmentPayload['carrier_accounts'] = $carrierAccountIds;
-                    Log::info('Using specific carrier accounts for shipment', [
-                        'seller_id' => $sellerId,
-                        'carrier_accounts' => $carrierAccountIds,
-                        'from_country' => $fromCountry,
-                        'to_country' => $toCountry
-                    ]);
-                } else {
-                    // Per IT-IT, se non ci sono carrier accounts validi, prova senza specificarli
-                    // Shippo userà i suoi default che potrebbero includere carrier per IT-IT
-                    if ($fromCountry === 'IT' && $toCountry === 'IT') {
-                        Log::warning('No valid carrier accounts for IT-IT route, Shippo will use default carriers', [
-                            'seller_id' => $sellerId,
-                            'from_country' => $fromCountry,
-                            'to_country' => $toCountry,
-                            'available_carriers_from_config' => array_keys($availableCarriers),
-                            'note' => 'Shippo default carriers may not support IT-IT, consider configuring a domestic Italian carrier'
-                        ]);
-                    } else {
-                        Log::warning('No valid carrier accounts found, Shippo will use default carriers', [
-                            'seller_id' => $sellerId,
-                            'from_country' => $fromCountry,
-                            'to_country' => $toCountry,
-                            'available_carriers_from_config' => array_keys($availableCarriers)
-                        ]);
-                    }
-                    // Non aggiungere carrier_accounts - Shippo userà i suoi default
-                }
-                
-                // Logging dettagliato del payload completo per debug IT-IT
-                Log::info('Creating Shippo shipment for rate calculation', [
-                    'seller_id' => $sellerId,
-                    'from_country' => $fromCountry,
-                    'to_country' => $toCountry,
-                    'from_city' => $sellerData['address']['city'] ?? 'N/A',
-                    'to_city' => $shippingAddress['city'] ?? 'N/A',
-                    'from_zip' => $sellerData['address']['zip'] ?? 'N/A',
-                    'to_zip' => $shippingAddress['zip'] ?? 'N/A',
-                    'parcel_weight' => $parcelConfig['weight'] ?? 'N/A',
-                    'carrier_accounts_count' => count($carrierAccountIds)
-                ]);
-                
-                // Logging completo del payload per verifica formato dati
-                Log::info('Shippo shipment payload (complete)', [
-                    'seller_id' => $sellerId,
-                    'payload' => $shipmentPayload,
-                    'address_from_details' => [
-                        'object_id' => $fromAddress['object_id'] ?? 'N/A',
-                        'country' => $fromCountry,
-                        'city' => $sellerData['address']['city'] ?? 'N/A',
-                        'zip' => $sellerData['address']['zip'] ?? 'N/A',
-                        'state' => $sellerData['address']['state'] ?? 'N/A',
-                        'street1' => $sellerData['address']['street1'] ?? 'N/A'
-                    ],
-                    'address_to_details' => [
-                        'object_id' => $toAddress['object_id'] ?? 'N/A',
-                        'country' => $toCountry,
-                        'city' => $shippingAddress['city'] ?? 'N/A',
-                        'zip' => $shippingAddress['zip'] ?? 'N/A',
-                        'state' => $shippingAddress['state'] ?? 'N/A',
-                        'street1' => $shippingAddress['street1'] ?? 'N/A'
-                    ],
-                    'parcel_details' => [
-                        'weight' => $parcelConfig['weight'] ?? 'N/A',
-                        'mass_unit' => $parcelConfig['mass_unit'] ?? 'N/A',
-                        'length' => $parcelConfig['length'] ?? 'N/A',
-                        'width' => $parcelConfig['width'] ?? 'N/A',
-                        'height' => $parcelConfig['height'] ?? 'N/A',
-                        'distance_unit' => $parcelConfig['distance_unit'] ?? 'N/A'
-                    ],
-                    'carrier_accounts' => $carrierAccountIds
-                ]);
-                
-                $shipment = $this->createShipment($shipmentPayload, false);
-
-                // Logging delle rates GREZZE prima di qualsiasi filtro
-                $rawRatesFromShippo = $shipment['rates'] ?? [];
-                Log::info('Shippo shipment created - RAW RATES (before any filtering)', [
-                    'seller_id' => $sellerId,
-                    'shipment_id' => $shipment['object_id'] ?? 'N/A',
-                    'shipment_status' => $shipment['status'] ?? 'N/A',
-                    'rates_count' => count($rawRatesFromShippo),
-                    'raw_rates' => $rawRatesFromShippo,
-                    'raw_rates_details' => array_map(function($rate) {
-                        return [
-                            'object_id' => $rate['object_id'] ?? 'N/A',
-                            'provider' => $rate['provider'] ?? 'N/A',
-                            'servicelevel' => $rate['servicelevel']['name'] ?? 'N/A',
-                            'amount' => $rate['amount'] ?? 'N/A',
-                            'currency' => $rate['currency'] ?? 'N/A',
-                            'estimated_days' => $rate['estimated_days'] ?? 'N/A',
-                            'carrier_account' => $rate['carrier_account'] ?? 'N/A'
-                        ];
-                    }, $rawRatesFromShippo),
-                    'shipment_messages' => $shipment['messages'] ?? [],
-                    'shipment_metadata' => [
-                        'object_created' => $shipment['object_created'] ?? 'N/A',
-                        'object_updated' => $shipment['object_updated'] ?? 'N/A',
-                        'status' => $shipment['status'] ?? 'N/A'
-                    ]
-                ]);
-
-                Log::info('Shippo shipment created', [
-                    'seller_id' => $sellerId,
-                    'shipment_id' => $shipment['object_id'] ?? 'N/A',
-                    'rates_count' => count($rawRatesFromShippo),
-                    'rates' => $rawRatesFromShippo
-                ]);
-
-                // Applica markup e categorizza tariffe
-                // Se c'è una ShippingZone, usa il suo markup e filtra per service_type
-                $rawRates = $rawRatesFromShippo;
-                
-                // Filtra per tipo di servizio se specificato nella ShippingZone
-                // IMPORTANTE: Se dopo il filtro non ci sono rates, usa tutte le rates disponibili
-                // Questo evita di perdere rates valide quando la categorizzazione non corrisponde perfettamente
-                if ($shippingZone && $shippingZone->use_shippo_pricing && $shippingZone->shippo_service_type) {
-                    $filteredRates = array_filter($rawRates, function($rate) use ($shippingZone) {
-                        $serviceType = $this->categorizeService($rate['servicelevel']['name'] ?? '');
-                        return $serviceType === $shippingZone->shippo_service_type;
-                    });
-                    
-                    // Se il filtro ha prodotto almeno una rate, usala
-                    // Altrimenti usa tutte le rates disponibili (fallback)
-                    if (!empty($filteredRates)) {
-                        $rawRates = $filteredRates;
-                    } else {
-                        // Nessuna rate corrisponde al filtro, usa tutte le rates disponibili
-                        Log::warning('No rates match shippo_service_type filter, using all available rates', [
-                            'seller_id' => $sellerId,
-                            'shipping_zone_id' => $shippingZone->id,
-                            'requested_service_type' => $shippingZone->shippo_service_type,
-                            'available_rates' => array_map(function($rate) {
-                                return [
-                                    'service_name' => $rate['servicelevel']['name'] ?? 'N/A',
-                                    'categorized_as' => $this->categorizeService($rate['servicelevel']['name'] ?? '')
-                                ];
-                            }, $rawRates)
-                        ]);
-                    }
-                }
-                
-                // Processa le tariffe con markup (usa quello della ShippingZone se disponibile)
-                $markup = $shippingZone && $shippingZone->use_shippo_pricing 
-                    ? ($shippingZone->shippo_markup ?? 1.60) 
-                    : (config('services.shippo.pricing.markup') ?? 1.60);
-                $managementFee = config('services.shippo.pricing.management_fee') ?? 0.90;
-                
-                $processedRates = [];
-                foreach ($rawRates as $rate) {
-                    $originalAmount = floatval($rate['amount']);
-                    $amountWithMarkup = $originalAmount + $markup + $managementFee;
-
-                    $serviceType = $this->categorizeService($rate['servicelevel']['name'] ?? '');
-                    
-                    $processedRates[] = [
-                        'object_id' => $rate['object_id'],
-                        'carrier' => $rate['provider'],
-                        'service_name' => $rate['servicelevel']['name'],
-                        'service_type' => $serviceType,
-                        'original_amount' => $originalAmount,
-                        'amount' => $amountWithMarkup,
-                        'currency' => $rate['currency'],
-                        'estimated_days' => $rate['estimated_days'] ?? null,
-                        'tracking' => $rate['tracking'] ?? false,
-                        'insurance' => $rate['insurance'] ?? false,
-                        'breakdown' => [
-                            'shippo_rate' => $originalAmount,
-                            'markup' => $markup,
-                            'management_fee' => $managementFee,
-                            'total' => $amountWithMarkup
-                        ]
-                    ];
-                }
-
-                // Ordina per prezzo
-                usort($processedRates, function($a, $b) {
-                    return $a['amount'] <=> $b['amount'];
-                });
-                
-                $rates = $processedRates;
-
-                Log::info('Rates processed', [
-                    'seller_id' => $sellerId,
-                    'shipping_zone_id' => $shippingZone?->id,
-                    'shippo_service_type_filter' => $shippingZone?->shippo_service_type,
-                    'markup_used' => $markup,
-                    'raw_rates_count' => count($shipment['rates'] ?? []),
-                    'filtered_rates_count' => count($rawRates),
-                    'processed_rates_count' => count($rates),
-                    'rates' => $rates
-                ]);
-
-                if (empty($rates)) {
-                    $errorMessage = 'Nessuna tariffa disponibile per questa destinazione';
-                    $shipmentMessages = $shipment['messages'] ?? [];
-                    
-                    // Filtra e formatta i messaggi di errore
-                    $filteredMessages = [];
-                    foreach ($shipmentMessages as $message) {
-                        $text = $message['text'] ?? '';
-                        // Ignora errori di carrier non disponibili (es. DHL Express da fuori USA)
-                        if (stripos($text, "doesn't support shipments from outside") === false && 
-                            stripos($text, "master account doesn't support") === false) {
-                            $filteredMessages[] = $text;
-                        }
-                    }
-                    
-                    // Se ci sono messaggi rilevanti, aggiungili
-                    if (!empty($filteredMessages)) {
-                        $errorMessage .= ': ' . implode(', ', array_unique($filteredMessages));
-                    } else {
-                        // Messaggio generico se non ci sono messaggi rilevanti
-                        $errorMessage .= '. Verifica che il codice postale sia corretto e che ci siano corrieri disponibili per questa destinazione.';
-                    }
-                    
-                    Log::warning('No rates available for shipment', [
-                        'seller_id' => $sellerId,
-                        'shipment_id' => $shipment['object_id'] ?? 'N/A',
-                        'from_country' => $fromCountry ?? 'N/A',
-                        'to_country' => $toCountry ?? 'N/A',
-                        'from_city' => $sellerData['address']['city'] ?? 'N/A',
-                        'to_city' => $shippingAddress['city'] ?? 'N/A',
-                        'from_zip' => $sellerData['address']['zip'] ?? 'N/A',
-                        'to_zip' => $shippingAddress['zip'] ?? 'N/A',
-                        'shipment_status' => $shipment['status'] ?? 'N/A',
-                        'shipment_messages' => $shipmentMessages,
-                        'filtered_messages' => $filteredMessages,
-                        'shipment_rates' => $shipment['rates'] ?? [],
-                        'carrier_accounts_used' => $carrierAccountIds ?? []
-                    ]);
-                    
-                    $results[$sellerId] = [
-                        'error' => $errorMessage,
-                        'seller' => $sellerData,
-                        'shipment_id' => $shipment['object_id'] ?? null,
-                    ];
-                } else {
-                $results[$sellerId] = [
-                    'seller' => $sellerData,
-                    'shipment_id' => $shipment['object_id'],
-                    'rates' => $rates,
-                    'from_address' => $fromAddress,
-                    'to_address' => $toAddress,
-                    'parcel' => $parcel,
-                ];
-                }
-
-            } catch (\Exception $e) {
-                Log::error('Errore calcolo tariffe venditore', [
-                    'seller_id' => $sellerId,
-                    'error' => $e->getMessage()
-                ]);
-                
-                $results[$sellerId] = [
-                    'error' => 'Impossibile calcolare tariffe per questo venditore',
-                    'seller' => $sellerData,
-                ];
-            }
-        }
-
-        return $results;
-    }
+    // ============================================
+    // METODO LEGACY PRICING RIMOSSO
+    // ============================================
+    // calculateRatesForOrder() - RIMOSSO definitivamente
+    // 
+    // Usa invece POST /api/shipping/v1/calculate-rates per CardSwap Shipping V1.
+    // 
+    // NOTA: Shippo viene ancora usato per la creazione di etichette (purchaseLabel),
+    // ma NON più per il calcolo dei prezzi durante il checkout.
+    // ============================================
+    // 
+    // Il metodo originale (circa 800 righe) è stato rimosso.
+    // Se necessario per recovery/legacy, consultare git history.
+    // ============================================
 
     /**
      * Processa e categorizza le tariffe con markup
@@ -1287,7 +553,12 @@ class ShippoService
     }
 
     /**
+     * @deprecated Shippo NON fa parte di CardSwap Shipping V1
+     * 
      * Acquista etichetta per un ordine
+     * 
+     * NOTA: CardSwap V1 NON richiede acquisto automatico di etichette Shippo.
+     * Le etichette vengono gestite manualmente dal venditore o tramite AfterShip.
      */
     public function purchaseLabelForOrder(string $rateObjectId, array $orderData): array
     {

@@ -43,8 +43,37 @@ return [
         'identity_enabled' => env('STRIPE_IDENTITY_ENABLED', false),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | AfterShip Tracking (CardSwap V1 - unica fonte tracking)
+    |--------------------------------------------------------------------------
+    | API: https://api.aftership.com/tracking/2026-01
+    | Header: as-api-key
+    | Webhook: verifica header aftership-hmac-sha256 con AFTERSHIP_WEBHOOK_SECRET
+    */
+    'aftership' => [
+        'api_key' => env('AFTERSHIP_API_KEY'),
+        'webhook_secret' => env('AFTERSHIP_WEBHOOK_SECRET'),
+        'api_version' => '2026-01',
+        'base_url' => 'https://api.aftership.com',
+    ],
+
+    // ============================================
+    // SHIPPO CONFIG - DEPRECATED
+    // ============================================
+    // ⚠️ ATTENZIONE: Shippo è DEPRECATO e NON fa parte di CardSwap Shipping V1.
+    // 
+    // Shippo NON viene più utilizzato per:
+    // - Pricing (usa CardSwap Shipping V1: shipping_price_tables)
+    // - Checkout (usa POST /api/shipping/v1/calculate-rates)
+    // - Tracking (usa AfterShip)
+    // - Post-ordine (usa AfterShip webhook)
+    // 
+    // Questa configurazione è mantenuta solo per compatibilità legacy.
+    // Le variabili SHIPPO_* in .env sono LEGACY e NON richieste per CardSwap V1.
+    // ============================================
     'shippo' => [
-        'key' => env('SHIPPO_API_KEY'),
+        'key' => env('SHIPPO_API_KEY'), // LEGACY - NON richiesto per CardSwap V1
         'sender' => [
             'name' => env('SHIPPO_SENDER_NAME', 'CardSwap Marketplace'),
             'company' => env('SHIPPO_SENDER_COMPANY', 'CardSwap'),

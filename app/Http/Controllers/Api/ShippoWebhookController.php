@@ -11,6 +11,16 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
+/**
+ * @deprecated ShippoWebhookController è DEPRECATO e NON fa parte di CardSwap Shipping V1.
+ * 
+ * Shippo NON viene più utilizzato per il tracking.
+ * CardSwap V1 usa ESCLUSIVAMENTE AfterShip per il tracking (vedi AfterShip webhook).
+ * 
+ * Questo webhook è DISABILITATO e ritorna errore esplicito.
+ * 
+ * Messaggio standard: "Shippo is deprecated and not used by CardSwap Shipping V1"
+ */
 class ShippoWebhookController extends Controller
 {
     private ShippoService $shippoService;
@@ -21,9 +31,40 @@ class ShippoWebhookController extends Controller
     }
 
     /**
+     * @deprecated Shippo webhook DISABILITATO - CardSwap V1 usa AfterShip
+     * 
      * Gestisce i webhook di Shippo per il tracking
+     * 
+     * NOTA: Questo webhook è DISABILITATO perché CardSwap V1 usa ESCLUSIVAMENTE AfterShip.
+     * Vedi AfterShip webhook per il tracking.
      */
     public function handleWebhook(Request $request): JsonResponse
+    {
+        Log::error('Shippo webhook called - Shippo is deprecated and not used by CardSwap Shipping V1', [
+            'payload' => $request->all(),
+            'headers' => $request->headers->all(),
+            'note' => 'CardSwap V1 uses AfterShip exclusively for tracking. This webhook is disabled.'
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Shippo is deprecated and not used by CardSwap Shipping V1. CardSwap V1 uses AfterShip exclusively for tracking.',
+            'error' => 'DEPRECATED_SERVICE'
+        ], 410); // 410 Gone - servizio non più disponibile
+    }
+
+    // ============================================
+    // METODI PRIVATI LEGACY - DISABILITATI
+    // ============================================
+    // Il codice originale è stato commentato perché Shippo è deprecato.
+    // CardSwap V1 usa ESCLUSIVAMENTE AfterShip per il tracking.
+    // 
+    // Tutti i metodi privati seguenti sono DISABILITATI e NON vengono eseguiti.
+    // ============================================
+    
+    /*
+    // CODICE ORIGINALE DISABILITATO - NON ESEGUITO
+    private function handleWebhookOriginal(Request $request): JsonResponse
     {
         try {
             // Log del payload per audit
@@ -89,9 +130,8 @@ class ShippoWebhookController extends Controller
         }
     }
 
-    /**
-     * Gestisce l'evento "transaction.updated"
-     */
+    // CODICE ORIGINALE DISABILITATO - NON ESEGUITO
+    /*
     private function handleTransactionUpdated(array $transactionData): void
     {
         $trackingNumber = $transactionData['tracking_number'] ?? null;
@@ -495,4 +535,5 @@ class ShippoWebhookController extends Controller
             'release_at' => now()->addHours(72)
         ]);
     }
+    */
 }

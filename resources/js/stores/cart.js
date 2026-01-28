@@ -6,7 +6,15 @@ import { normalizePrice } from '../utils/priceFormatter'
 export const useCartStore = defineStore('cart', () => {
   // Stato del carrello: oggetto con seller_id come chiave
   const cartItems = ref({})
-  const selectedShippingZones = ref({}) // seller_id -> shipping_zone_id
+  // ============================================
+  // LEGACY: selectedShippingZones - DEPRECATED
+  // ============================================
+  // Questo campo era usato per il sistema legacy basato su shipping_zones.
+  // NON usare più - ora usiamo CardSwap Shipping V1 (shipping_selections).
+  // Mantenuto temporaneamente per backward compatibility.
+  // TODO: Rimuovere quando non più referenziato.
+  // ============================================
+  const selectedShippingZones = ref({}) // DEPRECATED - non più usato per pricing
   const selectedAddress = ref(null)
 
   // Computed per ottenere tutti gli articoli del carrello
@@ -29,7 +37,9 @@ export const useCartStore = defineStore('cart', () => {
         const quantity = parseInt(item.quantity) || 1
         return sum + (price * quantity)
       }, 0)
-      const shippingCost = getShippingCostForSeller(sellerId)
+      // Shipping cost viene calcolato da CardSwap Shipping V1 nel checkout
+      // Non più da shipping_zones
+      const shippingCost = 0 // Calcolato nel checkout tramite CardSwap V1
       
       return {
         id: sellerId,
@@ -247,21 +257,18 @@ export const useCartStore = defineStore('cart', () => {
     saveToLocalStorage()
   }
 
-  // Ottiene il costo di spedizione per un venditore
+  // ============================================
+  // LEGACY: getShippingCostForSeller - DEPRECATED
+  // ============================================
+  // Questo metodo usa shipping_zones per il calcolo del costo.
+  // NON usare più - ora usiamo CardSwap Shipping V1.
+  // Mantenuto temporaneamente per backward compatibility.
+  // TODO: Rimuovere quando non più referenziato.
+  // ============================================
   const getShippingCostForSeller = (sellerId) => {
-    const sellerIdStr = sellerId.toString()
-    const shippingZoneId = selectedShippingZones.value[sellerIdStr]
-    
-    if (!shippingZoneId) return 0
-
-    const sellerItems = cartItems.value[sellerIdStr]
-    if (!sellerItems || sellerItems.length === 0) return 0
-
-    // Prendi la prima inserzione per ottenere le zone di spedizione
-    const firstItem = sellerItems[0]
-    const shippingZone = firstItem.shippingZones?.find(zone => zone.id === shippingZoneId)
-    
-    return shippingZone?.pivot?.shipping_cost || shippingZone?.shipping_cost || 0
+    console.warn('DEPRECATED: getShippingCostForSeller() - Usa CardSwap Shipping V1 invece')
+    // Ritorna 0 - il costo viene calcolato da CardSwap Shipping V1
+    return 0
   }
 
   // Verifica se un articolo è nel carrello
@@ -310,12 +317,8 @@ export const useCartStore = defineStore('cart', () => {
       errors.push('Il carrello è vuoto')
     }
 
-    // Verifica che ogni venditore abbia una zona di spedizione selezionata
-    Object.keys(cartItems.value).forEach(sellerId => {
-      if (!selectedShippingZones.value[sellerId]) {
-        errors.push(`Seleziona un metodo di spedizione per il venditore ${sellerId}`)
-      }
-    })
+    // NOTA: Validazione shipping_zones rimossa - ora usiamo CardSwap Shipping V1
+    // La validazione delle spedizioni viene fatta nel checkout tramite shipping_selections
 
     // Verifica che sia selezionato un indirizzo
     if (!selectedAddress.value) {
@@ -341,7 +344,7 @@ export const useCartStore = defineStore('cart', () => {
         sellers: sellers.value,
         grandTotal: grandTotal.value,
         selectedAddress: selectedAddress.value,
-        selectedShippingZones: selectedShippingZones.value
+        // selectedShippingZones rimosso - ora usiamo CardSwap Shipping V1
       }
     }
   }

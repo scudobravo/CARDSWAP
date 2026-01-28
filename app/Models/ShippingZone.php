@@ -17,11 +17,20 @@ class ShippingZone extends Model
         'region',
         'city',
         'postal_code',
-        'shipping_cost',
-        'base_cost',
-        'cost_per_kg',
-        'cost_per_euro',
-        'free_shipping_threshold',
+        // ============================================
+        // LEGACY PRICING – NOT USED BY CHECKOUT – REMOVAL PLANNED
+        // ============================================
+        // I seguenti campi legacy pricing sono stati rimossi dal fillable:
+        // - shipping_cost, base_cost, cost_per_kg, cost_per_euro
+        // - free_shipping_threshold, use_shippo_pricing, shippo_markup
+        // 
+        // Le shipping_zones ora sono SOLO per struttura geografica (raggruppamento paesi).
+        // Il pricing viene calcolato ESCLUSIVAMENTE da CardSwap Shipping V1:
+        // - shipping_price_tables, shipping_price_table_rates, shipping_price_table_insured
+        // - POST /api/shipping/v1/calculate-rates
+        // 
+        // La rimozione fisica delle colonne DB sarà una fase successiva.
+        // ============================================
         'max_weight_kg',
         'max_value_euro',
         'requires_seller_approval',
@@ -36,10 +45,8 @@ class ShippingZone extends Model
         'excluded_countries',
         'included_regions',
         'excluded_regions',
-        'use_shippo_pricing',
         'shippo_carrier',
         'shippo_service_type',
-        'shippo_markup',
         'shippo_require_insurance',
         'is_worldwide',
         'description',
@@ -47,11 +54,7 @@ class ShippingZone extends Model
     ];
 
     protected $casts = [
-        'shipping_cost' => 'decimal:2',
-        'base_cost' => 'decimal:2',
-        'cost_per_kg' => 'decimal:2',
-        'cost_per_euro' => 'decimal:2',
-        'free_shipping_threshold' => 'decimal:2',
+        // Campi strutturali/geografici (mantenuti)
         'max_weight_kg' => 'decimal:2',
         'max_value_euro' => 'decimal:2',
         'requires_seller_approval' => 'boolean',
@@ -65,11 +68,23 @@ class ShippingZone extends Model
         'excluded_countries' => 'array',
         'included_regions' => 'array',
         'excluded_regions' => 'array',
-        'use_shippo_pricing' => 'boolean',
-        'shippo_markup' => 'decimal:2',
         'shippo_require_insurance' => 'boolean',
         'is_worldwide' => 'boolean',
         'sort_order' => 'integer'
+        // ============================================
+        // LEGACY PRICING – NOT USED BY CHECKOUT – REMOVAL PLANNED
+        // ============================================
+        // I seguenti campi legacy pricing sono stati rimossi dal fillable:
+        // - shipping_cost, base_cost, cost_per_kg, cost_per_euro
+        // - free_shipping_threshold, use_shippo_pricing, shippo_markup
+        // 
+        // Le shipping_zones ora sono SOLO per struttura geografica (raggruppamento paesi).
+        // Il pricing viene calcolato ESCLUSIVAMENTE da CardSwap Shipping V1:
+        // - shipping_price_tables, shipping_price_table_rates, shipping_price_table_insured
+        // - POST /api/shipping/v1/calculate-rates
+        // 
+        // La rimozione fisica delle colonne DB sarà una fase successiva.
+        // ============================================
     ];
 
     /**
@@ -105,45 +120,12 @@ class ShippingZone extends Model
         return $query->where('user_id', $userId);
     }
 
-    /**
-     * Calcola il costo di spedizione basato sul valore dell'ordine e peso
-     */
-    public function calculateShippingCost($orderValue = 0, $weight = 0)
-    {
-        // Se c'è una soglia di spedizione gratuita e l'ordine la supera
-        if ($this->free_shipping_threshold && $orderValue >= $this->free_shipping_threshold) {
-            return 0;
-        }
-
-        // Verifica limiti massimi
-        if ($this->max_weight_kg && $weight > $this->max_weight_kg) {
-            throw new \Exception("Peso massimo superato per questa zona di spedizione");
-        }
-
-        if ($this->max_value_euro && $orderValue > $this->max_value_euro) {
-            throw new \Exception("Valore massimo superato per questa zona di spedizione");
-        }
-
-        // Calcola costo basato su peso e valore
-        $cost = $this->base_cost;
-        
-        // Aggiungi costo per peso (in kg)
-        if ($this->cost_per_kg > 0 && $weight > 0) {
-            $cost += $weight * $this->cost_per_kg;
-        }
-        
-        // Aggiungi costo per valore (in euro)
-        if ($this->cost_per_euro > 0 && $orderValue > 0) {
-            $cost += $orderValue * $this->cost_per_euro;
-        }
-
-        // Se non ci sono costi dinamici, usa il costo fisso
-        if ($cost == $this->base_cost && $this->shipping_cost > 0) {
-            $cost = $this->shipping_cost;
-        }
-
-        return max(0, $cost);
-    }
+    // ============================================
+    // METODI LEGACY PRICING RIMOSSI
+    // ============================================
+    // calculateShippingCost() - RIMOSSO definitivamente
+    // Usa invece CardSwap Shipping V1 (ShippingPriceTable) per il calcolo dei prezzi.
+    // ============================================
 
     /**
      * Verifica se la zona supporta un indirizzo specifico
@@ -328,100 +310,13 @@ class ShippingZone extends Model
         return [];
     }
 
-    /**
-     * Calcola il costo di spedizione usando SHIPPO se abilitato
-     */
-    public function calculateShippingCostWithShippo($orderValue = 0, $weight = 0, $destinationCountry = null)
-    {
-        // Se SHIPPO è abilitato e abbiamo un paese di destinazione
-        if ($this->use_shippo_pricing && $destinationCountry) {
-            try {
-                $shippoService = app(\App\Services\ShippoService::class);
-                
-                // Crea indirizzo mittente (CardSwap)
-                $fromAddress = config('services.shippo.sender');
-                
-                // Crea indirizzo destinatario (usa un indirizzo generico per il calcolo)
-                $toAddress = [
-                    'country' => $destinationCountry,
-                    'city' => 'City',
-                    'state' => 'State',
-                    'zip' => '00000',
-                    'street1' => 'Street 1',
-                    'name' => 'Recipient'
-                ];
-
-                // Crea pacco
-                $parcel = [
-                    'length' => '22',
-                    'width' => '15', 
-                    'height' => '3',
-                    'distance_unit' => 'cm',
-                    'weight' => max(0.1, $weight), // Minimo 100g
-                    'mass_unit' => 'kg',
-                ];
-
-                // Crea shipment
-                $shipment = $shippoService->createShipment([
-                    'address_from' => $fromAddress,
-                    'address_to' => $toAddress,
-                    'parcels' => [$parcel],
-                ], false);
-
-                if (isset($shipment['rates']) && !empty($shipment['rates'])) {
-                    // Filtra per tipo di servizio se specificato
-                    $rates = $shipment['rates'];
-                    if ($this->shippo_service_type) {
-                        $rates = array_filter($rates, function($rate) {
-                            $serviceType = $this->categorizeShippoService($rate['servicelevel']['name']);
-                            return $serviceType === $this->shippo_service_type;
-                        });
-                    }
-
-                    if (!empty($rates)) {
-                        // Prendi la tariffa più economica
-                        $cheapestRate = min($rates, function($a, $b) {
-                            return $a['amount'] <=> $b['amount'];
-                        });
-
-                        $originalAmount = floatval($cheapestRate['amount']);
-                        $amountWithMarkup = $originalAmount + $this->shippo_markup;
-
-                        return max(0, $amountWithMarkup);
-                    }
-                }
-            } catch (\Exception $e) {
-                \Log::error('Errore calcolo SHIPPO per zona ' . $this->id, [
-                    'error' => $e->getMessage(),
-                    'destination_country' => $destinationCountry
-                ]);
-            }
-        }
-
-        // Fallback al calcolo tradizionale
-        return $this->calculateShippingCost($orderValue, $weight);
-    }
-
-    /**
-     * Categorizza il servizio SHIPPO
-     */
-    private function categorizeShippoService(string $serviceName): string
-    {
-        $serviceName = strtolower($serviceName);
-        
-        if (strpos($serviceName, 'express') !== false || 
-            strpos($serviceName, 'priority') !== false ||
-            strpos($serviceName, 'overnight') !== false) {
-            return 'express';
-        }
-        
-        if (strpos($serviceName, 'insured') !== false ||
-            strpos($serviceName, 'signature') !== false) {
-            return 'insured';
-        }
-        
-        return 'standard';
-    }
+    // ============================================
+    // METODI LEGACY PRICING RIMOSSI
+    // ============================================
+    // calculateShippingCostWithShippo() - RIMOSSO definitivamente
+    // categorizeShippoService() - RIMOSSO definitivamente
+    // Usa invece CardSwap Shipping V1 (ShippingPriceTable) per il calcolo dei prezzi.
+    // ============================================
 
     /**
      * Scope per zone ordinate

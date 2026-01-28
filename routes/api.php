@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\KycController;
 use App\Http\Controllers\Api\StripeConnectController;
 use App\Http\Controllers\Api\StripeWebhookController;
+use App\Http\Controllers\Api\AfterShipWebhookController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\CardController;
 use App\Http\Controllers\Api\AvailabilityController;
@@ -33,6 +34,8 @@ use App\Http\Controllers\Api\FeedbackController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\ShippingZoneController;
+use App\Http\Controllers\Api\Seller\ShippingPriceTableController;
+use App\Http\Controllers\Api\Shipping\CardSwapShippingController;
 
 // Grading Companies
 Route::get('/grading-companies', function () {
@@ -51,10 +54,12 @@ Route::get('/grading-companies', function () {
     }
 });
 
-// Shipping Zones - API pubbliche per calcolo prezzi (non richiedono autenticazione)
-Route::post('/shipping-zones/calculate-price', [ShippingZoneController::class, 'calculatePrice']);
-Route::post('/shipping-zones/calculate-multiple-prices', [ShippingZoneController::class, 'calculateMultiplePrices']);
-Route::post('/shipping-zones/calculate-country-prices', [ShippingZoneController::class, 'calculateCountryPrices']);
+// Shipping Zones - API pubbliche (NON più per calcolo prezzi - legacy pricing rimosso)
+// NOTA: Endpoint pricing legacy rimossi:
+// - /shipping-zones/calculate-price - RIMOSSO
+// - /shipping-zones/calculate-multiple-prices - RIMOSSO
+// - /shipping-zones/calculate-country-prices - RIMOSSO
+// Usa invece POST /api/shipping/v1/calculate-rates per CardSwap Shipping V1.
 Route::post('/shipping-zones/check-country-support', [ShippingZoneController::class, 'checkCountrySupport']);
 Route::get('/shipping-zones/available-carriers', [ShippingZoneController::class, 'getAvailableCarriers']);
 
@@ -608,6 +613,11 @@ Route::middleware('auth:sanctum')->group(function () {
 // Rotte webhook Stripe (non protette)
 Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
 
+// Webhook AfterShip Tracking (CardSwap V1 - unica fonte aggiornamenti tracking)
+// URL da configurare in AfterShip: POST /api/webhooks/aftership
+// Verifica firma: header aftership-hmac-sha256 con AFTERSHIP_WEBHOOK_SECRET
+Route::post('/webhooks/aftership', [AfterShipWebhookController::class, 'handle']);
+
 // Rotte webhook test (solo in sviluppo)
 if (config('app.env') === 'local') {
     Route::post('/stripe/webhook/test', [StripeWebhookController::class, 'test']);
@@ -650,19 +660,103 @@ Route::middleware('auth:sanctum')->prefix('user')->group(function () {
 });
 
 
-// Shippo shipping routes
+// ============================================
+// SHIPPO ROUTES - DEPRECATE
+// ============================================
+// ⚠️ ATTENZIONE: Shippo è DEPRECATO e NON fa parte di CardSwap Shipping V1.
+// 
+// Shippo NON viene più utilizzato per:
+// - Pricing (usa CardSwap Shipping V1: POST /api/shipping/v1/calculate-rates)
+// - Checkout (usa PaymentController con shipping_selections)
+// - Tracking (usa AfterShip - vedi TrackingController)
+// - Post-ordine (usa AfterShip webhook)
+// 
+// Tutti gli endpoint Shippo sono deprecati e NON fanno parte del flusso CardSwap V1.
+// 
+// Messaggio standard: "Shippo is deprecated and not used by CardSwap Shipping V1"
+// ============================================
+
+// Shippo endpoints (DEPRECATI - NON usati da CardSwap V1)
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/shipping/calculate-rates', [App\Http\Controllers\Api\ShippoController::class, 'calculateRates']);
-    Route::post('/shipping/purchase-label', [App\Http\Controllers\Api\ShippoController::class, 'purchaseLabel']);
-    Route::get('/shipping/tracking', [App\Http\Controllers\Api\ShippoController::class, 'getTracking']);
-    Route::post('/shipping/validate-address', [App\Http\Controllers\Api\ShippoController::class, 'validateAddress']);
-    Route::post('/shipping/schedule-pickup', [App\Http\Controllers\Api\ShippoController::class, 'schedulePickup']);
-    Route::post('/shipping/refund-label', [App\Http\Controllers\Api\ShippoController::class, 'refundLabel']);
-    Route::get('/shipping/carrier-accounts', [App\Http\Controllers\Api\ShippoController::class, 'getCarrierAccounts']);
+    Route::post('/shipping/purchase-label', [App\Http\Controllers\Api\ShippoController::class, 'purchaseLabel'])
+        ->middleware(function ($request, $next) {
+            \Illuminate\Support\Facades\Log::warning('Shippo endpoint called - Shippo is deprecated and not used by CardSwap Shipping V1', [
+                'endpoint' => '/shipping/purchase-label',
+                'note' => 'CardSwap V1 does not require automatic Shippo label purchase'
+            ]);
+            return $next($request);
+        });
+    
+    Route::get('/shipping/tracking', [App\Http\Controllers\Api\ShippoController::class, 'getTracking'])
+        ->middleware(function ($request, $next) {
+            \Illuminate\Support\Facades\Log::warning('Shippo endpoint called - Shippo is deprecated and not used by CardSwap Shipping V1', [
+                'endpoint' => '/shipping/tracking',
+                'note' => 'CardSwap V1 uses AfterShip exclusively for tracking'
+            ]);
+            return $next($request);
+        });
+    
+    Route::post('/shipping/validate-address', [App\Http\Controllers\Api\ShippoController::class, 'validateAddress'])
+        ->middleware(function ($request, $next) {
+            \Illuminate\Support\Facades\Log::warning('Shippo endpoint called - Shippo is deprecated and not used by CardSwap Shipping V1', [
+                'endpoint' => '/shipping/validate-address'
+            ]);
+            return $next($request);
+        });
+    
+    Route::post('/shipping/schedule-pickup', [App\Http\Controllers\Api\ShippoController::class, 'schedulePickup'])
+        ->middleware(function ($request, $next) {
+            \Illuminate\Support\Facades\Log::warning('Shippo endpoint called - Shippo is deprecated and not used by CardSwap Shipping V1', [
+                'endpoint' => '/shipping/schedule-pickup'
+            ]);
+            return $next($request);
+        });
+    
+    Route::post('/shipping/refund-label', [App\Http\Controllers\Api\ShippoController::class, 'refundLabel'])
+        ->middleware(function ($request, $next) {
+            \Illuminate\Support\Facades\Log::warning('Shippo endpoint called - Shippo is deprecated and not used by CardSwap Shipping V1', [
+                'endpoint' => '/shipping/refund-label'
+            ]);
+            return $next($request);
+        });
+    
+    Route::get('/shipping/carrier-accounts', [App\Http\Controllers\Api\ShippoController::class, 'getCarrierAccounts'])
+        ->middleware(function ($request, $next) {
+            \Illuminate\Support\Facades\Log::warning('Shippo endpoint called - Shippo is deprecated and not used by CardSwap Shipping V1', [
+                'endpoint' => '/shipping/carrier-accounts',
+                'note' => 'CardSwap V1 uses shipping_price_tables to determine available methods'
+            ]);
+            return $next($request);
+        });
 });
 
-// Shippo webhook (no auth required)
-Route::post('/webhooks/shippo', [App\Http\Controllers\Api\ShippoWebhookController::class, 'handleWebhook']);
+// Shippo webhook (DISABILITATO - CardSwap V1 usa AfterShip)
+Route::post('/webhooks/shippo', [App\Http\Controllers\Api\ShippoWebhookController::class, 'handleWebhook'])
+    ->middleware(function ($request, $next) {
+        \Illuminate\Support\Facades\Log::error('Shippo webhook called - Shippo is deprecated and not used by CardSwap Shipping V1', [
+            'endpoint' => '/webhooks/shippo',
+            'note' => 'CardSwap V1 uses AfterShip webhook exclusively for tracking'
+        ]);
+        return $next($request);
+    });
 
 // Contact form (no auth required)
 Route::post('/contact', [App\Http\Controllers\Api\ContactController::class, 'sendMessage']);
+
+// ============================================
+// CardSwap Spedizioni V1 - Nuovo Sistema Pricing
+// ============================================
+
+// Calcolo tariffe per checkout (pubblico, ma può essere protetto se necessario)
+Route::post('/shipping/v1/calculate-rates', [CardSwapShippingController::class, 'calculateRates']);
+
+// Gestione tabelle prezzi venditore (protette, solo seller autenticati)
+Route::middleware('auth:sanctum')->prefix('seller/shipping/price-tables')->group(function () {
+    Route::get('/', [ShippingPriceTableController::class, 'index']);
+    Route::post('/', [ShippingPriceTableController::class, 'store']);
+    Route::put('/{id}', [ShippingPriceTableController::class, 'update']);
+    Route::delete('/{id}', [ShippingPriceTableController::class, 'destroy']);
+    Route::post('/{id}/countries', [ShippingPriceTableController::class, 'addCountries']);
+    Route::post('/{id}/rates', [ShippingPriceTableController::class, 'saveRates']);
+    Route::post('/{id}/insured', [ShippingPriceTableController::class, 'configureInsurance']);
+});

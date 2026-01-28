@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Services\AfterShipService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -507,6 +508,7 @@ class OrderController extends Controller
             $validator = Validator::make($request->all(), [
                 'status' => 'required|string|in:pending,pending_payment,paid_funds_held,label_created,in_transit_verified,delivered_pending_72h,dispute_hold,completed,confirmed,shipped,delivered,cancelled,refunded',
                 'tracking_number' => 'nullable|string|max:255',
+                'carrier_code' => 'nullable|string|max:100',
                 'notes' => 'nullable|string|max:1000'
             ]);
 
@@ -525,6 +527,9 @@ class OrderController extends Controller
             if ($request->input('tracking_number')) {
                 $updateData['tracking_number'] = $request->input('tracking_number');
             }
+            if ($request->filled('carrier_code')) {
+                $updateData['carrier_code'] = $request->input('carrier_code');
+            }
 
             if ($request->input('notes')) {
                 $updateData['notes'] = $request->input('notes');
@@ -541,6 +546,12 @@ class OrderController extends Controller
             }
 
             $order->update($updateData);
+
+            // Registra il tracking su AfterShip quando il venditore inserisce il numero (CardSwap V1 - unica fonte tracking)
+            if ($request->input('tracking_number')) {
+                $slug = $request->input('carrier_code') ?: $order->carrier_code;
+                app(AfterShipService::class)->createTracking($order, $request->input('tracking_number'), $slug ?: null);
+            }
 
             // Invia notifica all'acquirente
             $this->sendOrderStatusNotification($order, $request->input('status'));
