@@ -629,14 +629,13 @@ onMounted(async () => {
   loadRecentListings()
 })
 
-  // Computed per trovare inserzioni senza Stripe Connect
-  const listingsWithoutStripeComputed = computed(() => {
-  if (!recentListings.value || stripeConnectConfigured.value) {
-    return []
-  }
-  // Restituisce tutte le inserzioni attive/draft che non possono essere pubblicate
-  return recentListings.value.filter(listing => 
-    listing.status === 'draft' || listing.status === 'active'
-  )
-})
+  // Computed per trovare inserzioni senza Stripe Connect (usato nel template come listingsWithoutStripe)
+  const listingsWithoutStripe = computed(() => {
+    if (!recentListings.value || stripeConnectConfigured.value) {
+      return []
+    }
+    return recentListings.value.filter(listing =>
+      listing.status === 'draft' || listing.status === 'active'
+    )
+  })
 </script>
