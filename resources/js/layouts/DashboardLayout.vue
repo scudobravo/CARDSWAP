@@ -48,10 +48,16 @@
           <div class="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
             <!-- Campo ricerca rimosso -->
             <div class="flex items-center gap-x-4 lg:gap-x-6 ml-auto">
-              <button type="button" class="-m-2.5 p-2.5 text-gray-400 hover:text-gray-500">
-                <span class="sr-only">View notifications</span>
+              <router-link to="/notifications" class="relative -m-2.5 p-2.5 text-gray-400 hover:text-gray-500">
+                <span class="sr-only">Notifiche</span>
                 <BellIcon class="size-6" aria-hidden="true" />
-              </button>
+                <span
+                  v-if="unreadCount > 0"
+                  class="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white"
+                >
+                  {{ unreadCount > 99 ? '99+' : unreadCount }}
+                </span>
+              </router-link>
 
               <!-- Separator -->
               <div class="hidden lg:block lg:h-6 lg:w-px lg:bg-gray-200" aria-hidden="true" />
@@ -110,6 +116,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 import {
   Dialog,
@@ -134,13 +141,14 @@ const authStore = useAuthStore()
 
 const user = computed(() => authStore.user)
 const sidebarOpen = ref(false)
+const unreadCount = ref(0)
 
 const userNavigation = [
   { name: 'Il tuo profilo', href: '/account/profile' },
   { name: 'Logout', action: 'logout' },
 ]
 
-// Carica dati utente se necessario
+// Carica dati utente e conteggio notifiche
 onMounted(async () => {
   try {
     // Se c'è un token ma non c'è l'utente, caricalo
@@ -152,6 +160,16 @@ onMounted(async () => {
     if (!authStore.isAuthenticated) {
       router.push('/login')
       return
+    }
+
+    // Conteggio notifiche non lette (FASE D3)
+    try {
+      const { data } = await axios.get('/api/notifications/unread-count')
+      if (data.success && data.unread_count != null) {
+        unreadCount.value = data.unread_count
+      }
+    } catch (_) {
+      unreadCount.value = 0
     }
   } catch (error) {
     console.error('Errore nel caricamento utente:', error)

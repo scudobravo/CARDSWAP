@@ -10,6 +10,9 @@ class ShippingPriceTableInsured extends Model
 {
     use HasFactory;
 
+    /** @var string Nome tabella (singolare, non plurale Eloquent) */
+    protected $table = 'shipping_price_table_insured';
+
     protected $fillable = [
         'shipping_price_table_id',
         'package_bucket',

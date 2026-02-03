@@ -59,7 +59,7 @@
           </ul>
         </li>
 
-        <!-- Il mio Account -->
+        <!-- Il mio Account (Zone di Spedizione RIMOSSA – CardSwap V1: usa Prezzi spedizioni in Vendite) -->
         <li>
           <div class="text-xs/6 font-futura-bold text-gray-400 uppercase tracking-wider">Il mio Account</div>
           <ul role="list" class="-mx-2 mt-2 space-y-1">
@@ -106,21 +106,6 @@
                   'size-6 shrink-0'
                 ]" aria-hidden="true" />
                 Sicurezza
-              </router-link>
-            </li>
-            <li>
-              <router-link 
-                to="/profile/shipping-zones" 
-                :class="[
-                  $route.path === '/profile/shipping-zones' ? 'bg-gray-50 text-primary' : 'text-gray-700 hover:bg-gray-50 hover:text-primary',
-                  'group flex gap-x-3 rounded-md p-2 text-sm/6 font-gill-sans-semibold'
-                ]"
-              >
-                <TruckIcon :class="[
-                  $route.path === '/profile/shipping-zones' ? 'text-primary' : 'text-gray-400 group-hover:text-primary',
-                  'size-6 shrink-0'
-                ]" aria-hidden="true" />
-                Zone di Spedizione
               </router-link>
             </li>
             <li>
@@ -254,7 +239,22 @@
             </li>
             <li>
               <router-link 
-                to="/sales/statistics" 
+                to="/seller/shipping/prices" 
+                :class="[
+                  $route.path === '/seller/shipping/prices' ? 'bg-gray-50 text-primary' : 'text-gray-700 hover:bg-gray-50 hover:text-primary',
+                  'group flex gap-x-3 rounded-md p-2 text-sm/6 font-gill-sans-semibold'
+                ]"
+              >
+                <TruckIcon :class="[
+                  $route.path === '/seller/shipping/prices' ? 'text-primary' : 'text-gray-400 group-hover:text-primary',
+                  'size-6 shrink-0'
+                ]"                 aria-hidden="true" />
+                Prezzi spedizione
+              </router-link>
+            </li>
+            <li>
+              <router-link 
+                to="/sales/statistics"
                 :class="[
                   $route.path === '/sales/statistics' ? 'bg-gray-50 text-primary' : 'text-gray-700 hover:bg-gray-50 hover:text-primary',
                   'group flex gap-x-3 rounded-md p-2 text-sm/6 font-gill-sans-semibold'
