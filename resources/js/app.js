@@ -53,8 +53,7 @@ import KycPage from './views/KycPage.vue';
 // Import Stripe Connect Views
 import StripeReturn from './views/StripeReturn.vue';
 
-// Import Profile Views
-import ShippingZonesPage from './views/profile/ShippingZonesPage.vue';
+// Import Profile Views (ShippingZonesPage rimosso – redirect a Prezzi spedizioni)
 
 // Import Contact View
 import Contact from './views/Contact.vue';
@@ -91,9 +90,11 @@ const routes = [
     { path: '/categories/:category/:subcategory', component: SubcategoryPage, name: 'subcategory' },
     { path: '/product/:id', component: ProductDetail, name: 'product.detail' },
     { path: '/dashboard', component: Dashboard, name: 'dashboard' },
+    { path: '/notifications', component: () => import('./views/NotificationsPage.vue'), name: 'notifications' },
     { path: '/cart', component: Cart, name: 'cart' },
     { path: '/checkout', component: Checkout, name: 'checkout' },
     { path: '/orders', component: Orders, name: 'orders' },
+    { path: '/purchases/orders/:orderId', component: () => import('./views/buyer/BuyerOrderDetails.vue'), name: 'buyer.order.details' },
     { path: '/order-confirmation/:id', component: OrderConfirmation, name: 'order-confirmation' },
     { path: '/chat', component: () => import('./views/Chat.vue'), name: 'chat' },
     
@@ -103,8 +104,8 @@ const routes = [
     { path: '/account/payment-methods', component: AccountPaymentMethods, name: 'account.payment-methods' },
     { path: '/account/security', component: AccountSecurity, name: 'account.security' },
     
-    // Profile Routes
-    { path: '/profile/shipping-zones', component: ShippingZonesPage, name: 'profile.shipping-zones' },
+    // Profile Routes – Zone di Spedizione rimossa (CardSwap V1: usa Prezzi spedizioni)
+    { path: '/profile/shipping-zones', redirect: '/seller/shipping/prices', name: 'profile.shipping-zones' },
     
     // Purchases Routes
     { path: '/purchases/orders', component: PurchasesOrders, name: 'purchases.orders' },
@@ -146,6 +147,11 @@ const routes = [
 
     // Seller public page
     { path: '/seller/:id', component: SellerPage, name: 'seller.page' },
+
+    // CardSwap Shipping V1 – Prezzi spedizioni venditore
+    { path: '/seller/shipping/prices', component: () => import('./views/seller/SellerShippingPricesPage.vue'), name: 'seller.shipping.prices' },
+    // CardSwap Shipping V1 – Dettaglio ordine venditore (FASE D1)
+    { path: '/seller/orders/:orderId', component: () => import('./views/seller/SellerOrderDetails.vue'), name: 'seller.order.details' },
     
     // Listing detail route with category, listing ID and slug (SEO-friendly and unique)
     { path: '/:category/:listingId/:slug', component: ProductDetail, name: 'listing.detail' },
