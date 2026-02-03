@@ -1,0 +1,64 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\User;
+use App\Models\UserNotification;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+
+/**
+ * CardSwap Shipping V1 – FASE D3.
+ * Servizio notifiche: crea record in-app e invia email (triggerate solo da eventi backend).
+ * Nessuna logica di business: i messaggi sono definiti dai listener/eventi.
+ */
+class NotificationService
+{
+    /** Invia notifica a un utente (DB + email se abilitata). */
+    public function send(User $user, string $type, array $data): UserNotification
+    {
+        $title = $data['title'] ?? $type;
+        $message = $data['message'] ?? $data['body'] ?? '';
+        $actionUrl = $data['action_url'] ?? null;
+        $actionText = $data['action_text'] ?? null;
+        $sendEmail = $data['send_email'] ?? true;
+
+        $notification = UserNotification::create([
+            'user_id' => $user->id,
+            'type' => $type,
+            'title' => $title,
+            'message' => $message,
+            'data' => $data['data'] ?? null,
+            'action_url' => $actionUrl,
+            'action_text' => $actionText,
+        ]);
+
+        if ($sendEmail && $user->email) {
+            $this->sendEmail($user, $title, $message, $actionUrl, $data);
+        }
+
+        return $notification;
+    }
+
+    protected function sendEmail(User $user, string $title, string $message, ?string $actionUrl, array $data): void
+    {
+        try {
+            Mail::send('emails.shipping-notification', [
+                'user' => $user,
+                'title' => $title,
+                'message' => $message,
+                'action_url' => $actionUrl,
+                'order_number' => $data['order_number'] ?? null,
+            ], function ($m) use ($user, $title) {
+                $m->to($user->email, $user->name)
+                    ->subject($title . ' - CardSwap');
+            });
+        } catch (\Throwable $e) {
+            Log::warning('NotificationService: invio email fallito', [
+                'user_id' => $user->id,
+                'type' => $data['type'] ?? null,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+}

@@ -230,12 +230,12 @@
 
               <!-- Pulsanti Azione -->
               <div class="flex flex-wrap gap-2">
-                <button 
-                  @click="viewOrderDetails(order)"
-                  class="px-3 py-1.5 text-sm font-gill-sans-semibold text-primary bg-primary-light border border-primary rounded-md hover:bg-primary hover:text-white focus:outline-none focus:ring-2 focus:ring-primary whitespace-nowrap"
+                <router-link
+                  :to="{ name: 'seller.order.details', params: { orderId: order.id } }"
+                  class="px-3 py-1.5 text-sm font-gill-sans-semibold text-primary bg-primary-light border border-primary rounded-md hover:bg-primary hover:text-white focus:outline-none focus:ring-2 focus:ring-primary whitespace-nowrap inline-block"
                 >
                   Dettagli
-                </button>
+                </router-link>
                 
                 <!-- Pulsante Crea Etichetta Shippo (solo per ordini confermati/paid_funds_held senza tracking) -->
                 <button 

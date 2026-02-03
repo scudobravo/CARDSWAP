@@ -14,10 +14,13 @@ class Kernel extends ConsoleKernel
     {
         // Promemoria spedizione ogni ora
         $schedule->command('orders:send-shipment-reminders --hours=24')->hourly();
-        
+
+        // FASE D3: notifiche reminder venditore (untracked 5° giorno, tracked 6° giorno)
+        $schedule->job(new \App\Jobs\SendShipmentReminderNotifications())->dailyAt('09:00');
+
         // Controllo etichette non usate (timeout anti-frode) ogni giorno
         $schedule->job(new \App\Jobs\CheckUnusedLabels())->daily();
-        
+
         // Controllo payout schedulati ogni ora (fallback per job dispatchati con delay)
         $schedule->job(new \App\Jobs\ProcessScheduledPayouts())->hourly();
     }

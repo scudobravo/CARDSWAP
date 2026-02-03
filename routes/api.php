@@ -1,9 +1,6 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\UserAddressController;
 use App\Http\Controllers\Api\OrderController;
@@ -35,24 +32,14 @@ use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\ShippingZoneController;
 use App\Http\Controllers\Api\Seller\ShippingPriceTableController;
+use App\Http\Controllers\Api\Seller\SellerOrderController;
 use App\Http\Controllers\Api\Shipping\CardSwapShippingController;
+use App\Http\Controllers\Api\UserNotificationController;
+use App\Http\Controllers\Api\MiscController;
+use App\Http\Controllers\Api\DebugController;
 
-// Grading Companies
-Route::get('/grading-companies', function () {
-    try {
-        $companies = DB::table('grading_companies')
-            ->select('id', 'name')
-            ->orderBy('name')
-            ->get();
-            
-        return response()->json($companies);
-    } catch (\Exception $e) {
-        return response()->json([
-            'error' => 'Errore nel caricamento grading companies',
-            'message' => $e->getMessage()
-        ], 500);
-    }
-});
+// Grading Companies (controller per consentire route:cache)
+Route::get('/grading-companies', [MiscController::class, 'gradingCompanies']);
 
 // Shipping Zones - API pubbliche (NON più per calcolo prezzi - legacy pricing rimosso)
 // NOTA: Endpoint pricing legacy rimossi:
@@ -71,160 +58,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/shipping-zones/{id}', [ShippingZoneController::class, 'destroy']);
 });
 
-// Shipping Zones - Zone dell'utente autenticato (legacy)
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/user/shipping-zones', function (Request $request) {
-        try {
-            $zones = DB::table('shipping_zones')
-                ->select('id', 'name', 'country_code', 'shipping_cost', 'delivery_days_min', 'delivery_days_max', 'is_active')
-                ->where('user_id', $request->user()->id)
-                ->orderBy('name')
-                ->get()
-                ->map(function ($zone) {
-                    // Aggiungi una descrizione basata sui dati della zona
-                    $zone->description = "Spedizione in {$zone->country_code} - €{$zone->shipping_cost}";
-                    return $zone;
-                });
-                
-            return response()->json($zones);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Errore nel caricamento zone di spedizione',
-                'message' => $e->getMessage()
-            ], 500);
-        }
-    });
-});
+// Shipping Zones - Zone dell'utente autenticato (legacy, controller per route:cache)
+Route::middleware('auth:sanctum')->get('/user/shipping-zones', [MiscController::class, 'userShippingZones']);
 
 // Check if shipping zones exist for authenticated user
-Route::get('/shipping-zones/check', function (Request $request) {
-    try {
-        $user = $request->user();
-        if (!$user) {
-            return response()->json([
-                'has_zones' => false,
-                'zones_count' => 0,
-                'error' => 'User not authenticated'
-            ], 401);
-        }
-        
-        // Controlla sia le zone personali dell'utente che le zone globali
-        $personalZonesCount = DB::table('shipping_zones')
-            ->where('user_id', $user->id)
-            ->where('is_active', true)
-            ->count();
-            
-        $globalZonesCount = DB::table('shipping_zones')
-            ->whereNull('user_id')
-            ->where('is_active', true)
-            ->count();
-            
-        $zonesCount = $personalZonesCount + $globalZonesCount;
-            
-        \Illuminate\Support\Facades\Log::info('Shipping zones check', [
-            'user_id' => $user->id,
-            'personal_zones_count' => $personalZonesCount,
-            'global_zones_count' => $globalZonesCount,
-            'total_zones_count' => $zonesCount,
-            'has_zones' => $zonesCount > 0
-        ]);
-            
-        return response()->json([
-            'has_zones' => $zonesCount > 0,
-            'zones_count' => $zonesCount
-        ]);
-    } catch (\Exception $e) {
-        \Illuminate\Support\Facades\Log::error('Shipping zones check error', [
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
-        
-        return response()->json([
-            'has_zones' => false,
-            'zones_count' => 0,
-            'error' => $e->getMessage()
-        ]);
-    }
-})->middleware('auth:sanctum');
+Route::get('/shipping-zones/check', [MiscController::class, 'shippingZonesCheck'])->middleware('auth:sanctum');
 
-// Debug routes (senza autenticazione per test)
-Route::get('/debug-tokens', function () {
-    $users = DB::table('users')
-        ->select('id', 'name', 'email', 'remember_token', 'api_token', 'kyc_status')
-        ->get();
-        
-    return response()->json([
-        'users' => $users,
-        'message' => 'Usa uno di questi token con /api/debug-auth?token=TOKEN'
-    ]);
-});
-
-Route::get('/debug-auth', function (Request $request) {
-    $token = $request->query('token');
-    
-    if (!$token) {
-        return response()->json([
-            'error' => 'Token mancante',
-            'message' => 'Aggiungi ?token=YOUR_TOKEN alla URL'
-        ], 400);
-    }
-    
-    try {
-        // Verifica token
-        $user = DB::table('users')
-            ->where('remember_token', $token)
-            ->orWhere('api_token', $token)
-            ->first();
-            
-        if (!$user) {
-            return response()->json([
-                'error' => 'Token non valido',
-                'message' => 'Il token fornito non è valido'
-            ], 401);
-        }
-        
-        // Carica dati utente
-        $userData = [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'kyc_status' => $user->kyc_status,
-            'created_at' => $user->created_at
-        ];
-        
-        // Carica statistiche
-        $stats = [
-            'orders' => [
-                'total' => DB::table('orders')->where('buyer_id', $user->id)->orWhere('seller_id', $user->id)->count(),
-                'as_buyer' => DB::table('orders')->where('buyer_id', $user->id)->count(),
-                'as_seller' => DB::table('orders')->where('seller_id', $user->id)->count(),
-            ],
-            'listings' => [
-                'total' => DB::table('card_listings')->where('seller_id', $user->id)->count(),
-                'active' => DB::table('card_listings')->where('seller_id', $user->id)->where('status', 'active')->count(),
-            ],
-            'wishlist' => [
-                'total_items' => DB::table('wishlists')->where('user_id', $user->id)->count(),
-            ],
-            'notifications' => [
-                'unread' => DB::table('user_notifications')->where('user_id', $user->id)->whereNull('read_at')->count(),
-            ]
-        ];
-        
-        return response()->json([
-            'success' => true,
-            'user' => $userData,
-            'stats' => $stats,
-            'message' => 'Debug completato con successo'
-        ]);
-        
-    } catch (\Exception $e) {
-        return response()->json([
-            'error' => 'Errore interno',
-            'message' => $e->getMessage()
-        ], 500);
-    }
-});
+// Debug routes (controller per consentire route:cache)
+Route::get('/debug-tokens', [DebugController::class, 'debugTokens']);
+Route::get('/debug-auth', [DebugController::class, 'debugAuth']);
 
 /*
 |--------------------------------------------------------------------------
@@ -237,9 +79,7 @@ Route::get('/debug-auth', function (Request $request) {
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
+Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'user']);
 
 // Rotte pubbliche
 Route::post('/auth/register', [AuthController::class, 'register']);
@@ -490,6 +330,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/notification-preferences', [UserController::class, 'updateNotificationPreferences']);
     });
 
+    // Notifiche in-app (FASE D3)
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [UserNotificationController::class, 'index']);
+        Route::get('/unread-count', [UserNotificationController::class, 'unreadCount']);
+        Route::post('/read-all', [UserNotificationController::class, 'markAllAsRead']);
+        Route::post('/{id}/read', [UserNotificationController::class, 'markAsRead']);
+    });
+
     // Rotte per indirizzi utente
     Route::prefix('addresses')->group(function () {
         Route::get('/', [UserAddressController::class, 'index']);
@@ -543,6 +391,13 @@ Route::middleware('auth:sanctum')->group(function () {
         // Tracking
         Route::get('/{id}/tracking', [TrackingController::class, 'history']);
         Route::post('/{id}/tracking/events', [TrackingController::class, 'addEvent']);
+    });
+
+    // CardSwap Shipping V1 – Dettaglio ordine venditore (FASE D1)
+    Route::prefix('seller/orders')->group(function () {
+        Route::get('/{orderId}', [SellerOrderController::class, 'show']);
+        Route::post('/{orderId}/tracking', [SellerOrderController::class, 'addTracking']);
+        Route::post('/{orderId}/mark-shipped', [SellerOrderController::class, 'markShipped']);
     });
 
     // Rotte per statistiche vendite

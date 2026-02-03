@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helpers\ShippingAuditLog;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -61,7 +62,8 @@ class OrderController extends Controller
                 ->with([
                     'orderItems.cardListing.cardModel',
                     'orderItems.cardListing.seller',
-                    'seller'
+                    'seller',
+                    'orderShippings'
                 ])
                 ->find($id);
 
@@ -115,9 +117,14 @@ class OrderController extends Controller
                 'user_id' => $user->id
             ]);
 
+            $orderArray = $order->toArray();
+            $orderArray['shipment_status'] = $this->deriveShipmentStatusForBuyer($order);
+            $orderArray['insurance_fee'] = (float) $order->orderShippings->sum('insurance_fee');
+            $orderArray['is_tracked'] = !empty($order->tracking_number);
+
             return response()->json([
                 'success' => true,
-                'order' => $order,
+                'order' => $orderArray,
                 'order_items' => $orderItems,
                 'message' => 'Ordine recuperato con successo'
             ]);
@@ -138,6 +145,35 @@ class OrderController extends Controller
                 'error' => config('app.debug') ? $e->getMessage() : 'Si è verificato un errore'
             ], 500);
         }
+    }
+
+    /**
+     * Stato spedizione per UI buyer (CardSwap Shipping V1 FASE D2)
+     */
+    private function deriveShipmentStatusForBuyer(Order $order): string
+    {
+        if (in_array($order->status, ['cancelled'], true)) {
+            return 'CANCELLED';
+        }
+        if (in_array($order->status, ['refunded'], true)) {
+            return 'REFUNDED';
+        }
+        if ($order->has_dispute || $order->status === 'dispute_hold') {
+            return 'DISPUTED';
+        }
+        if (in_array($order->status, ['completed'], true) && $order->payout_status === 'paid') {
+            return 'RELEASED';
+        }
+        if (in_array($order->status, ['delivered_pending_72h', 'delivered'], true)) {
+            return 'DELIVERED_HOLD_72H';
+        }
+        if (in_array($order->status, ['shipped', 'in_transit_verified', 'label_created'], true)) {
+            return 'SHIPPED_IN_TRANSIT';
+        }
+        if (in_array($order->status, ['paid_funds_held', 'confirmed', 'pending_payment', 'pending'], true)) {
+            return 'PAID_WAITING_SHIPMENT';
+        }
+        return 'PAID_WAITING_SHIPMENT';
     }
 
     /**
@@ -294,6 +330,8 @@ class OrderController extends Controller
                     'paid_at' => now()
                 ]);
 
+                event(new \App\Events\OrderPaid($order->fresh(['seller', 'buyer'])));
+
                 Log::info('Order updated to paid_funds_held from frontend confirmPayment', [
                     'order_id' => $order->id,
                     'order_number' => $order->order_number
@@ -384,66 +422,74 @@ class OrderController extends Controller
                     ], 404);
                 }
 
-                // Valida che l'ordine sia in uno stato valido per aprire dispute
-                // Solo ordini consegnati e in attesa di rilascio fondi (72h)
+                // D5: dispute vietata se ordine = RELEASED (payout già pagato)
                 if ($order->status !== 'delivered_pending_72h') {
-                    Log::warning('Tentativo di aprire dispute su ordine in stato non valido', [
+                    Log::warning('D5: openDispute rifiutato – stato non valido', [
                         'order_id' => $order->id,
-                        'order_number' => $order->order_number,
                         'buyer_id' => $user->id,
                         'current_status' => $order->status,
                         'payout_status' => $order->payout_status
                     ]);
-                    
                     return response()->json([
                         'success' => false,
                         'message' => 'Non è possibile aprire una dispute per questo ordine. Le dispute possono essere aperte solo per ordini consegnati e in attesa di rilascio fondi.',
                         'current_status' => $order->status
-                    ], 400);
+                    ], 409);
                 }
 
-                // Verifica se il payout è già stato completato
                 if ($order->payout_status === 'paid') {
-                    Log::warning('Tentativo di aprire dispute su ordine già pagato', [
+                    Log::warning('D5: openDispute rifiutato – pagamento già rilasciato', [
                         'order_id' => $order->id,
-                        'order_number' => $order->order_number,
                         'buyer_id' => $user->id,
-                        'payout_status' => $order->payout_status,
-                        'payout_completed_at' => $order->payout_completed_at,
-                        'stripe_transfer_id' => $order->stripe_transfer_id
+                        'payout_completed_at' => $order->payout_completed_at
                     ]);
-                    
                     return response()->json([
                         'success' => false,
                         'message' => 'Non è possibile aprire una dispute per questo ordine. Il pagamento al venditore è già stato completato.',
                         'payout_completed_at' => $order->payout_completed_at
-                    ], 400);
+                    ], 409);
                 }
 
-                // Verifica se esiste già una dispute aperta
+                // D5: una sola disputa per ordine
                 if ($order->has_dispute) {
-                    Log::info('Tentativo di aprire dispute già esistente', [
+                    Log::warning('D5: openDispute rifiutato – dispute già aperta', [
                         'order_id' => $order->id,
-                        'order_number' => $order->order_number,
                         'buyer_id' => $user->id,
                         'dispute_opened_at' => $order->dispute_opened_at
                     ]);
-                    
                     return response()->json([
                         'success' => false,
                         'message' => 'Una dispute è già aperta per questo ordine',
                         'dispute_opened_at' => $order->dispute_opened_at
-                    ], 400);
+                    ], 409);
                 }
 
-                // Apre la dispute con lock per evitare race conditions
+                // D5: insured → flag “documentazione richiesta” in caso di disputa (backend only)
+                $order->load('orderShippings');
+                $insuranceFee = (float) $order->orderShippings->sum('insurance_fee');
+                $notesBase = ($order->notes ?? '') . "\n[DISPUTE APERTA] " . now()->format('Y-m-d H:i:s') . "\nMotivo: " . $request->reason . ($request->description ? "\nDescrizione: " . $request->description : '');
+                if ($insuranceFee > 0) {
+                    $notesBase .= "\n[DISPUTE] Documentazione richiesta (ordine assicurato).";
+                }
+
                 $order->update([
                     'has_dispute' => true,
                     'dispute_opened_at' => now(),
                     'status' => 'dispute_hold',
                     'payout_status' => 'dispute_hold',
-                    'notes' => ($order->notes ?? '') . "\n[DISPUTE APERTA] " . now()->format('Y-m-d H:i:s') . "\nMotivo: " . $request->reason . ($request->description ? "\nDescrizione: " . $request->description : '')
+                    'notes' => $notesBase,
                 ]);
+
+                event(new \App\Events\DisputeOpened($order->fresh(['seller', 'buyer'])));
+
+                ShippingAuditLog::log(
+                    ShippingAuditLog::ACTION_DISPUTE_OPENED,
+                    ShippingAuditLog::SOURCE_API,
+                    (int) $order->id,
+                    (int) $order->seller_id,
+                    (int) $user->id,
+                    ['insured' => $insuranceFee > 0]
+                );
 
                 Log::info('Dispute aperta per ordine con successo', [
                     'order_id' => $order->id,

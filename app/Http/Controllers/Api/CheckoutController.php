@@ -164,6 +164,7 @@ class CheckoutController extends Controller
                             'paid_at' => now(),
                             'status' => 'paid'
                         ]);
+                        event(new \App\Events\OrderPaid($order->fresh(['seller', 'buyer'])));
                     }
 
                     DB::commit();

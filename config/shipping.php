@@ -82,6 +82,12 @@ return [
      */
     'untracked_intl_wait_days' => env('SHIPPING_UNTRACKED_INTL_WAIT_DAYS', 30),
 
+    /**
+     * Giorni per segnare come spedito (spedizione non tracciata) – FASE D3 reminder
+     * Reminder inviato 1 giorno prima (reminder_untracked = untracked_mark_shipped_days - 1).
+     */
+    'untracked_mark_shipped_days' => env('SHIPPING_UNTRACKED_MARK_SHIPPED_DAYS', 5),
+
     /*
     |--------------------------------------------------------------------------
     | Configurazione Assicurazione

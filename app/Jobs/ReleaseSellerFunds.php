@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Helpers\ShippingAuditLog;
 use App\Models\Order;
 use App\Services\StripeService;
 use Illuminate\Bus\Queueable;
@@ -56,32 +57,28 @@ class ReleaseSellerFunds implements ShouldQueue
             'payout_scheduled_hours_ago' => $order->payout_scheduled_at ? now()->diffInHours($order->payout_scheduled_at) : null
         ]);
 
-        // Verifica che l'ordine sia nello stato corretto
+        // D5: release fondi vietata se ordine non in delivered_pending_72h
         if ($order->status !== 'delivered_pending_72h') {
-            Log::warning('Ordine non in stato delivered_pending_72h, salto rilascio fondi', [
+            Log::warning('D5-JOB: ReleaseSellerFunds skip – stato non valido', [
                 'order_id' => $order->id,
-                'order_number' => $order->order_number,
                 'current_status' => $order->status,
                 'expected_status' => 'delivered_pending_72h',
-                'payout_status' => $order->payout_status,
-                'has_dispute' => $order->has_dispute
+                'source' => 'job',
             ]);
             return;
         }
 
-        // Verifica se il payout è già stato completato (evita duplicati)
+        // D5: idempotenza – payout già completato → abort
         if ($order->payout_status === 'paid') {
-            Log::warning('Payout already completed for order', [
+            Log::warning('D5-JOB: ReleaseSellerFunds skip – payout già completato', [
                 'order_id' => $order->id,
-                'order_number' => $order->order_number,
                 'payout_completed_at' => $order->payout_completed_at,
-                'stripe_transfer_id' => $order->stripe_transfer_id,
-                'current_status' => $order->status
+                'source' => 'job',
             ]);
             return;
         }
 
-        // Verifica se c'è una dispute aperta (con lock per evitare race condition)
+        // D5: release fondi vietata se ordine = DISPUTED
         if ($order->has_dispute) {
             Log::info('Dispute aperta per ordine, blocco payout', [
                 'order_id' => $order->id,
@@ -173,6 +170,16 @@ class ReleaseSellerFunds implements ShouldQueue
                     'stripe_transfer_id' => $transfer['transfer']->id
                 ]);
 
+                event(new \App\Events\OrderReleased($order->fresh(['seller', 'buyer'])));
+
+                ShippingAuditLog::log(
+                    ShippingAuditLog::ACTION_RELEASE_FUNDS,
+                    ShippingAuditLog::SOURCE_JOB,
+                    (int) $order->id,
+                    (int) $seller->id,
+                    (int) $order->buyer_id,
+                    ['transfer_id' => $transfer['transfer']->id, 'amount_euros' => $order->seller_payout_amount]
+                );
                 Log::info('Fondi rilasciati al venditore con successo', [
                     'order_id' => $order->id,
                     'order_number' => $order->order_number,

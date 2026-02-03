@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers\ShippingAuditLog;
 use App\Models\User;
 use Stripe\Stripe;
 use Stripe\StripeClient;
@@ -946,6 +947,17 @@ class StripeService
             'status' => 'cancelled'
         ]);
 
+        event(new \App\Events\OrderCancelled($order->fresh(['seller', 'buyer'])));
+
+        ShippingAuditLog::log(
+            ShippingAuditLog::ACTION_ORDER_CANCELLED,
+            ShippingAuditLog::SOURCE_WEBHOOK,
+            (int) $order->id,
+            $order->seller_id ? (int) $order->seller_id : null,
+            $order->buyer_id ? (int) $order->buyer_id : null,
+            ['reason' => 'payment_canceled']
+        );
+
         // Rilascia prenotazione quantità
         $reservationId = $paymentIntent->metadata->reservation_id ?? null;
         if ($reservationId) {
@@ -1021,6 +1033,8 @@ class StripeService
             'refunded_at' => now(),
             'refund_reason' => $refund->reason ?? 'Rimborso richiesto'
         ]);
+
+        event(new \App\Events\OrderRefunded($order->fresh(['seller', 'buyer'])));
 
         // Invia notifiche
         $this->notifyRefundCreated($order, $refund);

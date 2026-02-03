@@ -4,11 +4,11 @@ namespace App\Jobs;
 
 use App\Models\Order;
 use Illuminate\Bus\Queueable;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Job schedulato che controlla periodicamente gli ordini pronti per il payout
@@ -36,13 +36,21 @@ class ProcessScheduledPayouts implements ShouldQueue
         Log::info('Ordini trovati per payout', ['count' => $orders->count()]);
 
         foreach ($orders as $order) {
-            Log::info('Processing scheduled payout for order', [
+            // D5: verifica stato prima di agire – skip se ordine non più modificabile
+            $order->refresh();
+            if (!in_array($order->status, ['delivered_pending_72h'], true) || $order->has_dispute || $order->payout_status !== 'pending_payout') {
+                Log::info('D5-JOB: ProcessScheduledPayouts skip ordine', [
+                    'order_id' => $order->id,
+                    'status' => $order->status,
+                    'has_dispute' => $order->has_dispute,
+                    'payout_status' => $order->payout_status,
+                ]);
+                continue;
+            }
+            Log::info('D5-JOB: ProcessScheduledPayouts dispatch ReleaseSellerFunds', [
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
-                'payout_scheduled_at' => $order->payout_scheduled_at
             ]);
-
-            // Dispatcha il job ReleaseSellerFunds per questo ordine
             ReleaseSellerFunds::dispatch($order);
         }
 

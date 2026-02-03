@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Helpers\ShippingAuditLog;
 use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -40,6 +41,8 @@ class CheckUnusedLabels implements ShouldQueue
         ]);
 
         foreach ($orders as $order) {
+            // AUDIT-FIX: refresh prima di agire per evitare race (stato può essere cambiato da webhook/altro job)
+            $order->refresh();
             // Verifica se c'è un evento di tracking che indica che il corriere ha accettato il pacco
             // Usa whereIn per evitare problemi con orWhere
             $hasCarrierAccepted = $order->trackingEvents()
@@ -55,11 +58,17 @@ class CheckUnusedLabels implements ShouldQueue
             ]);
 
             if (!$hasCarrierAccepted) {
+                // D5 / AUDIT-FIX: skip se ordine non più modificabile (cancelled, refunded, dispute, completed)
+                if (in_array($order->status, ['cancelled', 'refunded', 'dispute_hold', 'completed'], true) || $order->has_dispute) {
+                    Log::info('D5-JOB: CheckUnusedLabels skip – ordine non modificabile', ['order_id' => $order->id, 'status' => $order->status, 'has_dispute' => $order->has_dispute]);
+                    continue;
+                }
+
                 // Etichetta mai usata - timeout anti-frode
-                Log::warning('Timeout anti-frode: etichetta non usata dopo 5 giorni', [
+                Log::warning('D5-JOB: Timeout anti-frode – etichetta non usata dopo 5 giorni', [
                     'order_id' => $order->id,
                     'order_number' => $order->order_number,
-                    'label_created_at' => $order->label_created_at
+                    'label_created_at' => $order->label_created_at,
                 ]);
 
                 try {
@@ -91,21 +100,34 @@ class CheckUnusedLabels implements ShouldQueue
                         }
                     }
 
-                    // Strike al venditore (TODO: implementare sistema di strike)
-                    $seller = $order->seller;
-                    if ($seller) {
-                        Log::info('Strike applicato al venditore per etichetta non usata', [
-                            'seller_id' => $seller->id,
-                            'order_id' => $order->id
+                    $order->load(['seller', 'buyer']);
+
+                    // D5: audit log ordine cancellato (source=job)
+                    ShippingAuditLog::log(
+                        ShippingAuditLog::ACTION_ORDER_CANCELLED,
+                        ShippingAuditLog::SOURCE_JOB,
+                        (int) $order->id,
+                        (int) $order->seller_id,
+                        (int) $order->buyer_id,
+                        ['reason' => 'unused_label_timeout', 'buyer_refunded' => isset($refund) && ($refund['success'] ?? false)]
+                    );
+
+                    // D5: anti-abuse seller – log evento negativo (monitoraggio, nessun blocco in V1)
+                    if ($order->seller_id) {
+                        ShippingAuditLog::logSellerNegativeEvent('unused_label_cancelled', (int) $order->id, (int) $order->seller_id, [
+                            'label_created_at' => $order->label_created_at?->toIso8601String(),
                         ]);
-                        // TODO: Implementare sistema di strike (es. campo strikes nella tabella users)
                     }
 
-                    // Il costo Shippo resta a carico del venditore (già addebitato quando è stata creata l'etichetta)
                     Log::info('Ordine annullato per timeout anti-frode', [
                         'order_id' => $order->id,
-                        'buyer_refunded' => isset($refund) && $refund['success']
+                        'buyer_refunded' => isset($refund) && $refund['success'],
                     ]);
+
+                    event(new \App\Events\OrderCancelled($order));
+                    if ($order->refunded_at) {
+                        event(new \App\Events\OrderRefunded($order));
+                    }
 
                 } catch (\Exception $e) {
                     Log::error('Errore durante timeout anti-frode', [

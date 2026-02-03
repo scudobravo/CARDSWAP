@@ -142,6 +142,9 @@
                 <a href="{{ url('/privacy') }}">Privacy</a>
             </div>
             <div class="footer-text" style="margin-top: 15px; font-size: 12px;">
+                Questa email è automatica. Non rispondere.
+            </div>
+            <div class="footer-text" style="font-size: 12px;">
                 © {{ date('Y') }} CardSwap. Tutti i diritti riservati.
             </div>
         </div>

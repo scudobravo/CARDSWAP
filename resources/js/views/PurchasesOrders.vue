@@ -138,9 +138,9 @@
                 Dispute Aperta
               </div>
 
-              <!-- Pulsante Dettagli -->
+              <!-- Pulsante Dettagli (pagina dettaglio ordine buyer - FASE D2) -->
               <router-link
-                :to="`/order-confirmation/${order.id}`"
+                :to="{ name: 'buyer.order.details', params: { orderId: order.id } }"
                 class="px-3 py-1 text-sm font-gill-sans-semibold text-primary bg-primary-light border border-primary rounded-md hover:bg-primary hover:text-white focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 Dettagli

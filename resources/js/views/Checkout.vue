@@ -1086,6 +1086,13 @@ const processPayment = async () => {
         }
       }
     })
+
+    // AUDIT-FIX: verifica che ogni seller abbia una selezione prima di inviare (evita mismatch frontend/backend)
+    if (shippingSelections.length !== cartStore.sellers.length) {
+      isProcessing.value = false
+      alert('Seleziona un metodo di spedizione per ogni venditore prima di procedere.')
+      return
+    }
     
     const paymentData = {
       address: selectedAddress.value || {

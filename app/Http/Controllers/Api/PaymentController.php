@@ -910,7 +910,7 @@ class PaymentController extends Controller
         $shippingSelections = $requestData['shipping_selections'];
         $sellerIdsInOrder = array_column($sellers, 'seller_id');
         
-        // Verifica che ogni seller abbia una shipping_selection
+        // Verifica che ogni seller abbia una shipping_selection e coerenza metodo/bucket/subtotale
         foreach ($sellers as $sellerData) {
             $sellerId = $sellerData['seller_id'];
             $selection = collect($shippingSelections)->firstWhere('seller_id', $sellerId);
@@ -928,6 +928,25 @@ class PaymentController extends Controller
             // Verifica che seller_id corrisponda
             if ($selection['seller_id'] != $sellerId) {
                 $errors['shipping'][] = "Seller ID non corrispondente nella selezione spedizione per venditore {$sellerId}";
+            }
+
+            // AUDIT-FIX: validazione coerenza shipping_method vs package_bucket e subtotale (specifica V1)
+            $bucketData = $this->calculatePackageBucketForSeller($sellerData['items']);
+            $sellerSubtotal = 0;
+            foreach ($sellerData['items'] as $itemData) {
+                $listing = CardListing::find($itemData['listing_id']);
+                if ($listing) {
+                    $sellerSubtotal += $listing->price * (int) $itemData['quantity'];
+                }
+            }
+            $methodBucketError = $this->validateShippingMethodForBucketAndSubtotal(
+                $selection['shipping_method'],
+                $bucketData['bucket'],
+                $sellerSubtotal,
+                $sellerId
+            );
+            if ($methodBucketError !== null) {
+                $errors['shipping'][] = $methodBucketError;
             }
         }
         
@@ -1079,6 +1098,39 @@ class PaymentController extends Controller
             'item_count' => count($orderData['order_items']),
             'seller_count' => count($sellers)
         ];
+    }
+
+    /**
+     * Valida coerenza shipping_method con package_bucket e subtotale (specifica CardSwap V1).
+     * UNTRACKED solo LETTER + subtotale <= soglia; INSURED solo se subtotale >= 200€.
+     *
+     * @param string $shippingMethod Metodo selezionato
+     * @param string $bucket Bucket calcolato dagli items
+     * @param float $sellerSubtotal Subtotale venditore
+     * @param int $sellerId Per messaggi di errore
+     * @return string|null Messaggio di errore o null se valido
+     */
+    private function validateShippingMethodForBucketAndSubtotal(string $shippingMethod, string $bucket, float $sellerSubtotal, int $sellerId): ?string
+    {
+        $maxUntracked = (float) config('shipping.untracked_max_subtotal_eur', 20.00);
+        $minInsured = (float) config('shipping.insured_min_subtotal_eur', 200.00);
+
+        if ($shippingMethod === ShippingMethod::UNTRACKED_STANDARD) {
+            if ($bucket !== ShippingPackageBucket::LETTER) {
+                return "Metodo non tracciato consentito solo per spedizione in lettera (venditore {$sellerId}). Ricarica il checkout.";
+            }
+            if ($sellerSubtotal > $maxUntracked) {
+                return "Spedizione non tracciata consentita solo per ordini fino a " . number_format($maxUntracked, 0, ',', '') . "€ (venditore {$sellerId}). Ricarica il checkout.";
+            }
+        }
+
+        if ($shippingMethod === ShippingMethod::TRACKED_INSURED) {
+            if ($sellerSubtotal < $minInsured) {
+                return "Assicurazione obbligatoria per ordini da " . number_format($minInsured, 0, ',', '') . "€; metodo non applicabile (venditore {$sellerId}). Ricarica il checkout.";
+            }
+        }
+
+        return null;
     }
 
     /**
