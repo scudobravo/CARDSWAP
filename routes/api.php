@@ -518,7 +518,7 @@ Route::middleware('auth:sanctum')->prefix('user')->group(function () {
 // ============================================
 // SHIPPO ROUTES - DEPRECATE
 // ============================================
-// ⚠️ ATTENZIONE: Shippo è DEPRECATO e NON fa parte di CardSwap Shipping V1.
+// ATTENZIONE: Shippo è DEPRECATO e NON fa parte di CardSwap Shipping V1.
 // 
 // Shippo NON viene più utilizzato per:
 // - Pricing (usa CardSwap Shipping V1: POST /api/shipping/v1/calculate-rates)

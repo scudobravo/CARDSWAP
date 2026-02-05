@@ -123,7 +123,7 @@
           </div>
           <div class="ml-3 flex-1">
             <h3 class="text-sm font-gill-sans-semibold text-red-800">
-              ⚠️ Configurazione Stripe Connect Obbligatoria
+              Configurazione Stripe Connect Obbligatoria
             </h3>
             <div class="mt-2 text-sm text-red-700">
               <p class="font-gill-sans-semibold mb-2">
@@ -161,7 +161,7 @@
           </div>
           <div class="ml-3 flex-1">
             <h4 class="text-sm font-gill-sans-semibold text-red-800">
-              ⚠️ {{ listingsWithoutStripe.length }} inserzione/i non può/vengono essere pubblicata/e
+              {{ listingsWithoutStripe.length }} inserzione/i non può/vengono essere pubblicata/e
             </h4>
             <p class="mt-1 text-sm text-red-700">
               Hai {{ listingsWithoutStripe.length }} inserzione/i che non possono essere pubblicate perché Stripe Connect non è configurato. 
@@ -193,7 +193,7 @@
                   class="w-16 h-20 md:w-12 md:h-16 object-cover rounded flex-shrink-0"
                   @error="handleImageError"
                   @load="handleImageLoad"
-                  @click="() => console.log('🖼️ URL immagine:', `/storage/${listing.images[0]}`)"
+                  @click="() => console.log('URL immagine:', `/storage/${listing.images[0]}`)"
                 />
                 <div 
                   v-else
@@ -343,7 +343,7 @@ const stripeConnectConfigured = ref(false)
 // Methods
 const checkKycStatus = async () => {
   try {
-    console.log('🔄 Controllo stato KYC...')
+    console.log('Controllo stato KYC...')
     const response = await fetch('/api/kyc/status', {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -353,16 +353,16 @@ const checkKycStatus = async () => {
     
     if (response.ok) {
       const data = await response.json()
-      console.log('✅ Stato KYC:', data.data)
+      console.log('Stato KYC:', data.data)
       kycStatus.value = data.data
       kycCompleted.value = data.data.is_kyc_complete
     } else {
-      console.error('❌ Errore nel controllo KYC:', response.status)
+      console.error('Errore nel controllo KYC:', response.status)
       kycStatus.value = null
       kycCompleted.value = false
     }
   } catch (error) {
-    console.error('❌ Errore nel controllo KYC:', error)
+    console.error('Errore nel controllo KYC:', error)
     kycStatus.value = null
     kycCompleted.value = false
   }
@@ -377,7 +377,7 @@ const closeCreateModal = () => {
 }
 
 const editListing = (listing) => {
-  console.log('📝 Modifica inserzione:', listing)
+  console.log('Modifica inserzione:', listing)
   editingListing.value = listing
   showEditModal.value = true
 }
@@ -415,7 +415,7 @@ const deleteListing = async (listing) => {
   deletingListing.value = listing.id
   
   try {
-    console.log('🗑️ Eliminazione inserzione:', listing.id)
+    console.log('Eliminazione inserzione:', listing.id)
     
     const response = await fetch(`/api/listings/${listing.id}`, {
       method: 'DELETE',
@@ -431,19 +431,19 @@ const deleteListing = async (listing) => {
     }
     
     const data = await response.json()
-    console.log('✅ Risposta eliminazione:', data)
+    console.log('Risposta eliminazione:', data)
     
     if (data.success) {
       // Rimuovi l'inserzione dalla lista locale
       recentListings.value = recentListings.value.filter(l => l.id !== listing.id)
       // Refresh stats
       loadStats()
-      console.log('📊 Inserzione rimossa dalla lista')
+      console.log('Inserzione rimossa dalla lista')
     } else {
       throw new Error(data.message || 'Errore nell\'eliminazione dell\'inserzione')
     }
   } catch (err) {
-    console.error('❌ Errore nell\'eliminazione inserzione:', err)
+    console.error('Errore nell\'eliminazione inserzione:', err)
     alert(`Errore nell'eliminazione: ${err.message}`)
   } finally {
     deletingListing.value = null
@@ -483,7 +483,7 @@ const loadStats = async () => {
     }
     
     const data = await response.json()
-    console.log('📊 Statistiche caricate:', data)
+    console.log('Statistiche caricate:', data)
     
     if (data.success) {
       stats.value = data.data
@@ -515,14 +515,14 @@ const loadRecentListings = async () => {
     }
     
     const data = await response.json()
-    console.log('📋 Inserzioni recenti caricate:', data)
+    console.log('Inserzioni recenti caricate:', data)
     
     if (data.success) {
       // Mostra inserzioni attive e vendute (le vendute per vedere lo storico)
       recentListings.value = data.data.filter(listing => 
         listing.status === 'active' || listing.status === 'sold'
       )
-      console.log('📊 Numero inserzioni attive e vendute:', recentListings.value.length)
+      console.log('Numero inserzioni attive e vendute:', recentListings.value.length)
       console.log('📸 Dettagli inserzioni con immagini:', recentListings.value.map(l => ({
         id: l.id,
         status: l.status,
@@ -543,13 +543,13 @@ const loadRecentListings = async () => {
 
 // Handle image loading
 const handleImageLoad = (event) => {
-  console.log('✅ Immagine caricata con successo:', event.target.src)
+  console.log('Immagine caricata con successo:', event.target.src)
 }
 
 // Handle image loading errors
 const handleImageError = (event) => {
-  console.log('❌ Errore nel caricamento immagine:', event.target.src)
-  console.log('❌ Dettagli errore:', {
+  console.log('Errore nel caricamento immagine:', event.target.src)
+  console.log('Dettagli errore:', {
     src: event.target.src,
     naturalWidth: event.target.naturalWidth,
     naturalHeight: event.target.naturalHeight,

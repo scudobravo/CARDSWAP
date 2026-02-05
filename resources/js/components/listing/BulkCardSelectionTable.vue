@@ -174,8 +174,8 @@ const toggleAllSelection = () => {
 }
 
 const proceedToBulkEdit = () => {
-  console.log('🎯 BulkCardSelectionTable - Proceeding with cards:', selectedCards.value)
-  console.log('🎯 Number of cards:', selectedCards.value.length)
+  console.log('BulkCardSelectionTable - Proceeding with cards:', selectedCards.value)
+  console.log('Number of cards:', selectedCards.value.length)
   emit('proceed-to-bulk-edit', selectedCards.value)
 }
 </script>

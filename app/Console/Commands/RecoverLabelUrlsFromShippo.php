@@ -39,7 +39,7 @@ class RecoverLabelUrlsFromShippo extends Command
         $transactionId = $this->option('transaction-id');
 
         if ($dryRun) {
-            $this->warn('🔍 Modalità DRY-RUN: nessuna modifica verrà applicata');
+            $this->warn('Modalità DRY-RUN: nessuna modifica verrà applicata');
         }
 
         $this->info('Inizio recupero label_url da Shippo...');
@@ -53,7 +53,7 @@ class RecoverLabelUrlsFromShippo extends Command
                 
                 // Verifica che il metodo esista
                 if (!method_exists($shippoService, 'getTransaction')) {
-                    $this->error("  ❌ Metodo getTransaction non trovato in ShippoService");
+                    $this->error("  Metodo getTransaction non trovato in ShippoService");
                     return 1;
                 }
                 
@@ -77,7 +77,7 @@ class RecoverLabelUrlsFromShippo extends Command
                 ]);
                 
                 if (empty($transaction)) {
-                    $this->error("  ❌ Risposta vuota da Shippo");
+                    $this->error("  Risposta vuota da Shippo");
                     Log::error('RecoverLabelUrls: getTransaction response vuota', [
                         'order_id' => $orderId,
                         'transaction_id' => $transactionId
@@ -85,7 +85,7 @@ class RecoverLabelUrlsFromShippo extends Command
                     return 1;
                 }
                 
-                $this->line("  ✅ Risposta ricevata da Shippo");
+                $this->line("  Risposta ricevata da Shippo");
                 
                 // Log dettagliato per debug
                 $status = $transaction['status'] ?? 'N/A';
@@ -94,7 +94,7 @@ class RecoverLabelUrlsFromShippo extends Command
                 
                 // Se la transazione ha errori, mostra i messaggi
                 if ($status === 'ERROR' && !empty($transaction['messages'])) {
-                    $this->error("  ❌ Transazione in errore! Messaggi:");
+                    $this->error("  Transazione in errore! Messaggi:");
                     foreach ($transaction['messages'] as $message) {
                         $source = $message['source'] ?? 'N/A';
                         $text = $message['text'] ?? 'N/A';
@@ -108,23 +108,23 @@ class RecoverLabelUrlsFromShippo extends Command
                 
                 // Se è vuoto, potrebbe essere una stringa vuota
                 if (empty($labelUrl) && isset($transaction['label_url'])) {
-                    $this->warn("  ⚠️  label_url presente ma vuoto nella risposta Shippo");
+                    $this->warn("   label_url presente ma vuoto nella risposta Shippo");
                     if ($status === 'ERROR') {
-                        $this->error("  ❌ La transazione è in errore, quindi l'etichetta non è stata generata");
+                        $this->error("  La transazione è in errore, quindi l'etichetta non è stata generata");
                     }
                 }
                 
                 // Verifica se la transazione è ancora in elaborazione
                 if ($status === 'QUEUED' || $status === 'WAITING') {
-                    $this->warn("  ⚠️  Transazione ancora in elaborazione (status: {$status})");
-                    $this->info("  💡 Riprova tra qualche minuto");
+                    $this->warn("   Transazione ancora in elaborazione (status: {$status})");
+                    $this->info("  Riprova tra qualche minuto");
                 }
                 
                 // Mostra tutte le chiavi disponibili per debug
                 $this->line("  Chiavi disponibili nella transazione: " . implode(', ', array_keys($transaction)));
                 
                 if ($labelUrl) {
-                    $this->info("✅ Label URL trovato: {$labelUrl}");
+                    $this->info("Label URL trovato: {$labelUrl}");
                     
                     // Se c'è un order_id nei log, prova ad associarlo
                     if ($orderId) {
@@ -139,16 +139,16 @@ class RecoverLabelUrlsFromShippo extends Command
                         }
                     }
                 } else {
-                    $this->warn("⚠️  Label URL non trovato nella transazione");
+                    $this->warn("  Label URL non trovato nella transazione");
                     
                     // Se la transazione è in errore e --recreate è specificato, prova a ricreare con PNG
                     if ($status === 'ERROR' && $this->option('recreate') && $orderId) {
-                        $this->info("  🔄 Tentativo di ricreare etichetta con formato PNG...");
+                        $this->info("  Tentativo di ricreare etichetta con formato PNG...");
                         
                         try {
                             $order = Order::find($orderId);
                             if (!$order) {
-                                $this->error("  ❌ Ordine non trovato");
+                                $this->error("  Ordine non trovato");
                                 return 1;
                             }
                             
@@ -163,9 +163,9 @@ class RecoverLabelUrlsFromShippo extends Command
                             }
                             
                             if (!$rateObjectId) {
-                                $this->error("  ❌ Rate object_id non trovato nella transazione");
-                                $this->line("  💡 Struttura rate: " . json_encode($transaction['rate'] ?? 'N/A'));
-                                $this->line("  💡 Dovrai ricalcolare le tariffe manualmente");
+                                $this->error("  Rate object_id non trovato nella transazione");
+                                $this->line("  Struttura rate: " . json_encode($transaction['rate'] ?? 'N/A'));
+                                $this->line("  Dovrai ricalcolare le tariffe manualmente");
                                 return 1;
                             }
                             
@@ -214,8 +214,8 @@ class RecoverLabelUrlsFromShippo extends Command
                                     $newLabelUrl = $newTransaction['label_url'] ?? null;
                                     
                                     if ($newStatus === 'SUCCESS' && $newLabelUrl) {
-                                        $this->info("  ✅ Etichetta creata con successo usando rate esistente e formato {$format}!");
-                                        $this->info("  ✅ Label URL: {$newLabelUrl}");
+                                        $this->info("  Etichetta creata con successo usando rate esistente e formato {$format}!");
+                                        $this->info("  Label URL: {$newLabelUrl}");
                                         
                                         if (!$dryRun) {
                                             $carrier = (is_array($newTransaction['rate'] ?? null) ? ($newTransaction['rate']['provider'] ?? null) : null) ?? $order->carrier_code;
@@ -226,14 +226,14 @@ class RecoverLabelUrlsFromShippo extends Command
                                                 'status' => 'label_created',
                                                 'label_created_at' => now()
                                             ]);
-                                            $this->info("  ✅ Ordine #{$order->order_number} aggiornato con nuovo label_url");
+                                            $this->info("  Ordine #{$order->order_number} aggiornato con nuovo label_url");
                                         } else {
                                             $this->info("  [DRY-RUN] Aggiornerebbe ordine #{$order->order_number} con label_url: {$newLabelUrl}");
                                         }
                                         $labelCreated = true;
                                         break; // Esci dal loop se ha successo
                                     } else {
-                                        $this->warn("  ⚠️  Formato {$format} fallito (status: {$newStatus})");
+                                        $this->warn("   Formato {$format} fallito (status: {$newStatus})");
                                         if (!empty($newTransaction['messages'])) {
                                             foreach ($newTransaction['messages'] as $msg) {
                                                 $this->warn("    - " . ($msg['text'] ?? 'N/A'));
@@ -241,7 +241,7 @@ class RecoverLabelUrlsFromShippo extends Command
                                         }
                                     }
                                 } catch (\Exception $e) {
-                                    $this->warn("  ⚠️  Errore con formato {$format}: {$e->getMessage()}");
+                                    $this->warn("   Errore con formato {$format}: {$e->getMessage()}");
                                 }
                             }
                             
@@ -249,10 +249,10 @@ class RecoverLabelUrlsFromShippo extends Command
                                 return 0;
                             }
                             
-                            $this->line("  🔄 Tutti i formati falliti, ricalcolo tariffe per ottenere nuovo rate...");
+                            $this->line("  Tutti i formati falliti, ricalcolo tariffe per ottenere nuovo rate...");
                             
                             // Se il rate esistente non funziona, ricalcola le tariffe
-                            $this->line("  📦 Ricalcolo tariffe per ordine #{$order->order_number}...");
+                            $this->line("  Ricalcolo tariffe per ordine #{$order->order_number}...");
                             
                             // Carica relazioni necessarie
                             $order->load(['orderItems.cardListing.seller', 'buyer']);
@@ -260,13 +260,13 @@ class RecoverLabelUrlsFromShippo extends Command
                             // Prepara dati per ricalcolo tariffe
                             $sellers = $order->getSellers();
                             if ($sellers->isEmpty()) {
-                                $this->error("  ❌ Nessun venditore trovato per l'ordine");
+                                $this->error("  Nessun venditore trovato per l'ordine");
                                 return 1;
                             }
                             
                             $shippingAddress = $order->shipping_address;
                             if (empty($shippingAddress)) {
-                                $this->error("  ❌ Indirizzo di spedizione non trovato nell'ordine");
+                                $this->error("  Indirizzo di spedizione non trovato nell'ordine");
                                 return 1;
                             }
                             
@@ -301,7 +301,7 @@ class RecoverLabelUrlsFromShippo extends Command
                             if (empty($formattedShippingAddress['street1']) || 
                                 empty($formattedShippingAddress['city']) || 
                                 empty($formattedShippingAddress['zip'])) {
-                                $this->error("  ❌ Indirizzo di spedizione incompleto:");
+                                $this->error("  Indirizzo di spedizione incompleto:");
                                 $this->error("    street1: " . ($formattedShippingAddress['street1'] ?: 'VUOTO'));
                                 $this->error("    city: " . ($formattedShippingAddress['city'] ?: 'VUOTO'));
                                 $this->error("    zip: " . ($formattedShippingAddress['zip'] ?: 'VUOTO'));
@@ -326,7 +326,7 @@ class RecoverLabelUrlsFromShippo extends Command
                                     ?? $seller->addresses()->first();
                                 
                                 if (!$sellerAddress) {
-                                    $this->error("  ❌ Indirizzo venditore non trovato per {$seller->name}");
+                                    $this->error("  Indirizzo venditore non trovato per {$seller->name}");
                                     return 1;
                                 }
                                 
@@ -355,7 +355,7 @@ class RecoverLabelUrlsFromShippo extends Command
                             $this->line("  Struttura ratesResult: " . json_encode(array_keys($ratesResult ?? [])));
                             
                             if (empty($ratesResult)) {
-                                $this->error("  ❌ ratesResult vuoto");
+                                $this->error("  ratesResult vuoto");
                                 Log::error('Ricalcolo tariffe fallito - ratesResult vuoto', [
                                     'order_id' => $order->id,
                                     'sellers_data' => array_keys($sellersData),
@@ -370,7 +370,7 @@ class RecoverLabelUrlsFromShippo extends Command
                             
                             $sellerResult = $ratesResult[$firstSellerId] ?? null;
                             if (!$sellerResult) {
-                                $this->error("  ❌ Risultato venditore non trovato");
+                                $this->error("  Risultato venditore non trovato");
                                 Log::error('Ricalcolo tariffe fallito - seller result non trovato', [
                                     'order_id' => $order->id,
                                     'first_seller_id' => $firstSellerId,
@@ -381,7 +381,7 @@ class RecoverLabelUrlsFromShippo extends Command
                             
                             // Verifica se c'è un errore nel risultato
                             if (isset($sellerResult['error'])) {
-                                $this->error("  ❌ Errore nel calcolo tariffe: " . $sellerResult['error']);
+                                $this->error("  Errore nel calcolo tariffe: " . $sellerResult['error']);
                                 Log::error('Ricalcolo tariffe fallito - errore nel risultato', [
                                     'order_id' => $order->id,
                                     'seller_id' => $firstSellerId,
@@ -396,7 +396,7 @@ class RecoverLabelUrlsFromShippo extends Command
                             $this->line("  Seller result keys: " . json_encode(array_keys($sellerResult)));
                             
                             if (empty($rates)) {
-                                $this->error("  ❌ Nessuna tariffa disponibile per il venditore");
+                                $this->error("  Nessuna tariffa disponibile per il venditore");
                                 Log::error('Ricalcolo tariffe fallito - nessuna tariffa', [
                                     'order_id' => $order->id,
                                     'seller_result_keys' => array_keys($sellerResult),
@@ -410,11 +410,11 @@ class RecoverLabelUrlsFromShippo extends Command
                             $newRateObjectId = $newRate['object_id'] ?? null;
                             
                             if (!$newRateObjectId) {
-                                $this->error("  ❌ Rate object_id non trovato nelle nuove tariffe");
+                                $this->error("  Rate object_id non trovato nelle nuove tariffe");
                                 return 1;
                             }
                             
-                            $this->line("  ✅ Nuovo rate object_id: {$newRateObjectId}");
+                            $this->line("  Nuovo rate object_id: {$newRateObjectId}");
                             
                             // Prova formati supportati da Poste Italiane (PDF_4X6, PDF_SINGLE_8X11, PDF)
                             // PNG non è supportato da Poste Italiane
@@ -459,8 +459,8 @@ class RecoverLabelUrlsFromShippo extends Command
                                     $newLabelUrl = $newTransaction['label_url'] ?? null;
                                     
                                     if ($newStatus === 'SUCCESS' && $newLabelUrl) {
-                                        $this->info("  ✅ Nuova etichetta creata con successo con formato {$format}!");
-                                        $this->info("  ✅ Label URL: {$newLabelUrl}");
+                                        $this->info("  Nuova etichetta creata con successo con formato {$format}!");
+                                        $this->info("  Label URL: {$newLabelUrl}");
                                         
                                         if (!$dryRun) {
                                             $carrier = (is_array($newTransaction['rate'] ?? null) ? ($newTransaction['rate']['provider'] ?? null) : null) ?? $order->carrier_code;
@@ -471,14 +471,14 @@ class RecoverLabelUrlsFromShippo extends Command
                                                 'status' => 'label_created',
                                                 'label_created_at' => now()
                                             ]);
-                                            $this->info("  ✅ Ordine #{$order->order_number} aggiornato con nuovo label_url");
+                                            $this->info("  Ordine #{$order->order_number} aggiornato con nuovo label_url");
                                         } else {
                                             $this->info("  [DRY-RUN] Aggiornerebbe ordine #{$order->order_number} con label_url: {$newLabelUrl}");
                                         }
                                         $labelCreated = true;
                                         break; // Esci dal loop se ha successo
                                     } else {
-                                        $this->warn("  ⚠️  Formato {$format} fallito (status: {$newStatus})");
+                                        $this->warn("   Formato {$format} fallito (status: {$newStatus})");
                                         if (!empty($newTransaction['messages'])) {
                                             foreach ($newTransaction['messages'] as $msg) {
                                                 $this->warn("    - " . ($msg['text'] ?? 'N/A'));
@@ -486,20 +486,20 @@ class RecoverLabelUrlsFromShippo extends Command
                                         }
                                     }
                                 } catch (\Exception $e) {
-                                    $this->warn("  ⚠️  Errore con formato {$format}: {$e->getMessage()}");
+                                    $this->warn("   Errore con formato {$format}: {$e->getMessage()}");
                                 }
                             }
                             
                             if (!$labelCreated) {
-                                $this->error("  ❌ Tutti i formati falliti per il nuovo rate");
+                                $this->error("  Tutti i formati falliti per il nuovo rate");
                             }
                         } catch (\Exception $e) {
-                            $this->error("  ❌ Errore creazione nuova transazione: {$e->getMessage()}");
+                            $this->error("  Errore creazione nuova transazione: {$e->getMessage()}");
                         }
                     } else {
-                        $this->line("  💡 Verifica lo status della transazione su Shippo dashboard");
+                        $this->line("  Verifica lo status della transazione su Shippo dashboard");
                         if ($status === 'ERROR') {
-                            $this->line("  💡 Usa --recreate per tentare di ricreare l'etichetta con PNG");
+                            $this->line("  Usa --recreate per tentare di ricreare l'etichetta con PNG");
                         }
                     }
                 }
@@ -533,7 +533,7 @@ class RecoverLabelUrlsFromShippo extends Command
         $this->info("Trovati {$orders->count()} ordini con etichetta creata ma senza label_url");
 
         if ($orders->isEmpty()) {
-            $this->info('✅ Nessun ordine da recuperare');
+            $this->info(' Nessun ordine da recuperare');
             return 0;
         }
 
@@ -542,7 +542,7 @@ class RecoverLabelUrlsFromShippo extends Command
         $notFound = 0;
 
         foreach ($orders as $order) {
-            $this->line("📦 Ordine #{$order->order_number} (ID: {$order->id})");
+            $this->line("Ordine #{$order->order_number} (ID: {$order->id})");
 
             // Cerca transaction_id nei log per questo ordine
             // Cerca nei log recenti (ultimi 7 giorni)
@@ -560,7 +560,7 @@ class RecoverLabelUrlsFromShippo extends Command
             }
 
             if (!$transactionId) {
-                $this->warn("  ⚠️  Transaction ID non trovato nei log per questo ordine");
+                $this->warn("   Transaction ID non trovato nei log per questo ordine");
                 $notFound++;
                 continue;
             }
@@ -571,22 +571,22 @@ class RecoverLabelUrlsFromShippo extends Command
                 $labelUrl = $transaction['label_url'] ?? null;
 
                 if ($labelUrl) {
-                    $this->info("  ✅ Label URL recuperato: {$labelUrl}");
+                    $this->info("  Label URL recuperato: {$labelUrl}");
 
                     if (!$dryRun) {
                         $order->update(['label_url' => $labelUrl]);
-                        $this->info("  ✅ Ordine aggiornato");
+                        $this->info("  Ordine aggiornato");
                         $recovered++;
                     } else {
                         $this->info("  [DRY-RUN] Aggiornerebbe con: {$labelUrl}");
                         $recovered++;
                     }
                 } else {
-                    $this->warn("  ⚠️  Label URL non presente nella transazione Shippo");
+                    $this->warn("   Label URL non presente nella transazione Shippo");
                     $notFound++;
                 }
             } catch (\Exception $e) {
-                $this->error("  ❌ Errore: {$e->getMessage()}");
+                $this->error("  Errore: {$e->getMessage()}");
                 $errors++;
 
                 Log::error('Errore recupero label_url da Shippo', [
@@ -600,9 +600,9 @@ class RecoverLabelUrlsFromShippo extends Command
 
         $this->newLine();
         if ($dryRun) {
-            $this->warn("⚠️  Modalità DRY-RUN: nessuna modifica è stata applicata");
+            $this->warn("  Modalità DRY-RUN: nessuna modifica è stata applicata");
         }
-        $this->info('✅ Completato!');
+        $this->info(' Completato!');
         
         $this->table(
             ['Risultato', 'Conteggio'],

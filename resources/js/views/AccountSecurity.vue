@@ -511,7 +511,7 @@ const deleteAccount = async () => {
   errorMessage.value = ''
   
   try {
-    console.log('🗑️ Tentativo eliminazione account...')
+    console.log('Tentativo eliminazione account...')
     const response = await fetch('/api/user/account', {
       method: 'DELETE',
       headers: {
@@ -533,7 +533,7 @@ const deleteAccount = async () => {
       let errorData
       try {
         errorData = await response.json()
-        console.error('❌ Errore eliminazione account:', errorData)
+        console.error('Errore eliminazione account:', errorData)
       } catch (e) {
         errorData = { message: `Errore HTTP ${response.status}: ${response.statusText}` }
         console.error('❌ Errore parsing risposta:', e)
@@ -541,7 +541,7 @@ const deleteAccount = async () => {
       errorMessage.value = errorData.message || `Errore durante l'eliminazione dell'account (${response.status})`
     }
   } catch (error) {
-    console.error('❌ Errore eliminazione account:', error)
+    console.error('Errore eliminazione account:', error)
     errorMessage.value = `Errore durante l'eliminazione dell'account: ${error.message}`
   } finally {
     loading.value = false

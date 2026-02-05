@@ -67,14 +67,14 @@ class TestShippoHardcoded extends Command
             'mass_unit' => 'kg'
         ];
 
-        $this->info('📦 Dati test:');
+        $this->info(' Dati test:');
         $this->line('  From: ' . $fromAddressData['city'] . ' (' . $fromAddressData['state'] . '), ' . $fromAddressData['zip'] . ', ' . $fromAddressData['country']);
         $this->line('  To: ' . $toAddressData['city'] . ' (' . $toAddressData['state'] . '), ' . $toAddressData['zip'] . ', ' . $toAddressData['country']);
         $this->line('  Parcel: ' . $parcelData['weight'] . ' ' . $parcelData['mass_unit'] . ', ' . $parcelData['length'] . 'x' . $parcelData['width'] . 'x' . $parcelData['height'] . ' ' . $parcelData['distance_unit']);
         $this->newLine();
 
         try {
-            $this->info('🔄 Creazione indirizzi...');
+            $this->info('Creazione indirizzi...');
             
             // Crea indirizzi con gestione errori dettagliata
             try {
@@ -84,13 +84,13 @@ class TestShippoHardcoded extends Command
                 }
                 flush();
                 $fromAddress = $shippoService->createAddress($fromAddressData, true);
-                $this->line('  ✅ Indirizzo FROM creato: ' . ($fromAddress['object_id'] ?? 'N/A'));
+                $this->line('  Indirizzo FROM creato: ' . ($fromAddress['object_id'] ?? 'N/A'));
                 if (ob_get_level() > 0) {
                     ob_flush();
                 }
                 flush();
             } catch (\Exception $e) {
-                $this->error('  ❌ Errore creazione indirizzo FROM:');
+                $this->error('  Errore creazione indirizzo FROM:');
                 $this->error('    ' . $e->getMessage());
                 $this->error('    File: ' . $e->getFile() . ':' . $e->getLine());
                 Log::error('Errore creazione indirizzo FROM nel test', [
@@ -109,13 +109,13 @@ class TestShippoHardcoded extends Command
                 }
                 flush();
                 $toAddress = $shippoService->createAddress($toAddressData, true);
-                $this->line('  ✅ Indirizzo TO creato: ' . ($toAddress['object_id'] ?? 'N/A'));
+                $this->line('  Indirizzo TO creato: ' . ($toAddress['object_id'] ?? 'N/A'));
                 if (ob_get_level() > 0) {
                     ob_flush();
                 }
                 flush();
             } catch (\Exception $e) {
-                $this->error('  ❌ Errore creazione indirizzo TO:');
+                $this->error('  Errore creazione indirizzo TO:');
                 $this->error('    ' . $e->getMessage());
                 $this->error('    File: ' . $e->getFile() . ':' . $e->getLine());
                 Log::error('Errore creazione indirizzo TO nel test', [
@@ -127,7 +127,7 @@ class TestShippoHardcoded extends Command
                 throw $e;
             }
 
-            $this->info('✅ Indirizzi creati:');
+            $this->info(' Indirizzi creati:');
             $this->line('  From address ID: ' . ($fromAddress['object_id'] ?? 'N/A'));
             $this->line('  To address ID: ' . ($toAddress['object_id'] ?? 'N/A'));
             $this->newLine();
@@ -135,27 +135,27 @@ class TestShippoHardcoded extends Command
             // Verifica validazione indirizzi
             if (isset($fromAddress['validation_results'])) {
                 $fromValid = $fromAddress['validation_results']['is_valid'] ?? false;
-                $this->line('  From address valid: ' . ($fromValid ? '✅ Sì' : '❌ No'));
+                $this->line('  From address valid: ' . ($fromValid ? ' Sì' : ' No'));
             }
             if (isset($toAddress['validation_results'])) {
                 $toValid = $toAddress['validation_results']['is_valid'] ?? false;
-                $this->line('  To address valid: ' . ($toValid ? '✅ Sì' : '❌ No'));
+                $this->line('  To address valid: ' . ($toValid ? ' Sì' : ' No'));
             }
             $this->newLine();
 
             $this->info('🔄 Creazione pacco...');
             try {
                 $parcel = $shippoService->createParcel($parcelData);
-                $this->info('✅ Pacco creato: ' . ($parcel['object_id'] ?? 'N/A'));
+                $this->info(' Pacco creato: ' . ($parcel['object_id'] ?? 'N/A'));
             } catch (\Exception $e) {
-                $this->error('❌ Errore creazione pacco:');
+                $this->error(' Errore creazione pacco:');
                 $this->error('  ' . $e->getMessage());
                 $this->error('  File: ' . $e->getFile() . ':' . $e->getLine());
                 throw $e;
             }
             $this->newLine();
 
-            $this->info('🔄 Creazione shipment (SENZA carrier_accounts specificati)...');
+            $this->info('Creazione shipment (SENZA carrier_accounts specificati)...');
             
             // Shipment SENZA carrier_accounts - Shippo userà i suoi default
             // Usa solo object_id del pacco, non l'intero oggetto (evita problemi con extra: [])
@@ -182,7 +182,7 @@ class TestShippoHardcoded extends Command
                 'async' => false
             ];
 
-                    $this->line('📋 Payload shipment:');
+                    $this->line(' Payload shipment:');
                     $this->line(json_encode($shipmentPayload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
                     $this->newLine();
                     
@@ -197,7 +197,7 @@ class TestShippoHardcoded extends Command
 
                     $shipment = $shippoService->createShipment($shipmentPayload, false);
 
-            $this->info('✅ Shipment creato: ' . ($shipment['object_id'] ?? 'N/A'));
+            $this->info(' Shipment creato: ' . ($shipment['object_id'] ?? 'N/A'));
             $this->line('  Status: ' . ($shipment['status'] ?? 'N/A'));
             $this->newLine();
 
@@ -225,7 +225,7 @@ class TestShippoHardcoded extends Command
                         'shipment_messages' => $shipment['messages'] ?? []
                     ]);
                     
-                    $this->info('📊 Rates grezze da Shippo (prima di qualsiasi filtro):');
+                    $this->info(' Rates grezze da Shippo (prima di qualsiasi filtro):');
                     $this->line('  Count: ' . count($rawRates));
             
             if (count($rawRates) > 0) {
@@ -234,13 +234,13 @@ class TestShippoHardcoded extends Command
                     $this->line('    ' . ($index + 1) . '. ' . ($rate['provider'] ?? 'N/A') . ' - ' . ($rate['servicelevel']['name'] ?? 'N/A') . ' - €' . ($rate['amount'] ?? 'N/A'));
                 }
             } else {
-                $this->warn('  ⚠️  Nessuna rate restituita da Shippo');
+                $this->warn('   Nessuna rate restituita da Shippo');
             }
             $this->newLine();
 
             // Messages da Shippo
             if (!empty($shipment['messages'])) {
-                $this->warn('⚠️  Messages da Shippo:');
+                $this->warn('Messages da Shippo:');
                 foreach ($shipment['messages'] as $msg) {
                     $this->line('  - [' . ($msg['source'] ?? 'N/A') . '] ' . ($msg['text'] ?? 'N/A'));
                 }
@@ -260,7 +260,7 @@ class TestShippoHardcoded extends Command
             ]);
 
             // Test con carrier accounts specifici (Chronopost e Colissimo)
-            $this->info('🔄 Test con carrier accounts specifici (Chronopost e Colissimo)...');
+            $this->info('Test con carrier accounts specifici (Chronopost e Colissimo)...');
             
             // Recupera carrier accounts disponibili
             $carrierAccounts = $shippoService->listCarrierAccounts();
@@ -324,7 +324,7 @@ class TestShippoHardcoded extends Command
                     }, $rawRates2),
                     'shipment_messages' => $shipment2['messages'] ?? []
                 ]);
-                $this->info('📊 Rates con carrier accounts specifici:');
+                $this->info(' Rates con carrier accounts specifici:');
                 $this->line('  Count: ' . count($rawRates2));
                 
                 if (count($rawRates2) > 0) {
@@ -332,7 +332,7 @@ class TestShippoHardcoded extends Command
                         $this->line('    ' . ($index + 1) . '. ' . ($rate['provider'] ?? 'N/A') . ' - ' . ($rate['servicelevel']['name'] ?? 'N/A') . ' - €' . ($rate['amount'] ?? 'N/A'));
                     }
                 } else {
-                    $this->warn('  ⚠️  Nessuna rate restituita');
+                    $this->warn('   Nessuna rate restituita');
                 }
                 $this->newLine();
                 
@@ -343,14 +343,14 @@ class TestShippoHardcoded extends Command
                     }
                 }
             } else {
-                $this->warn('⚠️  Chronopost o Colissimo non trovati nei carrier accounts');
+                $this->warn('Chronopost o Colissimo non trovati nei carrier accounts');
             }
 
             $this->newLine();
-            $this->info('✅ Test completato! Controlla i log per dettagli completi.');
+            $this->info(' Test completato! Controlla i log per dettagli completi.');
 
         } catch (\Exception $e) {
-            $this->error('❌ Errore durante il test:');
+            $this->error(' Errore durante il test:');
             $this->error($e->getMessage());
             $this->error('File: ' . $e->getFile() . ':' . $e->getLine());
             

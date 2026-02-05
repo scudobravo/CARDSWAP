@@ -21,13 +21,13 @@ class UpdateBasketballRarityVariation extends Command
         $dryRun = $this->option('dry-run');
         
         if ($dryRun) {
-            $this->warn('⚠️  DRY RUN MODE - Nessuna modifica verrà applicata');
+            $this->warn('DRY RUN MODE - Nessuna modifica verrà applicata');
         }
 
         // Trova la categoria Basketball
         $category = Category::where('slug', 'basketball')->first();
         if (!$category) {
-            $this->error('❌ Categoria basketball non trovata!');
+            $this->error('Categoria basketball non trovata!');
             return 1;
         }
 
@@ -38,29 +38,29 @@ class UpdateBasketballRarityVariation extends Command
         
         // Crea la directory persistente se non esiste
         if (!is_dir($persistentPath)) {
-            $this->info("📁 Creazione directory persistente: {$persistentPath}");
+            $this->info(" Creazione directory persistente: {$persistentPath}");
             if (!mkdir($persistentPath, 0755, true)) {
-                $this->error("❌ Impossibile creare la directory {$persistentPath}");
+                $this->error(" Impossibile creare la directory {$persistentPath}");
             } else {
-                $this->info("✅ Directory persistente creata");
+                $this->info(" Directory persistente creata");
             }
         }
         
         // Verifica anche la directory current (per retrocompatibilità)
         if (!is_dir($toimportPath)) {
-            $this->warn("⚠️  Directory {$toimportPath} non esiste, tentativo di creazione...");
+            $this->warn("Directory {$toimportPath} non esiste, tentativo di creazione...");
             if (!mkdir($toimportPath, 0755, true)) {
-                $this->warn("⚠️  Impossibile creare la directory {$toimportPath} (non critico)");
+                $this->warn("Impossibile creare la directory {$toimportPath} (non critico)");
             } else {
-                $this->info("✅ Directory {$toimportPath} creata");
+                $this->info(" Directory {$toimportPath} creata");
             }
         }
 
         // Trova i file CSV
         $csvFiles = $this->findCsvFiles();
         if (empty($csvFiles)) {
-            $this->error('❌ Nessun file CSV trovato!');
-            $this->warn('💡 Suggerimenti:');
+            $this->error('Nessun file CSV trovato!');
+            $this->warn('Suggerimenti:');
             $this->warn('   1. Verifica che i file CSV siano presenti in /home/forge/www.cardswaptcg.com/current/TOIMPORT/');
             $this->warn('   2. Lista file nella directory: ls -la /home/forge/www.cardswaptcg.com/current/TOIMPORT/');
             $this->warn('   3. Esegui lo script direttamente sul server di produzione via SSH');
@@ -82,7 +82,7 @@ class UpdateBasketballRarityVariation extends Command
             return 1;
         }
 
-        $this->info('📁 File CSV trovati: ' . count($csvFiles));
+        $this->info('File CSV trovati: ' . count($csvFiles));
         foreach ($csvFiles as $file) {
             $this->info("   - {$file}");
         }
@@ -101,22 +101,22 @@ class UpdateBasketballRarityVariation extends Command
             $uniqueCsvFiles = array_unique($uniqueCsvFiles);
         }
         
-        $this->info("📁 File CSV unici da processare: " . count($uniqueCsvFiles));
+        $this->info(" File CSV unici da processare: " . count($uniqueCsvFiles));
 
         // Crea un file di cache con tutte le corrispondenze per evitare di leggere i CSV ogni volta
         $cacheFile = storage_path('app/cache_basketball_rarity_variation.json');
         $useCache = file_exists($cacheFile) && (time() - filemtime($cacheFile)) < 3600; // Cache valida per 1 ora
         
         if ($useCache) {
-            $this->info("📦 Caricamento cache esistente...");
+            $this->info(" Caricamento cache esistente...");
             $csvData = json_decode(file_get_contents($cacheFile), true);
-            $this->info("📊 Chiavi caricate dalla cache: " . count($csvData));
+            $this->info(" Chiavi caricate dalla cache: " . count($csvData));
         } else {
             // NON caricare tutto il CSV in memoria - invece crea un indice leggero
             // che mappa solo le chiavi necessarie ai file e posizioni
-            $this->info("📊 Creazione indice CSV e cache (senza caricare tutto in memoria)...");
+            $this->info(" Creazione indice CSV e cache (senza caricare tutto in memoria)...");
             $csvData = $this->createCsvCache($uniqueCsvFiles, $cacheFile);
-            $this->info("📊 Chiavi uniche nella cache: " . count($csvData));
+            $this->info(" Chiavi uniche nella cache: " . count($csvData));
         }
 
         // Conta le carte totali
@@ -176,15 +176,15 @@ class UpdateBasketballRarityVariation extends Command
         $bar->finish();
         $this->newLine(2);
 
-        $this->info("📈 Statistiche:");
-        $this->info("   ✅ Carte aggiornate: {$updated}");
-        $this->info("   ⏭️  Carte saltate (già aggiornate): {$skipped}");
-        $this->info("   ❌ Carte non trovate nel CSV: {$notFound}");
+        $this->info("Statistiche:");
+        $this->info("   Carte aggiornate: {$updated}");
+        $this->info("   Carte saltate (già aggiornate): {$skipped}");
+        $this->info("   Carte non trovate nel CSV: {$notFound}");
 
         if ($dryRun) {
-            $this->warn("\n⚠️  DRY RUN - Nessuna modifica è stata applicata");
+            $this->warn("\nDRY RUN - Nessuna modifica è stata applicata");
         } else {
-            $this->info("\n✅ Aggiornamento completato!");
+            $this->info("\nAggiornamento completato!");
         }
 
         return 0;
@@ -195,7 +195,7 @@ class UpdateBasketballRarityVariation extends Command
         $file = $this->option('file');
         
         if ($file && file_exists($file)) {
-            $this->info("✅ Usando file specificato: {$file}");
+            $this->info(" Usando file specificato: {$file}");
             return [$file];
         }
 
@@ -209,11 +209,11 @@ class UpdateBasketballRarityVariation extends Command
             $persistentPath . '/Elenco Set Basket 3 - Foglio1.csv',
         ];
         
-        $this->info("🔍 Cerca file nella directory persistente (storage/app/TOIMPORT)...");
+        $this->info(" Cerca file nella directory persistente (storage/app/TOIMPORT)...");
         foreach ($persistentFiles as $file) {
             if (file_exists($file) && is_readable($file)) {
                 $csvFiles[] = $file;
-                $this->info("   ✅ File trovato: {$file}");
+                $this->info("   File trovato: {$file}");
             }
         }
         
@@ -224,11 +224,11 @@ class UpdateBasketballRarityVariation extends Command
             '/home/forge/www.cardswaptcg.com/current/TOIMPORT/Elenco Set Basket 3 - Foglio1.csv',
         ];
         
-        $this->info("🔍 Cerca file specifici nel server Forge...");
+        $this->info(" Cerca file specifici nel server Forge...");
         foreach ($specificFiles as $specificFile) {
             $exists = file_exists($specificFile);
             $readable = $exists ? is_readable($specificFile) : false;
-            $this->info("   {$specificFile}: " . ($exists ? ($readable ? "✅ trovato e leggibile" : "⚠️ trovato ma non leggibile") : "❌ non trovato"));
+            $this->info("   {$specificFile}: " . ($exists ? ($readable ? "trovato e leggibile" : "trovato ma non leggibile") : "non trovato"));
             
             if ($exists && $readable) {
                 $csvFiles[] = $specificFile;
@@ -237,7 +237,7 @@ class UpdateBasketballRarityVariation extends Command
         
         // Se non ha trovato file specifici, cerca nelle directory
         if (empty($csvFiles)) {
-            $this->info("🔍 Cerca file nelle directory...");
+            $this->info("Cerca file nelle directory...");
             $searchPaths = [
                 storage_path('app/TOIMPORT'), // Directory persistente (priorità)
                 base_path('TOIMPORT'),
@@ -248,31 +248,31 @@ class UpdateBasketballRarityVariation extends Command
 
             foreach ($searchPaths as $path) {
                 $isDir = is_dir($path);
-                $this->info("   {$path}: " . ($isDir ? "✅ directory esiste" : "❌ non esiste o non è una directory"));
+                $this->info("   {$path}: " . ($isDir ? "directory esiste" : "non esiste o non è una directory"));
                 
                 if ($isDir) {
                     $files = glob($path . '/*Basket*.csv');
                     if ($files) {
                         $csvFiles = array_merge($csvFiles, $files);
                         foreach ($files as $f) {
-                            $this->info("   ✅ File trovato: {$f}");
+                            $this->info("   File trovato: {$f}");
                         }
                     } else {
-                        $this->info("   ℹ️  Nessun file Basket*.csv trovato in questa directory");
+                        $this->info("   Nessun file Basket*.csv trovato in questa directory");
                     }
                 }
             }
             
             // Cerca anche nei releases con wildcard
-            $this->info("🔍 Cerca file nei releases...");
+            $this->info(" Cerca file nei releases...");
             $releaseFiles = glob('/home/forge/www.cardswaptcg.com/releases/*/TOIMPORT/*Basket*.csv');
             if ($releaseFiles) {
                 $csvFiles = array_merge($csvFiles, $releaseFiles);
                 foreach ($releaseFiles as $f) {
-                    $this->info("   ✅ File trovato: {$f}");
+                    $this->info("   File trovato: {$f}");
                 }
             } else {
-                $this->info("   ℹ️  Nessun file trovato nei releases");
+                $this->info("    Nessun file trovato nei releases");
             }
         }
 
@@ -305,7 +305,7 @@ class UpdateBasketballRarityVariation extends Command
 
         foreach ($files as $file) {
             if (!file_exists($file) || !is_readable($file)) {
-                $this->warn("⚠️  File non leggibile: {$file}");
+                $this->warn("File non leggibile: {$file}");
                 continue;
             }
 
@@ -313,7 +313,7 @@ class UpdateBasketballRarityVariation extends Command
 
             $handle = fopen($file, 'r');
             if (!$handle) {
-                $this->warn("⚠️  Impossibile aprire file: {$file}");
+                $this->warn("Impossibile aprire file: {$file}");
                 continue;
             }
 
@@ -378,12 +378,12 @@ class UpdateBasketballRarityVariation extends Command
             }
 
             fclose($handle);
-            $this->info("   ✅ Processate {$rowNum} righe da " . basename($file));
+            $this->info("   Processate {$rowNum} righe da " . basename($file));
         }
 
         // Salva la cache finale
         file_put_contents($cacheFile, json_encode($cache, JSON_UNESCAPED_UNICODE));
-        $this->info("📦 Cache salvata in: {$cacheFile}");
+        $this->info(" Cache salvata in: {$cacheFile}");
 
         return $cache;
     }

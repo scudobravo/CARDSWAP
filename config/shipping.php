@@ -34,7 +34,7 @@ return [
      * 
      * @var int
      */
-    'max_price_tables_per_seller' => env('SHIPPING_MAX_PRICE_TABLES_PER_SELLER', 4),
+    'max_price_tables_per_seller' => env('SHIPPING_MAX_PRICE_TABLES_PER_SELLER', 5),
 
     /*
     |--------------------------------------------------------------------------

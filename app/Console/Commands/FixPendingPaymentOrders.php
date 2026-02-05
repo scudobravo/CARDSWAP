@@ -36,7 +36,7 @@ class FixPendingPaymentOrders extends Command
             ->get();
 
         if ($orders->isEmpty()) {
-            $this->info('✅ Nessun ordine trovato con status pending_payment e Payment Intent.');
+            $this->info(' Nessun ordine trovato con status pending_payment e Payment Intent.');
             return 0;
         }
 
@@ -57,7 +57,7 @@ class FixPendingPaymentOrders extends Command
                     'paid_at' => $order->paid_at ?? now()
                 ]);
 
-                $this->info("  ✅ Aggiornato a 'confirmed'");
+                $this->info("  Aggiornato a 'confirmed'");
                 $updated++;
 
                 Log::info('Ordine aggiornato da pending_payment a confirmed', [
@@ -66,16 +66,16 @@ class FixPendingPaymentOrders extends Command
                     'payment_intent_id' => $order->stripe_payment_intent_id
                 ]);
             } else {
-                $this->comment("  ⚠️  Verrebbe aggiornato a 'confirmed' (dry-run)");
+                $this->comment("   Verrebbe aggiornato a 'confirmed' (dry-run)");
             }
 
             $this->newLine();
         }
 
         if ($dryRun) {
-            $this->warn("⚠️  DRY RUN: Nessun ordine è stato modificato. Rimuovi --dry-run per applicare le modifiche.");
+            $this->warn("  DRY RUN: Nessun ordine è stato modificato. Rimuovi --dry-run per applicare le modifiche.");
         } else {
-            $this->info("✅ {$updated} ordini aggiornati con successo!");
+            $this->info("{$updated} ordini aggiornati con successo!");
         }
 
         return 0;

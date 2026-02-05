@@ -508,7 +508,7 @@ watch(() => props.cardData, (newCardData) => {
     
     // Se ci sono nuovi valori, resetta hasInitialized per forzare il popolamento
     if (hasNewValues && hasInitialized.value) {
-      console.log('🔄 Reset hasInitialized per popolare con nuovi valori dal CardModel')
+      console.log('Reset hasInitialized per popolare con nuovi valori dal CardModel')
       hasInitialized.value = false
     }
     
@@ -541,7 +541,7 @@ watch(() => props.cardData, (newCardData) => {
           notes: newCardData.notes !== undefined ? newCardData.notes : (additionalDetails.value.notes || '')
         }
         
-        console.log('🔄 ImagePreviewStep - additionalDetails popolato:', {
+        console.log('ImagePreviewStep - additionalDetails popolato:', {
           autograph: additionalDetails.value.autograph,
           rookie: additionalDetails.value.rookie,
           relic: additionalDetails.value.relic,

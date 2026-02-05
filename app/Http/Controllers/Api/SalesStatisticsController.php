@@ -71,13 +71,13 @@ class SalesStatisticsController extends Controller
             $ordersChange = $previousTotalOrders > 0 ? (($totalOrders - $previousTotalOrders) / $previousTotalOrders) * 100 : 0;
             $aovChange = $previousAverageOrderValue > 0 ? (($averageOrderValue - $previousAverageOrderValue) / $previousAverageOrderValue) * 100 : 0;
 
-            // Statistiche ordini per stato
+            // Statistiche ordini per stato (include tutti gli stati usati da CardSwap V1)
             $ordersByStatus = [
-                'pending' => $orders->where('status', 'pending')->count(),
-                'confirmed' => $orders->where('status', 'confirmed')->count(),
-                'shipped' => $orders->where('status', 'shipped')->count(),
-                'delivered' => $orders->where('status', 'delivered')->count(),
-                'cancelled' => $orders->where('status', 'cancelled')->count(),
+                'pending' => $orders->whereIn('status', ['pending', 'pending_payment'])->count(),
+                'confirmed' => $orders->whereIn('status', ['confirmed', 'paid_funds_held'])->count(),
+                'shipped' => $orders->whereIn('status', ['shipped', 'label_created', 'in_transit_verified'])->count(),
+                'delivered' => $orders->whereIn('status', ['delivered', 'delivered_pending_72h', 'completed'])->count(),
+                'cancelled' => $orders->whereIn('status', ['cancelled', 'refunded'])->count(),
             ];
 
             // Top prodotti venduti
@@ -136,7 +136,7 @@ class SalesStatisticsController extends Controller
               ->whereBetween('created_at', [$startDate, $endDate])
               ->whereIn('status', ['delivered', 'shipped']);
         })
-        ->with(['cardListing.cardModel'])
+        ->with(['cardListing.cardModel.category'])
         ->select('card_listing_id', DB::raw('SUM(quantity) as quantity_sold'), DB::raw('SUM(total_price) as total_revenue'))
         ->groupBy('card_listing_id')
         ->orderBy('quantity_sold', 'desc')
@@ -150,10 +150,16 @@ class SalesStatisticsController extends Controller
 
         return $query->get()->map(function ($item) {
             $cardModel = $item->cardListing->cardModel;
+            $categoryName = 'N/A';
+            if ($cardModel && $cardModel->relationLoaded('category') && $cardModel->category) {
+                $categoryName = is_object($cardModel->category) ? $cardModel->category->name : (string) $cardModel->category;
+            } elseif ($cardModel && $cardModel->category) {
+                $categoryName = is_object($cardModel->category) ? $cardModel->category->name : (string) $cardModel->category;
+            }
             return [
                 'id' => $item->card_listing_id,
                 'name' => $cardModel ? $cardModel->name : 'Prodotto',
-                'category' => $cardModel ? $cardModel->category : 'N/A',
+                'category' => $categoryName,
                 'quantity_sold' => $item->quantity_sold,
                 'total_revenue' => $item->total_revenue,
             ];

@@ -45,10 +45,17 @@ const bucketLabels = {
   PARCEL_L: 'PARCEL L'
 }
 
+const methodLabels = {
+  TRACKED_STANDARD: 'Tracciata standard',
+  TRACKED_EXPRESS: 'Tracciata express',
+  TRACKED_INSURED: 'Tracciata assicurata',
+  UNTRACKED_STANDARD: 'Non tracciata'
+}
+
 const methodLabel = computed(() => {
   const m = props.orderShipping?.shipping_method
   if (!m) return '—'
-  return m.replace(/_/g, ' ')
+  return methodLabels[m] || m.replace(/_/g, ' ')
 })
 
 const bucketLabel = computed(() => {

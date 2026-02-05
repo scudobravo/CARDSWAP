@@ -247,7 +247,7 @@
                   <div v-else-if="getShippingMethodsForSeller(seller.id).length === 0" 
                        class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <p class="text-sm text-yellow-800">
-                      ⚠️ Nessuna opzione di spedizione disponibile per questo venditore e paese.
+                      Nessuna opzione di spedizione disponibile per questo venditore e paese.
                     </p>
                   </div>
                   
@@ -683,11 +683,11 @@ const saveNewAddress = async () => {
 
 const initializeStripe = async () => {
   try {
-    console.log('🔧 Inizializzazione Stripe...')
+    console.log('Inizializzazione Stripe...')
     
     // Carica Stripe.js se non è già caricato
     if (!window.Stripe) {
-      console.log('📦 Caricamento Stripe.js...')
+      console.log('Caricamento Stripe.js...')
       const script = document.createElement('script')
       script.src = 'https://js.stripe.com/v3/'
       script.async = true
@@ -699,9 +699,9 @@ const initializeStripe = async () => {
         // Timeout dopo 10 secondi
         setTimeout(() => reject(new Error('Timeout caricamento Stripe.js')), 10000)
       })
-      console.log('✅ Stripe.js caricato')
+      console.log('Stripe.js caricato')
     } else {
-      console.log('✅ Stripe.js già caricato')
+      console.log('Stripe.js già caricato')
     }
     
     // Ottieni la chiave Stripe dal meta tag (sempre aggiornata dal .env) o dal vite config
@@ -709,7 +709,7 @@ const initializeStripe = async () => {
     const envKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
     const stripeKey = (metaKey && metaKey.trim() !== '') ? metaKey.trim() : (envKey && envKey.trim() !== '' ? envKey.trim() : null)
     
-    console.log('🔑 Chiave Stripe:', {
+    console.log('Chiave Stripe:', {
       hasMetaKey: !!metaKey,
       metaKeyValue: metaKey ? metaKey.substring(0, 20) + '...' : 'null',
       hasEnvKey: !!envKey,
@@ -719,7 +719,7 @@ const initializeStripe = async () => {
     })
     
     if (!stripeKey || stripeKey === 'null' || stripeKey === '') {
-      console.error('❌ Stripe publishable key non trovata!', {
+      console.error('Stripe publishable key non trovata!', {
         metaKey,
         envKey,
         allMetaTags: Array.from(document.querySelectorAll('meta')).map(m => ({
@@ -737,7 +737,7 @@ const initializeStripe = async () => {
     }
     
     stripe.value = window.Stripe(stripeKey)
-    console.log('✅ Stripe inizializzato')
+    console.log('Stripe inizializzato')
     
     // Inizializza Stripe Elements
     if (stripe.value) {
@@ -768,7 +768,7 @@ const initializeStripe = async () => {
         },
       })
       
-      console.log('✅ Stripe Elements creato')
+      console.log('Stripe Elements creato')
       
       // Attendi che il DOM sia pronto e che il div esista
       let attempts = 0
@@ -785,9 +785,9 @@ const initializeStripe = async () => {
       }
       
       if (cardElementDiv) {
-        console.log('✅ Div card-element trovato, montaggio Stripe Elements...')
+        console.log('Div card-element trovato, montaggio Stripe Elements...')
         cardElement.value.mount('#card-element')
-        console.log('✅ Stripe Elements montato con successo')
+        console.log('Stripe Elements montato con successo')
         
         // Gestisci errori di validazione
         cardElement.value.on('change', ({error}) => {
@@ -803,7 +803,7 @@ const initializeStripe = async () => {
           }
         })
       } else {
-        console.error('❌ Div #card-element non trovato dopo', maxAttempts, 'tentativi')
+        console.error('Div #card-element non trovato dopo', maxAttempts, 'tentativi')
         const errorDiv = document.getElementById('card-errors')
         if (errorDiv) {
           errorDiv.textContent = 'Errore: Impossibile inizializzare il campo carta di credito. Ricarica la pagina.'
@@ -812,7 +812,7 @@ const initializeStripe = async () => {
       }
     }
   } catch (error) {
-    console.error('❌ Errore nell\'inizializzazione Stripe:', error)
+    console.error('Errore nell\'inizializzazione Stripe:', error)
     const errorDiv = document.getElementById('card-errors')
     if (errorDiv) {
       errorDiv.textContent = `Errore: ${error.message || 'Impossibile inizializzare Stripe. Ricarica la pagina.'}`
@@ -824,12 +824,12 @@ const initializeStripe = async () => {
 // Funzione per precompilare i dati dell'utente
 const populateUserData = () => {
   if (authStore.user) {
-    console.log('🔍 Debug populateUserData - Dati utente completi:', authStore.user)
+    console.log('Debug populateUserData - Dati utente completi:', authStore.user)
     
     // Informazioni di contatto
     formData.value.email = authStore.user.email || ''
     formData.value.phone = authStore.user.phone || ''
-    console.log('📧 Email precompilata:', formData.value.email)
+    console.log('Email precompilata:', formData.value.email)
     console.log('📞 Telefono precompilato:', formData.value.phone)
     
     // Estrai nome e cognome dal campo 'name' se first_name e last_name sono null
@@ -860,22 +860,22 @@ const populateUserData = () => {
     
     if (authStore.user.address) {
       formData.value.address = authStore.user.address
-      console.log('✅ Indirizzo precompilato:', formData.value.address)
+      console.log('Indirizzo precompilato:', formData.value.address)
     }
     if (authStore.user.city) {
       formData.value.city = authStore.user.city
-      console.log('✅ Città precompilata:', formData.value.city)
+      console.log('Città precompilata:', formData.value.city)
     }
     if (authStore.user.postal_code) {
       formData.value.postalCode = authStore.user.postal_code
-      console.log('✅ CAP precompilato:', formData.value.postalCode)
+      console.log('CAP precompilato:', formData.value.postalCode)
     }
     if (authStore.user.country) {
       formData.value.country = authStore.user.country
-      console.log('✅ Paese precompilato:', formData.value.country)
+      console.log('Paese precompilato:', formData.value.country)
     }
     
-    console.log('📋 Form finale precompilato:', formData.value)
+    console.log('Form finale precompilato:', formData.value)
   }
 }
 
@@ -1195,7 +1195,7 @@ const processPayment = async () => {
     }
     
   } catch (error) {
-    console.error('❌ Errore nel pagamento:', error)
+    console.error('Errore nel pagamento:', error)
     
     // Gestisci errori specifici
     let errorMessage = 'Errore nel processamento del pagamento'
@@ -1212,7 +1212,7 @@ const processPayment = async () => {
         
         // Verifica se l'errore è relativo a Stripe Connect del venditore
         if (errorText.includes('Stripe Connect') || errorText.includes('non può ricevere pagamenti') || errorText.includes('non ha configurato') || errorText.includes('non ha completato')) {
-          errorMessage = `⚠️ Impossibile completare l'acquisto\n\n${errorText}\n\nIl venditore deve configurare Stripe Connect prima di poter vendere. Contatta il supporto se il problema persiste.`
+          errorMessage = `Impossibile completare l'acquisto\n\n${errorText}\n\nIl venditore deve configurare Stripe Connect prima di poter vendere. Contatta il supporto se il problema persiste.`
         } else {
           errorMessage = `Errore di validazione: ${errorText}`
         }

@@ -123,20 +123,13 @@
         />
       </div>
 
-      <!-- Grafici -->
+      <!-- Grafici: nascosti fino a integrazione (grafici vuoti) -->
+      <!--
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SalesChart
-          title="Vendite nel Tempo"
-          :data="statistics.daily_sales"
-          type="line"
-        />
-        
-        <SalesChart
-          title="Vendite per Categoria"
-          :data="Object.entries(statistics.category_sales || {})"
-          type="pie"
-        />
+        <SalesChart title="Vendite nel Tempo" :data="statistics.daily_sales" type="line" />
+        <SalesChart title="Vendite per Categoria" :data="Object.entries(statistics.category_sales || {})" type="pie" />
       </div>
+      -->
 
       <!-- Statistiche Dettagliate -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -155,7 +148,7 @@
                 </span>
                 <div>
                   <p class="text-sm font-gill-sans-semibold text-gray-900">{{ product.name }}</p>
-                  <p class="text-xs text-gray-500">{{ product.category }}</p>
+                  <p class="text-xs text-gray-500">{{ categoryLabel(product.category) }}</p>
                 </div>
               </div>
               <div class="text-right">
@@ -225,6 +218,11 @@
                   €{{ formatPriceItaliana(month.average_order_value) }}
                 </td>
               </tr>
+              <tr v-if="!statistics.monthly_trend?.length">
+                <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500">
+                  Nessun dato per il periodo selezionato
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -246,7 +244,6 @@
 import { ref, onMounted } from 'vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import StatisticsCard from '@/components/statistics/StatisticsCard.vue'
-import SalesChart from '@/components/statistics/SalesChart.vue'
 import { formatPriceItaliana } from '../utils/priceFormatter'
 import { 
   ChartBarIcon, 
@@ -302,6 +299,14 @@ const formatMonth = (monthString) => {
     year: 'numeric', 
     month: 'long' 
   })
+}
+
+// Mostra solo il nome della categoria (backend può inviare oggetto o stringa)
+const categoryLabel = (category) => {
+  if (category == null || category === '') return '—'
+  if (typeof category === 'string') return category
+  if (typeof category === 'object' && category !== null && 'name' in category) return category.name
+  return '—'
 }
 
 // Lifecycle

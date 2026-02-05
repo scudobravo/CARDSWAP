@@ -209,12 +209,12 @@ class ImportFootballExcelCards extends Command
             return 1;
         }
 
-        $this->info("🚀 Inizio importazione carte di calcio da Excel...");
-        $this->info("📁 File: {$filePath}");
-        $this->info("📦 Chunk size: {$this->chunkSize}");
+        $this->info("Inizio importazione carte di calcio da Excel...");
+        $this->info("File: {$filePath}");
+        $this->info("Chunk size: {$this->chunkSize}");
         
         if ($dryRun) {
-            $this->warn("⚠️  Modalità DRY RUN - Nessun dato verrà salvato");
+            $this->warn("Modalità DRY RUN - Nessun dato verrà salvato");
         }
 
         if ($clearTables) {
@@ -227,7 +227,7 @@ class ImportFootballExcelCards extends Command
         // Processa il file in chunk
         $this->processFileInChunks($filePath, $category, $limit, $dryRun);
 
-        $this->info("✅ Importazione completata!");
+        $this->info("Importazione completata!");
         return 0;
     }
 
@@ -237,11 +237,11 @@ class ImportFootballExcelCards extends Command
     private function clearTables($dryRun = false)
     {
         if ($dryRun) {
-            $this->info("🧹 DRY RUN: Svuotamento tabelle simulato");
+            $this->info("DRY RUN: Svuotamento tabelle simulato");
             return;
         }
 
-        $this->info("🧹 Svuotamento tabelle...");
+        $this->info("Svuotamento tabelle...");
         
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         CardModel::truncate();
@@ -251,7 +251,7 @@ class ImportFootballExcelCards extends Command
         League::truncate();
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         
-        $this->info("✅ Tabelle svuotate");
+        $this->info("Tabelle svuotate");
     }
 
     /**
@@ -270,7 +270,7 @@ class ImportFootballExcelCards extends Command
             throw new \Exception("File CSV vuoto o malformato");
         }
 
-        $this->info("📋 Header rilevato: " . implode(', ', $header));
+        $this->info("Header rilevato: " . implode(', ', $header));
 
         $rowCount = 0;
         $processedCount = 0;
@@ -302,7 +302,7 @@ class ImportFootballExcelCards extends Command
             if (count($chunk) >= $this->chunkSize) {
                 $this->processChunk($chunk, $category, $dryRun, $processedCount);
                 $processedCount += count($chunk);
-                $this->info("📊 Processate {$processedCount} righe...");
+                $this->info("Processate {$processedCount} righe...");
                 $chunk = [];
             }
         }
@@ -314,7 +314,7 @@ class ImportFootballExcelCards extends Command
         }
 
         fclose($handle);
-        $this->info("📊 Totale righe processate: {$processedCount}");
+        $this->info("Totale righe processate: {$processedCount}");
     }
 
     /**
@@ -327,7 +327,7 @@ class ImportFootballExcelCards extends Command
         $requiredFields = ['Player', 'Numero', 'BRAND', 'SET'];
         foreach ($requiredFields as $field) {
             if (!isset($rowData[$field])) {
-                $this->warn("⚠️  Riga {$rowNumber}: Campo obbligatorio '{$field}' mancante - riga saltata");
+                $this->warn("Riga {$rowNumber}: Campo obbligatorio '{$field}' mancante - riga saltata");
                 Log::warning("ImportFootballExcelCards - Campo mancante", [
                     'row' => $rowNumber,
                     'field' => $field,
@@ -355,7 +355,7 @@ class ImportFootballExcelCards extends Command
                 
                 // Verifica che ora abbiamo un player name valido
                 if (!empty(trim($correctedData['Player'] ?? ''))) {
-                    $this->warn("🔧 Riga {$rowNumber}: Corretto parsing CSV malformato");
+                    $this->warn("Riga {$rowNumber}: Corretto parsing CSV malformato");
                     Log::info("ImportFootballExcelCards - Riga corretta", [
                         'row' => $rowNumber,
                         'original_card_number' => substr($cardNumber, 0, 100),
@@ -366,7 +366,7 @@ class ImportFootballExcelCards extends Command
             }
             
             // Se non riusciamo a correggere, salta la riga
-            $this->warn("⚠️  Riga {$rowNumber}: Impossibile correggere riga CSV malformata - riga saltata");
+            $this->warn("Riga {$rowNumber}: Impossibile correggere riga CSV malformata - riga saltata");
             Log::warning("ImportFootballExcelCards - Riga non correggibile", [
                 'row' => $rowNumber,
                 'card_number_preview' => substr($cardNumber, 0, 200)
@@ -376,7 +376,7 @@ class ImportFootballExcelCards extends Command
         
         // Verifica che il player name non sia vuoto
         if (empty($playerName)) {
-            $this->warn("⚠️  Riga {$rowNumber}: Player name vuoto - riga saltata");
+            $this->warn("Riga {$rowNumber}: Player name vuoto - riga saltata");
             Log::warning("ImportFootballExcelCards - Player name vuoto", [
                 'row' => $rowNumber,
                 'data' => $rowData
@@ -390,7 +390,7 @@ class ImportFootballExcelCards extends Command
             $cardNumberParts = explode(',', $cardNumber);
             $rowData['Numero'] = trim($cardNumberParts[0]);
             
-            $this->warn("🔧 Riga {$rowNumber}: Card number troppo lungo, estratto solo la prima parte");
+            $this->warn("Riga {$rowNumber}: Card number troppo lungo, estratto solo la prima parte");
             Log::info("ImportFootballExcelCards - Card number corretto", [
                 'row' => $rowNumber,
                 'original' => substr($cardNumber, 0, 100),
@@ -407,7 +407,7 @@ class ImportFootballExcelCards extends Command
     private function processChunk($chunk, $category, $dryRun = false, $startRowNumber = 0)
     {
         if ($dryRun) {
-            $this->info("🔄 DRY RUN: Processamento chunk di " . count($chunk) . " righe");
+            $this->info("DRY RUN: Processamento chunk di " . count($chunk) . " righe");
             return;
         }
 
@@ -427,7 +427,7 @@ class ImportFootballExcelCards extends Command
                 $errorCount++;
                 $playerName = $row['Player'] ?? 'Unknown';
                 $cardNumber = $row['Numero'] ?? 'Unknown';
-                $this->error("❌ Errore alla riga {$rowNumber} (Player: {$playerName}, Numero: {$cardNumber}): " . $e->getMessage());
+                $this->error("Errore alla riga {$rowNumber} (Player: {$playerName}, Numero: {$cardNumber}): " . $e->getMessage());
                 Log::error("ImportFootballExcelCards - Errore riga {$rowNumber}", [
                     'player' => $playerName,
                     'numero' => $cardNumber,
@@ -438,7 +438,7 @@ class ImportFootballExcelCards extends Command
         }
 
         if ($errorCount > 0 || $skippedCount > 0) {
-            $this->warn("⚠️  Chunk completato: {$successCount} successi, {$errorCount} errori, {$skippedCount} saltati");
+            $this->warn("Chunk completato: {$successCount} successi, {$errorCount} errori, {$skippedCount} saltati");
         }
     }
 
@@ -458,7 +458,7 @@ class ImportFootballExcelCards extends Command
                     'is_active' => true,
                     'sort_order' => 1,
                 ]);
-                $this->info("✅ Creata categoria Calcio");
+                $this->info("Creata categoria Calcio");
             } else {
                 $category = (object) [
                     'id' => 1,
@@ -503,7 +503,7 @@ class ImportFootballExcelCards extends Command
             // Se card_number contiene virgole e sembra essere l'intera riga, estrai solo la prima parte
             $cardNumberParts = explode(',', $cardNumber);
             $cardNumber = trim($cardNumberParts[0]);
-            $this->warn("🔧 Riga {$rowNumber}: Card number corretto (era troppo lungo)");
+            $this->warn("Riga {$rowNumber}: Card number corretto (era troppo lungo)");
         }
         
         // Campi boolean per le nuove caratteristiche

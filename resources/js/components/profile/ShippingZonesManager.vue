@@ -248,10 +248,10 @@ const closeAdvancedModal = () => {
           loading.value = true
           
           try {
-            console.log('🔍 zoneData ricevuto:', zoneData)
-            console.log('🔍 zoneData.countries:', zoneData.countries)
-            console.log('🔍 zoneData.excludedCountries:', zoneData.excludedCountries)
-            console.log('🔍 editingAdvancedZone.value:', editingAdvancedZone.value)
+            console.log(' zoneData ricevuto:', zoneData)
+            console.log(' zoneData.countries:', zoneData.countries)
+            console.log(' zoneData.excludedCountries:', zoneData.excludedCountries)
+            console.log(' editingAdvancedZone.value:', editingAdvancedZone.value)
     
     // Prepara i dati per il salvataggio
     const saveData = {
@@ -272,10 +272,10 @@ const closeAdvancedModal = () => {
       description: editingAdvancedZone.value?.description || `Zona ${zoneData.option} con prezzi SHIPPO`
     }
     
-            console.log('🔍 saveData preparato:', saveData)
-            console.log('🔍 saveData.is_active:', saveData.is_active, typeof saveData.is_active)
-            console.log('🔍 saveData.included_countries:', saveData.included_countries)
-            console.log('🔍 saveData.excluded_countries:', saveData.excluded_countries)
+            console.log(' saveData preparato:', saveData)
+            console.log(' saveData.is_active:', saveData.is_active, typeof saveData.is_active)
+            console.log(' saveData.included_countries:', saveData.included_countries)
+            console.log(' saveData.excluded_countries:', saveData.excluded_countries)
 
     // Controlla se esiste già una zona con lo stesso nome per l'utente corrente
     if (!editingAdvancedZone.value) {
@@ -306,15 +306,15 @@ const closeAdvancedModal = () => {
     
             if (response.ok) {
               const result = await response.json()
-              console.log('✅ Zona avanzata salvata:', result)
-              console.log('✅ is_active salvato:', result.data?.is_active, typeof result.data?.is_active)
-              console.log('✅ included_countries salvati:', result.data?.included_countries)
-              console.log('✅ excluded_countries salvati:', result.data?.excluded_countries)
+              console.log(' Zona avanzata salvata:', result)
+              console.log(' is_active salvato:', result.data?.is_active, typeof result.data?.is_active)
+              console.log(' included_countries salvati:', result.data?.included_countries)
+              console.log(' excluded_countries salvati:', result.data?.excluded_countries)
               await loadZones()
               closeAdvancedModal()
             } else {
               const error = await response.json()
-              console.error('❌ Errore nel salvataggio:', error)
+              console.error('Errore nel salvataggio:', error)
               alert(`Errore: ${error.message}`)
             }
   } catch (error) {

@@ -21,8 +21,8 @@ class ImportDisneySpongebobProduction extends Command
         // Verifica ambiente
         $env = config('app.env');
         if ($env !== 'production' && !$this->option('auto')) {
-            if (!$this->confirm("⚠️  L'ambiente non è 'production' (attuale: $env). Continuare?")) {
-                $this->error('❌ Operazione annullata.');
+            if (!$this->confirm("L'ambiente non è 'production' (attuale: $env). Continuare?")) {
+                $this->error('Operazione annullata.');
                 return 1;
             }
         }
@@ -47,7 +47,7 @@ class ImportDisneySpongebobProduction extends Command
         $duration = round(($endTime - $startTime) / 60, 2);
 
         $this->newLine();
-        $this->info("✅ Importazione completata! Tempo totale: $duration minuti");
+        $this->info("Importazione completata! Tempo totale: $duration minuti");
         $this->info('═══════════════════════════════════════════════════════');
 
         return 0;
@@ -56,7 +56,7 @@ class ImportDisneySpongebobProduction extends Command
     private function importCategory($categorySlug)
     {
         $categoryName = ucfirst($categorySlug);
-        $this->info("📦 Importazione categoria: $categoryName");
+        $this->info("Importazione categoria: $categoryName");
         $this->newLine();
 
         // Verifica stato attuale
@@ -68,8 +68,8 @@ class ImportDisneySpongebobProduction extends Command
             $q->where('slug', $categorySlug);
         })->count();
 
-        $this->info("📊 Carte $categoryName attuali: $currentCards");
-        $this->info("📊 Set $categoryName attuali: $currentSets");
+        $this->info("Carte $categoryName attuali: $currentCards");
+        $this->info("Set $categoryName attuali: $currentSets");
         $this->newLine();
 
         // File da importare
@@ -85,19 +85,19 @@ class ImportDisneySpongebobProduction extends Command
         }
 
         // Verifica file
-        $this->info("📁 Verifica file CSV...");
+        $this->info("Verifica file CSV...");
         $filesFound = [];
         foreach ($files as $file) {
             if (file_exists(base_path($file))) {
-                $this->info("✅ Trovato: $file");
+                $this->info("Trovato: $file");
                 $filesFound[] = $file;
             } else {
-                $this->error("❌ File non trovato: $file");
+                $this->error("File non trovato: $file");
             }
         }
 
         if (empty($filesFound)) {
-            $this->error("❌ Nessun file CSV trovato per $categoryName!");
+            $this->error("Nessun file CSV trovato per $categoryName!");
             return;
         }
 
@@ -105,7 +105,7 @@ class ImportDisneySpongebobProduction extends Command
 
         // Importazione
         foreach ($filesFound as $index => $file) {
-            $this->info("📄 Importazione file " . ($index + 1) . ": $file");
+            $this->info("Importazione file " . ($index + 1) . ": $file");
             
             if ($categorySlug === 'disney') {
                 $this->call('import:disney-cards', [
@@ -117,7 +117,7 @@ class ImportDisneySpongebobProduction extends Command
                 ]);
             }
             
-            $this->info("✅ File " . ($index + 1) . " importato");
+            $this->info("File " . ($index + 1) . " importato");
             $this->newLine();
         }
 
@@ -130,7 +130,7 @@ class ImportDisneySpongebobProduction extends Command
             $q->where('slug', $categorySlug);
         })->count();
 
-        $this->info("✅ $categoryName completato!");
+        $this->info("$categoryName completato!");
         $this->info("   Carte: $finalCards (prima: $currentCards)");
         $this->info("   Set: $finalSets (prima: $currentSets)");
         $this->newLine();

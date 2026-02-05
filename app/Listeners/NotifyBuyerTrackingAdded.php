@@ -4,9 +4,8 @@ namespace App\Listeners;
 
 use App\Events\TrackingAdded;
 use App\Services\NotificationService;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
-class NotifyBuyerTrackingAdded implements ShouldQueue
+class NotifyBuyerTrackingAdded
 {
     public function handle(TrackingAdded $event): void
     {

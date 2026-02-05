@@ -4,9 +4,8 @@ namespace App\Listeners;
 
 use App\Events\OrderCancelled;
 use App\Services\NotificationService;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
-class NotifySellerOrderCancelled implements ShouldQueue
+class NotifySellerOrderCancelled
 {
     public function handle(OrderCancelled $event): void
     {

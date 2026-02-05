@@ -4,9 +4,8 @@ namespace App\Listeners;
 
 use App\Events\OrderRefunded;
 use App\Services\NotificationService;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
-class NotifyBuyerOrderRefunded implements ShouldQueue
+class NotifyBuyerOrderRefunded
 {
     public function handle(OrderRefunded $event): void
     {

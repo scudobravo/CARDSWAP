@@ -367,8 +367,8 @@ const goBack = () => {
 }
 
 const applyBulkEdit = () => {
-  console.log('🔍 BulkEditForm - selectedCards:', props.selectedCards)
-  console.log('🔍 BulkEditForm - bulkData:', bulkData.value)
+  console.log('BulkEditForm - selectedCards:', props.selectedCards)
+  console.log('BulkEditForm - bulkData:', bulkData.value)
   
   const listings = props.selectedCards.map(card => ({
     card_model_id: card.id,
@@ -376,7 +376,7 @@ const applyBulkEdit = () => {
     ...bulkData.value
   }))
   
-  console.log('🔍 BulkEditForm - listings create:', listings)
+  console.log('BulkEditForm - listings create:', listings)
   
   // Emetti sia i listings che le immagini
   emit('apply-bulk-edit', listings)
@@ -483,9 +483,9 @@ const loadGradingData = async () => {
 
 // Lifecycle
 onMounted(() => {
-  console.log('🔧 BulkEditForm mounted')
-  console.log('🔧 Selected cards on mount:', props.selectedCards)
-  console.log('🔧 Selected cards length:', props.selectedCards?.length)
+  console.log('BulkEditForm mounted')
+  console.log('Selected cards on mount:', props.selectedCards)
+  console.log('Selected cards length:', props.selectedCards?.length)
   loadGradingData()
 })
 </script>

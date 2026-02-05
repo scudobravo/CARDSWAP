@@ -22,9 +22,9 @@
 
     <!-- CTA Aggiungi tabella -->
     <div class="mb-6 flex items-center justify-between">
-      <span class="text-sm text-gray-500">{{ tables.length }} / 4 tabelle</span>
+      <span class="text-sm text-gray-500">{{ tables.length }} / 5 tabelle</span>
       <button
-        v-if="tables.length < 4"
+        v-if="tables.length < 5"
         type="button"
         @click="openDrawer()"
         class="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
@@ -151,7 +151,7 @@ const editingTableData = ref(null)
 const deleteModalOpen = ref(false)
 const tableToDelete = ref(null)
 
-const MAX_TABLES = 4
+const MAX_TABLES = 5
 
 function tableStatusLabel (table) {
   const hasCountries = table.countries && table.countries.length > 0

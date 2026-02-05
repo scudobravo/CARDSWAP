@@ -22,14 +22,14 @@ class ImportBasketballProduction extends Command
         // Verifica ambiente
         $env = config('app.env');
         if ($env !== 'production' && !$this->option('auto')) {
-            if (!$this->confirm("⚠️  L'ambiente non è 'production' (attuale: $env). Continuare?")) {
-                $this->error('❌ Operazione annullata.');
+            if (!$this->confirm("L'ambiente non è 'production' (attuale: $env). Continuare?")) {
+                $this->error('Operazione annullata.');
                 return 1;
             }
         }
 
         // Verifica stato attuale
-        $this->info('📊 Verifica stato attuale del database...');
+        $this->info('Verifica stato attuale del database...');
         $basketCards = \App\Models\CardModel::whereHas('category', function($q) {
             $q->where('slug', 'basketball');
         })->count();
@@ -38,12 +38,12 @@ class ImportBasketballProduction extends Command
             $q->where('slug', 'basketball');
         })->count();
 
-        $this->info("✅ Carte Basketball attuali: $basketCards");
-        $this->info("✅ Set Basketball attuali: $basketSets");
+        $this->info("Carte Basketball attuali: $basketCards");
+        $this->info("Set Basketball attuali: $basketSets");
         $this->newLine();
 
         // Verifica file CSV
-        $this->info('📁 Verifica file CSV...');
+        $this->info('Verifica file CSV...');
         $files = [
             'TOIMPORT/Elenco Set Basket 1 - Foglio1.csv',
             'TOIMPORT/Elenco Set Basket 2 - Foglio1.csv',
@@ -53,15 +53,15 @@ class ImportBasketballProduction extends Command
         $filesFound = [];
         foreach ($files as $file) {
             if (file_exists(base_path($file))) {
-                $this->info("✅ Trovato: $file");
+                $this->info("Trovato: $file");
                 $filesFound[] = $file;
             } else {
-                $this->error("❌ File non trovato: $file");
+                $this->error("File non trovato: $file");
             }
         }
 
         if (empty($filesFound)) {
-            $this->error('❌ Nessun file CSV trovato!');
+            $this->error('Nessun file CSV trovato!');
             $this->warn('   Assicurati che i file CSV siano nella directory TOIMPORT/');
             return 1;
         }
@@ -70,32 +70,32 @@ class ImportBasketballProduction extends Command
 
         // Conferma
         if (!$this->option('auto')) {
-            $this->warn('⚠️  ATTENZIONE: Stai per importare i dati di basket in PRODUZIONE');
+            $this->warn('ATTENZIONE: Stai per importare i dati di basket in PRODUZIONE');
             $this->warn('   Questo processo potrebbe richiedere molto tempo.');
             if (!$this->confirm('   Vuoi procedere?')) {
-                $this->error('❌ Operazione annullata.');
+                $this->error('Operazione annullata.');
                 return 1;
             }
         }
 
         $this->newLine();
-        $this->info('🚀 Inizio importazione...');
+        $this->info('Inizio importazione...');
         $this->newLine();
 
         $startTime = microtime(true);
 
         // Importazione file
         foreach ($filesFound as $index => $file) {
-            $this->info("📄 Importazione file " . ($index + 1) . ": $file");
+            $this->info("Importazione file " . ($index + 1) . ": $file");
             $this->call('import:basket-cards', [
                 '--file' => $file
             ]);
-            $this->info("✅ File " . ($index + 1) . " importato");
+            $this->info("File " . ($index + 1) . " importato");
             $this->newLine();
         }
 
         // Verifica finale
-        $this->info('📊 Verifica finale...');
+        $this->info('Verifica finale...');
         $finalCards = \App\Models\CardModel::whereHas('category', function($q) {
             $q->where('slug', 'basketball');
         })->count();
@@ -108,7 +108,7 @@ class ImportBasketballProduction extends Command
         $duration = round(($endTime - $startTime) / 60, 2);
 
         $this->newLine();
-        $this->info('✅ Importazione completata!');
+        $this->info('Importazione completata!');
         $this->info("   Carte Basketball: $finalCards (prima: $basketCards)");
         $this->info("   Set Basketball: $finalSets (prima: $basketSets)");
         $this->info("   Tempo impiegato: $duration minuti");

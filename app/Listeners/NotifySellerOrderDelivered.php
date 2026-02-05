@@ -4,9 +4,8 @@ namespace App\Listeners;
 
 use App\Events\OrderDelivered;
 use App\Services\NotificationService;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
-class NotifySellerOrderDelivered implements ShouldQueue
+class NotifySellerOrderDelivered
 {
     public function handle(OrderDelivered $event): void
     {

@@ -39,8 +39,8 @@
         Spedizione assicurata: potrebbe essere richiesta documentazione in caso di problema.
       </div>
 
-      <!-- CASO A: Spedizione tracciata (o legacy senza metodo: mostra form tracking) -->
-      <div v-if="isTrackedMethod || showTrackingFallback" class="mb-6">
+      <!-- CASO A: Spedizione tracciata (solo se metodo è esplicitamente tracciato: richiede tracking) -->
+      <div v-if="isTrackedMethod" class="mb-6">
         <TrackingForm
           :order-id="order.id"
           :existing-tracking="existingTracking"
@@ -49,8 +49,8 @@
         />
       </div>
 
-      <!-- CASO B: Spedizione non tracciata -->
-      <div v-else-if="isUntrackedMethod" class="mb-6">
+      <!-- CASO B: Spedizione non tracciata O metodo sconosciuto → solo "Segna come spedito" (nessuna minaccia annullamento) -->
+      <div v-else-if="isUntrackedMethod || showTrackingFallback" class="mb-6">
         <UntrackedShipmentAction
           :order-id="order.id"
           :shipped-at="order.shipped_at"
@@ -77,9 +77,14 @@
         <div class="rounded-lg border border-gray-200 bg-white p-4">
           <h2 class="text-sm font-semibold text-gray-900 mb-3">Indirizzo di spedizione</h2>
           <address v-if="order.shipping_address" class="text-sm text-gray-600 not-italic">
-            {{ order.shipping_address.street ?? '' }}<br>
-            {{ order.shipping_address.city ?? '' }} {{ order.shipping_address.postal_code ?? '' }}<br>
+            <span v-if="order.shipping_address.first_name || order.shipping_address.last_name">
+              {{ order.shipping_address.first_name }} {{ order.shipping_address.last_name }}<br>
+            </span>
+            {{ order.shipping_address.address_line_1 ?? order.shipping_address.street ?? '' }}<br>
+            <span v-if="order.shipping_address.address_line_2">{{ order.shipping_address.address_line_2 }}<br></span>
+            {{ order.shipping_address.postal_code ?? '' }} {{ order.shipping_address.city ?? '' }}<br>
             {{ order.shipping_address.country ?? '' }}
+            <span v-if="order.shipping_address.phone"><br>Tel. {{ order.shipping_address.phone }}</span>
           </address>
           <p v-else class="text-sm text-gray-500">—</p>
         </div>

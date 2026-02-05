@@ -59,7 +59,7 @@
           </div>
           <div class="ml-3 flex-1">
             <h3 class="text-sm font-gill-sans-semibold text-red-800">
-              ⚠️ Configurazione Stripe Connect Obbligatoria
+              Configurazione Stripe Connect Obbligatoria
             </h3>
             <div class="mt-2 text-sm text-red-700">
               <p class="font-gill-sans-semibold mb-2">
@@ -92,7 +92,7 @@
           </div>
           <div class="ml-3 flex-1">
             <h4 class="text-sm font-gill-sans-semibold text-red-800">
-              ⚠️ {{ listingsWithoutStripe.length }} inserzione/i non può/vengono essere pubblicata/e
+              {{ listingsWithoutStripe.length }} inserzione/i non può/vengono essere pubblicata/e
             </h4>
             <p class="mt-1 text-sm text-red-700">
               Hai {{ listingsWithoutStripe.length }} inserzione/i che non possono essere pubblicate perché Stripe Connect non è configurato. 
@@ -556,7 +556,7 @@ const loadListings = async (reset = true) => {
   error.value = null
   
   try {
-    console.log('🔄 Caricamento inserzioni...', { page: currentPage.value, search: searchQuery.value, status: statusFilter.value })
+    console.log('Caricamento inserzioni...', { page: currentPage.value, search: searchQuery.value, status: statusFilter.value })
     
     // Costruisci i parametri della query
     const params = new URLSearchParams({
@@ -585,7 +585,7 @@ const loadListings = async (reset = true) => {
     }
     
     const data = await response.json()
-    console.log('✅ Inserzioni caricate:', data)
+    console.log('Inserzioni caricate:', data)
     
     if (data.success && data.data) {
       if (reset) {
@@ -598,12 +598,12 @@ const loadListings = async (reset = true) => {
       totalListings.value = data.pagination?.total || data.data.length
       hasMorePages.value = data.pagination?.current_page < data.pagination?.last_page
       
-      console.log('📊 Numero inserzioni:', listings.value.length, 'di', totalListings.value)
+      console.log('Numero inserzioni:', listings.value.length, 'di', totalListings.value)
     } else {
       throw new Error(data.message || 'Errore nel caricamento delle inserzioni')
     }
   } catch (err) {
-    console.error('❌ Errore nel caricamento inserzioni:', err)
+    console.error('Errore nel caricamento inserzioni:', err)
     error.value = err.message
     if (reset) {
       listings.value = []
@@ -657,7 +657,7 @@ const loadMore = () => {
 
 // Edit listing function
 const editListing = (listing) => {
-  console.log('✏️ Modifica inserzione:', listing.id)
+  console.log('Modifica inserzione:', listing.id)
   
   // Apri modal di creazione in modalità modifica
   openEditModal(listing)
@@ -679,7 +679,7 @@ const closeEditModal = () => {
 
 // Gestisce l'aggiornamento dell'inserzione
 const handleListingUpdated = (updatedListing) => {
-  console.log('✅ Inserzione aggiornata:', updatedListing)
+  console.log('Inserzione aggiornata:', updatedListing)
   
   // Aggiorna la lista locale
   const index = listings.value.findIndex(l => l.id === updatedListing.id)
@@ -702,7 +702,7 @@ const deleteListing = async (listing) => {
   deletingListing.value = listing.id
   
   try {
-    console.log('🗑️ Eliminazione inserzione:', listing.id)
+    console.log('Eliminazione inserzione:', listing.id)
     
     const response = await fetch(`/api/listings/${listing.id}`, {
       method: 'DELETE',
@@ -717,18 +717,18 @@ const deleteListing = async (listing) => {
     }
     
     const data = await response.json()
-    console.log('✅ Inserzione eliminata:', data)
+    console.log('Inserzione eliminata:', data)
     
     if (data.success) {
       // Rimuovi l'inserzione dalla lista locale
       listings.value = listings.value.filter(l => l.id !== listing.id)
       totalListings.value = Math.max(0, totalListings.value - 1)
-      console.log('📊 Inserzione rimossa dalla lista')
+      console.log('Inserzione rimossa dalla lista')
     } else {
       throw new Error(data.message || 'Errore nell\'eliminazione dell\'inserzione')
     }
   } catch (err) {
-    console.error('❌ Errore nell\'eliminazione inserzione:', err)
+    console.error('Errore nell\'eliminazione inserzione:', err)
     alert(`Errore nell'eliminazione: ${err.message}`)
   } finally {
     deletingListing.value = null
@@ -737,7 +737,7 @@ const deleteListing = async (listing) => {
 
 // Handle image loading errors
 const handleImageError = (event) => {
-  console.log('❌ Errore nel caricamento immagine:', event.target.src)
+  console.log('Errore nel caricamento immagine:', event.target.src)
   // Nascondi l'immagine e mostra il placeholder
   event.target.style.display = 'none'
 }

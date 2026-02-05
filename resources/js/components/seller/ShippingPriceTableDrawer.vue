@@ -15,7 +15,8 @@
         </TransitionChild>
         <div class="fixed inset-0 overflow-hidden">
           <div class="absolute inset-0 overflow-hidden">
-            <div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+            <!-- Mobile: full width senza padding. Desktop: pannello a destra con pl-10 -->
+            <div class="pointer-events-none fixed inset-y-0 right-0 flex w-full max-w-full pl-0 sm:pl-10">
               <TransitionChild
                 as="template"
                 enter="transform transition ease-in-out duration-300"
@@ -25,14 +26,14 @@
                 leave-from="translate-x-0"
                 leave-to="translate-x-full"
               >
-                <DialogPanel class="pointer-events-auto w-screen max-w-2xl">
-                  <div class="flex h-full flex-col bg-white shadow-xl">
-                    <div class="px-6 py-4 border-b border-gray-200">
-                      <div class="flex items-center justify-between">
-                        <DialogTitle class="text-lg font-semibold text-gray-900">
+                <DialogPanel class="pointer-events-auto w-full max-w-full sm:w-screen sm:max-w-2xl">
+                  <div class="flex h-full flex-col bg-white shadow-xl min-w-0">
+                    <div class="shrink-0 px-4 sm:px-6 py-4 border-b border-gray-200">
+                      <div class="flex items-center justify-between gap-2 min-w-0">
+                        <DialogTitle class="text-base sm:text-lg font-semibold text-gray-900 truncate min-w-0">
                           {{ isEdit ? 'Modifica tabella prezzi' : 'Nuova tabella prezzi' }}
                         </DialogTitle>
-                        <button type="button" @click="close" class="rounded-md text-gray-400 hover:text-gray-600">
+                        <button type="button" @click="close" class="shrink-0 rounded-md p-1 text-gray-400 hover:text-gray-600" aria-label="Chiudi">
                           <XMarkIcon class="h-6 w-6" />
                         </button>
                       </div>
@@ -50,7 +51,7 @@
                         </span>
                       </nav>
                     </div>
-                    <div class="flex-1 overflow-y-auto px-6 py-4">
+                    <div class="flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-4 min-w-0">
                       <!-- Step 1: Nome -->
                       <div v-show="step === 1" class="space-y-4">
                         <h3 class="text-sm font-medium text-gray-900">Nome tabella</h3>
@@ -115,8 +116,8 @@
                       <!-- Step 3: Matrice prezzi -->
                       <div v-show="step === 3" class="space-y-4">
                         <h3 class="text-sm font-medium text-gray-900">Matrice prezzi (€)</h3>
-                        <p class="text-xs text-gray-500">Campo vuoto = metodo disabilitato. UNTRACKED solo per LETTER.</p>
-                        <div class="overflow-x-auto">
+                        <p class="text-xs text-gray-500 break-words">Campo vuoto = metodo disabilitato. UNTRACKED solo per LETTER.</p>
+                        <div class="overflow-x-auto -mx-1">
                           <table class="min-w-full divide-y divide-gray-200 text-sm">
                             <thead>
                               <tr>
@@ -192,7 +193,7 @@
                         </div>
                       </div>
                     </div>
-                    <div class="border-t border-gray-200 px-6 py-4 flex justify-between">
+                    <div class="shrink-0 border-t border-gray-200 px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-2">
                       <button
                         v-if="step > 1"
                         type="button"
@@ -202,7 +203,7 @@
                         Indietro
                       </button>
                       <div v-else />
-                      <div class="flex gap-2">
+                      <div class="flex flex-wrap gap-2 justify-end">
                         <button type="button" @click="close" class="rounded-md bg-white px-4 py-2 text-sm font-medium text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
                           Annulla
                         </button>

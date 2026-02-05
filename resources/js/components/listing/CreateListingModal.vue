@@ -24,19 +24,19 @@
 
         <!-- Content -->
         <div class="px-6 py-6">
-          <!-- Step 0: Controllo Zone di Spedizione -->
+          <!-- Step 0: Controllo Tabelle Prezzi (CardSwap V1 – non più zone di spedizione legacy) -->
           <div v-if="currentStep === 0" class="space-y-6">
-            <!-- Messaggio se non ci sono zone -->
-            <div v-if="!hasShippingZones" class="text-center">
-              <div class="w-20 h-20 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-                <svg class="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            <!-- Messaggio se non ci sono tabelle prezzi con paesi -->
+            <div v-if="!hasPriceTablesWithCountries" class="text-center">
+              <div class="w-20 h-20 mx-auto mb-4 bg-amber-100 rounded-full flex items-center justify-center">
+                <svg class="w-10 h-10 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
               </div>
-              <h3 class="text-xl font-semibold text-gray-900 mb-2">Configurazione Richiesta</h3>
+              <h3 class="text-xl font-semibold text-gray-900 mb-2">Configurazione spedizioni</h3>
               <p class="text-gray-600 mb-6">
-                Prima di creare inserzioni, devi configurare le tue zone di spedizione.<br>
-                Crea almeno una zona per definire dove puoi spedire le tue carte.
+                Prima di creare inserzioni, configura le <strong>Tabelle Prezzi</strong> (CardSwap V1).<br>
+                Aggiungi almeno una tabella e assegna i paesi dove vuoi spedire.
               </p>
               <div class="flex gap-3 justify-center">
                 <button
@@ -45,16 +45,17 @@
                 >
                   Chiudi
                 </button>
-                <button
-                  @click="goToShippingZones"
-                  class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark transition-colors"
+                <router-link
+                  to="/seller/shipping/prices"
+                  class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark transition-colors inline-block"
+                  @click.native="closeModal"
                 >
-                  Configura Zone
-                </button>
+                  Vai a Prezzi spedizioni
+                </router-link>
               </div>
             </div>
             
-            <!-- Selezione modalità se ci sono zone -->
+            <!-- Selezione modalità se le tabelle prezzi sono ok -->
             <div v-else>
               <div class="text-center">
                 <h4 class="text-xl font-semibold text-gray-900 mb-2">Come vuoi aggiungere le tue carte?</h4>
@@ -567,58 +568,21 @@
 
 
 
-          <!-- Step 3: Zone di Spedizione (Bulk) - era step 4, ora step 3 -->
-          <div v-if="currentStep === 3 && selectedMode === 'bulk'" class="space-y-6">
+          <!-- Step 3: Spedizione (CardSwap V1 – tabelle prezzi, nessuna selezione zone) -->
+          <div v-if="currentStep === 3" class="space-y-6">
             <div class="text-center">
-              <h4 class="text-xl font-semibold text-gray-900 mb-2">Zone di Spedizione</h4>
-              <p class="text-gray-600">Seleziona le zone dove vuoi spedire</p>
-              <div class="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p class="text-sm text-yellow-800">
-                  <strong>⚠️ Obbligatorio:</strong> Devi selezionare almeno una zona di spedizione per pubblicare l'inserzione
+              <h4 class="text-xl font-semibold text-gray-900 mb-2">Spedizione</h4>
+              <p class="text-gray-600 mb-4">
+                La spedizione è gestita con le tue <strong>Tabelle Prezzi</strong>. L’acquirente sceglierà metodo e costo in base ai paesi che hai configurato nella sezione Prezzi spedizioni.
+              </p>
+              <div class="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg text-left max-w-lg mx-auto">
+                <p class="text-sm text-gray-700">
+                  Non serve selezionare zone qui: se hai già configurato almeno una tabella con paesi e tariffe, l’inserzione sarà spedibile in base a quella configurazione.
                 </p>
               </div>
             </div>
-            
-            <div class="space-y-4">
-              <div 
-                v-for="zone in shippingZones" 
-                :key="zone.id"
-                class="border rounded-lg p-4 transition-all duration-200 hover:shadow-md"
-                :class="{
-                  'border-primary bg-primary/5': selectedShippingZones.includes(zone.id),
-                  'border-gray-300': !selectedShippingZones.includes(zone.id)
-                }"
-              >
-                <label class="flex items-start space-x-3 cursor-pointer">
-                  <input 
-                    v-model="selectedShippingZones"
-                    :value="zone.id"
-                    type="checkbox"
-                    class="h-5 w-5 text-primary focus:ring-primary border-gray-300 rounded mt-1"
-                  />
-                  <div class="flex-1">
-                    <div class="flex items-center justify-between">
-                      <h6 class="font-medium text-gray-900">{{ zone.name }}</h6>
-                      <span v-if="zone.delivery_days_min || zone.delivery_days_max" class="text-sm text-gray-500">
-                        {{ zone.delivery_days_min ?? '?' }}-{{ zone.delivery_days_max ?? '?' }} giorni
-                      </span>
-                      <span v-else class="text-sm text-gray-500">Tempi variabili</span>
-                    </div>
-                    <p class="text-sm text-gray-600 mt-1">{{ zone.description }}</p>
-                  </div>
-                </label>
-              </div>
-            </div>
-            
-            <!-- Validazione zone di spedizione -->
-            <div v-if="selectedShippingZones.length === 0" class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p class="text-sm text-red-800">
-                <strong>⚠️ Attenzione:</strong> Devi selezionare almeno una zona di spedizione per procedere
-              </p>
-            </div>
-            
-            <!-- Pulsanti per bulk -->
-            <div class="mt-6 flex items-center justify-between">
+            <!-- Pulsanti inline solo per bulk (il footer è nascosto in step 3 bulk) -->
+            <div v-if="selectedMode === 'bulk'" class="mt-6 flex items-center justify-between">
               <button 
                 @click="previousStep"
                 class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
@@ -627,109 +591,12 @@
               </button>
               <button
                 @click="createListing"
-                :disabled="selectedShippingZones.length === 0 || isSubmitting"
+                :disabled="isSubmitting"
                 class="px-6 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {{ isSubmitting ? 'Salvataggio in corso...' : 'Crea Inserzioni Bulk' }}
               </button>
             </div>
-          </div>
-
-          <!-- Step 3: Zone di Spedizione (Sealed Pack, Sealed Box, Lot) -->
-          <div v-if="currentStep === 3 && (selectedMode === 'sealed-pack' || selectedMode === 'sealed-box' || selectedMode === 'lot')" class="space-y-6">
-            <div class="text-center">
-              <h4 class="text-xl font-semibold text-gray-900 mb-2">Zone di Spedizione</h4>
-              <p class="text-gray-600">Seleziona le zone dove vuoi spedire</p>
-              <div class="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p class="text-sm text-yellow-800">
-                  <strong>⚠️ Obbligatorio:</strong> Devi selezionare almeno una zona di spedizione per pubblicare l'inserzione
-                </p>
-              </div>
-            </div>
-            
-            <div class="space-y-4">
-              <div 
-                v-for="zone in shippingZones" 
-                :key="zone.id"
-                class="border rounded-lg p-4 transition-all duration-200 hover:shadow-md"
-                :class="{
-                  'border-primary bg-primary/5': selectedShippingZones.includes(zone.id),
-                  'border-gray-300': !selectedShippingZones.includes(zone.id)
-                }"
-              >
-                <label class="flex items-start space-x-3 cursor-pointer">
-                  <input 
-                    v-model="selectedShippingZones"
-                    :value="zone.id"
-                    type="checkbox"
-                    class="h-5 w-5 text-primary focus:ring-primary border-gray-300 rounded mt-1"
-                  />
-                  <div class="flex-1">
-                    <div class="flex items-center justify-between">
-                      <h6 class="font-medium text-gray-900">{{ zone.name }}</h6>
-                      <span v-if="zone.delivery_days_min || zone.delivery_days_max" class="text-sm text-gray-500">
-                        {{ zone.delivery_days_min ?? '?' }}-{{ zone.delivery_days_max ?? '?' }} giorni
-                      </span>
-                      <span v-else class="text-sm text-gray-500">Tempi variabili</span>
-                    </div>
-                    <p class="text-sm text-gray-600 mt-1">{{ zone.description }}</p>
-                  </div>
-                </label>
-              </div>
-            </div>
-            
-            <!-- Validazione zone di spedizione -->
-            <div v-if="selectedShippingZones.length === 0" class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p class="text-sm text-red-800">
-                <strong>⚠️ Attenzione:</strong> Devi selezionare almeno una zona di spedizione per procedere
-              </p>
-            </div>
-          </div>
-
-          <!-- Step 3: Zone di Spedizione (Single) -->
-          <div v-if="currentStep === 3 && selectedMode === 'single'" class="space-y-6">
-            <div class="text-center">
-              <h4 class="text-xl font-semibold text-gray-900 mb-2">Zone di Spedizione</h4>
-              <p class="text-gray-600">Seleziona le zone dove vuoi spedire</p>
-              <div class="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p class="text-sm text-yellow-800">
-                  <strong>⚠️ Obbligatorio:</strong> Devi selezionare almeno una zona di spedizione per pubblicare l'inserzione
-                </p>
-              </div>
-            </div>
-            
-            <div class="space-y-4">
-              <div 
-                v-for="zone in shippingZones" 
-                :key="zone.id"
-                class="border rounded-lg p-4 transition-all duration-200 hover:shadow-md"
-                :class="{
-                  'border-primary bg-primary/5': selectedShippingZones.includes(zone.id),
-                  'border-gray-300': !selectedShippingZones.includes(zone.id)
-                }"
-              >
-                <label class="flex items-start space-x-3 cursor-pointer">
-                  <input 
-                    v-model="selectedShippingZones"
-                    :value="zone.id"
-                    type="checkbox"
-                    class="h-5 w-5 text-primary focus:ring-primary border-gray-300 rounded mt-1"
-                  />
-                  <div class="flex-1">
-                    <div class="flex items-center justify-between">
-                      <h6 class="font-medium text-gray-900">{{ zone.name }}</h6>
-                      <span v-if="zone.delivery_days_min || zone.delivery_days_max" class="text-sm text-gray-500">
-                        {{ zone.delivery_days_min ?? '?' }}-{{ zone.delivery_days_max ?? '?' }} giorni
-                      </span>
-                      <span v-else class="text-sm text-gray-500">Tempi variabili</span>
-                    </div>
-                    <p class="text-sm text-gray-600 mt-1">{{ zone.description }}</p>
-                  </div>
-                </label>
-              </div>
-            </div>
-            
-            <!-- Validazione zone di spedizione -->
           </div>
 
           <!-- Step 4: Anteprima e Conferma (Single) -->
@@ -908,7 +775,8 @@ const shippingZones = ref([])
 const bulkListings = ref([]) // For bulk mode
 const isDragOver = ref(false) // For drag & drop
 const selectedCategory = ref('football') // Categoria selezionata
-const hasShippingZones = ref(false) // Controllo esistenza zone di spedizione
+const hasShippingZones = ref(false) // Controllo esistenza zone di spedizione (legacy)
+const hasPriceTablesWithCountries = ref(false) // CardSwap V1: almeno una tabella prezzi con paesi
 const priceError = ref(false) // Stato errore validazione prezzo
 
 // Listing data
@@ -1057,8 +925,8 @@ const canProceed = computed(() => {
       }
       return false
     case 3:
-      // Step zone di spedizione
-      return selectedShippingZones.value.length > 0
+      // Step spedizione: CardSwap V1 usa tabelle prezzi, non più selezione zone
+      return true
     case 4:
       // Anteprima: richiedi carta selezionata, prezzo obbligatorio e quantità valida
       if (selectedMode.value === 'single') {
@@ -1090,23 +958,14 @@ const nextStep = () => {
     priceError.value = false
   }
   
-  // Validazione specifica per le zone di spedizione
-  if ((currentStep.value === 3 && selectedMode.value === 'single') || 
-      (currentStep.value === 3 && selectedMode.value === 'bulk')) { // Step delle zone di spedizione
-    if (selectedShippingZones.value.length === 0) {
-      alert('⚠️ Seleziona almeno una zona di spedizione per continuare')
-      return
-    }
-  }
-  
   // Quando si passa dal Passo 1 al Passo 2, pre-popola i campi con i dati della carta selezionata
   if (currentStep.value === 1 && selectedMode.value === 'single' && selectedCardModel.value) {
     const card = selectedCardModel.value
     
-    console.log('🔄 Pre-popolamento campi Passo 2 con carta:', card)
-    console.log('🔄 is_rookie:', card.is_rookie, typeof card.is_rookie)
-    console.log('🔄 is_autograph:', card.is_autograph, typeof card.is_autograph)
-    console.log('🔄 is_relic:', card.is_relic, typeof card.is_relic)
+    console.log('Pre-popolamento campi Passo 2 con carta:', card)
+    console.log('is_rookie:', card.is_rookie, typeof card.is_rookie)
+    console.log('is_autograph:', card.is_autograph, typeof card.is_autograph)
+    console.log('is_relic:', card.is_relic, typeof card.is_relic)
     
     // Pre-popola le caratteristiche speciali dalla carta selezionata
     // Solo se i campi non sono già stati impostati
@@ -1141,7 +1000,7 @@ const nextStep = () => {
         }
       }
       
-      console.log('🔄 Valori convertiti - isRookie:', isRookie, 'isAutograph:', isAutograph, 'isRelic:', isRelic, 'isSketch:', isSketch)
+      console.log('Valori convertiti - isRookie:', isRookie, 'isAutograph:', isAutograph, 'isRelic:', isRelic, 'isSketch:', isSketch)
       
       // Aggiorna additionalDetails con i dati della carta
       const detailsUpdate = {
@@ -1162,15 +1021,15 @@ const nextStep = () => {
       
       additionalDetails.value = detailsUpdate
       
-      console.log('🔄 additionalDetails aggiornato:', additionalDetails.value)
+      console.log('additionalDetails aggiornato:', additionalDetails.value)
     }
   }
   
   // Log per debug quando si passa al passo 2 per pack/box/lotti
   if (currentStep.value === 1 && (selectedMode.value === 'sealed-pack' || selectedMode.value === 'sealed-box' || selectedMode.value === 'lot')) {
-    console.log('🔄 Passaggio al passo 2 - Filtri attuali:', JSON.stringify(filters.value))
-    console.log('🔄 Categoria selezionata:', selectedCategory.value)
-    console.log('🔄 Immagini attuali:', cardImages.value.filter(img => img !== null).length)
+    console.log('Passaggio al passo 2 - Filtri attuali:', JSON.stringify(filters.value))
+    console.log('Categoria selezionata:', selectedCategory.value)
+    console.log('Immagini attuali:', cardImages.value.filter(img => img !== null).length)
   }
   
   if (canProceed.value && currentStep.value < totalSteps.value - 1) {
@@ -1260,12 +1119,12 @@ const handleFiltersChanged = async (newFilters) => {
   // Questo evita che l'anno venga perso quando viene selezionato un set
   if (userSelectedYear && userSelectedYear !== '' && (!newFilters.year || newFilters.year === '')) {
     filters.value.year = userSelectedYear
-    console.log('✅ Anno selezionato manualmente preservato in handleFiltersChanged:', userSelectedYear)
+    console.log('Anno selezionato manualmente preservato in handleFiltersChanged:', userSelectedYear)
   } else if (userSelectedYear && newFilters.year && newFilters.year !== userSelectedYear) {
     // Se l'utente aveva selezionato un anno e viene passato un anno diverso (probabilmente dal set),
     // preserva l'anno selezionato manualmente dall'utente
     filters.value.year = userSelectedYear
-    console.log('✅ Anno selezionato manualmente preservato (sovrascritto anno dal set):', userSelectedYear)
+    console.log(' Anno selezionato manualmente preservato (sovrascritto anno dal set):', userSelectedYear)
   }
   
   // Cerca automaticamente solo durante lo step di selezione (step 1)
@@ -1291,7 +1150,7 @@ const searchSingleCard = async (filters) => {
   return new Promise((resolve) => {
     searchTimeout = setTimeout(async () => {
       try {
-        console.log('🔍 Ricerca carta singola con filtri:', filters)
+        console.log(' Ricerca carta singola con filtri:', filters)
         
         // Convert to the format expected by the API
         const searchFilters = {
@@ -1302,7 +1161,7 @@ const searchSingleCard = async (filters) => {
           rarity: filters.rarity,
           year: filters.year,
           number: filters.number
-          // ✅ RIMOSSO: price non è un filtro di ricerca, è un input dell'utente
+          // RIMOSSO: price non è un filtro di ricerca, è un input dell'utente
         }
         
         // Aggiungi filtri per numerazione (min e max)
@@ -1313,7 +1172,7 @@ const searchSingleCard = async (filters) => {
           searchFilters.numbered_max = filters.numberedMax
         }
         
-        console.log('🔍 Filtri convertiti per API:', searchFilters)
+        console.log(' Filtri convertiti per API:', searchFilters)
         
         // Rimuovi parametri vuoti
         const cleanFilters = Object.fromEntries(
@@ -1324,7 +1183,7 @@ const searchSingleCard = async (filters) => {
         const queryParams = new URLSearchParams(cleanFilters).toString()
         const url = `/api/cards/search?${queryParams}`
         
-        console.log('🔍 URL richiesta:', url)
+        console.log(' URL richiesta:', url)
         
         const response = await fetch(url, {
           method: 'GET',
@@ -1334,13 +1193,13 @@ const searchSingleCard = async (filters) => {
           }
         })
         
-        console.log('🔍 Response status:', response.status)
+        console.log(' Response status:', response.status)
         
         const data = await response.json()
-        console.log('🔍 Response data:', data)
+        console.log(' Response data:', data)
         
         const cards = data.cards || []
-        console.log('🔍 Carte trovate:', cards.length)
+        console.log(' Carte trovate:', cards.length)
         
         // Popola filteredCardModels per la selezione manuale
         filteredCardModels.value = cards
@@ -1348,17 +1207,17 @@ const searchSingleCard = async (filters) => {
         
         // Se troviamo una sola carta che corrisponde ai filtri, selezionala automaticamente
         if (cards.length === 1) {
-          console.log('✅ Carta unica trovata, selezionata automaticamente:', cards[0])
+          console.log(' Carta unica trovata, selezionata automaticamente:', cards[0])
           selectCardModel(cards[0]) // Usa la funzione per popolare i dati
         } else if (cards.length > 1) {
-          console.log('⚠️ Multiple carte trovate, non seleziono automaticamente')
+          console.log('Multiple carte trovate, non seleziono automaticamente')
         } else {
-          console.log('❌ Nessuna carta trovata per i filtri specificati')
+          console.log(' Nessuna carta trovata per i filtri specificati')
           selectedCardModel.value = null
           listingData.value.card_model_id = null
         }
       } catch (error) {
-        console.error('❌ Errore nella ricerca carta singola:', error)
+        console.error(' Errore nella ricerca carta singola:', error)
         selectedCardModel.value = null
         listingData.value.card_model_id = null
         filteredCardModels.value = []
@@ -1370,7 +1229,7 @@ const searchSingleCard = async (filters) => {
 }
 
 const selectCardModel = (card) => {
-  console.log('🎯 Carta selezionata manualmente:', card)
+  console.log(' Carta selezionata manualmente:', card)
   selectedCardModel.value = card
   listingData.value.card_model_id = card.id
   
@@ -1379,17 +1238,17 @@ const selectCardModel = (card) => {
     // Popola i dati base della carta
     listingData.value.card_model_id = card.id
     
-    // ✅ NON popoliamo più automaticamente il prezzo
+    // NON popoliamo più automaticamente il prezzo
     // L'utente deve inserirlo manualmente
     
-    // ✅ NON popoliamo più automaticamente i campi del form
+    // NON popoliamo più automaticamente i campi del form
     // L'utente deve selezionarli manualmente per evitare filtri troppo specifici
-    console.log('✅ Campi del form NON popolati automaticamente - l\'utente deve selezionarli manualmente')
+    console.log(' Campi del form NON popolati automaticamente - l\'utente deve selezionarli manualmente')
     
-    // ✅ NON popoliamo più automaticamente i campi del form
+    // NON popoliamo più automaticamente i campi del form
     // L'utente deve selezionarli manualmente per evitare filtri troppo specifici
     
-    console.log('✅ Carta selezionata per riferimento:', {
+    console.log(' Carta selezionata per riferimento:', {
       card_model_id: card.id,
       price: card.price,
       rarity: card.rarity,
@@ -1397,7 +1256,7 @@ const selectCardModel = (card) => {
       brand: card.card_set?.brand,
       number: card.card_number_in_set || ''
     })
-    console.log('✅ Campi del form NON popolati automaticamente - l\'utente deve selezionarli manualmente')
+    console.log(' Campi del form NON popolati automaticamente - l\'utente deve selezionarli manualmente')
   }
 }
 
@@ -1432,7 +1291,7 @@ const handleSearchCards = async (filters, page = 1) => {
     })
     
     const data = await response.json()
-    console.log('🔍 Response data per bulk search:', data)
+    console.log(' Response data per bulk search:', data)
     
     if (page === 1) {
       // Prima pagina: sostituisci i risultati
@@ -1481,11 +1340,11 @@ const getCurrentFilters = () => {
 }
 
 const handleProceedToBulkEdit = (cards) => {
-  console.log('🎯 CreateListingModal - handleProceedToBulkEdit called with cards:', cards)
-  console.log('🎯 Number of cards received:', cards?.length)
+  console.log(' CreateListingModal - handleProceedToBulkEdit called with cards:', cards)
+  console.log(' Number of cards received:', cards?.length)
   selectedCardsForBulkEdit.value = cards
-  console.log('🎯 selectedCardsForBulkEdit after assignment:', selectedCardsForBulkEdit.value)
-  console.log('🎯 selectedCardsForBulkEdit length:', selectedCardsForBulkEdit.value?.length)
+  console.log(' selectedCardsForBulkEdit after assignment:', selectedCardsForBulkEdit.value)
+  console.log(' selectedCardsForBulkEdit length:', selectedCardsForBulkEdit.value?.length)
   nextStep()
 }
 
@@ -1494,7 +1353,7 @@ const handleBulkEditGoBack = () => {
 }
 
 const handleApplyBulkEdit = (listings) => {
-  console.log('🔍 CreateListingModal - Ricevute listings:', listings)
+  console.log(' CreateListingModal - Ricevute listings:', listings)
   // Assicuriamoci che le listings abbiano tutti i campi necessari
   bulkListings.value = listings.map(listing => ({
     ...listing,
@@ -1503,7 +1362,7 @@ const handleApplyBulkEdit = (listings) => {
     condition: listing.condition || 'mint',
     quantity: listing.quantity || 1
   }))
-  console.log('✅ Bulk listings aggiornate:', bulkListings.value)
+  console.log(' Bulk listings aggiornate:', bulkListings.value)
   // Non chiamiamo nextStep() qui, lasciamo che sia il footer a gestire la navigazione
 }
 
@@ -1587,7 +1446,7 @@ const handleSealedImageUpload = (event, type) => {
   const files = Array.from(event.target.files)
   console.log('📸 File selezionati:', files.length)
   if (files.length === 0) {
-    console.warn('⚠️ Nessun file selezionato')
+    console.warn('Nessun file selezionato')
     return
   }
   processImageFiles(files)
@@ -1683,7 +1542,7 @@ const removeImage = (index) => {
 
 const loadGradingCompanies = async () => {
   try {
-    console.log('🔄 Caricamento grading companies...')
+    console.log(' Caricamento grading companies...')
     const response = await fetch('/api/grading-companies')
     console.log('📡 Response status:', response.status)
     console.log('📡 Response ok:', response.ok)
@@ -1694,11 +1553,11 @@ const loadGradingCompanies = async () => {
     
     const data = await response.json()
     gradingCompanies.value = data
-    console.log('✅ Grading companies caricate:', data)
-    console.log('📊 Numero di companies:', data.length)
+    console.log(' Grading companies caricate:', data)
+    console.log(' Numero di companies:', data.length)
   } catch (error) {
-    console.error('❌ Errore nel caricamento grading companies:', error)
-    console.error('❌ Error details:', error.message)
+    console.error(' Errore nel caricamento grading companies:', error)
+    console.error(' Error details:', error.message)
     // Fallback con dati mock se l'API non funziona
     gradingCompanies.value = [
       { id: 1, name: 'PSA' },
@@ -1707,13 +1566,13 @@ const loadGradingCompanies = async () => {
       { id: 4, name: 'GRAAD' },
       { id: 5, name: 'CGC' }
     ]
-    console.log('🔄 Usando dati mock:', gradingCompanies.value)
+    console.log(' Usando dati mock:', gradingCompanies.value)
   }
 }
 
 const checkShippingZones = async () => {
   try {
-    console.log('🔄 Controllo esistenza zone di spedizione...')
+    console.log(' Controllo esistenza zone di spedizione...')
     const response = await fetch('/api/shipping-zones/check', {
       headers: {
         'Accept': 'application/json',
@@ -1723,14 +1582,14 @@ const checkShippingZones = async () => {
     
     if (response.ok) {
       const data = await response.json()
-      console.log('✅ Controllo zone di spedizione:', data)
+      console.log(' Controllo zone di spedizione:', data)
       hasShippingZones.value = data.has_zones
     } else {
-      console.error('❌ Errore nel controllo zone di spedizione:', response.status)
+      console.error(' Errore nel controllo zone di spedizione:', response.status)
       hasShippingZones.value = false
     }
   } catch (error) {
-    console.error('❌ Errore nel controllo zone di spedizione:', error)
+    console.error(' Errore nel controllo zone di spedizione:', error)
     hasShippingZones.value = false
   }
 }
@@ -1740,9 +1599,31 @@ const goToShippingZones = () => {
   window.location.href = '/profile/shipping-zones'
 }
 
+/** CardSwap V1: verifica se il venditore ha almeno una tabella prezzi con paesi configurati */
+const checkPriceTables = async () => {
+  try {
+    const response = await fetch('/api/seller/shipping/price-tables', {
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+    if (response.ok) {
+      const data = await response.json()
+      const tables = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : [])
+      hasPriceTablesWithCountries.value = tables.some(t => (t.countries && t.countries.length > 0))
+    } else {
+      hasPriceTablesWithCountries.value = false
+    }
+  } catch (e) {
+    console.error('Controllo tabelle prezzi:', e)
+    hasPriceTablesWithCountries.value = false
+  }
+}
+
 const loadShippingZones = async () => {
   try {
-    console.log('🔄 Caricamento zone di spedizione...')
+    console.log(' Caricamento zone di spedizione...')
     const response = await fetch('/api/shipping-zones', {
       headers: {
         'Accept': 'application/json',
@@ -1752,11 +1633,11 @@ const loadShippingZones = async () => {
     
     if (response.ok) {
       const data = await response.json()
-      console.log('✅ Zone di spedizione caricate:', data)
+      console.log(' Zone di spedizione caricate:', data)
       // L'endpoint ritorna { success: true, data: [...] }
       // In alcuni ambienti potremmo ricevere direttamente un array
       const rawZones = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : [])
-      console.log('📦 Raw zones ricevute:', rawZones.length, rawZones)
+      console.log(' Raw zones ricevute:', rawZones.length, rawZones)
       
       // Normalizza per garantire sempre id, name e giorni
       const normalized = rawZones.map((z) => {
@@ -1766,7 +1647,7 @@ const loadShippingZones = async () => {
         const rawId = source.id ?? attrs.id ?? source.zone_id
         const id = parseInt(rawId, 10)
         if (isNaN(id)) {
-          console.warn('⚠️ ID zona non valido:', rawId, source)
+          console.warn('ID zona non valido:', rawId, source)
           return null
         }
         const name = source.name || attrs.name || source.title || source.label || (source.country_code ? `Spedizione ${source.country_code}` : 'Zona')
@@ -1775,7 +1656,7 @@ const loadShippingZones = async () => {
         const deliveryMax = source.delivery_days_max ?? attrs.delivery_days_max ?? source.max_days ?? null
         const description = source.description || attrs.description || ''
         
-        console.log('📦 Normalizzazione zona:', { id, name, deliveryMin, deliveryMax, description })
+        console.log(' Normalizzazione zona:', { id, name, deliveryMin, deliveryMax, description })
         
         return { 
           id, 
@@ -1786,13 +1667,13 @@ const loadShippingZones = async () => {
         }
       }).filter(z => z !== null) // Rimuovi zone con ID non validi
       
-      console.log('✅ Zone normalizzate:', normalized.length, normalized)
+      console.log(' Zone normalizzate:', normalized.length, normalized)
       shippingZones.value = normalized
     } else {
-      console.error('❌ Errore nel caricamento zone di spedizione:', response.status)
+      console.error(' Errore nel caricamento zone di spedizione:', response.status)
     }
   } catch (error) {
-    console.error('❌ Errore nel caricamento zone di spedizione:', error)
+    console.error(' Errore nel caricamento zone di spedizione:', error)
   }
 }
 
@@ -1802,13 +1683,13 @@ const loadShippingZones = async () => {
 const compressImageForUpload = (file, maxWidth = 1920, maxHeight = 2560, quality = 0.70, maxSizeMB = 1.0) => {
   return new Promise((resolve, reject) => {
     const fileSizeMB = file.size / 1024 / 1024
-    console.log(`📦 Compressione immagine: ${file.name}, dimensione originale: ${fileSizeMB.toFixed(2)}MB`)
+    console.log(` Compressione immagine: ${file.name}, dimensione originale: ${fileSizeMB.toFixed(2)}MB`)
     
     // Su mobile, comprimi sempre se > 500KB per sicurezza (limite più conservativo)
     const shouldCompress = file.size > 500 * 1024 // 500KB invece di 1.5MB
     
     if (!shouldCompress) {
-      console.log('✅ File già piccolo (< 500KB), non comprimere')
+      console.log(' File già piccolo (< 500KB), non comprimere')
       resolve(file)
       return
     }
@@ -1853,7 +1734,7 @@ const compressImageForUpload = (file, maxWidth = 1920, maxHeight = 2560, quality
               (blob) => {
                 if (blob) {
                   const sizeMB = blob.size / 1024 / 1024
-                  console.log(`📦 Compressione tentativo: qualità ${targetQuality.toFixed(2)}, dimensione: ${sizeMB.toFixed(2)}MB`)
+                  console.log(` Compressione tentativo: qualità ${targetQuality.toFixed(2)}, dimensione: ${sizeMB.toFixed(2)}MB`)
                   res({ blob, size: blob.size, quality: targetQuality })
                 } else {
                   rej(new Error('Errore nella creazione blob'))
@@ -1876,7 +1757,7 @@ const compressImageForUpload = (file, maxWidth = 1920, maxHeight = 2560, quality
               const result = await compressWithQuality(currentQuality)
               
               if (result.size <= maxSizeBytes) {
-                console.log(`✅ Compressione riuscita: qualità ${result.quality.toFixed(2)}, dimensione: ${(result.size / 1024 / 1024).toFixed(2)}MB`)
+                console.log(` Compressione riuscita: qualità ${result.quality.toFixed(2)}, dimensione: ${(result.size / 1024 / 1024).toFixed(2)}MB`)
                 const compressedFile = new File([result.blob], file.name, {
                   type: 'image/jpeg',
                   lastModified: Date.now()
@@ -1893,7 +1774,7 @@ const compressImageForUpload = (file, maxWidth = 1920, maxHeight = 2560, quality
                   const newWidth = Math.round(width * scaleFactor)
                   const newHeight = Math.round(height * scaleFactor)
                   
-                  console.log(`📦 Ridimensionamento ulteriore: ${newWidth}x${newHeight} (fattore: ${scaleFactor.toFixed(2)})`)
+                  console.log(` Ridimensionamento ulteriore: ${newWidth}x${newHeight} (fattore: ${scaleFactor.toFixed(2)})`)
                   
                   canvas.width = newWidth
                   canvas.height = newHeight
@@ -1904,7 +1785,7 @@ const compressImageForUpload = (file, maxWidth = 1920, maxHeight = 2560, quality
                     type: 'image/jpeg',
                     lastModified: Date.now()
                   })
-                  console.log(`✅ Compressione finale riuscita: dimensione: ${(finalResult.size / 1024 / 1024).toFixed(2)}MB`)
+                  console.log(` Compressione finale riuscita: dimensione: ${(finalResult.size / 1024 / 1024).toFixed(2)}MB`)
                   resolve(compressedFile)
                   return
                 }
@@ -1923,12 +1804,12 @@ const compressImageForUpload = (file, maxWidth = 1920, maxHeight = 2560, quality
         compressProgressively(quality).catch(reject)
       }
       img.onerror = () => {
-        console.error('❌ Errore nel caricamento dell\'immagine')
+        console.error(' Errore nel caricamento dell\'immagine')
         reject(new Error('Errore nel caricamento dell\'immagine'))
       }
     }
     reader.onerror = () => {
-      console.error('❌ Errore nella lettura del file')
+      console.error(' Errore nella lettura del file')
       reject(new Error('Errore nella lettura del file'))
     }
   })
@@ -2081,20 +1962,20 @@ const createNewSingleListing = async () => {
     if (image && image.file) {
       try {
         const fileSizeMB = image.file.size / 1024 / 1024
-        console.log(`🖼️ Immagine ${index + 1}: ${fileSizeMB.toFixed(2)}MB`)
+        console.log(`Immagine ${index + 1}: ${fileSizeMB.toFixed(2)}MB`)
         
         // Comprimi sempre se > 500KB o se la dimensione totale supererebbe 3MB (più conservativo)
         const shouldCompress = image.file.size > 500 * 1024 || totalSize + image.file.size > 3 * 1024 * 1024
         
         if (shouldCompress) {
-          console.log(`📦 Compressione immagine ${index + 1}...`)
+          console.log(` Compressione immagine ${index + 1}...`)
           const compressedFile = await compressImageForUpload(image.file)
           const compressedSizeMB = compressedFile.size / 1024 / 1024
-          console.log(`✅ Immagine ${index + 1} compressa: ${compressedSizeMB.toFixed(2)}MB (riduzione: ${((1 - compressedFile.size / image.file.size) * 100).toFixed(1)}%)`)
+          console.log(` Immagine ${index + 1} compressa: ${compressedSizeMB.toFixed(2)}MB (riduzione: ${((1 - compressedFile.size / image.file.size) * 100).toFixed(1)}%)`)
           
           // Verifica che la compressione sia stata effettivamente applicata
           if (compressedFile.size >= image.file.size) {
-            console.warn(`⚠️ Compressione non efficace: file compresso (${compressedSizeMB.toFixed(2)}MB) è grande quanto o più grande dell'originale (${fileSizeMB.toFixed(2)}MB)`)
+            console.warn(` Compressione non efficace: file compresso (${compressedSizeMB.toFixed(2)}MB) è grande quanto o più grande dell'originale (${fileSizeMB.toFixed(2)}MB)`)
             // Usa comunque il file compresso, ma avvisa
           }
           
@@ -2103,25 +1984,25 @@ const createNewSingleListing = async () => {
           
           // Se dopo la compressione è ancora troppo grande, mostra errore
           if (compressedFile.size > 1.5 * 1024 * 1024) {
-            const errorMsg = `⚠️ Attenzione: L'immagine ${index + 1} è ancora troppo grande dopo la compressione (${compressedSizeMB.toFixed(2)}MB). Prova con un'immagine più piccola o di qualità inferiore.`
+            const errorMsg = `Attenzione: L'immagine ${index + 1} è ancora troppo grande dopo la compressione (${compressedSizeMB.toFixed(2)}MB). Prova con un'immagine più piccola o di qualità inferiore.`
             console.error(errorMsg)
             alert(errorMsg)
             throw new Error(`Immagine ${index + 1} troppo grande dopo compressione`)
           }
         } else {
-          console.log(`✅ Immagine ${index + 1} già piccola (${fileSizeMB.toFixed(2)}MB), non comprimere`)
+          console.log(` Immagine ${index + 1} già piccola (${fileSizeMB.toFixed(2)}MB), non comprimere`)
           formData.append('images[]', image.file)
           totalSize += image.file.size
         }
       } catch (error) {
-        console.error(`❌ Errore compressione immagine ${index + 1}:`, error)
+        console.error(` Errore compressione immagine ${index + 1}:`, error)
         // Se la compressione fallisce, NON inviare il file originale se è troppo grande
         if (image.file.size < 2 * 1024 * 1024) {
-          console.log(`✅ Usando file originale per immagine ${index + 1} (${(image.file.size / 1024 / 1024).toFixed(2)}MB)`)
+          console.log(` Usando file originale per immagine ${index + 1} (${(image.file.size / 1024 / 1024).toFixed(2)}MB)`)
           formData.append('images[]', image.file)
           totalSize += image.file.size
         } else {
-          const errorMsg = `❌ L'immagine ${index + 1} è troppo grande (${(image.file.size / 1024 / 1024).toFixed(2)}MB) e non può essere compressa. Per favore, usa un'immagine più piccola.`
+          const errorMsg = ` L'immagine ${index + 1} è troppo grande (${(image.file.size / 1024 / 1024).toFixed(2)}MB) e non può essere compressa. Per favore, usa un'immagine più piccola.`
           console.error(errorMsg)
           alert(errorMsg)
           throw new Error(`Immagine ${index + 1} troppo grande: ${(image.file.size / 1024 / 1024).toFixed(2)}MB`)
@@ -2130,26 +2011,21 @@ const createNewSingleListing = async () => {
     }
   }
   
-  console.log(`📦 Dimensione totale immagini: ${(totalSize / 1024 / 1024).toFixed(2)}MB`)
+  console.log(` Dimensione totale immagini: ${(totalSize / 1024 / 1024).toFixed(2)}MB`)
   
   // Verifica che la dimensione totale non superi 4MB
   if (totalSize > 4 * 1024 * 1024) {
-    const errorMsg = `⚠️ Attenzione: La dimensione totale delle immagini (${(totalSize / 1024 / 1024).toFixed(2)}MB) è troppo grande. Per favore, carica meno immagini o immagini più piccole.`
+    const errorMsg = `Attenzione: La dimensione totale delle immagini (${(totalSize / 1024 / 1024).toFixed(2)}MB) è troppo grande. Per favore, carica meno immagini o immagini più piccole.`
     console.error(errorMsg)
     alert(errorMsg)
     throw new Error('Dimensione totale immagini troppo grande')
   }
   
-  // Add shipping zones (required)
-  if (selectedShippingZones.value.length === 0) {
-    console.error('shipping_zones is required but not found')
-    alert('Errore: Seleziona almeno una zona di spedizione')
-    return
-  }
+  // Zone di spedizione: CardSwap V1 opzionale (tabelle prezzi)
   selectedShippingZones.value.forEach(zoneId => {
     formData.append('shipping_zones[]', zoneId)
   })
-  
+
   // Campi booleani - sempre inviati
   formData.append('is_foil', listingData.value.is_foil ? 'true' : 'false')
   formData.append('is_signed', listingData.value.is_signed ? 'true' : 'false')
@@ -2195,7 +2071,7 @@ const createNewSingleListing = async () => {
     autograph_condition_score: additionalDetails.value.autographConditionScore || null,
     language: 'italian',
     images: cardImages.value.filter(img => img).length,
-    shipping_zones: selectedShippingZones.value.length
+    shipping_zones: selectedShippingZones.value.length // opzionale in CardSwap V1
   })
   
   const response = await fetch('/api/listings', {
@@ -2208,7 +2084,7 @@ const createNewSingleListing = async () => {
   
   if (response.ok) {
     const data = await response.json()
-    console.log('✅ Inserzione creata con successo:', data)
+    console.log(' Inserzione creata con successo:', data)
     emit('created', data.data)
     closeModal()
   } else {
@@ -2219,14 +2095,14 @@ const createNewSingleListing = async () => {
     
     // Gestione specifica per errore Stripe Connect
     if (errorData.error === 'stripe_connect_required' || errorData.message?.includes('Stripe Connect')) {
-      alert('⚠️ Devi configurare Stripe Connect prima di pubblicare inserzioni.\n\nVai su Account > Metodi di Pagamento per configurarlo.')
+      alert('Devi configurare Stripe Connect prima di pubblicare inserzioni.\n\nVai su Account > Metodi di Pagamento per configurarlo.')
       window.location.href = '/account/payment-methods'
       return
     }
     
     // Gestione specifica per errore KYC
     if (errorData.requires_kyc) {
-      alert(`⚠️ Verifica identità richiesta!\n\nPer creare inserzioni devi completare la verifica della tua identità.\n\nClicca OK per essere reindirizzato alla pagina di verifica.`)
+      alert(`Verifica identità richiesta!\n\nPer creare inserzioni devi completare la verifica della tua identità.\n\nClicca OK per essere reindirizzato alla pagina di verifica.`)
       // Reindirizza alla pagina KYC
       window.location.href = '/dashboard/kyc'
       return
@@ -2257,7 +2133,7 @@ const createNewSingleListing = async () => {
 }
 
 const createBulkListings = async () => {
-  console.log('🔄 Creazione inserzioni bulk...', bulkListings.value)
+  console.log(' Creazione inserzioni bulk...', bulkListings.value)
   
   // Crea un'inserzione per ogni carta selezionata
   const createdListings = []
@@ -2267,7 +2143,7 @@ const createBulkListings = async () => {
     const formData = new FormData()
     
     // Dati obbligatori
-    console.log(`🔍 Listing ${i + 1} data:`, {
+    console.log(`Listing ${i + 1} data:`, {
       card_model_id: listing.card_model_id,
       price: listing.price,
       condition: listing.condition,
@@ -2309,7 +2185,7 @@ const createBulkListings = async () => {
     
     // Immagini bulk - una immagine per carta (comprimi se necessario)
     if (bulkImages.value && bulkImages.value[i] && bulkImages.value[i].file) {
-      console.log(`🖼️ Aggiungendo immagine per carta ${i + 1}:`, bulkImages.value[i])
+      console.log(`Aggiungendo immagine per carta ${i + 1}:`, bulkImages.value[i])
       try {
         const imageFile = bulkImages.value[i].file
         // Se l'immagine è > 2MB, comprimila prima dell'upload
@@ -2325,14 +2201,14 @@ const createBulkListings = async () => {
         formData.append('images[]', bulkImages.value[i].file)
       }
     } else {
-      console.log(`⚠️ Nessuna immagine per carta ${i + 1}`)
+      console.log(`Nessuna immagine per carta ${i + 1}`)
     }
     
-    // Zone di spedizione
+    // Zone di spedizione (CardSwap V1: opzionale)
     selectedShippingZones.value.forEach(zoneId => {
       formData.append('shipping_zones[]', zoneId)
     })
-    
+
       try {
         const response = await fetch('/api/listings', {
           method: 'POST',
@@ -2357,21 +2233,21 @@ const createBulkListings = async () => {
         
         const data = await response.json()
         createdListings.push(data.data)
-        console.log(`✅ Inserzione ${i + 1}/${bulkListings.value.length} creata con successo`)
+        console.log(` Inserzione ${i + 1}/${bulkListings.value.length} creata con successo`)
     } catch (error) {
-      console.error(`❌ Errore nella creazione inserzione ${i + 1}:`, error)
+      console.error(` Errore nella creazione inserzione ${i + 1}:`, error)
       
       // Gestione specifica per errore KYC
       const errorData = error.response?.data || (error.message ? { message: error.message } : {})
       if (errorData.requires_kyc) {
-        alert(`⚠️ Verifica identità richiesta!\n\nPer creare inserzioni devi completare la verifica della tua identità.\n\nClicca OK per essere reindirizzato alla pagina di verifica.`)
+        alert(`Verifica identità richiesta!\n\nPer creare inserzioni devi completare la verifica della tua identità.\n\nClicca OK per essere reindirizzato alla pagina di verifica.`)
         // Reindirizza alla pagina KYC
         window.location.href = '/dashboard/kyc'
         return
       }
       
       if (error.response && error.response.data && error.response.data.errors) {
-        console.error(`❌ Dettagli errore:`, error.response.data.errors)
+        console.error(` Dettagli errore:`, error.response.data.errors)
         alert(`Errore nella creazione inserzione ${i + 1}: ${JSON.stringify(error.response.data.errors)}`)
       } else if (errorData.message) {
         alert(`Errore nella creazione inserzione ${i + 1}: ${errorData.message}`)
@@ -2382,7 +2258,7 @@ const createBulkListings = async () => {
   }
   
   if (createdListings.length > 0) {
-    console.log(`✅ ${createdListings.length} inserzioni create con successo`)
+    console.log(` ${createdListings.length} inserzioni create con successo`)
     emit('created', createdListings)
     closeModal()
   }
@@ -2398,7 +2274,7 @@ const createSealedPackListing = async () => {
   formData.append('category', selectedCategory.value)
   
   // Filtri selezionati - log per debug
-  console.log('📋 Filtri al momento della creazione sealed-pack:', {
+  console.log(' Filtri al momento della creazione sealed-pack:', {
     set: filters.value.set,
     year: filters.value.year,
     brand: filters.value.brand,
@@ -2432,14 +2308,14 @@ const createSealedPackListing = async () => {
     }
   })
   
-  // Zone di spedizione - assicurati che gli ID siano numeri interi
+  // Zone di spedizione (CardSwap V1: opzionale)
   selectedShippingZones.value.forEach(zoneId => {
     const numericId = parseInt(zoneId, 10)
     if (!isNaN(numericId)) {
       formData.append('shipping_zones[]', numericId.toString())
     }
   })
-  
+
   try {
     const token = localStorage.getItem('token')
     const headers = {
@@ -2449,13 +2325,13 @@ const createSealedPackListing = async () => {
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
     }
-    
+
     const response = await fetch('/api/listings', {
       method: 'POST',
       body: formData,
       headers
     })
-    
+
     if (!response.ok) {
       // Verifica se la risposta è JSON
       const contentType = response.headers.get('content-type')
@@ -2474,14 +2350,14 @@ const createSealedPackListing = async () => {
       }
       // Gestione specifica per errore Stripe Connect
       if (errorData.error === 'stripe_connect_required' || errorData.message?.includes('Stripe Connect')) {
-        alert('⚠️ Devi configurare Stripe Connect prima di pubblicare inserzioni.\n\nVai su Account > Metodi di Pagamento per configurarlo.')
+        alert('Devi configurare Stripe Connect prima di pubblicare inserzioni.\n\nVai su Account > Metodi di Pagamento per configurarlo.')
         window.location.href = '/account/payment-methods'
         return
       }
-      
+
       throw new Error(errorData.message || errorData.error || 'Errore nella creazione inserzione')
     }
-    
+
     const data = await response.json()
     emit('created', data.data)
     closeModal()
@@ -2501,7 +2377,7 @@ const createSealedBoxListing = async () => {
   formData.append('category', selectedCategory.value)
   
   // Filtri selezionati - log per debug
-  console.log('📋 Filtri al momento della creazione sealed-pack:', {
+  console.log(' Filtri al momento della creazione sealed-pack:', {
     set: filters.value.set,
     year: filters.value.year,
     brand: filters.value.brand,
@@ -2577,7 +2453,7 @@ const createSealedBoxListing = async () => {
       }
       // Gestione specifica per errore Stripe Connect
       if (errorData.error === 'stripe_connect_required' || errorData.message?.includes('Stripe Connect')) {
-        alert('⚠️ Devi configurare Stripe Connect prima di pubblicare inserzioni.\n\nVai su Account > Metodi di Pagamento per configurarlo.')
+        alert('Devi configurare Stripe Connect prima di pubblicare inserzioni.\n\nVai su Account > Metodi di Pagamento per configurarlo.')
         window.location.href = '/account/payment-methods'
         return
       }
@@ -2666,7 +2542,7 @@ const createLotListing = async () => {
       }
       // Gestione specifica per errore Stripe Connect
       if (errorData.error === 'stripe_connect_required' || errorData.message?.includes('Stripe Connect')) {
-        alert('⚠️ Devi configurare Stripe Connect prima di pubblicare inserzioni.\n\nVai su Account > Metodi di Pagamento per configurarlo.')
+        alert('Devi configurare Stripe Connect prima di pubblicare inserzioni.\n\nVai su Account > Metodi di Pagamento per configurarlo.')
         window.location.href = '/account/payment-methods'
         return
       }
@@ -2847,7 +2723,7 @@ const handleAdditionalDetailsChanged = (details) => {
 }
 
 const handleBulkImagesUploaded = (images) => {
-  console.log('🖼️ Immagini bulk caricate:', images)
+  console.log('Immagini bulk caricate:', images)
   bulkImages.value = images
   // Update bulk listings with images
   bulkListings.value.forEach((listing, index) => {
@@ -2855,7 +2731,7 @@ const handleBulkImagesUploaded = (images) => {
       listing.images = [images[index].file]
     }
   })
-  console.log('🖼️ Bulk images aggiornate:', bulkImages.value)
+  console.log('Bulk images aggiornate:', bulkImages.value)
 }
 
 
@@ -2927,6 +2803,7 @@ const getFirstUploadedImage = () => {
 
 // Lifecycle
 onMounted(async () => {
+  await checkPriceTables()
   await checkShippingZones()
   if (hasShippingZones.value) {
     loadShippingZones()
@@ -2954,7 +2831,7 @@ watch(() => props.editingListing, (newListing) => {
           }))
           
           // Dispatches anche l'evento filters-populated per compatibilità
-          console.log('🎯 Dispatching filters-populated con brand:', selectedCardModel.value.brand)
+          console.log(' Dispatching filters-populated con brand:', selectedCardModel.value.brand)
           window.dispatchEvent(new CustomEvent('filters-populated', { 
             detail: {
               team: selectedCardModel.value.team,
@@ -2975,7 +2852,7 @@ watch(() => props.editingListing, (newListing) => {
 // Watch per controllo zone di spedizione quando il modal si apre
 watch(() => props.isOpen, async (isOpen) => {
   if (isOpen) {
-    console.log('🔄 Modal aperto, controllo zone di spedizione...')
+    console.log(' Modal aperto, controllo zone di spedizione...')
     await checkShippingZones()
     if (hasShippingZones.value) {
       loadShippingZones()
@@ -3004,7 +2881,7 @@ watch(() => listingData.value.price, (newPrice) => {
 // Inizializza carta pre-selezionata per "Sell Same Card"
 const initializePreselectedCard = async () => {
   try {
-    console.log('🔄 Inizializzazione carta pre-selezionata:', props.preselectedCardModel)
+    console.log(' Inizializzazione carta pre-selezionata:', props.preselectedCardModel)
     
     // Imposta la modalità single
     selectedMode.value = 'single'
@@ -3025,7 +2902,7 @@ const initializePreselectedCard = async () => {
           const cmData = await resp.json()
           // L'API restituisce { success: true, data: { card_model: ... } }
           cardModelData = cmData.data?.card_model || cmData.data || cmData.card_model || cmData
-          console.log('✅ Dati carta caricati:', {
+          console.log(' Dati carta caricati:', {
             id: cardModelData.id,
             hasPlayer: !!cardModelData.player,
             hasTeam: !!cardModelData.team,
@@ -3035,12 +2912,12 @@ const initializePreselectedCard = async () => {
             cardSetName: cardModelData.card_set?.name
           })
         } else {
-          console.error('❌ Errore HTTP nel caricamento carta:', resp.status)
+          console.error(' Errore HTTP nel caricamento carta:', resp.status)
           // Fallback ai dati passati
           cardModelData = props.preselectedCardModel
         }
       } catch (e) {
-        console.error('❌ Errore caricamento dettagli card model:', e)
+        console.error(' Errore caricamento dettagli card model:', e)
         // Fallback ai dati passati
         cardModelData = props.preselectedCardModel
       }
@@ -3050,7 +2927,7 @@ const initializePreselectedCard = async () => {
     
     // Se ancora non abbiamo player o card_set, usa i dati fallback
     if (!cardModelData.player || !cardModelData.card_set) {
-      console.warn('⚠️ Dati incompleti, uso dati passati come fallback')
+      console.warn('Dati incompleti, uso dati passati come fallback')
       cardModelData = {
         ...cardModelData,
         ...props.preselectedCardModel
@@ -3077,20 +2954,20 @@ const initializePreselectedCard = async () => {
               const data = await response.json()
               if (data.success && data.data?.player) {
                 playerWithCards = data.data.player
-                console.log('✅ Carte del giocatore caricate per sell same:', playerWithCards.cards?.length || 0)
+                console.log(' Carte del giocatore caricate per sell same:', playerWithCards.cards?.length || 0)
               } else if (data.player) {
                 playerWithCards = data.player
-                console.log('✅ Carte del giocatore caricate per sell same (formato alternativo):', playerWithCards.cards?.length || 0)
+                console.log(' Carte del giocatore caricate per sell same (formato alternativo):', playerWithCards.cards?.length || 0)
               }
             } else {
-              console.warn('⚠️ La risposta non è JSON, probabilmente non esiste l\'endpoint specifico')
+              console.warn('La risposta non è JSON, probabilmente non esiste l\'endpoint specifico')
             }
           } else {
-            console.warn('⚠️ Errore HTTP nel caricamento carte del giocatore:', response.status)
+            console.warn('Errore HTTP nel caricamento carte del giocatore:', response.status)
           }
         }
       } catch (error) {
-        console.warn('⚠️ Errore nel caricamento carte del giocatore (non critico):', error.message)
+        console.warn('Errore nel caricamento carte del giocatore (non critico):', error.message)
         // Non bloccare il flusso se non si riesce a caricare le carte
       }
     }
@@ -3140,7 +3017,7 @@ const initializePreselectedCard = async () => {
     
     // Usa setTimeout come in edit mode per assicurarsi che ChainedFilters sia completamente montato e ascolti gli eventi
     setTimeout(() => {
-      console.log('🎯 Dispatching filters-populated per sell same card con:', {
+      console.log(' Dispatching filters-populated per sell same card con:', {
         player: playerWithCards?.name || playerWithCards?.id || 'MISSING',
         team: cardModelData.team?.name || cardModelData.team?.id || 'MISSING',
         card_set: cardModelData.card_set?.name || cardModelData.card_set?.id || 'MISSING',
@@ -3152,13 +3029,13 @@ const initializePreselectedCard = async () => {
       
       // Verifica che tutti i dati necessari siano presenti
       if (!playerWithCards && !cardModelData.player) {
-        console.error('❌ ERRORE: Player mancante nei dati!')
+        console.error(' ERRORE: Player mancante nei dati!')
       }
       if (!cardModelData.team) {
-        console.error('❌ ERRORE: Team mancante nei dati!')
+        console.error(' ERRORE: Team mancante nei dati!')
       }
       if (!cardModelData.card_set) {
-        console.error('❌ ERRORE: Card_set mancante nei dati!')
+        console.error(' ERRORE: Card_set mancante nei dati!')
       }
       
       // Dispatches event 'filters-populated' per popolare i filtri in ChainedFilters (come in edit mode)
@@ -3190,14 +3067,14 @@ const initializePreselectedCard = async () => {
       }))
     }, 600) // Timeout aumentato per dare più tempo
   } catch (error) {
-    console.error('❌ Errore nell\'inizializzazione carta pre-selezionata:', error)
+    console.error(' Errore nell\'inizializzazione carta pre-selezionata:', error)
   }
 }
 
 // Inizializza modalità edit
 const initializeEditMode = async (listing) => {
   try {
-    console.log('🔄 Inizializzazione modalità edit con listing:', listing)
+    console.log(' Inizializzazione modalità edit con listing:', listing)
     
     // IMPORTANTE: Ricarica sempre la listing dal backend per avere i dati più aggiornati del CardModel
     let freshListing = listing
@@ -3214,7 +3091,7 @@ const initializeEditMode = async (listing) => {
           const data = await response.json()
           if (data.success && data.data) {
             freshListing = data.data
-            console.log('✅ Listing ricaricata dal backend con CardModel aggiornato:', {
+            console.log(' Listing ricaricata dal backend con CardModel aggiornato:', {
               listing_id: freshListing.id,
               card_model_id: freshListing.card_model?.id || freshListing.cardModel?.id,
               is_rookie: freshListing.card_model?.is_rookie || freshListing.cardModel?.is_rookie,
@@ -3224,10 +3101,10 @@ const initializeEditMode = async (listing) => {
             })
           }
         } else {
-          console.warn('⚠️ Errore nel ricaricamento listing, uso dati in memoria')
+          console.warn('Errore nel ricaricamento listing, uso dati in memoria')
         }
       } catch (error) {
-        console.warn('⚠️ Errore nel ricaricamento listing, uso dati in memoria:', error)
+        console.warn('Errore nel ricaricamento listing, uso dati in memoria:', error)
       }
     }
     
@@ -3278,7 +3155,7 @@ const initializeEditMode = async (listing) => {
       }
       
       // Log completo del listing per debug
-      console.log('🔍 Listing completo per sealed-pack/box/lot:', {
+      console.log(' Listing completo per sealed-pack/box/lot:', {
         id: freshListing.id,
         listing_type: freshListing.listing_type,
         card_set_id: freshListing.card_set_id,
@@ -3304,7 +3181,7 @@ const initializeEditMode = async (listing) => {
         brand: brand
       }
       
-      console.log('✅ Filtri impostati per sealed-pack/box/lot:', {
+      console.log(' Filtri impostati per sealed-pack/box/lot:', {
         set: setId,
         year: year,
         brand: brand,
@@ -3316,7 +3193,7 @@ const initializeEditMode = async (listing) => {
       
       // Se i filtri sono vuoti, potrebbe essere necessario caricare i dettagli completi del listing
       if (!setId && !year && !brand) {
-        console.warn('⚠️ Nessun filtro trovato nel listing, potrebbe essere necessario caricare i dettagli completi')
+        console.warn('Nessun filtro trovato nel listing, potrebbe essere necessario caricare i dettagli completi')
         // Prova a caricare i dettagli completi del listing dall'API
         try {
           const response = await fetch(`/api/listings/${freshListing.id}`, {
@@ -3329,7 +3206,7 @@ const initializeEditMode = async (listing) => {
             const data = await response.json()
             if (data.success && data.data) {
               const fullListing = data.data
-              console.log('✅ Listing completo caricato:', {
+              console.log(' Listing completo caricato:', {
                 card_set_id: fullListing.card_set_id,
                 year: fullListing.year,
                 brand: fullListing.brand,
@@ -3348,12 +3225,12 @@ const initializeEditMode = async (listing) => {
                   year: fullYear,
                   brand: fullBrand
                 }
-                console.log('✅ Filtri aggiornati con dati completi:', filters.value)
+                console.log(' Filtri aggiornati con dati completi:', filters.value)
               }
             }
           }
         } catch (error) {
-          console.error('❌ Errore nel caricamento dettagli listing:', error)
+          console.error(' Errore nel caricamento dettagli listing:', error)
         }
       }
       
@@ -3374,7 +3251,7 @@ const initializeEditMode = async (listing) => {
             }
           }
         } catch (e) {
-          console.error('❌ Errore caricamento dettagli card model:', e)
+          console.error(' Errore caricamento dettagli card model:', e)
         }
       }
       
@@ -3447,7 +3324,7 @@ const initializeEditMode = async (listing) => {
       }
     }
     
-    console.log('🔄 Caricamento caratteristiche per edit:', {
+    console.log(' Caricamento caratteristiche per edit:', {
       fromCardModel: !!cardModel,
       isRookie,
       isAutograph,
@@ -3520,7 +3397,7 @@ const initializeEditMode = async (listing) => {
       
       // Usa setTimeout per assicurarsi che il componente ChainedFilters sia montato
       setTimeout(async () => {
-        console.log('🎯 Dispatching filters-populated per sealed-pack/box/lot con filtri:', filters.value)
+        console.log(' Dispatching filters-populated per sealed-pack/box/lot con filtri:', filters.value)
         
         // Se abbiamo un set_id, carica prima l'oggetto completo del set
         let cardSetObject = null
@@ -3530,10 +3407,10 @@ const initializeEditMode = async (listing) => {
             if (response.ok) {
               const data = await response.json()
               cardSetObject = data.card_set
-              console.log('✅ Set caricato per sealed-pack/box/lot:', cardSetObject)
+              console.log(' Set caricato per sealed-pack/box/lot:', cardSetObject)
             }
           } catch (error) {
-            console.error('❌ Errore nel caricamento set:', error)
+            console.error(' Errore nel caricamento set:', error)
           }
         }
         
@@ -3550,7 +3427,7 @@ const initializeEditMode = async (listing) => {
         // Questo è importante perché il componente potrebbe non aver ancora processato l'evento
         await nextTick()
         
-        console.log('✅ Filtri impostati per sealed-pack/box/lot:', {
+        console.log(' Filtri impostati per sealed-pack/box/lot:', {
           set: filters.value.set,
           year: filters.value.year,
           brand: filters.value.brand,
@@ -3580,26 +3457,26 @@ const initializeEditMode = async (listing) => {
               const data = await response.json()
               if (data.success && data.data?.player) {
                 playerWithCards = data.data.player
-                console.log('✅ Carte del giocatore caricate per edit:', playerWithCards.cards?.length || 0)
+                console.log(' Carte del giocatore caricate per edit:', playerWithCards.cards?.length || 0)
               } else if (data.player) {
                 playerWithCards = data.player
-                console.log('✅ Carte del giocatore caricate per edit (formato alternativo):', playerWithCards.cards?.length || 0)
+                console.log(' Carte del giocatore caricate per edit (formato alternativo):', playerWithCards.cards?.length || 0)
               }
             } else {
-              console.warn('⚠️ La risposta non è JSON, probabilmente non esiste l\'endpoint specifico')
+              console.warn('La risposta non è JSON, probabilmente non esiste l\'endpoint specifico')
             }
           } else {
-            console.warn('⚠️ Errore HTTP nel caricamento carte del giocatore:', response.status)
+            console.warn('Errore HTTP nel caricamento carte del giocatore:', response.status)
           }
         } catch (error) {
-          console.warn('⚠️ Errore nel caricamento carte del giocatore (non critico):', error.message)
+          console.warn('Errore nel caricamento carte del giocatore (non critico):', error.message)
           // Non bloccare il flusso se non si riesce a caricare le carte
         }
       }
       
       // Usa setTimeout per assicurarsi che il componente ChainedFilters sia montato e i listener attivi
       setTimeout(() => {
-        console.log('🎯 Dispatching filters-populated con player:', playerWithCards?.name || playerWithCards?.id)
+        console.log(' Dispatching filters-populated con player:', playerWithCards?.name || playerWithCards?.id)
         window.dispatchEvent(new CustomEvent('filters-populated', { 
           detail: {
             team: selectedCardModel.value.team,
@@ -3616,7 +3493,7 @@ const initializeEditMode = async (listing) => {
       }, 300) // Aumentato timeout per assicurarsi che il componente sia montato
     }
   } catch (error) {
-    console.error('❌ Errore nell\'inizializzazione modalità edit:', error)
+    console.error(' Errore nell\'inizializzazione modalità edit:', error)
   }
 }
 
@@ -3624,7 +3501,7 @@ const initializeEditMode = async (listing) => {
 const updateSealedPackListing = async () => {
   try {
     isSubmitting.value = true
-    console.log('💾 Aggiornamento sealed-pack listing:', props.editingListing.id)
+    console.log(' Aggiornamento sealed-pack listing:', props.editingListing.id)
     
     const formData = new FormData()
     
@@ -3687,7 +3564,7 @@ const updateSealedPackListing = async () => {
       throw new Error(response.data.message || 'Errore nell\'aggiornamento dell\'inserzione')
     }
   } catch (error) {
-    console.error('❌ Errore aggiornamento sealed-pack:', error)
+    console.error(' Errore aggiornamento sealed-pack:', error)
     if (error.response?.data?.errors) {
       const errorMessages = Object.entries(error.response.data.errors)
         .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
@@ -3706,7 +3583,7 @@ const updateSealedPackListing = async () => {
 const updateSealedBoxListing = async () => {
   try {
     isSubmitting.value = true
-    console.log('💾 Aggiornamento sealed-box listing:', props.editingListing.id)
+    console.log(' Aggiornamento sealed-box listing:', props.editingListing.id)
     
     const formData = new FormData()
     
@@ -3769,7 +3646,7 @@ const updateSealedBoxListing = async () => {
       throw new Error(response.data.message || 'Errore nell\'aggiornamento dell\'inserzione')
     }
   } catch (error) {
-    console.error('❌ Errore aggiornamento sealed-box:', error)
+    console.error(' Errore aggiornamento sealed-box:', error)
     if (error.response?.data?.errors) {
       const errorMessages = Object.entries(error.response.data.errors)
         .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
@@ -3788,7 +3665,7 @@ const updateSealedBoxListing = async () => {
 const updateLotListing = async () => {
   try {
     isSubmitting.value = true
-    console.log('💾 Aggiornamento lot listing:', props.editingListing.id)
+    console.log(' Aggiornamento lot listing:', props.editingListing.id)
     
     const formData = new FormData()
     
@@ -3844,7 +3721,7 @@ const updateLotListing = async () => {
       throw new Error(response.data.message || 'Errore nell\'aggiornamento dell\'inserzione')
     }
   } catch (error) {
-    console.error('❌ Errore aggiornamento lot:', error)
+    console.error(' Errore aggiornamento lot:', error)
     if (error.response?.data?.errors) {
       const errorMessages = Object.entries(error.response.data.errors)
         .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
@@ -3863,7 +3740,7 @@ const updateLotListing = async () => {
 const updateSingleListing = async () => {
   try {
     isSubmitting.value = true
-    console.log('💾 Aggiornamento inserzione:', props.editingListing.id)
+    console.log(' Aggiornamento inserzione:', props.editingListing.id)
     
     // Per sealed-pack, sealed-box e lot, usa metodi specifici
     if (selectedMode.value === 'sealed-pack') {
@@ -3966,16 +3843,16 @@ const updateSingleListing = async () => {
     for (const image of newImages) {
       try {
         const fileSizeMB = image.file.size / 1024 / 1024
-        console.log(`🖼️ Immagine nuova per update: ${fileSizeMB.toFixed(2)}MB`)
+        console.log(`Immagine nuova per update: ${fileSizeMB.toFixed(2)}MB`)
         
         // Comprimi sempre se > 500KB o se la dimensione totale supererebbe 3MB
         const shouldCompress = image.file.size > 500 * 1024 || totalSize + image.file.size > 3 * 1024 * 1024
         
         if (shouldCompress) {
-          console.log(`📦 Compressione immagine per update...`)
+          console.log(` Compressione immagine per update...`)
           const compressedFile = await compressImageForUpload(image.file)
           const compressedSizeMB = compressedFile.size / 1024 / 1024
-          console.log(`✅ Immagine compressa: ${compressedSizeMB.toFixed(2)}MB`)
+          console.log(` Immagine compressa: ${compressedSizeMB.toFixed(2)}MB`)
           formData.append('images[]', compressedFile)
           totalSize += compressedFile.size
           
@@ -3988,30 +3865,27 @@ const updateSingleListing = async () => {
           totalSize += image.file.size
         }
       } catch (error) {
-        console.error('❌ Errore compressione immagine:', error)
+        console.error(' Errore compressione immagine:', error)
         // Se la compressione fallisce, NON inviare se è troppo grande
         if (image.file.size < 2 * 1024 * 1024) {
           formData.append('images[]', image.file)
           totalSize += image.file.size
         } else {
-          alert(`❌ L'immagine è troppo grande (${(image.file.size / 1024 / 1024).toFixed(2)}MB) e non può essere compressa. Per favore, usa un'immagine più piccola.`)
+          alert(` L'immagine è troppo grande (${(image.file.size / 1024 / 1024).toFixed(2)}MB) e non può essere compressa. Per favore, usa un'immagine più piccola.`)
           throw error
         }
       }
     }
     
-    console.log(`📦 Dimensione totale immagini per update: ${(totalSize / 1024 / 1024).toFixed(2)}MB`)
+    console.log(` Dimensione totale immagini per update: ${(totalSize / 1024 / 1024).toFixed(2)}MB`)
     
     // Verifica dimensione totale
     if (totalSize > 4 * 1024 * 1024) {
-      alert(`⚠️ Attenzione: La dimensione totale delle immagini (${(totalSize / 1024 / 1024).toFixed(2)}MB) è troppo grande.`)
+      alert(` Attenzione: La dimensione totale delle immagini (${(totalSize / 1024 / 1024).toFixed(2)}MB) è troppo grande.`)
       throw new Error('Dimensione totale immagini troppo grande')
     }
     
-    // Aggiungi le zone di spedizione (obbligatorio)
-    if (selectedShippingZones.value.length === 0) {
-      throw new Error('Devi selezionare almeno una zona di spedizione')
-    }
+    // Zone di spedizione: CardSwap V1 opzionale
     selectedShippingZones.value.forEach(zoneId => {
       formData.append('shipping_zones[]', zoneId)
     })
@@ -4052,7 +3926,7 @@ const updateSingleListing = async () => {
       
       // Axios restituisce direttamente i dati
       const data = response.data
-      console.log('✅ Inserzione aggiornata:', data)
+      console.log(' Inserzione aggiornata:', data)
       
       if (data.success) {
         emit('updated', data.data)
@@ -4061,11 +3935,11 @@ const updateSingleListing = async () => {
         throw new Error(data.message || 'Errore nell\'aggiornamento dell\'inserzione')
       }
     } catch (error) {
-      console.error('❌ Errore completo:', error)
+      console.error(' Errore completo:', error)
       if (error.response && error.response.data) {
-        console.error('❌ Dettagli errore backend:', error.response.data)
+        console.error(' Dettagli errore backend:', error.response.data)
         if (error.response.data.errors) {
-          console.error('❌ Errori di validazione:', error.response.data.errors)
+          console.error(' Errori di validazione:', error.response.data.errors)
           const errorMessages = Object.entries(error.response.data.errors)
             .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
             .join('\n')
@@ -4077,7 +3951,7 @@ const updateSingleListing = async () => {
       throw error
     }
   } catch (error) {
-    console.error('❌ Errore nell\'aggiornamento inserzione:', error)
+    console.error(' Errore nell\'aggiornamento inserzione:', error)
     
     // Gestione errori dettagliata
     let errorMessage = 'Errore nell\'aggiornamento dell\'inserzione.'

@@ -4,9 +4,8 @@ namespace App\Listeners;
 
 use App\Events\DisputeUpdated;
 use App\Services\NotificationService;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
-class NotifyBuyerDisputeUpdated implements ShouldQueue
+class NotifyBuyerDisputeUpdated
 {
     public function handle(DisputeUpdated $event): void
     {

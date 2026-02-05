@@ -13,7 +13,7 @@
       <!-- Fallback text if chart fails -->
       <div v-if="!chartInstance" class="absolute inset-0 flex items-center justify-center text-gray-500">
         <div class="text-center">
-          <div class="text-2xl mb-2">📊</div>
+          <div class="text-2xl mb-2">Grafico</div>
           <p class="text-sm">Caricamento grafico...</p>
         </div>
       </div>

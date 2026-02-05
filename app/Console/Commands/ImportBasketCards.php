@@ -45,12 +45,12 @@ class ImportBasketCards extends Command
             return 1;
         }
 
-        $this->info("🚀 Inizio importazione carte di basket...");
-        $this->info("📁 File: {$filePath}");
-        $this->info("📦 Chunk size: {$this->chunkSize}");
+        $this->info("Inizio importazione carte di basket...");
+        $this->info("File: {$filePath}");
+        $this->info("Chunk size: {$this->chunkSize}");
         
         if ($dryRun) {
-            $this->warn("⚠️  Modalità DRY RUN - Nessun dato verrà salvato");
+            $this->warn("Modalità DRY RUN - Nessun dato verrà salvato");
         }
 
         // Crea o trova la categoria Basket
@@ -59,7 +59,7 @@ class ImportBasketCards extends Command
         // Processa il file in chunk
         $this->processFileInChunks($filePath, $category, $limit, $dryRun);
 
-        $this->info("✅ Importazione completata!");
+        $this->info("Importazione completata!");
         return 0;
     }
 
@@ -83,7 +83,7 @@ class ImportBasketCards extends Command
         $chunkCount = 0;
         $chunk = [];
 
-        $this->info("🔄 Inizio elaborazione a chunk...");
+        $this->info("Inizio elaborazione a chunk...");
 
         while (($row = fgetcsv($handle)) !== false && ($limit === null || $totalProcessed < $limit)) {
             if (count($row) >= 9) {
@@ -95,7 +95,7 @@ class ImportBasketCards extends Command
                     $totalSkipped += $result['skipped'];
                     $chunkCount++;
                     
-                    $this->info("📦 Chunk {$chunkCount} completato: {$result['processed']} processate, {$result['skipped']} saltate");
+                    $this->info("Chunk {$chunkCount} completato: {$result['processed']} processate, {$result['skipped']} saltate");
                     
                     // Flush output per assicurarsi che i messaggi vengano scritti immediatamente
                     if (function_exists('ob_flush')) {
@@ -119,15 +119,15 @@ class ImportBasketCards extends Command
             $totalSkipped += $result['skipped'];
             $chunkCount++;
             
-            $this->info("📦 Chunk finale {$chunkCount} completato: {$result['processed']} processate, {$result['skipped']} saltate");
+            $this->info("Chunk finale {$chunkCount} completato: {$result['processed']} processate, {$result['skipped']} saltate");
         }
 
         fclose($handle);
 
-        $this->info("📈 Statistiche finali:");
-        $this->info("   📦 Chunk processati: {$chunkCount}");
-        $this->info("   ✅ Carte processate: {$totalProcessed}");
-        $this->info("   ⚠️  Carte saltate: {$totalSkipped}");
+        $this->info("Statistiche finali:");
+        $this->info("   Chunk processati: {$chunkCount}");
+        $this->info("   Carte processate: {$totalProcessed}");
+        $this->info("   Carte saltate: {$totalSkipped}");
     }
 
     private function processChunk($chunk, $category, $dryRun = false)
@@ -147,7 +147,7 @@ class ImportBasketCards extends Command
                 } catch (\Exception $e) {
                     $playerName = $row['Player'] ?? 'Unknown';
                     $cardNumber = $row['Numero'] ?? 'Unknown';
-                    $this->error("❌ Errore processando riga (Player: {$playerName}, Numero: {$cardNumber}): " . $e->getMessage());
+                    $this->error("Errore processando riga (Player: {$playerName}, Numero: {$cardNumber}): " . $e->getMessage());
                     \Log::error("ImportBasketCards - Errore riga", [
                         'player' => $playerName,
                         'numero' => $cardNumber,

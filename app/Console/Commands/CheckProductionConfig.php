@@ -28,7 +28,7 @@ class CheckProductionConfig extends Command
      */
     public function handle()
     {
-        $this->info('🔍 Verifica Configurazione Produzione');
+        $this->info('Verifica Configurazione Produzione');
         $this->info('═══════════════════════════════════════════════════════');
         $this->newLine();
 
@@ -56,7 +56,7 @@ class CheckProductionConfig extends Command
         $this->info('═══════════════════════════════════════════════════════');
         
         if ($allOk) {
-            $this->info('✅ Tutte le verifiche sono passate! Pronto per la produzione.');
+            $this->info('Tutte le verifiche sono passate! Pronto per la produzione.');
             return 0;
         } else {
             $this->error('❌ Alcune verifiche sono fallite. Controlla la configurazione.');
@@ -66,7 +66,7 @@ class CheckProductionConfig extends Command
 
     private function checkEnvironment(): bool
     {
-        $this->info('1️⃣  Verifica Ambiente');
+        $this->info('1. Verifica Ambiente');
         
         $env = config('app.env');
         $debug = config('app.debug');
@@ -75,25 +75,25 @@ class CheckProductionConfig extends Command
         $ok = true;
 
         if ($env === 'production') {
-            $this->line("   ✅ APP_ENV: $env");
+            $this->line("   APP_ENV: $env");
         } else {
-            $this->error("   ❌ APP_ENV: $env (dovrebbe essere 'production')");
+            $this->error("   APP_ENV: $env (dovrebbe essere 'production')");
             $ok = false;
         }
 
         if (!$debug) {
-            $this->line("   ✅ APP_DEBUG: false");
+            $this->line("   APP_DEBUG: false");
         } else {
-            $this->error("   ❌ APP_DEBUG: true (dovrebbe essere false in produzione)");
+            $this->error("   APP_DEBUG: true (dovrebbe essere false in produzione)");
             $ok = false;
         }
 
         if ($url && str_starts_with($url, 'https://')) {
-            $this->line("   ✅ APP_URL: $url (HTTPS attivo)");
+            $this->line("   APP_URL: $url (HTTPS attivo)");
         } elseif ($url) {
-            $this->warn("   ⚠️  APP_URL: $url (non usa HTTPS)");
+            $this->warn("    APP_URL: $url (non usa HTTPS)");
         } else {
-            $this->error("   ❌ APP_URL: non configurato");
+            $this->error("   APP_URL: non configurato");
             $ok = false;
         }
 
@@ -103,7 +103,7 @@ class CheckProductionConfig extends Command
 
     private function checkStripe(): bool
     {
-        $this->info('2️⃣  Verifica Stripe');
+        $this->info('2. Verifica Stripe');
         
         $stripeKey = config('services.stripe.key');
         $stripeSecret = config('services.stripe.secret');
@@ -114,53 +114,53 @@ class CheckProductionConfig extends Command
         // Verifica chiave pubblica
         if ($stripeKey) {
             if (str_starts_with($stripeKey, 'pk_live_')) {
-                $this->line("   ✅ STRIPE_KEY: configurata (produzione)");
+                $this->line("   STRIPE_KEY: configurata (produzione)");
             } elseif (str_starts_with($stripeKey, 'pk_test_')) {
-                $this->error("   ❌ STRIPE_KEY: è una chiave di TEST (usa pk_live_)");
+                $this->error("   STRIPE_KEY: è una chiave di TEST (usa pk_live_)");
                 $ok = false;
             } else {
-                $this->error("   ❌ STRIPE_KEY: formato non valido");
+                $this->error("   STRIPE_KEY: formato non valido");
                 $ok = false;
             }
         } else {
-            $this->error("   ❌ STRIPE_KEY: non configurata");
+            $this->error("   STRIPE_KEY: non configurata");
             $ok = false;
         }
 
         // Verifica chiave segreta
         if ($stripeSecret) {
             if (str_starts_with($stripeSecret, 'sk_live_')) {
-                $this->line("   ✅ STRIPE_SECRET: configurata (produzione)");
+                $this->line("   STRIPE_SECRET: configurata (produzione)");
             } elseif (str_starts_with($stripeSecret, 'sk_test_')) {
-                $this->error("   ❌ STRIPE_SECRET: è una chiave di TEST (usa sk_live_)");
+                $this->error("   STRIPE_SECRET: è una chiave di TEST (usa sk_live_)");
                 $ok = false;
             } else {
-                $this->error("   ❌ STRIPE_SECRET: formato non valido");
+                $this->error("   STRIPE_SECRET: formato non valido");
                 $ok = false;
             }
         } else {
-            $this->error("   ❌ STRIPE_SECRET: non configurata");
+            $this->error("   STRIPE_SECRET: non configurata");
             $ok = false;
         }
 
         // Verifica webhook secret
         if ($webhookSecret) {
             if (str_starts_with($webhookSecret, 'whsec_')) {
-                $this->line("   ✅ STRIPE_WEBHOOK_SECRET: configurato");
+                $this->line("   STRIPE_WEBHOOK_SECRET: configurato");
             } else {
-                $this->warn("   ⚠️  STRIPE_WEBHOOK_SECRET: formato sospetto");
+                $this->warn("    STRIPE_WEBHOOK_SECRET: formato sospetto");
             }
         } else {
-            $this->warn("   ⚠️  STRIPE_WEBHOOK_SECRET: non configurato (webhook non funzioneranno)");
+            $this->warn("    STRIPE_WEBHOOK_SECRET: non configurato (webhook non funzioneranno)");
         }
 
         // Test connessione Stripe
         if ($stripeSecret && str_starts_with($stripeSecret, 'sk_live_')) {
             try {
                 $stripeService = new StripeService();
-                $this->line("   ✅ Connessione Stripe: OK");
+                $this->line("   Connessione Stripe: OK");
             } catch (\Exception $e) {
-                $this->error("   ❌ Connessione Stripe fallita: " . $e->getMessage());
+                $this->error("   Connessione Stripe fallita: " . $e->getMessage());
                 $ok = false;
             }
         }
@@ -171,7 +171,7 @@ class CheckProductionConfig extends Command
 
     private function checkShippo(): bool
     {
-        $this->info('3️⃣  Verifica Shippo');
+        $this->info('3. Verifica Shippo');
         
         $apiKey = config('services.shippo.key');
         $sender = config('services.shippo.sender');
@@ -181,15 +181,15 @@ class CheckProductionConfig extends Command
         if ($apiKey) {
             if (str_starts_with($apiKey, 'shippo_live_') || str_starts_with($apiKey, 'shippo_test_')) {
                 if (str_starts_with($apiKey, 'shippo_live_')) {
-                    $this->line("   ✅ SHIPPO_API_KEY: configurata (produzione)");
+                    $this->line("   SHIPPO_API_KEY: configurata (produzione)");
                 } else {
-                    $this->warn("   ⚠️  SHIPPO_API_KEY: è una chiave di TEST");
+                    $this->warn("    SHIPPO_API_KEY: è una chiave di TEST");
                 }
             } else {
-                $this->warn("   ⚠️  SHIPPO_API_KEY: formato non riconosciuto");
+                $this->warn("    SHIPPO_API_KEY: formato non riconosciuto");
             }
         } else {
-            $this->error("   ❌ SHIPPO_API_KEY: non configurata");
+            $this->error("   SHIPPO_API_KEY: non configurata");
             $ok = false;
         }
 
@@ -204,10 +204,10 @@ class CheckProductionConfig extends Command
         }
 
         if (empty($missingFields)) {
-            $this->line("   ✅ Indirizzo mittente: completo");
+            $this->line("   Indirizzo mittente: completo");
             $this->line("      " . ($sender['name'] ?? '') . ", " . ($sender['city'] ?? '') . ", " . ($sender['country'] ?? ''));
         } else {
-            $this->error("   ❌ Indirizzo mittente incompleto. Campi mancanti: " . implode(', ', $missingFields));
+            $this->error("   Indirizzo mittente incompleto. Campi mancanti: " . implode(', ', $missingFields));
             $ok = false;
         }
 
@@ -217,7 +217,7 @@ class CheckProductionConfig extends Command
 
     private function checkEmail(): bool
     {
-        $this->info('4️⃣  Verifica Email');
+        $this->info('4. Verifica Email');
         
         $mailer = config('mail.default');
         $fromAddress = config('mail.from.address');
@@ -228,31 +228,31 @@ class CheckProductionConfig extends Command
         // Verifica mailer
         $validMailers = ['smtp', 'mailgun', 'postmark', 'resend', 'ses'];
         if (in_array($mailer, $validMailers)) {
-            $this->line("   ✅ MAIL_MAILER: $mailer");
+            $this->line("   MAIL_MAILER: $mailer");
         } elseif ($mailer === 'log') {
-            $this->warn("   ⚠️  MAIL_MAILER: log (le email non verranno inviate realmente)");
+            $this->warn("    MAIL_MAILER: log (le email non verranno inviate realmente)");
         } else {
-            $this->error("   ❌ MAIL_MAILER: $mailer (non valido per produzione)");
+            $this->error("   MAIL_MAILER: $mailer (non valido per produzione)");
             $ok = false;
         }
 
         // Verifica indirizzo mittente
         if ($fromAddress && $fromAddress !== 'hello@example.com') {
             if (filter_var($fromAddress, FILTER_VALIDATE_EMAIL)) {
-                $this->line("   ✅ MAIL_FROM_ADDRESS: $fromAddress");
+                $this->line("   MAIL_FROM_ADDRESS: $fromAddress");
             } else {
-                $this->error("   ❌ MAIL_FROM_ADDRESS: formato email non valido");
+                $this->error("   MAIL_FROM_ADDRESS: formato email non valido");
                 $ok = false;
             }
         } else {
-            $this->error("   ❌ MAIL_FROM_ADDRESS: non configurato o usa valore di default");
+            $this->error("   MAIL_FROM_ADDRESS: non configurato o usa valore di default");
             $ok = false;
         }
 
         if ($fromName && $fromName !== 'Example') {
-            $this->line("   ✅ MAIL_FROM_NAME: $fromName");
+            $this->line("   MAIL_FROM_NAME: $fromName");
         } else {
-            $this->warn("   ⚠️  MAIL_FROM_NAME: non configurato o usa valore di default");
+            $this->warn("    MAIL_FROM_NAME: non configurato o usa valore di default");
         }
 
         // Verifica configurazione SMTP se usato
@@ -262,16 +262,16 @@ class CheckProductionConfig extends Command
             $username = config('mail.mailers.smtp.username');
             
             if ($host && $host !== '127.0.0.1') {
-                $this->line("   ✅ SMTP Host: $host");
+                $this->line("   SMTP Host: $host");
             } else {
-                $this->error("   ❌ SMTP Host: non configurato correttamente");
+                $this->error("   SMTP Host: non configurato correttamente");
                 $ok = false;
             }
 
             if ($username) {
-                $this->line("   ✅ SMTP Username: configurato");
+                $this->line("   SMTP Username: configurato");
             } else {
-                $this->warn("   ⚠️  SMTP Username: non configurato");
+                $this->warn("    SMTP Username: non configurato");
             }
         }
 
@@ -281,24 +281,24 @@ class CheckProductionConfig extends Command
 
     private function checkDatabase(): bool
     {
-        $this->info('5️⃣  Verifica Database');
+        $this->info('5. Verifica Database');
         
         try {
             \DB::connection()->getPdo();
-            $this->line("   ✅ Connessione database: OK");
+            $this->line("   Connessione database: OK");
             
             // Verifica che non sia il database di test
             $database = config('database.connections.mysql.database');
             if (str_contains(strtolower($database), 'test')) {
-                $this->warn("   ⚠️  Database sembra essere di test: $database");
+                $this->warn("    Database sembra essere di test: $database");
             } else {
-                $this->line("   ✅ Database: $database");
+                $this->line("   Database: $database");
             }
             
             $this->newLine();
             return true;
         } catch (\Exception $e) {
-            $this->error("   ❌ Connessione database fallita: " . $e->getMessage());
+            $this->error("   Connessione database fallita: " . $e->getMessage());
             $this->newLine();
             return false;
         }
@@ -306,19 +306,19 @@ class CheckProductionConfig extends Command
 
     private function checkUrl(): bool
     {
-        $this->info('6️⃣  Verifica URL e SSL');
+        $this->info('6. Verifica URL e SSL');
         
         $url = config('app.url');
         $ok = true;
 
         if (!$url) {
-            $this->error("   ❌ APP_URL: non configurato");
+            $this->error("   APP_URL: non configurato");
             $ok = false;
         } elseif (!str_starts_with($url, 'https://')) {
-            $this->warn("   ⚠️  APP_URL: non usa HTTPS ($url)");
+            $this->warn("    APP_URL: non usa HTTPS ($url)");
             $this->warn("      In produzione è fortemente consigliato usare HTTPS");
         } else {
-            $this->line("   ✅ APP_URL: $url (HTTPS attivo)");
+            $this->line("   APP_URL: $url (HTTPS attivo)");
             
             // Verifica che l'URL sia raggiungibile
             try {
@@ -332,12 +332,12 @@ class CheckProductionConfig extends Command
                 curl_close($ch);
                 
                 if ($httpCode >= 200 && $httpCode < 400) {
-                    $this->line("   ✅ URL raggiungibile: HTTP $httpCode");
+                    $this->line("   URL raggiungibile: HTTP $httpCode");
                 } else {
-                    $this->warn("   ⚠️  URL risponde con codice: HTTP $httpCode");
+                    $this->warn("    URL risponde con codice: HTTP $httpCode");
                 }
             } catch (\Exception $e) {
-                $this->warn("   ⚠️  Impossibile verificare raggiungibilità URL: " . $e->getMessage());
+                $this->warn("    Impossibile verificare raggiungibilità URL: " . $e->getMessage());
             }
         }
 

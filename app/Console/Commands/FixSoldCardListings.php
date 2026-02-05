@@ -38,7 +38,7 @@ class FixSoldCardListings extends Command
         $listingId = $this->option('listing-id');
 
         if ($dryRun) {
-            $this->info('🔍 Modalità DRY-RUN: nessuna modifica verrà applicata');
+            $this->info('Modalità DRY-RUN: nessuna modifica verrà applicata');
         }
 
         $this->info('Inizio aggiornamento card listings vendute...');
@@ -77,7 +77,7 @@ class FixSoldCardListings extends Command
         }
 
         $this->newLine();
-        $this->info("✅ Completato!");
+        $this->info("Completato!");
         $this->table(
             ['Risultato', 'Conteggio'],
             [
@@ -88,7 +88,7 @@ class FixSoldCardListings extends Command
         );
 
         if ($dryRun) {
-            $this->warn('⚠️  Modalità DRY-RUN: nessuna modifica è stata applicata');
+            $this->warn('Modalità DRY-RUN: nessuna modifica è stata applicata');
             $this->info('Esegui senza --dry-run per applicare le modifiche');
         }
 
@@ -110,11 +110,11 @@ class FixSoldCardListings extends Command
             })
             ->sum('quantity');
 
-        $this->line("📦 Listing #{$listing->id} ({$cardName}): quantity={$listing->quantity}, status={$listing->status}, totalSold={$totalSold}");
+        $this->line("Listing #{$listing->id} ({$cardName}): quantity={$listing->quantity}, status={$listing->status}, totalSold={$totalSold}");
 
         // Logica: se quantity = 0 ma status è ancora 'active', marcare come sold
         if ($listing->status === 'active' && $listing->quantity <= 0) {
-            $this->info("  ✅ Dovrebbe essere venduta: quantity=0 ma status=active");
+            $this->info("  Dovrebbe essere venduta: quantity=0 ma status=active");
 
             if (!$dryRun) {
                 try {
@@ -127,7 +127,7 @@ class FixSoldCardListings extends Command
 
                     DB::commit();
 
-                    $this->info("  ✅ Listing #{$listing->id} aggiornata: status=sold, quantity=0");
+                    $this->info("  Listing #{$listing->id} aggiornata: status=sold, quantity=0");
                     
                     Log::info('Card listing fixed by FixSoldCardListings command', [
                         'listing_id' => $listing->id,
@@ -140,7 +140,7 @@ class FixSoldCardListings extends Command
                     return 'fixed';
                 } catch (\Exception $e) {
                     DB::rollBack();
-                    $this->error("  ❌ Errore aggiornando listing #{$listing->id}: {$e->getMessage()}");
+                    $this->error("  Errore aggiornando listing #{$listing->id}: {$e->getMessage()}");
                     $errorCount++;
 
                     Log::error('Error fixing card listing', [
@@ -158,7 +158,7 @@ class FixSoldCardListings extends Command
             // Se totalSold >= quantity attuale, significa che è stata venduta completamente
             // (quantity attuale + totalSold = quantity originale, quindi se totalSold >= quantity attuale, è venduta)
             if ($totalSold >= $listing->quantity) {
-                $this->info("  ✅ Dovrebbe essere venduta: totalSold ({$totalSold}) >= quantity attuale ({$listing->quantity})");
+                $this->info("  Dovrebbe essere venduta: totalSold ({$totalSold}) >= quantity attuale ({$listing->quantity})");
 
                 if (!$dryRun) {
                     try {
@@ -171,7 +171,7 @@ class FixSoldCardListings extends Command
 
                         DB::commit();
 
-                        $this->info("  ✅ Listing #{$listing->id} aggiornata: status=sold, quantity=0");
+                        $this->info("  Listing #{$listing->id} aggiornata: status=sold, quantity=0");
                         
                         Log::info('Card listing fixed by FixSoldCardListings command (totalSold >= quantity)', [
                             'listing_id' => $listing->id,
@@ -184,7 +184,7 @@ class FixSoldCardListings extends Command
                         return 'fixed';
                     } catch (\Exception $e) {
                         DB::rollBack();
-                        $this->error("  ❌ Errore aggiornando listing #{$listing->id}: {$e->getMessage()}");
+                        $this->error("  Errore aggiornando listing #{$listing->id}: {$e->getMessage()}");
                         
                         Log::error('Error fixing card listing', [
                             'listing_id' => $listing->id,
@@ -197,11 +197,11 @@ class FixSoldCardListings extends Command
                     return 'fixed';
                 }
             } else {
-                $this->line("  ℹ️  OK: quantity={$listing->quantity}, totalSold={$totalSold} (non completamente venduta)");
+                $this->line("   OK: quantity={$listing->quantity}, totalSold={$totalSold} (non completamente venduta)");
                 return 'skipped';
             }
         } else {
-            $this->line("  ℹ️  OK: status={$listing->status}, quantity={$listing->quantity}, totalSold={$totalSold}");
+            $this->line("   OK: status={$listing->status}, quantity={$listing->quantity}, totalSold={$totalSold}");
             return 'skipped';
         }
     }

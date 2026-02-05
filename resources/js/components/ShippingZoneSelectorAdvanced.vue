@@ -427,7 +427,7 @@ export default {
 
     // Gestione selezione/deselezione singoli paesi
         const toggleCountry = (countryCode, isChecked) => {
-          console.log(`🔍 Toggle paese ${countryCode}:`, isChecked)
+          console.log(` Toggle paese ${countryCode}:`, isChecked)
           console.log('🔍 selectedCountries PRIMA:', [...selectedCountries])
           
           if (isChecked) {
@@ -551,9 +551,9 @@ export default {
                 .filter(code => !currentSelectedCountries.includes(code)) : []
           }
           
-          console.log('🚀 Emettendo zoneData:', zoneData)
-          console.log('🚀 zoneData.countries:', zoneData.countries)
-          console.log('🚀 selectedCountries al momento del salvataggio:', currentSelectedCountries)
+          console.log(' Emettendo zoneData:', zoneData)
+          console.log(' zoneData.countries:', zoneData.countries)
+          console.log(' selectedCountries al momento del salvataggio:', currentSelectedCountries)
           
           emit('done', zoneData)
         }
@@ -613,7 +613,7 @@ export default {
             // Fallback: se included_countries è null/empty, usa alcuni paesi europei di default
             if (includedCountries.length === 0) {
               includedCountries = ['IT', 'FR', 'DE', 'ES', 'GB', 'NL', 'BE', 'AT', 'CH']
-              console.log('⚠️ included_countries vuoto, usando paesi di default:', includedCountries)
+              console.log('included_countries vuoto, usando paesi di default:', includedCountries)
             }
             
             selectedCountries.splice(0, selectedCountries.length, ...includedCountries)

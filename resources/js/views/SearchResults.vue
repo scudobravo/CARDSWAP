@@ -108,7 +108,7 @@ const hasMoreResults = ref(false)
 
 // Funzione per cercare le carte
 const searchCards = async (page = 1) => {
-  console.log('🔍 searchCards chiamata:', { page, query: searchQuery.value })
+  console.log('searchCards chiamata:', { page, query: searchQuery.value })
   
   if (!searchQuery.value.trim()) {
     console.log('❌ Query vuota, esco')
@@ -138,7 +138,7 @@ const searchCards = async (page = 1) => {
     
     if (response.ok) {
       const data = await response.json()
-      console.log('✅ Data ricevuta:', data)
+      console.log('Data ricevuta:', data)
       
       if (page === 1) {
         cards.value = data.data || []
@@ -156,7 +156,7 @@ const searchCards = async (page = 1) => {
       hasMoreResults.value = currentPageNum < lastPageNum
       
       // Debug log per verificare la paginazione
-      console.log('📊 Paginazione:', {
+      console.log('Paginazione:', {
         current_page: currentPageNum,
         last_page: lastPageNum,
         total: totalResults.value,

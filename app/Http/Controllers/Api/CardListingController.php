@@ -155,8 +155,9 @@ class CardListingController extends Controller
             'description' => 'nullable|string|max:1000',
             'images' => 'nullable|array',
             'images.*' => 'nullable|file|image|max:10240',
-            'shipping_zones' => 'required|array|min:1',
-            'shipping_zones.*' => 'required|integer|exists:shipping_zones,id',
+            // CardSwap V1: shipping_zones opzionale; il pricing usa le Tabelle Prezzi del venditore
+            'shipping_zones' => 'sometimes|array',
+            'shipping_zones.*' => 'integer|exists:shipping_zones,id',
             'status' => 'in:draft,active,paused,inactive',
         ];
         
@@ -256,8 +257,8 @@ class CardListingController extends Controller
 
             $cardListing = CardListing::create($listingData);
 
-            // Gestione zone di spedizione
-            if ($request->has('shipping_zones')) {
+            // Gestione zone di spedizione (opzionale con CardSwap V1; se presenti le allega)
+            if ($request->has('shipping_zones') && is_array($request->shipping_zones) && count($request->shipping_zones) > 0) {
                 $cardListing->shippingZones()->attach($request->shipping_zones);
             }
 
@@ -448,7 +449,7 @@ class CardListingController extends Controller
             'listings.*.is_first_edition' => 'boolean',
             'listings.*.is_negotiable' => 'boolean',
             'listings.*.description' => 'nullable|string|max:1000',
-            'listings.*.shipping_zones' => 'required|array|min:1',
+            'listings.*.shipping_zones' => 'sometimes|array',
             'listings.*.shipping_zones.*' => 'exists:shipping_zones,id'
         ]);
 
@@ -1103,7 +1104,7 @@ class CardListingController extends Controller
                 $cardModelUpdate = [];
                 
                 // Log dei dati ricevuti per debug
-                \Log::info('🔍 UPDATE - Aggiornamento CardModel - Dati ricevuti:', [
+                \Log::info(' UPDATE - Aggiornamento CardModel - Dati ricevuti:', [
                     'listing_id' => $cardListing->id,
                     'card_model_id' => $cardListing->cardModel->id,
                     'autograph' => $request->input('autograph'),
@@ -1119,31 +1120,31 @@ class CardListingController extends Controller
                 if ($request->has('autograph')) {
                     $autographValue = $request->input('autograph');
                     $cardModelUpdate['is_autograph'] = in_array(strtolower($autographValue), ['si', 'yes', '1', 'true', 'sì']);
-                    \Log::info('🔍 Autograph convertito:', ['input' => $autographValue, 'output' => $cardModelUpdate['is_autograph']]);
+                    \Log::info(' Autograph convertito:', ['input' => $autographValue, 'output' => $cardModelUpdate['is_autograph']]);
                 }
                 
                 if ($request->has('rookie')) {
                     $rookieValue = $request->input('rookie');
                     $cardModelUpdate['is_rookie'] = in_array(strtolower($rookieValue), ['si', 'yes', '1', 'true', 'sì']);
-                    \Log::info('🔍 Rookie convertito:', ['input' => $rookieValue, 'output' => $cardModelUpdate['is_rookie']]);
+                    \Log::info(' Rookie convertito:', ['input' => $rookieValue, 'output' => $cardModelUpdate['is_rookie']]);
                 }
                 
                 if ($request->has('relic')) {
                     $relicValue = $request->input('relic');
                     $cardModelUpdate['is_relic'] = in_array(strtolower($relicValue), ['si', 'yes', '1', 'true', 'sì']);
-                    \Log::info('🔍 Relic convertito:', ['input' => $relicValue, 'output' => $cardModelUpdate['is_relic']]);
+                    \Log::info(' Relic convertito:', ['input' => $relicValue, 'output' => $cardModelUpdate['is_relic']]);
                 }
                 
                 if ($request->has('jewel')) {
                     $jewelValue = $request->input('jewel');
                     $cardModelUpdate['is_jewel'] = in_array(strtolower($jewelValue), ['si', 'yes', '1', 'true', 'sì']);
-                    \Log::info('🔍 Jewel convertito:', ['input' => $jewelValue, 'output' => $cardModelUpdate['is_jewel']]);
+                    \Log::info(' Jewel convertito:', ['input' => $jewelValue, 'output' => $cardModelUpdate['is_jewel']]);
                 }
                 
                 if ($request->has('onCardAuto')) {
                     $onCardAutoValue = $request->input('onCardAuto');
                     $cardModelUpdate['is_on_card_auto'] = in_array(strtolower($onCardAutoValue), ['si', 'yes', '1', 'true', 'sì']);
-                    \Log::info('🔍 OnCardAuto convertito:', ['input' => $onCardAutoValue, 'output' => $cardModelUpdate['is_on_card_auto']]);
+                    \Log::info(' OnCardAuto convertito:', ['input' => $onCardAutoValue, 'output' => $cardModelUpdate['is_on_card_auto']]);
                 }
                 
                 // Gestione multiAutograph/multiPlayer
@@ -1173,7 +1174,7 @@ class CardListingController extends Controller
                                 break;
                         }
                     }
-                    \Log::info('🔍 MultiAutograph convertito:', ['input' => $multiValue, 'output' => $cardModelUpdate]);
+                    \Log::info(' MultiAutograph convertito:', ['input' => $multiValue, 'output' => $cardModelUpdate]);
                 }
                 
                 // Gestione sketch per Disney/Spongebob (salvato nell'array attributes)
@@ -1202,11 +1203,11 @@ class CardListingController extends Controller
                     }
                     
                     $cardModelUpdate['attributes'] = $attributes;
-                    \Log::info('🔍 Sketch convertito:', ['input' => $sketchValue, 'output' => $isSketch, 'attributes' => $attributes]);
+                    \Log::info(' Sketch convertito:', ['input' => $sketchValue, 'output' => $isSketch, 'attributes' => $attributes]);
                 }
                 
                 // Log dei valori prima dell'aggiornamento
-                \Log::info('🔍 Valori CardModel PRIMA aggiornamento:', [
+                \Log::info(' Valori CardModel PRIMA aggiornamento:', [
                     'is_rookie' => $cardListing->cardModel->is_rookie,
                     'is_autograph' => $cardListing->cardModel->is_autograph,
                     'is_relic' => $cardListing->cardModel->is_relic,
@@ -1217,11 +1218,11 @@ class CardListingController extends Controller
                 // Aggiorna il CardModel solo se ci sono modifiche
                 if (!empty($cardModelUpdate)) {
                     $cardListing->cardModel->update($cardModelUpdate);
-                    \Log::info('✅ CardModel aggiornato con successo:', $cardModelUpdate);
+                    \Log::info('CardModel aggiornato con successo:', $cardModelUpdate);
                     
                     // Ricarica il modello per verificare i valori aggiornati
                     $cardListing->cardModel->refresh();
-                    \Log::info('🔍 Valori CardModel DOPO aggiornamento:', [
+                    \Log::info(' Valori CardModel DOPO aggiornamento:', [
                         'is_rookie' => $cardListing->cardModel->is_rookie,
                         'is_autograph' => $cardListing->cardModel->is_autograph,
                         'is_relic' => $cardListing->cardModel->is_relic,
@@ -1229,10 +1230,10 @@ class CardListingController extends Controller
                         'attributes' => $cardListing->cardModel->attributes,
                     ]);
                 } else {
-                    \Log::warning('⚠️ Nessun campo da aggiornare nel CardModel');
+                    \Log::warning(' Nessun campo da aggiornare nel CardModel');
                 }
             } else {
-                \Log::warning('⚠️ CardListing senza CardModel associato', ['listing_id' => $cardListing->id]);
+                \Log::warning(' CardListing senza CardModel associato', ['listing_id' => $cardListing->id]);
             }
 
             // Verifica che l'utente abbia Stripe Connect configurato prima di pubblicare

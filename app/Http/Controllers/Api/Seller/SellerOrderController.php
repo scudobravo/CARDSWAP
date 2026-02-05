@@ -45,6 +45,30 @@ class SellerOrderController extends Controller
             $orderShipping = $order->orderShippings->first();
             $shipmentStatus = $this->deriveShipmentStatus($order);
 
+            // Riepilogo spedizione: usa order_shippings se presente, altrimenti fallback con prezzo da order (ordini legacy)
+            $orderShippingPayload = null;
+            if ($orderShipping) {
+                $orderShippingPayload = [
+                    'id' => $orderShipping->id,
+                    'shipping_method' => $orderShipping->shipping_method,
+                    'package_bucket' => $orderShipping->package_bucket,
+                    'logistic_units_total' => (float) $orderShipping->logistic_units_total,
+                    'shipping_price' => (float) ($orderShipping->shipping_price ?? $order->shipping_cost),
+                    'insurance_fee' => (float) $orderShipping->insurance_fee,
+                    'insurance_included' => (float) $orderShipping->insurance_fee > 0,
+                ];
+            } elseif ($order->shipping_cost > 0 || $order->shipping_cost !== null) {
+                $orderShippingPayload = [
+                    'id' => null,
+                    'shipping_method' => null,
+                    'package_bucket' => null,
+                    'logistic_units_total' => null,
+                    'shipping_price' => (float) $order->shipping_cost,
+                    'insurance_fee' => 0.0,
+                    'insurance_included' => false,
+                ];
+            }
+
             $response = [
                 'id' => $order->id,
                 'order_number' => $order->order_number,
@@ -75,15 +99,7 @@ class SellerOrderController extends Controller
                     'price' => (float) $item->price,
                     'total_price' => (float) $item->total_price,
                 ]),
-                'order_shipping' => $orderShipping ? [
-                    'id' => $orderShipping->id,
-                    'shipping_method' => $orderShipping->shipping_method,
-                    'package_bucket' => $orderShipping->package_bucket,
-                    'logistic_units_total' => (float) $orderShipping->logistic_units_total,
-                    'shipping_price' => (float) $orderShipping->shipping_price,
-                    'insurance_fee' => (float) $orderShipping->insurance_fee,
-                    'insurance_included' => (float) $orderShipping->insurance_fee > 0,
-                ] : null,
+                'order_shipping' => $orderShippingPayload,
                 'buyer' => $order->buyer ? [
                     'id' => $order->buyer->id,
                     'name' => $order->buyer->name,

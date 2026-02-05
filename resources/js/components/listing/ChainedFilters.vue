@@ -671,7 +671,7 @@ const onRarityFocus = async () => {
   
   // Se c'è già una rarity selezionata, mostra i suoi dati
   if (selectedRarity.value) {
-    console.log('✅ Rarity già selezionata, mostro i suoi dati:', selectedRarity.value)
+    console.log(' Rarity già selezionata, mostro i suoi dati:', selectedRarity.value)
     // Non fare nulla, la rarity è già selezionata
     return
   }
@@ -696,7 +696,7 @@ const selectRarity = (rarity) => {
   filteredRarities.value = []
   showRarityDropdown.value = false
   
-  console.log('✅ Rarity selezionata:', rarity)
+  console.log(' Rarity selezionata:', rarity)
   
   onFiltersChanged()
 }
@@ -782,7 +782,7 @@ const onPlayerFocus = async () => {
   
   // Se c'è già un giocatore selezionato, mostra i suoi dati
   if (selectedPlayer.value) {
-    console.log('✅ Giocatore già selezionato, mostro i suoi dati:', selectedPlayer.value.name)
+    console.log(' Giocatore già selezionato, mostro i suoi dati:', selectedPlayer.value.name)
     // Non fare nulla, il giocatore è già selezionato
     return
   }
@@ -799,13 +799,13 @@ const onPlayerBlur = () => {
 }
 
 const onPlayerInputChange = () => {
-  console.log('🔄 Campo playerSearch cambiato a:', localFilters.value.playerSearch)
-  console.log('🔄 selectedPlayer.value:', selectedPlayer.value?.name)
+  console.log(' Campo playerSearch cambiato a:', localFilters.value.playerSearch)
+  console.log(' selectedPlayer.value:', selectedPlayer.value?.name)
   
   // Se l'utente modifica manualmente il campo e c'è un giocatore selezionato,
   // verifica se il testo corrisponde al giocatore selezionato
   if (selectedPlayer.value && localFilters.value.playerSearch !== (selectedPlayer.value.display_name || selectedPlayer.value.name)) {
-    console.log('⚠️ L\'utente ha modificato il campo, potrebbe aver deselezionato il giocatore')
+    console.log(' L\'utente ha modificato il campo, potrebbe aver deselezionato il giocatore')
     // Non fare nulla automaticamente, lascia che l'utente gestisca la selezione
   }
 }
@@ -813,8 +813,8 @@ const onPlayerInputChange = () => {
 const searchTeams = async () => {
   const query = localFilters.value.teamSearch || ''
   
-  console.log('🔍 searchTeams chiamata con query:', query)
-  console.log('🔍 Player ID:', localFilters.value.player)
+  console.log(' searchTeams chiamata con query:', query)
+  console.log(' Player ID:', localFilters.value.player)
   
   // Se non c'è query ma c'è un giocatore selezionato, carica le squadre del giocatore
   // Skip search for categories that don't support teams
@@ -824,19 +824,19 @@ const searchTeams = async () => {
   }
   
   if (query.length < 2 && localFilters.value.player) {
-    console.log('🔍 Nessuna query, carico squadre per giocatore selezionato')
+    console.log(' Nessuna query, carico squadre per giocatore selezionato')
     await loadTeamsForPlayer()
     return
   }
   
   // Skip search if query is too short and no player selected
   if (query.length < 2) {
-    console.log('🔍 Query troppo corta e nessun giocatore selezionato')
+    console.log(' Query troppo corta e nessun giocatore selezionato')
     filteredTeams.value = []
     return
   }
   
-  console.log('🔍 Ricerca team per:', query)
+  console.log(' Ricerca team per:', query)
   
   try {
     // Costruisci i parametri - SOLO player_id per evitare filtri che limitano i risultati
@@ -845,34 +845,34 @@ const searchTeams = async () => {
     // RIMOSSO: set, year, brand per evitare di limitare i risultati delle squadre
     
     const url = `/api/${props.category}/filters/teams/search?${params.toString()}`
-    console.log('🔍 URL team:', url)
+    console.log(' URL team:', url)
     
     const response = await fetch(url)
-    console.log('🔍 Response status team:', response.status)
+    console.log(' Response status team:', response.status)
     
     const data = await response.json()
-    console.log('🔍 Response data team:', data)
+    console.log(' Response data team:', data)
     
     filteredTeams.value = data.teams || []
-    console.log('🔍 Filtered teams:', filteredTeams.value)
-    console.log('🔍 Numero squadre trovate:', filteredTeams.value.length)
+    console.log(' Filtered teams:', filteredTeams.value)
+    console.log(' Numero squadre trovate:', filteredTeams.value.length)
   } catch (error) {
-    console.error('❌ Errore nella ricerca squadre:', error)
+    console.error(' Errore nella ricerca squadre:', error)
     filteredTeams.value = []
   }
 }
 
 const onTeamFocus = async () => {
-  console.log('🔍 Focus su campo Team')
-  console.log('🔍 selectedPlayer.value:', selectedPlayer.value?.name)
-  console.log('🔍 filteredTeams.value.length:', filteredTeams.value.length)
-  console.log('🔍 localFilters.value.player:', localFilters.value.player)
+  console.log(' Focus su campo Team')
+  console.log(' selectedPlayer.value:', selectedPlayer.value?.name)
+  console.log(' filteredTeams.value.length:', filteredTeams.value.length)
+  console.log(' localFilters.value.player:', localFilters.value.player)
   
   showTeamDropdown.value = true
   
   // Se ci sono già squadre caricate per il giocatore selezionato, non fare ricerche inutili
   if (selectedPlayer.value && filteredTeams.value.length > 0) {
-    console.log('✅ Squadre già caricate per questo giocatore, le mostro')
+    console.log(' Squadre già caricate per questo giocatore, le mostro')
     return
   }
   
@@ -896,7 +896,7 @@ const searchCardSets = async () => {
     return
   }
   
-  console.log('🔍 Ricerca set per:', query)
+  console.log(' Ricerca set per:', query)
   
   try {
     // Includi team_id quando presente per filtrare correttamente i set
@@ -905,35 +905,35 @@ const searchCardSets = async () => {
     if (localFilters.value.team) params.append('team_id', localFilters.value.team)
     
     const url = `/api/${props.category}/filters/card-sets/search?${params.toString()}`
-    console.log('🔍 URL set:', url)
+    console.log(' URL set:', url)
     
     const response = await fetch(url)
-    console.log('🔍 Response status set:', response.status)
+    console.log(' Response status set:', response.status)
     
     if (!response.ok) {
-      console.error('❌ Errore HTTP nella ricerca set:', response.status, response.statusText)
+      console.error(' Errore HTTP nella ricerca set:', response.status, response.statusText)
       return
     }
     
     const data = await response.json()
-    console.log('🔍 Response data set:', data)
+    console.log(' Response data set:', data)
     
     if (data.card_sets && data.card_sets.length > 0) {
       // Mantieni i set così come arrivano dall'API (set diversi per anno restano distinti)
       filteredCardSets.value = data.card_sets
-      console.log('✅ Set filtrati:', filteredCardSets.value.length)
+      console.log(' Set filtrati:', filteredCardSets.value.length)
     } else {
       filteredCardSets.value = []
-      console.log('⚠️ Nessun set trovato per questa ricerca')
+      console.log(' Nessun set trovato per questa ricerca')
     }
   } catch (error) {
-    console.error('❌ Errore nella ricerca set:', error)
+    console.error(' Errore nella ricerca set:', error)
     filteredCardSets.value = []
   }
 }
 
 const loadAllCardSets = async () => {
-  console.log('🔍 Caricamento tutti i set disponibili')
+  console.log(' Caricamento tutti i set disponibili')
   
   try {
     // Includi team_id quando presente per filtrare correttamente i set
@@ -942,45 +942,45 @@ const loadAllCardSets = async () => {
     if (localFilters.value.team) params.append('team_id', localFilters.value.team)
     
     const url = `/api/${props.category}/filters/card-sets/search?${params.toString()}`
-    console.log('🔍 URL set (all):', url)
+    console.log(' URL set (all):', url)
     
     const response = await fetch(url)
-    console.log('🔍 Response status set (all):', response.status)
+    console.log(' Response status set (all):', response.status)
     
     if (!response.ok) {
-      console.error('❌ Errore HTTP nel caricamento set:', response.status, response.statusText)
+      console.error(' Errore HTTP nel caricamento set:', response.status, response.statusText)
       return
     }
     
     const data = await response.json()
-    console.log('🔍 Response data set (all):', data)
+    console.log(' Response data set (all):', data)
     
     if (data.card_sets && data.card_sets.length > 0) {
       // Mantieni i set così come arrivano dall'API (set diversi per anno restano distinti)
       filteredCardSets.value = data.card_sets
-      console.log('✅ Set filtrati per giocatore:', filteredCardSets.value.length)
+      console.log(' Set filtrati per giocatore:', filteredCardSets.value.length)
     } else {
       filteredCardSets.value = []
-      console.log('⚠️ Nessun set trovato per questo giocatore')
+      console.log(' Nessun set trovato per questo giocatore')
     }
   } catch (error) {
-    console.error('❌ Errore nel caricamento di tutti i set:', error)
+    console.error(' Errore nel caricamento di tutti i set:', error)
     filteredCardSets.value = []
   }
 }
 
 const onSetFocus = async () => {
-  console.log('🔍 Focus su campo Set')
-  console.log('🔍 selectedPlayer.value:', selectedPlayer.value?.name)
-  console.log('🔍 filteredCardSets.value.length:', filteredCardSets.value.length)
-  console.log('🔍 localFilters.value.player:', localFilters.value.player)
-  console.log('🔍 localFilters.value.team:', localFilters.value.team)
+  console.log(' Focus su campo Set')
+  console.log(' selectedPlayer.value:', selectedPlayer.value?.name)
+  console.log(' filteredCardSets.value.length:', filteredCardSets.value.length)
+  console.log(' localFilters.value.player:', localFilters.value.player)
+  console.log(' localFilters.value.team:', localFilters.value.team)
   
   showSetDropdown.value = true
   
   // Ricarica sempre i set quando si fa focus per assicurarsi che siano aggiornati con i filtri correnti (player + team)
   // Questo è importante perché quando viene selezionato un team, i set devono essere filtrati correttamente
-  console.log('🔄 Ricaricamento set con filtri correnti (player + team)')
+  console.log(' Ricaricamento set con filtri correnti (player + team)')
   
   // Carica tutti i set disponibili quando si fa focus
   // Se non c'è query, mostra tutti i set disponibili
@@ -999,8 +999,8 @@ const onSetBlur = () => {
 }
 
 const selectPlayer = (player) => {
-  console.log('🎯 Selezionando giocatore:', player)
-  console.log('🎯 Dati giocatore completi:', {
+  console.log(' Selezionando giocatore:', player)
+  console.log(' Dati giocatore completi:', {
     id: player.id,
     name: player.name,
     display_name: player.display_name,
@@ -1016,26 +1016,26 @@ const selectPlayer = (player) => {
   filteredPlayers.value = []
   showPlayerDropdown.value = false
   
-  // ✅ LOGICA A CASCATA: NON resettare i filtri esistenti
+  // LOGICA A CASCATA: NON resettare i filtri esistenti
   // I filtri si accumulano progressivamente per creare query più specifiche
-  console.log('✅ Mantenendo filtri esistenti per logica a cascata')
+  console.log(' Mantenendo filtri esistenti per logica a cascata')
   
-  console.log('✅ Giocatore selezionato:', player.name, 'ID:', player.id)
-  console.log('✅ Campo playerSearch impostato a:', localFilters.value.playerSearch)
+  console.log(' Giocatore selezionato:', player.name, 'ID:', player.id)
+  console.log(' Campo playerSearch impostato a:', localFilters.value.playerSearch)
   
   // Gestione team del giocatore
   if (player.all_teams && player.all_teams.length > 0) {
-    console.log('✅ Giocatore ha squadre disponibili:', player.all_teams.map(t => t.name))
+    console.log(' Giocatore ha squadre disponibili:', player.all_teams.map(t => t.name))
     
-    // ✅ LOGICA A CASCATA: Mantieni il team corrente se è valido per il giocatore
+    // LOGICA A CASCATA: Mantieni il team corrente se è valido per il giocatore
     if (player.all_teams.length > 1) {
     if (localFilters.value.team) {
       const currentTeamIsValid = player.all_teams.some(t => t.id === localFilters.value.team)
       if (currentTeamIsValid) {
-          console.log('✅ Team corrente è valido per questo giocatore, lo manteniamo per logica a cascata')
+          console.log(' Team corrente è valido per questo giocatore, lo manteniamo per logica a cascata')
         // Mantieni il team corrente
       } else {
-        console.log('⚠️ Team corrente non è valido per questo giocatore, lo resettiamo')
+        console.log(' Team corrente non è valido per questo giocatore, lo resettiamo')
         selectedTeam.value = null
         localFilters.value.team = null
       }
@@ -1045,10 +1045,10 @@ const selectPlayer = (player) => {
     const singleTeam = player.all_teams[0]
     selectedTeam.value = singleTeam
     localFilters.value.team = singleTeam.id
-    console.log('✅ Giocatore ha una sola squadra, impostata automaticamente:', singleTeam.name)
+    console.log(' Giocatore ha una sola squadra, impostata automaticamente:', singleTeam.name)
     }
   } else {
-    console.log('⚠️ Giocatore non ha squadre associate, resetto team')
+    console.log(' Giocatore non ha squadre associate, resetto team')
     selectedTeam.value = null
     localFilters.value.team = null
   }
@@ -1067,7 +1067,7 @@ const selectPlayer = (player) => {
   
   // Verifica che la selezione sia stata applicata correttamente
   setTimeout(() => {
-    console.log('🔍 Verifica selezione giocatore dopo 100ms:')
+    console.log(' Verifica selezione giocatore dopo 100ms:')
     console.log('  - selectedPlayer.value:', selectedPlayer.value?.name)
     console.log('  - localFilters.value.player:', localFilters.value.player)
     console.log('  - localFilters.value.playerSearch:', localFilters.value.playerSearch)
@@ -1192,21 +1192,21 @@ const selectCard = (card) => {
     const cardSet = card.card_set || card.cardSet
     localFilters.value.set = cardSet.id
     selectedCardSet.value = cardSet
-    console.log('✅ Campo Set aggiornato con:', cardSet.name)
+    console.log(' Campo Set aggiornato con:', cardSet.name)
     // Popola anche Brand se disponibile
     if (cardSet.brand) {
       localFilters.value.brand = cardSet.brand
-      console.log('✅ Campo Brand aggiornato con:', cardSet.brand)
+      console.log(' Campo Brand aggiornato con:', cardSet.brand)
     }
   }
   
   if (card.year) {
     localFilters.value.year = card.year
-    console.log('✅ Campo Year aggiornato con:', card.year)
+    console.log(' Campo Year aggiornato con:', card.year)
   } else if ((card.card_set || card.cardSet) && (card.card_set?.year || card.cardSet?.year)) {
     const year = card.card_set?.year || card.cardSet?.year
     localFilters.value.year = year
-    console.log('✅ Campo Year aggiornato dal set con:', year)
+    console.log(' Campo Year aggiornato dal set con:', year)
   }
   
   // IMPORTANTE: Per Disney/Spongebob, usa SOLO rarity (non rarity_variation) per il filtro
@@ -1221,7 +1221,7 @@ const selectCard = (card) => {
       localFilters.value.rarity = rarityValue
       selectedRarity.value = rarityValue
       localFilters.value.raritySearch = rarityValue
-      console.log('✅ Campo Rarity aggiornato con (Disney/Spongebob):', rarityValue, 'da rarity:', card.rarity)
+      console.log(' Campo Rarity aggiornato con (Disney/Spongebob):', rarityValue, 'da rarity:', card.rarity)
     }
   } else {
     // Per altre categorie (football, basketball, pokemon), usa rarity con rarity_variation se presente
@@ -1233,7 +1233,7 @@ const selectCard = (card) => {
       localFilters.value.rarity = displayRarity
       selectedRarity.value = displayRarity
       localFilters.value.raritySearch = displayRarity
-      console.log('✅ Campo Rarity aggiornato con:', displayRarity)
+      console.log(' Campo Rarity aggiornato con:', displayRarity)
     }
   }
   
@@ -1241,11 +1241,11 @@ const selectCard = (card) => {
   // Usa SOLO card_number_in_set (NUMBERED /) - se non c'è, non mostrare nulla
   if (card.card_number_in_set) {
     localFilters.value.number = card.card_number_in_set
-    console.log('✅ Campo Numbered aggiornato con:', card.card_number_in_set)
+    console.log(' Campo Numbered aggiornato con:', card.card_number_in_set)
   } else {
     // Se card_number_in_set è vuoto, resetta il campo Numbered
     localFilters.value.number = null
-    console.log('✅ Campo Numbered resettato (card_number_in_set vuoto)')
+    console.log(' Campo Numbered resettato (card_number_in_set vuoto)')
   }
   
   // Notifica al parent la carta selezionata
@@ -1268,9 +1268,9 @@ const selectTeam = (team) => {
   filteredTeams.value = []
   showTeamDropdown.value = false
   
-  // ✅ LOGICA A CASCATA: NON resettare i filtri esistenti
+  // LOGICA A CASCATA: NON resettare i filtri esistenti
   // I filtri si accumulano progressivamente per creare query più specifiche
-  console.log('✅ Team selezionato per logica a cascata:', team.name)
+  console.log(' Team selezionato per logica a cascata:', team.name)
   
   // Filtri slegati: non aggiornare opzioni a cascata
   
@@ -1294,22 +1294,22 @@ const selectCardSet = async (set) => {
   filteredCardSets.value = []
   showSetDropdown.value = false
   
-  // ✅ LOGICA A CASCATA: NON resettare i filtri esistenti
+  // LOGICA A CASCATA: NON resettare i filtri esistenti
   // I filtri si accumulano progressivamente per creare query più specifiche
-  console.log('✅ Set selezionato per logica a cascata:', set.name)
-  console.log('✅ Team mantenuto:', selectedTeam.value?.name)
-  console.log('✅ Anno corrente prima della selezione set:', userSelectedYear)
-  console.log('✅ Anno del set selezionato:', set.year)
+  console.log(' Set selezionato per logica a cascata:', set.name)
+  console.log(' Team mantenuto:', selectedTeam.value?.name)
+  console.log(' Anno corrente prima della selezione set:', userSelectedYear)
+  console.log(' Anno del set selezionato:', set.year)
   
   // IMPORTANTE: Se il set ha un anno e l'utente NON ha ancora selezionato un anno manualmente,
   // popola automaticamente l'anno dal set
   // Questo permette di selezionare "STADIUM CLUB CHROME UCC (2022/23)" e avere l'anno 2022/23 popolato automaticamente
   if (set.year && (!userSelectedYear || userSelectedYear === '')) {
     localFilters.value.year = set.year
-    console.log('✅ Anno popolato automaticamente dal set:', set.year)
+    console.log(' Anno popolato automaticamente dal set:', set.year)
   } else if (userSelectedYear && userSelectedYear !== '') {
     // Se l'utente ha già selezionato un anno manualmente, preservalo
-    console.log('✅ Anno selezionato manualmente preservato:', userSelectedYear)
+    console.log(' Anno selezionato manualmente preservato:', userSelectedYear)
   }
   
   // IMPORTANTE: Carica le opzioni disponibili per l'anno quando viene selezionato un set
@@ -1320,7 +1320,7 @@ const selectCardSet = async (set) => {
   if (set.year && !availableYears.value.includes(set.year)) {
     availableYears.value.push(set.year)
     availableYears.value.sort((a, b) => String(b).localeCompare(String(a), undefined, { numeric: true }))
-    console.log('✅ Anno del set aggiunto alle opzioni disponibili:', set.year)
+    console.log(' Anno del set aggiunto alle opzioni disponibili:', set.year)
   }
   
   // Assicurati che l'anno selezionato venga preservato anche dopo il caricamento delle opzioni
@@ -1335,7 +1335,7 @@ const selectCardSet = async (set) => {
     // Verifica che l'anno sia ancora valido tra le opzioni disponibili
     if (availableYears.value.includes(yearToPreserve)) {
       localFilters.value.year = yearToPreserve
-      console.log('✅ Anno preservato dopo caricamento opzioni:', yearToPreserve)
+      console.log(' Anno preservato dopo caricamento opzioni:', yearToPreserve)
     }
   }
   
@@ -1370,7 +1370,7 @@ const selectCardName = (cardName) => {
   filteredCards.value = cardsWithName
   hasSearchedCards.value = true
   
-  console.log('✅ Nome base selezionato:', cardName, 'carte trovate:', cardsWithName.length)
+  console.log(' Nome base selezionato:', cardName, 'carte trovate:', cardsWithName.length)
   
   // Se c'è solo una carta, selezionala automaticamente
   if (cardsWithName.length === 1) {
@@ -1412,19 +1412,19 @@ const loadChainedDataDebounced = () => {
       localFilters.value.year
     ].filter(Boolean).length
     
-    console.log('🔍 Numero di filtri attivi:', activeFiltersCount)
+    console.log(' Numero di filtri attivi:', activeFiltersCount)
     
-    // ✅ LOGICA MIGLIORATA: Chiama i filtri a catena anche con 1 filtro per aggiornare i dropdown
+    // LOGICA MIGLIORATA: Chiama i filtri a catena anche con 1 filtro per aggiornare i dropdown
     // ma gestisci correttamente i risultati per non sovrascrivere le squadre
-    console.log('🔄 Aggiornamento filtri a catena con', activeFiltersCount, 'filtri attivi')
+    console.log(' Aggiornamento filtri a catena con', activeFiltersCount, 'filtri attivi')
     
-    console.log('🔄 Aggiornamento filtri a catena con', activeFiltersCount, 'filtri attivi')
+    console.log(' Aggiornamento filtri a catena con', activeFiltersCount, 'filtri attivi')
     
   loadChainedData()
   }, 1000) // 1 secondo di debounce
 }
 
-// ✅ LOGICA A CASCATA: Funzione per aggiornare le opzioni disponibili in base ai filtri selezionati
+// LOGICA A CASCATA: Funzione per aggiornare le opzioni disponibili in base ai filtri selezionati
 let updateOptionsTimeout = null
 let lastUpdateParams = ''
 
@@ -1441,13 +1441,13 @@ const updateAvailableOptions = async () => {
     
     const currentParams = params.toString()
     
-    // ✅ Evita chiamate ridondanti con gli stessi parametri
+    // Evita chiamate ridondanti con gli stessi parametri
     if (currentParams === lastUpdateParams) {
-      console.log('⚠️ Parametri identici, salto l\'aggiornamento per evitare chiamate ridondanti')
+      console.log(' Parametri identici, salto l\'aggiornamento per evitare chiamate ridondanti')
       return
     }
     
-    // ✅ Evita chiamate se ci sono troppi filtri attivi
+    // Evita chiamate se ci sono troppi filtri attivi
     const activeFiltersCount = [
       localFilters.value.player,
       localFilters.value.team,
@@ -1457,60 +1457,60 @@ const updateAvailableOptions = async () => {
       localFilters.value.year
     ].filter(Boolean).length
     
-    // ✅ LOGICA MIGLIORATA: Chiama i filtri a catena anche con 1 filtro per aggiornare i dropdown
+    // LOGICA MIGLIORATA: Chiama i filtri a catena anche con 1 filtro per aggiornare i dropdown
     // ma gestisci correttamente i risultati per non sovrascrivere le squadre
-    console.log('🔄 Aggiornamento opzioni disponibili con', activeFiltersCount, 'filtri attivi')
+    console.log(' Aggiornamento opzioni disponibili con', activeFiltersCount, 'filtri attivi')
     
-    console.log('🔄 Aggiornamento opzioni disponibili con', activeFiltersCount, 'filtri attivi')
+    console.log(' Aggiornamento opzioni disponibili con', activeFiltersCount, 'filtri attivi')
     
-    // ✅ Debounce per evitare troppe chiamate
+    // Debounce per evitare troppe chiamate
     if (updateOptionsTimeout) {
       clearTimeout(updateOptionsTimeout)
     }
     
     updateOptionsTimeout = setTimeout(async () => {
       try {
-        console.log('🔄 Aggiornando opzioni disponibili per logica a cascata')
+        console.log(' Aggiornando opzioni disponibili per logica a cascata')
         
         const url = `/api/${props.category}/filters/chained?${currentParams}`
-        console.log('🔍 URL per aggiornamento opzioni a cascata:', url)
+        console.log(' URL per aggiornamento opzioni a cascata:', url)
         
         const response = await fetch(url)
         
         if (!response.ok) {
-          console.error('❌ Errore HTTP nell\'aggiornamento opzioni a cascata:', response.status, response.statusText)
-          console.error('❌ URL che ha causato l\'errore:', url)
+          console.error(' Errore HTTP nell\'aggiornamento opzioni a cascata:', response.status, response.statusText)
+          console.error(' URL che ha causato l\'errore:', url)
           return
         }
         
         const data = await response.json()
-        console.log('🔍 Dati per aggiornamento opzioni a cascata:', data)
+        console.log(' Dati per aggiornamento opzioni a cascata:', data)
         
-        // ✅ Aggiorna le opzioni disponibili in base ai dati restituiti
-        // ✅ LOGICA MIGLIORATA: Aggiorna solo i dropdown che necessitano di aggiornamento
+        // Aggiorna le opzioni disponibili in base ai dati restituiti
+        // LOGICA MIGLIORATA: Aggiorna solo i dropdown che necessitano di aggiornamento
         if (data.teams && data.teams.length > 0) {
           // Aggiorna le squadre solo se i filtri a catena restituiscono più squadre
           // o se non ci sono squadre già caricate
           if (filteredTeams.value.length === 0 || data.teams.length >= filteredTeams.value.length) {
             filteredTeams.value = data.teams
-            console.log('✅ Squadre aggiornate per logica a cascata:', data.teams.length)
+            console.log(' Squadre aggiornate per logica a cascata:', data.teams.length)
           } else {
-            console.log('⚠️ Filtri a catena restituiscono meno squadre, mantengo quelle esistenti')
-            console.log('⚠️ Squadre esistenti:', filteredTeams.value.length, 'vs filtri a catena:', data.teams.length)
+            console.log(' Filtri a catena restituiscono meno squadre, mantengo quelle esistenti')
+            console.log(' Squadre esistenti:', filteredTeams.value.length, 'vs filtri a catena:', data.teams.length)
           }
         } else {
           // Se non ci sono squadre nei filtri a catena, mantieni quelle esistenti
-          console.log('⚠️ Nessuna squadra nei filtri a catena, mantengo quelle esistenti')
-          console.log('⚠️ Squadre esistenti:', filteredTeams.value.length)
+          console.log(' Nessuna squadra nei filtri a catena, mantengo quelle esistenti')
+          console.log(' Squadre esistenti:', filteredTeams.value.length)
         }
         
         if (data.card_sets && data.card_sets.length > 0) {
           // Aggiorna i set disponibili
           filteredCardSets.value = data.card_sets
-          console.log('✅ Set aggiornati per logica a cascata:', data.card_sets.length)
+          console.log(' Set aggiornati per logica a cascata:', data.card_sets.length)
         } else {
           // Se non ci sono set, mantieni quelli esistenti
-          console.log('⚠️ Nessun set nei filtri a catena, mantengo quelli esistenti')
+          console.log(' Nessun set nei filtri a catena, mantengo quelli esistenti')
         }
         
         // Aggiorna brand/rarity/year; se vuoti, usa fallback dai dati locali
@@ -1531,20 +1531,20 @@ const updateAvailableOptions = async () => {
           if ((!data.years || data.years.length === 0) && fb.years.length) availableYears.value = fb.years
         }
 
-        console.log('✅ Brand finali:', availableBrands.value.length)
-        console.log('✅ Rarities finali:', availableRarities.value.length)
-        console.log('✅ Years finali:', availableYears.value.length)
+        console.log(' Brand finali:', availableBrands.value.length)
+        console.log(' Rarities finali:', availableRarities.value.length)
+        console.log(' Years finali:', availableYears.value.length)
         
         // Aggiorna i parametri dell'ultima chiamata riuscita
         lastUpdateParams = currentParams
         
       } catch (error) {
-        console.error('❌ Errore nell\'aggiornamento opzioni a cascata:', error)
+        console.error(' Errore nell\'aggiornamento opzioni a cascata:', error)
       }
     }, 500) // Debounce di 500ms
     
   } catch (error) {
-    console.error('❌ Errore nella preparazione aggiornamento opzioni a cascata:', error)
+    console.error(' Errore nella preparazione aggiornamento opzioni a cascata:', error)
   }
 }
 
@@ -1597,35 +1597,35 @@ const searchCardsByName = async () => {
       params.append('per_page', '500')
       
       const url = `/api/cards/search?${params.toString()}`
-      console.log('🔍 Ricerca carte per nome:', url)
+      console.log(' Ricerca carte per nome:', url)
       
       const response = await fetch(url)
       if (!response.ok) {
-        console.error('❌ Errore nella ricerca carte per nome:', response.status)
+        console.error(' Errore nella ricerca carte per nome:', response.status)
         filteredCardsByName.value = []
         filteredCardNames.value = []
         return
       }
       
       const data = await response.json()
-      console.log('🔍 Risposta API:', data)
-      console.log('🔍 Carte trovate per nome:', data.cards?.length || 0, 'o data.data?.length:', data.data?.length || 0)
+      console.log(' Risposta API:', data)
+      console.log(' Carte trovate per nome:', data.cards?.length || 0, 'o data.data?.length:', data.data?.length || 0)
       
       // Raggruppa per nome base e mostra solo nomi unici nel dropdown
       // L'API può restituire sia 'cards' che 'data'
       const cards = data.cards || data.data || []
       filteredCardsByName.value = cards
       
-      console.log('🔍 Carte da processare:', cards.length)
+      console.log(' Carte da processare:', cards.length)
       if (cards.length > 0) {
-        console.log('🔍 Prima carta esempio:', cards[0])
+        console.log(' Prima carta esempio:', cards[0])
       }
       
       // Estrai nomi base unici che corrispondono alla ricerca
       const uniqueBaseNames = new Set()
       const queryLower = query.toLowerCase().trim()
       
-      console.log('🔍 Filtro nomi base - Query:', queryLower, 'Carte totali:', cards.length)
+      console.log(' Filtro nomi base - Query:', queryLower, 'Carte totali:', cards.length)
       
       let matchedCount = 0
       cards.forEach((card, index) => {
@@ -1644,24 +1644,24 @@ const searchCardsByName = async () => {
             matchedCount++
             if (matchedCount <= 5) {
               const matchType = baseNameLower.includes(queryLower) ? 'nome base' : 'nome completo'
-              console.log('✅ Nome base corrisponde:', baseName, 'per query:', queryLower, 'via', matchType, 'da carta:', cardName)
+              console.log(' Nome base corrisponde:', baseName, 'per query:', queryLower, 'via', matchType, 'da carta:', cardName)
             }
           }
         } else if (index < 5) {
-          console.log('⚠️ Nome base vuoto per carta:', cardName, 'card object:', card)
+          console.log(' Nome base vuoto per carta:', cardName, 'card object:', card)
         }
       })
       
-      console.log('🔍 Nomi base unici trovati:', uniqueBaseNames.size, 'su', matchedCount, 'corrispondenze')
+      console.log(' Nomi base unici trovati:', uniqueBaseNames.size, 'su', matchedCount, 'corrispondenze')
       
       // Se non ci sono nomi base corrispondenti, non mostrare nulla nel dropdown
       // (non mostrare tutti i nomi base, perché non corrispondono alla ricerca)
       
       filteredCardNames.value = Array.from(uniqueBaseNames).sort()
-      console.log('🔍 Nomi base unici trovati:', filteredCardNames.value.length)
+      console.log(' Nomi base unici trovati:', filteredCardNames.value.length)
       showCardNameDropdown.value = true
     } catch (error) {
-      console.error('❌ Errore nella ricerca carte per nome:', error)
+      console.error(' Errore nella ricerca carte per nome:', error)
       filteredCardsByName.value = []
       filteredCardNames.value = []
     }
@@ -1728,23 +1728,23 @@ const searchCardsForCategory = async () => {
       }
       
       const url = `/api/cards/search?${params.toString()}`
-      console.log('🔍 Ricerca carte per categoria:', url)
+      console.log(' Ricerca carte per categoria:', url)
       
       const response = await fetch(url)
       if (!response.ok) {
-        console.error('❌ Errore nella ricerca carte:', response.status)
+        console.error(' Errore nella ricerca carte:', response.status)
         filteredCards.value = []
         hasSearchedCards.value = true
         return
       }
       
       const data = await response.json()
-      console.log('🔍 Carte trovate:', data.cards?.length || 0)
+      console.log(' Carte trovate:', data.cards?.length || 0)
       
       filteredCards.value = data.cards || []
       hasSearchedCards.value = true
     } catch (error) {
-      console.error('❌ Errore nella ricerca carte per categoria:', error)
+      console.error(' Errore nella ricerca carte per categoria:', error)
       filteredCards.value = []
       hasSearchedCards.value = true
     }
@@ -1801,50 +1801,50 @@ const loadTeamsForPlayer = async () => {
   }
   
   if (!localFilters.value.player) {
-    console.log('⚠️ Nessun player ID per caricare squadre')
+    console.log(' Nessun player ID per caricare squadre')
     return
   }
   
   try {
-    console.log('🔍 Caricamento squadre per giocatore:', localFilters.value.player)
+    console.log(' Caricamento squadre per giocatore:', localFilters.value.player)
     
     const params = new URLSearchParams()
     params.append('player_id', localFilters.value.player)
     
     const url = `/api/${props.category}/filters/teams/search?${params.toString()}`
-    console.log('🔍 URL squadre:', url)
+    console.log(' URL squadre:', url)
     
     const response = await fetch(url)
-    console.log('🔍 Response status squadre:', response.status)
+    console.log(' Response status squadre:', response.status)
     
     if (!response.ok) {
-      console.error('❌ Errore HTTP nel caricamento squadre:', response.status, response.statusText)
+      console.error(' Errore HTTP nel caricamento squadre:', response.status, response.statusText)
       return
     }
     
     const data = await response.json()
-    console.log('🔍 Squadre caricate:', data.teams)
-    console.log('🔍 Dettagli squadre:', data.teams?.map(t => ({ id: t.id, name: t.name })))
+    console.log(' Squadre caricate:', data.teams)
+    console.log(' Dettagli squadre:', data.teams?.map(t => ({ id: t.id, name: t.name })))
     
     filteredTeams.value = data.teams || []
-    console.log('🔍 filteredTeams.value dopo assegnazione:', filteredTeams.value)
-    console.log('🔍 filteredTeams.value.length:', filteredTeams.value.length)
+    console.log(' filteredTeams.value dopo assegnazione:', filteredTeams.value)
+    console.log(' filteredTeams.value.length:', filteredTeams.value.length)
     
     // Se il giocatore ha solo una squadra, selezionala automaticamente
     if (data.teams && data.teams.length === 1) {
       const singleTeam = data.teams[0]
       selectedTeam.value = singleTeam
       localFilters.value.team = singleTeam.id
-      console.log('✅ Squadra unica selezionata automaticamente:', singleTeam.name)
+      console.log(' Squadra unica selezionata automaticamente:', singleTeam.name)
     } else if (data.teams && data.teams.length > 1) {
-      console.log('✅ Giocatore ha più squadre disponibili:', data.teams.map(t => t.name))
-      console.log('✅ Squadre disponibili per selezione manuale')
+      console.log(' Giocatore ha più squadre disponibili:', data.teams.map(t => t.name))
+      console.log(' Squadre disponibili per selezione manuale')
     } else {
-      console.log('⚠️ Nessuna squadra trovata per questo giocatore')
+      console.log(' Nessuna squadra trovata per questo giocatore')
     }
     
   } catch (error) {
-    console.error('❌ Errore nel caricamento squadre:', error)
+    console.error(' Errore nel caricamento squadre:', error)
     filteredTeams.value = []
   }
 }
@@ -1853,7 +1853,7 @@ const loadAllTeamsForPlayer = async (player) => {
   if (!player || !player.all_teams) return
   
   try {
-    console.log('🔍 Caricamento tutte le squadre per giocatore:', player.name)
+    console.log(' Caricamento tutte le squadre per giocatore:', player.name)
     
     // Usa le squadre già disponibili nel player object
     filteredTeams.value = player.all_teams.map(team => ({
@@ -1862,22 +1862,22 @@ const loadAllTeamsForPlayer = async (player) => {
       slug: team.slug
     }))
     
-    console.log('🔍 Squadre caricate da player object:', filteredTeams.value)
+    console.log(' Squadre caricate da player object:', filteredTeams.value)
     
   } catch (error) {
-    console.error('❌ Errore nel caricamento squadre:', error)
+    console.error(' Errore nel caricamento squadre:', error)
     filteredTeams.value = []
   }
 }
 
 const loadCardSetsForPlayer = async () => {
   if (!localFilters.value.player) {
-    console.log('⚠️ Nessun player ID per caricare set')
+    console.log(' Nessun player ID per caricare set')
     return
   }
   
   try {
-    console.log('🔍 Caricamento set per giocatore:', localFilters.value.player)
+    console.log(' Caricamento set per giocatore:', localFilters.value.player)
     
     const params = new URLSearchParams()
     params.append('player_id', localFilters.value.player)
@@ -1885,20 +1885,20 @@ const loadCardSetsForPlayer = async () => {
     if (localFilters.value.team) params.append('team_id', localFilters.value.team)
     
     const url = `/api/${props.category}/filters/card-sets/search?${params.toString()}`
-    console.log('🔍 URL set per giocatore:', url)
+    console.log(' URL set per giocatore:', url)
     
     const response = await fetch(url)
-    console.log('🔍 Response status set:', response.status)
+    console.log(' Response status set:', response.status)
     
     if (!response.ok) {
-      console.error('❌ Errore HTTP nel caricamento set:', response.status, response.statusText)
+      console.error(' Errore HTTP nel caricamento set:', response.status, response.statusText)
       return
     }
     
     const data = await response.json()
-    console.log('🔍 Set caricati per giocatore:', data.card_sets)
+    console.log(' Set caricati per giocatore:', data.card_sets)
     
-    // ✅ LOGICA MIGLIORATA: Rimuovi i set duplicati e gestisci correttamente gli anni
+    // LOGICA MIGLIORATA: Rimuovi i set duplicati e gestisci correttamente gli anni
     if (data.card_sets && data.card_sets.length > 0) {
       // Raggruppa i set per nome per rimuovere i duplicati
       const uniqueSets = new Map()
@@ -1917,15 +1917,15 @@ const loadCardSetsForPlayer = async () => {
       })
       
       filteredCardSets.value = Array.from(uniqueSets.values())
-      console.log('✅ Set unici disponibili per giocatore:', filteredCardSets.value.map(s => s.name))
-      console.log('✅ Set duplicati rimossi:', data.card_sets.length - filteredCardSets.value.length)
+      console.log(' Set unici disponibili per giocatore:', filteredCardSets.value.map(s => s.name))
+      console.log(' Set duplicati rimossi:', data.card_sets.length - filteredCardSets.value.length)
     } else {
       filteredCardSets.value = []
-      console.log('⚠️ Nessun set trovato per questo giocatore')
+      console.log(' Nessun set trovato per questo giocatore')
     }
     
   } catch (error) {
-    console.error('❌ Errore nel caricamento set per giocatore:', error)
+    console.error(' Errore nel caricamento set per giocatore:', error)
     filteredCardSets.value = []
   }
 }
@@ -1934,7 +1934,7 @@ const loadChainedData = async () => {
   try {
     // Skip chained data for categories that don't support it (Disney, Spongebob)
     if (['disney', 'spongebob'].includes(props.category)) {
-      console.log('🔄 Categoria non supporta filtri a catena, skip')
+      console.log(' Categoria non supporta filtri a catena, skip')
       return
     }
     
@@ -1948,11 +1948,11 @@ const loadChainedData = async () => {
       localFilters.value.year
     ].filter(Boolean).length
     
-    // ✅ LOGICA MIGLIORATA: Chiama i filtri a catena anche con 1 filtro per aggiornare i dropdown
+    // LOGICA MIGLIORATA: Chiama i filtri a catena anche con 1 filtro per aggiornare i dropdown
     // ma gestisci correttamente i risultati per non sovrascrivere le squadre
-    console.log('🔄 Caricamento filtri a catena con', activeFiltersCount, 'filtri attivi')
+    console.log(' Caricamento filtri a catena con', activeFiltersCount, 'filtri attivi')
     
-    console.log('🔄 Caricamento filtri a catena con', activeFiltersCount, 'filtri attivi')
+    console.log(' Caricamento filtri a catena con', activeFiltersCount, 'filtri attivi')
     
     const params = new URLSearchParams()
     if (localFilters.value.player) params.append('player_id', localFilters.value.player)
@@ -1963,43 +1963,43 @@ const loadChainedData = async () => {
     if (localFilters.value.year) params.append('year', localFilters.value.year)
 
     const url = `/api/${props.category}/filters/chained?${params.toString()}`
-    console.log('🔍 URL filtri a catena:', url)
+    console.log(' URL filtri a catena:', url)
 
     const response = await fetch(url)
     
     if (!response.ok) {
-      console.error('❌ Errore HTTP nei filtri a catena:', response.status, response.statusText)
-      console.error('❌ URL che ha causato l\'errore:', url)
+      console.error(' Errore HTTP nei filtri a catena:', response.status, response.statusText)
+      console.error(' URL che ha causato l\'errore:', url)
       return
     }
     
     const data = await response.json()
-    console.log('🔍 Dati filtri a catena:', data)
+    console.log(' Dati filtri a catena:', data)
     
-    // ✅ Aggiorna le opzioni disponibili in base ai dati restituiti
-    // ✅ LOGICA MIGLIORATA: Aggiorna solo i dropdown che necessitano di aggiornamento
+    // Aggiorna le opzioni disponibili in base ai dati restituiti
+    // LOGICA MIGLIORATA: Aggiorna solo i dropdown che necessitano di aggiornamento
     if (data.teams && data.teams.length > 0) {
       // Aggiorna le squadre solo se i filtri a catena restituiscono più squadre
       // o se non ci sono squadre già caricate
       if (filteredTeams.value.length === 0 || data.teams.length >= filteredTeams.value.length) {
         filteredTeams.value = data.teams
-        console.log('✅ Squadre aggiornate da filtri a catena:', data.teams.length)
+        console.log(' Squadre aggiornate da filtri a catena:', data.teams.length)
     } else {
-        console.log('⚠️ Filtri a catena restituiscono meno squadre, mantengo quelle esistenti')
-        console.log('⚠️ Squadre esistenti:', filteredTeams.value.length, 'vs filtri a catena:', data.teams.length)
+        console.log(' Filtri a catena restituiscono meno squadre, mantengo quelle esistenti')
+        console.log(' Squadre esistenti:', filteredTeams.value.length, 'vs filtri a catena:', data.teams.length)
       }
     } else {
       // Se non ci sono squadre nei filtri a catena, mantieni quelle esistenti
-      console.log('⚠️ Nessuna squadra nei filtri a catena, mantengo quelle esistenti')
-      console.log('⚠️ Squadre esistenti:', filteredTeams.value.length)
+      console.log(' Nessuna squadra nei filtri a catena, mantengo quelle esistenti')
+      console.log(' Squadre esistenti:', filteredTeams.value.length)
     }
     
     if (data.card_sets && data.card_sets.length > 0) {
       // Aggiorna i set disponibili
       filteredCardSets.value = data.card_sets
-      console.log('✅ Set aggiornati da filtri a catena:', data.card_sets.length)
+      console.log(' Set aggiornati da filtri a catena:', data.card_sets.length)
     } else {
-      console.log('⚠️ Nessun set nei filtri a catena, mantengo quelli esistenti')
+      console.log(' Nessun set nei filtri a catena, mantengo quelli esistenti')
     }
     
     // Aggiorna brand/rarity/year; se vuoti, usa fallback dai dati locali
@@ -2017,7 +2017,7 @@ const loadChainedData = async () => {
       // Ripristina l'anno selezionato manualmente se è ancora valido
       if (currentYear && data.years.includes(currentYear)) {
         localFilters.value.year = currentYear
-        console.log('✅ Anno selezionato manualmente preservato dopo aggiornamento opzioni:', currentYear)
+        console.log(' Anno selezionato manualmente preservato dopo aggiornamento opzioni:', currentYear)
       }
     }
 
@@ -2028,12 +2028,12 @@ const loadChainedData = async () => {
       if ((!data.years || data.years.length === 0) && fb.years.length) availableYears.value = fb.years
     }
 
-    console.log('✅ Brand finali:', availableBrands.value.length)
-    console.log('✅ Rarities finali:', availableRarities.value.length)
-    console.log('✅ Years finali:', availableYears.value.length)
+    console.log(' Brand finali:', availableBrands.value.length)
+    console.log(' Rarities finali:', availableRarities.value.length)
+    console.log(' Years finali:', availableYears.value.length)
   } catch (error) {
-    console.error('❌ Errore nel caricamento dati filtri a catena:', error)
-    console.error('❌ Dettagli errore:', error.message)
+    console.error(' Errore nel caricamento dati filtri a catena:', error)
+    console.error(' Dettagli errore:', error.message)
   }
 }
 
@@ -2055,28 +2055,28 @@ const loadChainedDataWithBrand = async (selectedBrand) => {
     // Update available options based on current selections
     if (data.rarities && data.rarities.length > 0) {
       availableRarities.value = data.rarities
-      console.log('✅ Rarities aggiornate da filtri a catena:', data.rarities)
+      console.log(' Rarities aggiornate da filtri a catena:', data.rarities)
     } else {
-      console.log('⚠️ Nessuna rarity per il brand selezionato:', selectedBrand)
+      console.log(' Nessuna rarity per il brand selezionato:', selectedBrand)
     }
     
     if (data.years && data.years.length > 0) {
       availableYears.value = data.years
-      console.log('✅ Years aggiornati da filtri a catena:', data.years)
+      console.log(' Years aggiornati da filtri a catena:', data.years)
     } else {
-      console.log('⚠️ Nessun year per il brand selezionato:', selectedBrand)
+      console.log(' Nessun year per il brand selezionato:', selectedBrand)
     }
     
     // Aggiorna i brand disponibili dai set
     if (data.sets && data.sets.length > 0) {
       const brands = [...new Set(data.sets.map(set => set.brand))].filter(Boolean)
       availableBrands.value = brands
-      console.log('✅ Brands aggiornati da filtri a catena:', brands)
+      console.log(' Brands aggiornati da filtri a catena:', brands)
     } else {
-      console.log('⚠️ Nessun set per il brand selezionato:', selectedBrand)
+      console.log(' Nessun set per il brand selezionato:', selectedBrand)
     }
     
-    console.log('✅ Brand mantenuto dall\'utente:', selectedBrand)
+    console.log(' Brand mantenuto dall\'utente:', selectedBrand)
     
   } catch (error) {
     console.error('Errore nel caricamento dati filtri a catena:', error)
@@ -2085,54 +2085,54 @@ const loadChainedDataWithBrand = async (selectedBrand) => {
 
 const loadInitialData = async () => {
   try {
-    console.log('🔄 Caricamento dati iniziali per categoria:', props.category)
+    console.log(' Caricamento dati iniziali per categoria:', props.category)
     
     const response = await fetch(`/api/${props.category}/filters/options`)
     const data = await response.json()
     
-    console.log('📊 Dati iniziali caricati:', data)
-    console.log('📊 Rarities raw:', data.rarities)
-    console.log('📊 Years raw:', data.years)
+    console.log(' Dati iniziali caricati:', data)
+    console.log(' Rarities raw:', data.rarities)
+    console.log(' Years raw:', data.years)
     
     // Load initial options
     if (data.rarities) {
       availableRarities.value = data.rarities
-      console.log('✅ Rarities assegnate:', availableRarities.value)
+      console.log(' Rarities assegnate:', availableRarities.value)
     } else {
-      console.log('❌ Nessuna rarity trovata nei dati')
+      console.log(' Nessuna rarity trovata nei dati')
     }
     
     if (data.years) {
       // Ordina in ordine decrescente lato frontend per sicurezza
       availableYears.value = [...data.years].sort((a, b) => String(b).localeCompare(String(a), undefined, { numeric: true }))
-      console.log('✅ Years assegnati:', availableYears.value)
+      console.log(' Years assegnati:', availableYears.value)
     } else {
-      console.log('❌ Nessun year trovato nei dati')
+      console.log(' Nessun year trovato nei dati')
     }
     
     // Extract brands from card_sets
     if (data.card_sets) {
-      console.log('📊 Card sets raw:', data.card_sets)
+      console.log(' Card sets raw:', data.card_sets)
       const brands = [...new Set(data.card_sets.map(set => set.brand))].filter(Boolean)
       availableBrands.value = brands
-      console.log('✅ Brands estratti da card_sets:', brands)
-      console.log('✅ availableBrands.value dopo assegnazione:', availableBrands.value)
+      console.log(' Brands estratti da card_sets:', brands)
+      console.log(' availableBrands.value dopo assegnazione:', availableBrands.value)
     } else {
-      console.log('❌ Nessun card_sets trovato nei dati')
+      console.log(' Nessun card_sets trovato nei dati')
     }
     
-    console.log('🎯 Stato finale:')
+    console.log(' Stato finale:')
     console.log('  - Available brands:', availableBrands.value)
     console.log('  - Available rarities:', availableRarities.value)
     console.log('  - Available years:', availableYears.value)
   } catch (error) {
-    console.error('❌ Errore nel caricamento dati iniziali:', error)
+    console.error(' Errore nel caricamento dati iniziali:', error)
   }
 }
 
 // Ripristina gli oggetti completi quando abbiamo solo gli ID
 const restoreSelectedEntities = async () => {
-  console.log('🔄 Ripristino entità selezionate da initialFilters:', props.initialFilters)
+  console.log(' Ripristino entità selezionate da initialFilters:', props.initialFilters)
   
   // Ripristina player se abbiamo un ID ma non l'oggetto
   if (localFilters.value.player && !selectedPlayer.value) {
@@ -2143,14 +2143,14 @@ const restoreSelectedEntities = async () => {
         // Aspetta un po' prima di fare la chiamata API
         await new Promise(resolve => setTimeout(resolve, 200))
         if (selectedPlayer.value) {
-          console.log('✅ Player già popolato tramite evento')
+          console.log(' Player già popolato tramite evento')
           return
         }
         
         // Se abbiamo playerSearch ma non selectedPlayer, crea un oggetto temporaneo per mostrare il tag
         // Nota: playerSearch viene usato solo per creare l'oggetto temporaneo, poi viene svuotato
         if (localFilters.value.playerSearch && localFilters.value.player) {
-          console.log('🔄 Creando oggetto player temporaneo per mostrare il tag')
+          console.log(' Creando oggetto player temporaneo per mostrare il tag')
           selectedPlayer.value = {
             id: localFilters.value.player,
             name: localFilters.value.playerSearch,
@@ -2173,16 +2173,16 @@ const restoreSelectedEntities = async () => {
           const data = await response.json()
           if (data.player) {
             selectedPlayer.value = data.player
-            console.log('✅ Player ripristinato dall\'API:', selectedPlayer.value)
+            console.log(' Player ripristinato dall\'API:', selectedPlayer.value)
           } else {
-            console.warn('⚠️ Player non trovato nella risposta')
+            console.warn(' Player non trovato nella risposta')
           }
         } else {
-          console.warn('⚠️ Errore HTTP nel ripristino player:', response.status)
+          console.warn(' Errore HTTP nel ripristino player:', response.status)
         }
       }
     } catch (error) {
-      console.error('❌ Errore nel ripristino player:', error)
+      console.error(' Errore nel ripristino player:', error)
     }
   }
   
@@ -2193,10 +2193,10 @@ const restoreSelectedEntities = async () => {
       if (response.ok) {
         const data = await response.json()
         selectedTeam.value = data.team
-        console.log('✅ Team ripristinato:', selectedTeam.value)
+        console.log(' Team ripristinato:', selectedTeam.value)
       }
     } catch (error) {
-      console.error('❌ Errore nel ripristino team:', error)
+      console.error(' Errore nel ripristino team:', error)
     }
   }
   
@@ -2207,10 +2207,10 @@ const restoreSelectedEntities = async () => {
       if (response.ok) {
         const data = await response.json()
         selectedCardSet.value = data.card_set
-        console.log('✅ Set ripristinato:', selectedCardSet.value)
+        console.log(' Set ripristinato:', selectedCardSet.value)
       }
     } catch (error) {
-      console.error('❌ Errore nel ripristino set:', error)
+      console.error(' Errore nel ripristino set:', error)
     }
   }
 }
@@ -2221,7 +2221,7 @@ onMounted(async () => {
   
   // Aggiorna localFilters con i filtri iniziali se presenti
   if (props.initialFilters && Object.keys(props.initialFilters).length > 0) {
-    console.log('🔄 Filtri iniziali trovati in onMounted:', props.initialFilters)
+    console.log(' Filtri iniziali trovati in onMounted:', props.initialFilters)
     localFilters.value = { ...localFilters.value, ...props.initialFilters }
   }
   
@@ -2237,7 +2237,7 @@ onMounted(async () => {
   // aspetta un po' e ripristina di nuovo
   if ((localFilters.value.set || localFilters.value.year || localFilters.value.brand) && !selectedCardSet.value) {
     setTimeout(async () => {
-      console.log('🔄 Ripristino entità per filtri iniziali (set/year/brand)')
+      console.log(' Ripristino entità per filtri iniziali (set/year/brand)')
       await restoreSelectedEntities()
     }, 300)
   }
@@ -2260,11 +2260,11 @@ onUnmounted(() => {
 
 // Watch for external filter changes
 watch(() => props.initialFilters, async (newFilters) => {
-  console.log('🔄 initialFilters cambiati:', newFilters)
+  console.log(' initialFilters cambiati:', newFilters)
   
   // Salva il brand selezionato dall'utente prima di aggiornare i filtri
   const userSelectedBrand = localFilters.value.brand
-  console.log('🔄 Brand selezionato dall\'utente da preservare:', userSelectedBrand)
+  console.log(' Brand selezionato dall\'utente da preservare:', userSelectedBrand)
   
   // Aggiorna i filtri ma preserva il brand selezionato dall'utente
   localFilters.value = { ...localFilters.value, ...newFilters }
@@ -2272,12 +2272,12 @@ watch(() => props.initialFilters, async (newFilters) => {
   // Se l'utente aveva selezionato un brand, ripristinalo
   if (userSelectedBrand && userSelectedBrand !== '') {
     localFilters.value.brand = userSelectedBrand
-    console.log('✅ Brand dell\'utente ripristinato:', userSelectedBrand)
+    console.log(' Brand dell\'utente ripristinato:', userSelectedBrand)
   }
   
   // Se abbiamo playerSearch ma non selectedPlayer, imposta selectedPlayer basandosi sui dati disponibili
   if (localFilters.value.playerSearch && !selectedPlayer.value && localFilters.value.player) {
-    console.log('🔄 Trovato playerSearch ma selectedPlayer non popolato, ripristino...')
+    console.log(' Trovato playerSearch ma selectedPlayer non popolato, ripristino...')
     await restoreSelectedEntities()
   }
   
@@ -2297,7 +2297,7 @@ watch(() => props.initialFilters, async (newFilters) => {
 
 // Watch for team filter changes to update cards
 watch(() => localFilters.value.team, () => {
-  console.log('🔄 Team filter cambiato:', localFilters.value.team)
+  console.log(' Team filter cambiato:', localFilters.value.team)
   filterCardsByTeam()
   // Ricarica i set in base al nuovo team
   loadCardSetsForPlayer()
@@ -2306,11 +2306,11 @@ watch(() => localFilters.value.team, () => {
 
 // Watch for set filter changes to update cards
 watch(() => localFilters.value.set, async (newSetId) => {
-  console.log('🔄 Set filter cambiato:', newSetId)
+  console.log(' Set filter cambiato:', newSetId)
   
   // Se abbiamo un set ID ma non l'oggetto completo, ripristina l'entità
   if (newSetId && !selectedCardSet.value) {
-    console.log('🔄 Set ID presente ma oggetto non popolato, ripristino...')
+    console.log(' Set ID presente ma oggetto non popolato, ripristino...')
     await restoreSelectedEntities()
   }
   
@@ -2342,7 +2342,7 @@ watch(() => localFilters.value.year, () => {
   }
 })
 watch(() => localFilters.value.rarity, () => {
-  console.log('🔄 Rarity filter cambiato:', localFilters.value.rarity)
+  console.log(' Rarity filter cambiato:', localFilters.value.rarity)
   if (['disney', 'spongebob'].includes(props.category) && !props.showPlayer) {
     // Se c'è una ricerca per nome attiva, aggiorna anche quella
     if (localFilters.value.cardNameSearch && localFilters.value.cardNameSearch.length >= 2) {
@@ -2357,7 +2357,7 @@ watch(() => localFilters.value.rarity, () => {
 watch(() => localFilters.value.playerSearch, async (newSearch) => {
   // Se abbiamo playerSearch ma non selectedPlayer e abbiamo un player ID, ripristina il player
   if (newSearch && newSearch !== '' && !selectedPlayer.value && localFilters.value.player) {
-    console.log('🔄 playerSearch cambiato ma selectedPlayer vuoto, ripristino player...')
+    console.log(' playerSearch cambiato ma selectedPlayer vuoto, ripristino player...')
     await restoreSelectedEntities()
   }
 }, { immediate: false })
@@ -2366,7 +2366,7 @@ watch(() => localFilters.value.playerSearch, async (newSearch) => {
 watch(() => localFilters.value.player, async (newPlayerId) => {
   // Se abbiamo un player ID ma non selectedPlayer, ripristina il player
   if (newPlayerId && newPlayerId !== '' && !selectedPlayer.value) {
-    console.log('🔄 Player ID cambiato ma selectedPlayer vuoto, ripristino player...')
+    console.log(' Player ID cambiato ma selectedPlayer vuoto, ripristino player...')
     await restoreSelectedEntities()
   }
 }, { immediate: false })
@@ -2374,7 +2374,7 @@ watch(() => localFilters.value.player, async (newPlayerId) => {
 // Gestisce l'evento di popolamento filtri
 const handleFiltersPopulated = async (event) => {
   const data = event.detail
-  console.log('🎯 handleFiltersPopulated ricevuto con dati:', data)
+  console.log(' handleFiltersPopulated ricevuto con dati:', data)
   
   // Popola Player (importante per la sezione "Seleziona Carta")
   if (data.player) {
@@ -2382,14 +2382,14 @@ const handleFiltersPopulated = async (event) => {
     selectedPlayer.value = data.player
     localFilters.value.player = data.player.id
     localFilters.value.playerSearch = '' // Lascia il campo vuoto, il tag mostrerà il nome
-    console.log('✅ Player popolato tramite filters-populated:', selectedPlayer.value?.name || selectedPlayer.value?.display_name)
+    console.log(' Player popolato tramite filters-populated:', selectedPlayer.value?.name || selectedPlayer.value?.display_name)
     
     // Inizializza le carte del giocatore se disponibili
     if (data.player.cards && data.player.cards.length > 0) {
       initializeCardFiltering(data.player)
     }
   } else {
-    console.warn('⚠️ Nessun player nei dati di filters-populated')
+    console.warn(' Nessun player nei dati di filters-populated')
   }
   
   // Popola Team
@@ -2397,7 +2397,7 @@ const handleFiltersPopulated = async (event) => {
     selectedTeam.value = data.team
     localFilters.value.team = data.team.id || data.team
     localFilters.value.teamSearch = '' // Svuota il campo di ricerca, il tag mostrerà il nome
-    console.log('✅ Team popolato tramite filters-populated:', selectedTeam.value?.name)
+    console.log(' Team popolato tramite filters-populated:', selectedTeam.value?.name)
   }
   
   // Popola Set
@@ -2408,20 +2408,20 @@ const handleFiltersPopulated = async (event) => {
     selectedCardSet.value = data.card_set
     localFilters.value.set = data.card_set.id || data.card_set
     localFilters.value.setSearch = '' // Svuota il campo di ricerca, il tag mostrerà il nome
-    console.log('✅ Set popolato tramite filters-populated:', selectedCardSet.value?.name)
+    console.log(' Set popolato tramite filters-populated:', selectedCardSet.value?.name)
     
     // IMPORTANTE: NON popolare l'anno automaticamente dal set se l'utente ha già selezionato un anno
     // Ripristina l'anno selezionato manualmente dall'utente (se presente)
     if (userSelectedYear) {
       localFilters.value.year = userSelectedYear
-      console.log('✅ Anno selezionato manualmente preservato dopo popolamento set:', userSelectedYear)
+      console.log(' Anno selezionato manualmente preservato dopo popolamento set:', userSelectedYear)
     }
   }
   
   // Popola Brand
   if (data.brand) {
     localFilters.value.brand = data.brand
-    console.log('✅ Brand popolato tramite filters-populated:', data.brand)
+    console.log(' Brand popolato tramite filters-populated:', data.brand)
   }
   
   // Popola altri filtri
@@ -2429,23 +2429,23 @@ const handleFiltersPopulated = async (event) => {
     localFilters.value.rarity = data.rarity
     selectedRarity.value = data.rarity
     localFilters.value.raritySearch = data.rarity
-    console.log('✅ Rarity popolato tramite filters-populated:', data.rarity)
+    console.log(' Rarity popolato tramite filters-populated:', data.rarity)
   }
   // IMPORTANTE: Popola l'anno SOLO se esplicitamente fornito nei dati, NON dal set
   // Questo evita che l'anno venga popolato automaticamente quando viene selezionato un set
   if (data.year && !data.card_set) {
     // Popola l'anno solo se NON stiamo popolando anche un set (per evitare conflitti)
     localFilters.value.year = data.year
-    console.log('✅ Year popolato tramite filters-populated:', data.year)
+    console.log(' Year popolato tramite filters-populated:', data.year)
   } else if (data.year && data.card_set && !localFilters.value.year) {
     // Popola l'anno solo se non c'è già un anno selezionato manualmente
     localFilters.value.year = data.year
-    console.log('✅ Year popolato tramite filters-populated (nessun anno esistente):', data.year)
+    console.log(' Year popolato tramite filters-populated (nessun anno esistente):', data.year)
   }
   // Popola Numbered (card_number_in_set) - anche se è stringa vuota, resetta il campo
   if (data.number !== undefined && data.number !== null) {
     localFilters.value.number = data.number || ''
-    console.log('✅ Number popolato tramite filters-populated:', data.number || '(vuoto)')
+    console.log(' Number popolato tramite filters-populated:', data.number || '(vuoto)')
   }
   
   // Forza un re-render per assicurarsi che i tag vengano mostrati

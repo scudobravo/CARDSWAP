@@ -237,22 +237,14 @@
                   Dettagli
                 </router-link>
                 
-                <!-- Pulsante Crea Etichetta Shippo (solo per ordini confermati/paid_funds_held senza tracking) -->
-                <button 
-                  v-if="(order.status === 'confirmed' || order.status === 'paid_funds_held' || order.status === 'label_created') && !order.tracking_number"
-                  @click="createShippoLabel(order)"
-                  :disabled="creatingLabel === order.id"
-                  class="px-3 py-1.5 text-sm font-gill-sans-semibold text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                <!-- Link a dettaglio ordine per inserire tracking (CardSwap V1: no Shippo, solo tracking manuale / AfterShip) -->
+                <router-link
+                  v-if="(order.status === 'confirmed' || order.status === 'paid_funds_held') && !order.tracking_number"
+                  :to="{ name: 'seller.order.details', params: { orderId: order.id } }"
+                  class="px-3 py-1.5 text-sm font-gill-sans-semibold text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 whitespace-nowrap inline-block"
                 >
-                  <span v-if="creatingLabel === order.id" class="flex items-center">
-                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Creando...
-                  </span>
-                  <span v-else>Crea Etichetta</span>
-                </button>
+                  Inserisci tracking
+                </router-link>
                 
                 <button 
                   v-if="canUpdateStatus(order.status)"
@@ -347,7 +339,6 @@ const pagination = ref(null)
 const showOrderModal = ref(false)
 const showStatusModal = ref(false)
 const selectedOrder = ref(null)
-const creatingLabel = ref(null)
 
 // Filtri
 const filters = ref({
@@ -564,190 +555,6 @@ const handleStatusUpdated = () => {
   loadOrders()
   closeOrderModal()
   closeStatusModal()
-}
-
-const createShippoLabel = async (order) => {
-  if (!confirm('Vuoi creare l\'etichetta di spedizione Shippo per questo ordine?')) {
-    return
-  }
-
-  creatingLabel.value = order.id
-  error.value = null
-
-  try {
-    // Prima calcola le tariffe per questo ordine
-    const shippingAddress = order.shipping_address
-    if (!shippingAddress) {
-      throw new Error('Indirizzo di spedizione non trovato')
-    }
-
-    // Recupera l'indirizzo del venditore dal database
-    // Prima prova con defaultAddress, poi con il primo indirizzo disponibile
-    let sellerAddress = null
-    
-    if (order.seller?.default_address) {
-      sellerAddress = order.seller.default_address
-    } else if (order.seller?.addresses && order.seller.addresses.length > 0) {
-      sellerAddress = order.seller.addresses[0]
-    } else {
-      // Fallback: usa i campi diretti del User se disponibili
-      if (order.seller?.address || order.seller?.city) {
-        sellerAddress = {
-          address_line_1: order.seller.address || '',
-          city: order.seller.city || '',
-          state_province: order.seller.state_province || '',
-          postal_code: order.seller.postal_code || '',
-          country: order.seller.country || 'IT'
-        }
-      }
-    }
-
-    if (!sellerAddress) {
-      throw new Error('Indirizzo del venditore non trovato. Configura un indirizzo nel tuo profilo prima di creare etichette di spedizione.')
-    }
-
-    // Prepara i dati del venditore per Shippo
-    const seller = {
-      id: order.seller_id,
-      name: order.seller?.name || 'Venditore',
-      address: {
-        street1: sellerAddress.address_line_1 || sellerAddress.address || '',
-        street2: sellerAddress.address_line_2 || '',
-        city: sellerAddress.city || '',
-        state: sellerAddress.state_province || sellerAddress.state || '',
-        zip: sellerAddress.postal_code || sellerAddress.zip || '',
-        country: sellerAddress.country || 'IT',
-        phone: sellerAddress.phone || order.seller?.phone || ''
-      }
-    }
-
-    // ============================================
-    // SHIPPO ENDPOINT DISABILITATO
-    // ============================================
-    // Shippo è DEPRECATO e NON fa parte di CardSwap Shipping V1.
-    // 
-    // CardSwap V1 usa ESCLUSIVAMENTE:
-    // - POST /api/shipping/v1/calculate-rates per il pricing
-    // - AfterShip per il tracking
-    // 
-    // Questo endpoint Shippo è DISABILITATO.
-    // ============================================
-    console.error('SalesOrders: Shippo endpoint is deprecated and not used by CardSwap Shipping V1. This feature is disabled.')
-    throw new Error('Shippo is deprecated and not used by CardSwap Shipping V1. Use CardSwap Shipping V1 for pricing and AfterShip for tracking.')
-    
-    // CODICE ORIGINALE DISABILITATO - NON ESEGUITO
-    /*
-    const ratesResponse = await fetch('/api/shipping/calculate-rates', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        sellers: {
-          [order.seller_id]: seller
-        },
-        shipping_address: {
-          name: `${shippingAddress.first_name} ${shippingAddress.last_name}`,
-          street1: shippingAddress.address_line_1,
-          city: shippingAddress.city,
-          state: shippingAddress.state_province || shippingAddress.region,
-          zip: shippingAddress.postal_code,
-          country: shippingAddress.country
-        }
-      })
-    })
-
-    if (!ratesResponse.ok) {
-      throw new Error('Errore nel calcolo delle tariffe')
-    }
-
-    const ratesData = await ratesResponse.json()
-    
-    // Verifica se c'è un errore nel risultato
-    const sellerResult = ratesData.data?.[order.seller_id]
-    if (sellerResult?.error) {
-      throw new Error(sellerResult.error)
-    }
-    
-    const sellerRates = sellerResult?.rates
-
-    if (!sellerRates || sellerRates.length === 0) {
-      throw new Error('Nessuna tariffa disponibile per questo ordine')
-    }
-
-    // Usa la prima tariffa disponibile (o quella più economica)
-    const selectedRate = sellerRates[0]
-
-    // Acquista l'etichetta
-    const labelResponse = await fetch('/api/shipping/purchase-label', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        rate_object_id: selectedRate.object_id,
-        order_id: order.id,
-        seller_id: order.seller_id
-      })
-    })
-
-    if (!labelResponse.ok) {
-      const errorData = await labelResponse.json()
-      throw new Error(errorData.message || 'Errore nella creazione dell\'etichetta')
-    }
-
-    const labelData = await labelResponse.json()
-
-    if (labelData.success) {
-      // Aggiorna l'ordine con il tracking number
-      await fetch(`/api/orders/${order.id}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          status: 'shipped',
-          tracking_number: labelData.data.tracking_number
-        })
-      })
-
-      // Mostra messaggio con link cliccabile all'etichetta
-      const trackingNumber = labelData.data.tracking_number || 'N/A'
-      const labelUrl = labelData.data.label_url
-      
-      let message = `Etichetta creata con successo!\n\nTracking: ${trackingNumber}\n\n`
-      
-      if (labelUrl) {
-        // Se c'è un link, apri una finestra di dialogo con il link cliccabile
-        const userConfirmed = confirm(
-          `Etichetta creata con successo!\n\nTracking: ${trackingNumber}\n\nVuoi aprire il link per scaricare l'etichetta?`
-        )
-        if (userConfirmed) {
-          window.open(labelUrl, '_blank')
-        }
-      } else {
-        // Se non c'è link, mostra solo il messaggio
-        alert(message + 'L\'etichetta è stata creata. Controlla i dettagli dell\'ordine per il link.')
-      }
-      
-      loadOrders()
-    } else {
-      throw new Error(labelData.message || 'Errore nella creazione dell\'etichetta')
-    }
-    */
-  } catch (err) {
-    console.error('Errore: Shippo is deprecated and not used by CardSwap Shipping V1', err)
-    error.value = err.message
-    alert(`Errore: ${err.message}`)
-  } finally {
-    creatingLabel.value = null
-  }
 }
 
 // Lifecycle
