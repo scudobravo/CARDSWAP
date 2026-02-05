@@ -42,6 +42,19 @@ class NotificationService
 
     protected function sendEmail(User $user, string $title, string $message, ?string $actionUrl, array $data): void
     {
+        $driver = config('mail.default');
+        Log::info('NotificationService: invio email', [
+            'to' => $user->email,
+            'subject' => $title . ' - CardSwap',
+            'driver' => $driver,
+        ]);
+
+        if ($driver === 'log' || $driver === 'array') {
+            Log::warning('NotificationService: le email non vengono inviate realmente. Imposta MAIL_MAILER=smtp (e SMTP) in .env per inviare.', [
+                'driver' => $driver,
+            ]);
+        }
+
         try {
             Mail::send('emails.shipping-notification', [
                 'user' => $user,
@@ -56,8 +69,10 @@ class NotificationService
         } catch (\Throwable $e) {
             Log::warning('NotificationService: invio email fallito', [
                 'user_id' => $user->id,
+                'email' => $user->email,
                 'type' => $data['type'] ?? null,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
         }
     }

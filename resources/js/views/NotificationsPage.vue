@@ -49,11 +49,11 @@
               <p class="mt-0.5 text-sm text-gray-600 whitespace-pre-wrap">{{ n.message }}</p>
               <p class="mt-1 text-xs text-gray-400">{{ formatDate(n.created_at) }}</p>
               <a
-                v-if="n.action_url"
-                :href="n.action_url"
+                v-if="notificationLink(n)"
+                :href="notificationLink(n)"
                 class="mt-2 inline-block text-sm font-medium text-primary hover:underline"
               >
-                {{ n.action_text || 'Vai al dettaglio' }}
+                {{ n.action_text || 'Visualizza dettaglio' }}
               </a>
             </div>
             <button
@@ -93,6 +93,21 @@ import { CheckIcon } from '@heroicons/vue/24/outline'
 const notificationsStore = useNotificationsStore()
 
 const notifications = ref([])
+
+/** Restituisce l’URL per “Visualizza dettaglio”: se il link salvato è localhost, usa l’origin corrente così funziona in produzione */
+function notificationLink (n) {
+  const url = n.action_url
+  if (!url) return null
+  try {
+    const u = new URL(url)
+    if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') {
+      return window.location.origin + u.pathname + u.search
+    }
+    return url
+  } catch (_) {
+    return url
+  }
+}
 const loading = ref(true)
 const markingAll = ref(false)
 const unreadCount = ref(0)

@@ -56,6 +56,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Frontend / SPA URL (per link nelle notifiche e email)
+    |--------------------------------------------------------------------------
+    |
+    | URL pubblico dell\'app frontend. Se non impostato, si usa APP_URL.
+    | In produzione impostare APP_URL (e opzionalmente FRONTEND_URL) al dominio reale
+    | (es. https://cardswaptcg.com) così "Visualizza dettaglio" non apra localhost.
+    |
+    */
+    'frontend_url' => env('FRONTEND_URL', env('APP_URL', 'http://localhost')),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |
