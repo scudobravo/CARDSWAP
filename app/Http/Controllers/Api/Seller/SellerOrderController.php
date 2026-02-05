@@ -58,9 +58,10 @@ class SellerOrderController extends Controller
                     'insurance_included' => (float) $orderShipping->insurance_fee > 0,
                 ];
             } elseif ($order->shipping_cost > 0 || $order->shipping_cost !== null) {
+                // Ordini legacy senza order_shippings: default a tracciata se c’è prezzo (così metodo e UI sono coerenti)
                 $orderShippingPayload = [
                     'id' => null,
-                    'shipping_method' => null,
+                    'shipping_method' => $order->shipping_cost > 0 ? ShippingMethod::TRACKED_STANDARD : null,
                     'package_bucket' => null,
                     'logistic_units_total' => null,
                     'shipping_price' => (float) $order->shipping_cost,

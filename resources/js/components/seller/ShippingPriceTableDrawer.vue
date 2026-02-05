@@ -443,16 +443,13 @@ async function goNext () {
     }
   }
   if (step.value === 2 && currentTableId.value) {
-    const toAdd = form.value.countries.filter(c => !currentCountryCodes.value.includes(c))
-    if (toAdd.length > 0) {
-      try {
-        await axios.post(`/api/seller/shipping/price-tables/${currentTableId.value}/countries`, {
-          countries: toAdd.map(c => String(c).toUpperCase())
-        })
-      } catch (e) {
-        alert(e.response?.data?.message || 'Errore assegnazione paesi')
-        return
-      }
+    try {
+      await axios.put(`/api/seller/shipping/price-tables/${currentTableId.value}/countries`, {
+        countries: form.value.countries.map(c => String(c).toUpperCase())
+      })
+    } catch (e) {
+      alert(e.response?.data?.message || 'Errore sincronizzazione paesi')
+      return
     }
   }
   if (step.value === 3 && currentTableId.value) {
@@ -494,12 +491,9 @@ async function saveAll () {
   if (step.value !== 4 || !currentTableId.value) return
   saving.value = true
   try {
-    const toAdd = form.value.countries.filter(c => !currentCountryCodes.value.includes(c))
-    if (toAdd.length > 0) {
-      await axios.post(`/api/seller/shipping/price-tables/${currentTableId.value}/countries`, {
-        countries: toAdd.map(c => String(c).toUpperCase())
-      })
-    }
+    await axios.put(`/api/seller/shipping/price-tables/${currentTableId.value}/countries`, {
+      countries: form.value.countries.map(c => String(c).toUpperCase())
+    })
     const rates = []
     for (const m of METHODS) {
       for (const b of BUCKETS) {

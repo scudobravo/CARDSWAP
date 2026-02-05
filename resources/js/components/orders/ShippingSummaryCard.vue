@@ -54,8 +54,10 @@ const methodLabels = {
 
 const methodLabel = computed(() => {
   const m = props.orderShipping?.shipping_method
-  if (!m) return '—'
-  return methodLabels[m] || m.replace(/_/g, ' ')
+  if (m) return methodLabels[m] || m.replace(/_/g, ' ')
+  // Metodo non salvato (es. ordine legacy): se c’è prezzo mostriamo “Tracciata standard” per coerenza con la UI
+  if ((props.orderShipping?.shipping_price ?? 0) > 0) return 'Tracciata standard'
+  return '—'
 })
 
 const bucketLabel = computed(() => {

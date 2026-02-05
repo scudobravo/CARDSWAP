@@ -562,6 +562,7 @@ Route::middleware('auth:sanctum')->prefix('seller/shipping/price-tables')->group
     Route::put('/{id}', [ShippingPriceTableController::class, 'update']);
     Route::delete('/{id}', [ShippingPriceTableController::class, 'destroy']);
     Route::post('/{id}/countries', [ShippingPriceTableController::class, 'addCountries']);
+    Route::put('/{id}/countries', [ShippingPriceTableController::class, 'syncCountries']);
     Route::post('/{id}/rates', [ShippingPriceTableController::class, 'saveRates']);
     Route::post('/{id}/insured', [ShippingPriceTableController::class, 'configureInsurance']);
 });

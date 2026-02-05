@@ -139,8 +139,12 @@ const TRACKED_METHODS = ['TRACKED_STANDARD', 'TRACKED_EXPRESS', 'TRACKED_INSURED
 const UNTRACKED_METHODS = ['UNTRACKED_STANDARD']
 
 const isTrackedMethod = computed(() => {
-  const m = order.value?.order_shipping?.shipping_method
-  return m && TRACKED_METHODS.includes(m)
+  const os = order.value?.order_shipping
+  const m = os?.shipping_method
+  if (m && TRACKED_METHODS.includes(m)) return true
+  // Ordini legacy o senza metodo salvato: se c’è prezzo spedizione, trattiamo come tracciata (mostriamo form tracking)
+  if (!m && (os?.shipping_price ?? 0) > 0) return true
+  return false
 })
 
 const isUntrackedMethod = computed(() => {

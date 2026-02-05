@@ -365,6 +365,94 @@ class ShippingPriceTableController extends Controller
     }
 
     /**
+     * Sincronizza l'elenco paesi della tabella: sostituisce con la lista inviata.
+     * Consente di rimuovere paesi deselezionati (non solo aggiungere).
+     */
+    public function syncCountries(Request $request, int $id): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'countries' => 'required|array',
+            'countries.*' => 'required|string|size:2|regex:/^[A-Za-z]{2}$/',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dati di validazione non validi',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $seller = $request->user();
+
+            if (!$seller || !$seller->isSeller()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Accesso negato'
+                ], 403);
+            }
+
+            $table = ShippingPriceTable::forSeller($seller->id)->findOrFail($id);
+
+            $requested = array_map(function ($code) {
+                return strtoupper($code);
+            }, array_values(array_unique($request->input('countries'))));
+
+            DB::beginTransaction();
+
+            ShippingPriceTableCountry::where('shipping_price_table_id', $table->id)->delete();
+
+            $added = [];
+            $skipped = [];
+
+            foreach ($requested as $countryCode) {
+                if (ShippingPriceTableService::existsCountryForSeller($seller->id, $countryCode)) {
+                    $skipped[] = [
+                        'country_code' => $countryCode,
+                        'reason' => 'Paese già in un\'altra tabella',
+                    ];
+                    continue;
+                }
+
+                ShippingPriceTableCountry::create([
+                    'shipping_price_table_id' => $table->id,
+                    'seller_id' => $seller->id,
+                    'country_code' => $countryCode,
+                ]);
+
+                $added[] = $countryCode;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Paesi sincronizzati',
+                'data' => [
+                    'added' => $added,
+                    'skipped' => $skipped,
+                ]
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tabella prezzi non trovata o non autorizzato'
+            ], 404);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Errore sync paesi tabella prezzi', [
+                'table_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Errore nella sincronizzazione dei paesi'
+            ], 500);
+        }
+    }
+
+    /**
      * Salva matrice prezzi per una tabella
      * 
      * Input: array di tariffe con package_bucket, shipping_method, price_eur
