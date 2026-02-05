@@ -1,12 +1,12 @@
 @extends('emails.base')
 
 @section('content')
-    <div class="greeting">Ciao {{ $user->name }},</div>
+    <div class="greeting">Ciao {{ $user->name ?? 'Utente' }},</div>
     <div class="message">
         @if(isset($order_number))
             <p><strong>Ordine #{{ $order_number }}</strong></p>
         @endif
-        {!! nl2br(e($message)) !!}
+        {!! nl2br(e($message_body ?? '')) !!}
     </div>
     @if(!empty($action_url))
         <p>

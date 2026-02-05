@@ -56,10 +56,11 @@ class NotificationService
         }
 
         try {
+            $messageBody = is_string($message) ? $message : (string) $message;
             Mail::send('emails.shipping-notification', [
                 'user' => $user,
                 'title' => $title,
-                'message' => $message,
+                'message_body' => $messageBody,
                 'action_url' => $actionUrl,
                 'order_number' => $data['order_number'] ?? null,
             ], function ($m) use ($user, $title) {
