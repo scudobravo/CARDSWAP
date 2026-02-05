@@ -137,13 +137,15 @@ const order = ref(null)
 
 const TRACKED_METHODS = ['TRACKED_STANDARD', 'TRACKED_EXPRESS', 'TRACKED_INSURED']
 const UNTRACKED_METHODS = ['UNTRACKED_STANDARD']
+/** Soglia prezzo (€) oltre la quale ordini legacy (senza metodo) si considerano tracciati */
+const LEGACY_TRACKED_PRICE_THRESHOLD = 6
 
 const isTrackedMethod = computed(() => {
   const os = order.value?.order_shipping
   const m = os?.shipping_method
   if (m && TRACKED_METHODS.includes(m)) return true
-  // Ordini legacy o senza metodo salvato: se c’è prezzo spedizione, trattiamo come tracciata (mostriamo form tracking)
-  if (!m && (os?.shipping_price ?? 0) > 0) return true
+  // Ordini legacy (metodo assente): solo se prezzo >= soglia richiediamo tracking (es. €8 sì, €3 no)
+  if (!m && (os?.shipping_price ?? 0) >= LEGACY_TRACKED_PRICE_THRESHOLD) return true
   return false
 })
 

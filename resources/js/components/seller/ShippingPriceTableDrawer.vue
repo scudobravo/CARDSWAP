@@ -116,26 +116,26 @@
                       <!-- Step 3: Matrice prezzi -->
                       <div v-show="step === 3" class="space-y-4">
                         <h3 class="text-sm font-medium text-gray-900">Matrice prezzi (€)</h3>
-                        <p class="text-xs text-gray-500 break-words">Campo vuoto = metodo disabilitato. UNTRACKED solo per LETTER.</p>
-                        <div class="overflow-x-auto -mx-1">
-                          <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <p class="text-xs text-gray-500 break-words">Vuoto = disabilitato. UNTRACKED solo LETTER.</p>
+                        <div class="overflow-x-auto -mx-1 overflow-y-visible">
+                          <table class="w-full divide-y divide-gray-200 text-xs sm:text-sm border-collapse" style="min-width: 280px;">
                             <thead>
                               <tr>
-                                <th class="py-2 pr-4 text-left font-medium text-gray-700">Metodo</th>
-                                <th v-for="b in buckets" :key="b" class="py-2 px-2 text-center font-medium text-gray-700">{{ bucketLabel(b) }}</th>
+                                <th class="py-1.5 pr-2 pl-1 text-left font-medium text-gray-700 whitespace-nowrap bg-white sticky left-0 z-10 border-r border-gray-100">Metodo</th>
+                                <th v-for="b in buckets" :key="b" class="py-1.5 px-1 text-center font-medium text-gray-700 whitespace-nowrap">{{ bucketLabelShort(b) }}</th>
                               </tr>
                             </thead>
                             <tbody>
                               <tr v-for="method in methods" :key="method" class="border-t border-gray-100">
-                                <td class="py-2 pr-4 text-gray-700">{{ methodLabel(method) }}</td>
-                                <td v-for="bucket in buckets" :key="bucket" class="py-1 px-2">
+                                <td class="py-1 pr-2 pl-1 text-gray-700 whitespace-nowrap bg-white sticky left-0 z-10 border-r border-gray-100" :title="methodLabel(method)">{{ methodLabelShort(method) }}</td>
+                                <td v-for="bucket in buckets" :key="bucket" class="py-1 px-1">
                                   <input
                                     v-if="method === 'UNTRACKED_STANDARD' && bucket !== 'LETTER'"
                                     type="text"
                                     disabled
                                     placeholder="–"
                                     title="UNTRACKED solo per LETTER"
-                                    class="w-16 rounded border border-gray-200 bg-gray-100 px-2 py-1 text-center text-gray-400 cursor-not-allowed"
+                                    class="w-11 sm:w-14 min-w-0 max-w-[4rem] rounded border border-gray-200 bg-gray-100 px-1 py-0.5 sm:px-2 sm:py-1 text-center text-gray-400 cursor-not-allowed text-xs"
                                   />
                                   <input
                                     v-else
@@ -143,8 +143,8 @@
                                     type="number"
                                     min="0"
                                     step="0.01"
-                                    placeholder="0.00"
-                                    class="w-16 rounded border border-gray-300 px-2 py-1 text-center focus:border-primary focus:ring-1 focus:ring-primary"
+                                    placeholder="0"
+                                    class="w-11 sm:w-14 min-w-0 max-w-[4rem] rounded border border-gray-300 px-1 py-0.5 sm:px-2 sm:py-1 text-center text-xs focus:border-primary focus:ring-1 focus:ring-primary"
                                   />
                                 </td>
                               </tr>
@@ -287,11 +287,27 @@ function bucketLabel (b) {
   return labels[b] || b
 }
 
+/** Etichette brevi per la matrice (mobile) */
+function bucketLabelShort (b) {
+  const labels = { LETTER: 'LETTER', PARCEL_S: 'P.S', PARCEL_M: 'P.M', PARCEL_L: 'P.L' }
+  return labels[b] || b
+}
+
 function methodLabel (m) {
   const labels = {
     UNTRACKED_STANDARD: 'Non tracciata',
     TRACKED_STANDARD: 'Tracciata standard',
     TRACKED_EXPRESS: 'Tracciata express'
+  }
+  return labels[m] || m
+}
+
+/** Etichette brevi per la matrice (mobile) */
+function methodLabelShort (m) {
+  const labels = {
+    UNTRACKED_STANDARD: 'Non tracc.',
+    TRACKED_STANDARD: 'Tracc. std',
+    TRACKED_EXPRESS: 'Tracc. expr'
   }
   return labels[m] || m
 }

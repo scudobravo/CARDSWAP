@@ -58,10 +58,10 @@ class SellerOrderController extends Controller
                     'insurance_included' => (float) $orderShipping->insurance_fee > 0,
                 ];
             } elseif ($order->shipping_cost > 0 || $order->shipping_cost !== null) {
-                // Ordini legacy senza order_shippings: default a tracciata se c’è prezzo (così metodo e UI sono coerenti)
+                // Ordini legacy senza order_shippings: metodo null, la UI distingue per prezzo (soglia €6)
                 $orderShippingPayload = [
                     'id' => null,
-                    'shipping_method' => $order->shipping_cost > 0 ? ShippingMethod::TRACKED_STANDARD : null,
+                    'shipping_method' => null,
                     'package_bucket' => null,
                     'logistic_units_total' => null,
                     'shipping_price' => (float) $order->shipping_cost,
@@ -264,11 +264,12 @@ class SellerOrderController extends Controller
             ], 409);
         }
 
-        // D5: mark shipped consentito solo se metodo = UNTRACKED_STANDARD (da order_shippings del seller)
-        // D5-HARDENING-NOTE: ordine multi-seller ha più order_shippings; markShipped valida solo il metodo del seller corrente.
+        // D5: mark shipped consentito se metodo = UNTRACKED_STANDARD oppure ordine legacy (nessun order_shippings)
         $order->load(['orderShippings' => fn ($q) => $q->where('seller_id', $user->id)]);
         $sellerShipping = $order->orderShippings->first();
-        if (!$sellerShipping || $sellerShipping->shipping_method !== ShippingMethod::UNTRACKED_STANDARD) {
+        $allowUntracked = $sellerShipping === null
+            || $sellerShipping->shipping_method === ShippingMethod::UNTRACKED_STANDARD;
+        if (!$allowUntracked) {
             Log::warning('D5: markShipped rifiutato – metodo non untracked', [
                 'order_id' => $order->id,
                 'seller_id' => $user->id,

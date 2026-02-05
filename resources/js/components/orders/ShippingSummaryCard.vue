@@ -55,8 +55,10 @@ const methodLabels = {
 const methodLabel = computed(() => {
   const m = props.orderShipping?.shipping_method
   if (m) return methodLabels[m] || m.replace(/_/g, ' ')
-  // Metodo non salvato (es. ordine legacy): se c’è prezzo mostriamo “Tracciata standard” per coerenza con la UI
-  if ((props.orderShipping?.shipping_price ?? 0) > 0) return 'Tracciata standard'
+  // Metodo non salvato (legacy): soglia €6 per mostrare tracciata vs non tracciata
+  const price = props.orderShipping?.shipping_price ?? 0
+  if (price >= 6) return 'Tracciata standard'
+  if (price > 0) return 'Non tracciata'
   return '—'
 })
 
