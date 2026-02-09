@@ -20,9 +20,9 @@ class AfterShipService
 
     public function __construct()
     {
-        $this->baseUrl = config('services.aftership.base_url', 'https://api.aftership.com');
-        $this->apiKey = config('services.aftership.api_key', '');
-        $this->apiVersion = config('services.aftership.api_version', '2026-01');
+        $this->baseUrl = (string) (config('services.aftership.base_url') ?? 'https://api.aftership.com');
+        $this->apiKey = (string) (config('services.aftership.api_key') ?? '');
+        $this->apiVersion = (string) (config('services.aftership.api_version') ?? '2026-01');
     }
 
     /**
