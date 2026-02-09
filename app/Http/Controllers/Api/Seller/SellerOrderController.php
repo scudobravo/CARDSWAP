@@ -268,8 +268,20 @@ class SellerOrderController extends Controller
                 ], 409);
             }
 
-            $newTrackingNumber = $request->input('tracking_number');
+            $newTrackingNumber = is_string($request->input('tracking_number')) ? trim($request->input('tracking_number')) : '';
             $newCarrierSlug = $request->input('carrier_slug');
+            if (is_string($newCarrierSlug)) {
+                $newCarrierSlug = trim($newCarrierSlug) ?: null;
+            } else {
+                $newCarrierSlug = null;
+            }
+
+            if ($newTrackingNumber === '') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Inserisci il numero di tracking.',
+                ], 422);
+            }
 
             if ($newTrackingNumber === $order->tracking_number && ($newCarrierSlug ?? '') === ($order->carrier_code ?? '')) {
                 return response()->json([

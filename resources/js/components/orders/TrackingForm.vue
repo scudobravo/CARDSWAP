@@ -197,13 +197,20 @@ function cancelEdit () {
 }
 
 async function submitUpdate () {
-  if (!editForm.tracking_number?.trim()) return
+  const trackingNumber = editForm.tracking_number?.trim()
+  if (!trackingNumber) {
+    updateError.value = 'Inserisci il numero di tracking.'
+    return
+  }
   updateLoading.value = true
   updateError.value = ''
   try {
-    const { data } = await axios.patch(`/api/seller/orders/${props.orderId}/tracking`, {
-      tracking_number: editForm.tracking_number.trim(),
+    const payload = {
+      tracking_number: trackingNumber,
       carrier_slug: editForm.carrier_slug?.trim() || undefined
+    }
+    const { data } = await axios.patch(`/api/seller/orders/${props.orderId}/tracking`, payload, {
+      headers: { 'Content-Type': 'application/json' }
     })
     if (data.success) {
       showEditForm.value = false

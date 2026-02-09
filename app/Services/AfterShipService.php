@@ -31,6 +31,14 @@ class AfterShipService
      */
     public function createTracking(Order $order, string $trackingNumber, ?string $slug = null): array
     {
+        $trackingNumber = is_string($trackingNumber) ? trim($trackingNumber) : '';
+        if ($trackingNumber === '') {
+            return [
+                'success' => false,
+                'message' => 'Inserisci il numero di tracking.',
+            ];
+        }
+
         if (empty($this->apiKey)) {
             Log::warning('AfterShip API key non configurata, skip create tracking', [
                 'order_id' => $order->id,
