@@ -397,6 +397,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('seller/orders')->group(function () {
         Route::get('/{orderId}', [SellerOrderController::class, 'show']);
         Route::post('/{orderId}/tracking', [SellerOrderController::class, 'addTracking']);
+        Route::patch('/{orderId}/tracking', [SellerOrderController::class, 'updateTracking']);
         Route::post('/{orderId}/mark-shipped', [SellerOrderController::class, 'markShipped']);
     });
 

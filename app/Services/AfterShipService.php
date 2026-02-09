@@ -36,7 +36,11 @@ class AfterShipService
                 'order_id' => $order->id,
                 'tracking_number' => $trackingNumber,
             ]);
-            return ['success' => false, 'reason' => 'api_key_missing'];
+            return [
+                'success' => false,
+                'reason' => 'api_key_missing',
+                'message' => 'Servizio di verifica tracking non disponibile. Contatta l\'assistenza.',
+            ];
         }
 
         $tracking = [
@@ -66,15 +70,18 @@ class AfterShipService
                 ];
             }
 
+            $userMessage = $this->userMessageFromAfterShipResponse($body, $response->status());
             Log::warning('AfterShip create tracking non 2xx', [
                 'order_id' => $order->id,
                 'status' => $response->status(),
                 'body' => $body,
+                'user_message' => $userMessage,
             ]);
             return [
                 'success' => false,
                 'status' => $response->status(),
                 'body' => $body,
+                'message' => $userMessage,
             ];
         } catch (\Exception $e) {
             Log::error('AfterShip create tracking exception', [
@@ -85,6 +92,7 @@ class AfterShipService
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
+                'message' => 'Impossibile verificare il numero di tracking. Riprova più tardi o controlla il codice e il corriere.',
             ];
         }
     }
@@ -118,6 +126,45 @@ class AfterShipService
             ]);
             return ['success' => false, 'error' => $e->getMessage()];
         }
+    }
+
+    /**
+     * Restituisce un messaggio in italiano per l'utente a partire dalla risposta di errore AfterShip.
+     * @see https://aftership.com/docs/tracking/quickstart/request-errors
+     */
+    private function userMessageFromAfterShipResponse(?array $body, int $httpStatus): string
+    {
+        if (!is_array($body)) {
+            return 'Il numero di tracking non è stato accettato. Controlla il codice e il corriere e riprova.';
+        }
+
+        $code = $body['meta']['code'] ?? null;
+
+        $messagesByCode = [
+            4003 => 'Questo numero di tracking è già registrato per un altro ordine.',
+            4005 => 'Il numero di tracking non è valido. Controlla il codice e riprova.',
+            4007 => 'Il numero di tracking è obbligatorio.',
+            4008 => 'Uno o più campi non sono validi. Controlla i dati inseriti.',
+            4010 => 'Il corriere selezionato non è valido. Scegli il corriere corretto dalla lista.',
+            4011 => 'Per questo corriere sono richiesti altri campi. Controlla i dati inseriti.',
+            4012 => 'Il numero di tracking non è riconosciuto da questo corriere, ha formato non valido o il corriere non è supportato. Verifica codice e corriere (es. Poste Italiane).',
+            4017 => 'Il formato del numero di tracking non è valido. Controlla il codice e riprova.',
+        ];
+
+        if ($code !== null && isset($messagesByCode[$code])) {
+            return $messagesByCode[$code];
+        }
+
+        $apiMessage = $body['meta']['message'] ?? null;
+        if (is_string($apiMessage) && $apiMessage !== '') {
+            return $apiMessage;
+        }
+
+        if ($httpStatus >= 400 && $httpStatus < 500) {
+            return 'Il numero di tracking non è stato accettato. Controlla il codice e il corriere (es. Poste Italiane) e riprova.';
+        }
+
+        return 'Impossibile verificare il numero di tracking in questo momento. Riprova più tardi.';
     }
 
     private function client(): \Illuminate\Http\Client\PendingRequest

@@ -43,6 +43,9 @@ class CheckProductionConfig extends Command
         // 3. Verifica Shippo
         $allOk = $this->checkShippo() && $allOk;
 
+        // 3b. Verifica AfterShip (tracking – CardSwap V1)
+        $allOk = $this->checkAfterShip() && $allOk;
+
         // 4. Verifica Email
         $allOk = $this->checkEmail() && $allOk;
 
@@ -209,6 +212,32 @@ class CheckProductionConfig extends Command
         } else {
             $this->error("   Indirizzo mittente incompleto. Campi mancanti: " . implode(', ', $missingFields));
             $ok = false;
+        }
+
+        $this->newLine();
+        return $ok;
+    }
+
+    private function checkAfterShip(): bool
+    {
+        $this->info('3b. Verifica AfterShip (tracking)');
+
+        $apiKey = config('services.aftership.api_key');
+        $webhookSecret = config('services.aftership.webhook_secret');
+
+        $ok = true;
+
+        if (empty($apiKey)) {
+            $this->error('   AFTERSHIP_API_KEY: non configurata (il tracking non funzionerà)');
+            $ok = false;
+        } else {
+            $this->line('   AFTERSHIP_API_KEY: configurata');
+        }
+
+        if (empty($webhookSecret)) {
+            $this->warn('   AFTERSHIP_WEBHOOK_SECRET: non configurato (i webhook non saranno verificati, rischio sicurezza)');
+        } else {
+            $this->line('   AFTERSHIP_WEBHOOK_SECRET: configurato');
         }
 
         $this->newLine();

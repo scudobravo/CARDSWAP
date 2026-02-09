@@ -179,14 +179,25 @@ class SellerOrderController extends Controller
             ], 409);
         }
 
+        // Verifica il tracking con AfterShip prima di salvare: se KO non salviamo e restituiamo errore
+        $trackingNumber = $request->input('tracking_number');
+        $carrierSlug = $request->input('carrier_slug');
+        $createResult = app(AfterShipService::class)->createTracking($order, $trackingNumber, $carrierSlug);
+
+        if (!($createResult['success'] ?? false)) {
+            $message = $createResult['message'] ?? 'Il numero di tracking non è stato accettato. Controlla il codice e il corriere e riprova.';
+            return response()->json([
+                'success' => false,
+                'message' => $message,
+            ], 422);
+        }
+
         $order->update([
-            'tracking_number' => $request->input('tracking_number'),
-            'carrier_code' => $request->input('carrier_slug'),
+            'tracking_number' => $trackingNumber,
+            'carrier_code' => $carrierSlug,
             'status' => 'shipped',
             'shipped_at' => now(),
         ]);
-
-        app(AfterShipService::class)->createTracking($order, $request->input('tracking_number'), $request->input('carrier_slug'));
 
         event(new \App\Events\TrackingAdded($order->fresh(['seller', 'buyer'])));
 
@@ -202,6 +213,100 @@ class SellerOrderController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Tracking inserito correttamente',
+            'data' => [
+                'tracking_number' => $order->tracking_number,
+                'carrier_code' => $order->carrier_code,
+                'shipped_at' => $order->shipped_at?->toIso8601String(),
+                'status' => $order->status,
+            ],
+        ]);
+    }
+
+    /**
+     * Modifica numero di tracking (ordine già spedito con tracking).
+     * PATCH /api/seller/orders/:orderId/tracking
+     * Verifica con AfterShip prima di salvare; solo ordini in stato shipped/in_transit/delivered_pending_72h.
+     */
+    public function updateTracking(Request $request, string $orderId): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'tracking_number' => 'required|string|max:255',
+            'carrier_slug' => 'nullable|string|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => 'Dati non validi', 'errors' => $validator->errors()], 422);
+        }
+
+        $user = Auth::user();
+        $order = $this->findOrderForSeller($orderId, $user->id);
+        if (!$order) {
+            return response()->json(['success' => false, 'message' => 'Ordine non trovato'], 404);
+        }
+
+        if (empty($order->tracking_number)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Questo ordine non ha ancora un tracking. Usa "Inserisci tracking" per aggiungerlo.',
+            ], 409);
+        }
+
+        $allowedStatuses = ['shipped', 'in_transit_verified', 'label_created', 'delivered_pending_72h'];
+        if (!in_array($order->status, $allowedStatuses, true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Non è possibile modificare il tracking per ordini completati, annullati o in disputa.',
+                'current_status' => $order->status,
+            ], 409);
+        }
+
+        if ($order->has_dispute) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Non è possibile modificare il tracking con una disputa aperta.',
+            ], 409);
+        }
+
+        $newTrackingNumber = $request->input('tracking_number');
+        $newCarrierSlug = $request->input('carrier_slug');
+
+        if ($newTrackingNumber === $order->tracking_number && ($newCarrierSlug ?? '') === ($order->carrier_code ?? '')) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Nessuna modifica',
+                'data' => [
+                    'tracking_number' => $order->tracking_number,
+                    'carrier_code' => $order->carrier_code,
+                    'shipped_at' => $order->shipped_at?->toIso8601String(),
+                    'status' => $order->status,
+                ],
+            ]);
+        }
+
+        $createResult = app(AfterShipService::class)->createTracking($order, $newTrackingNumber, $newCarrierSlug ?: null);
+        if (!($createResult['success'] ?? false)) {
+            $message = $createResult['message'] ?? 'Il numero di tracking non è stato accettato. Controlla il codice e il corriere e riprova.';
+            return response()->json(['success' => false, 'message' => $message], 422);
+        }
+
+        $oldTracking = $order->tracking_number;
+        $order->update([
+            'tracking_number' => $newTrackingNumber,
+            'carrier_code' => $newCarrierSlug ?? $order->carrier_code,
+        ]);
+
+        ShippingAuditLog::log(
+            ShippingAuditLog::ACTION_TRACKING_UPDATED,
+            ShippingAuditLog::SOURCE_API,
+            (int) $order->id,
+            (int) $order->seller_id,
+            (int) $order->buyer_id,
+            ['old_tracking_number' => $oldTracking, 'tracking_number' => $order->tracking_number]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tracking aggiornato correttamente',
             'data' => [
                 'tracking_number' => $order->tracking_number,
                 'carrier_code' => $order->carrier_code,

@@ -15,6 +15,7 @@ class ShippingAuditLog
     public const SOURCE_WEBHOOK = 'webhook';
 
     public const ACTION_TRACKING_INSERTED = 'tracking_inserted';
+    public const ACTION_TRACKING_UPDATED = 'tracking_updated';
     public const ACTION_SHIPPED_UNTRACKED = 'shipped_untracked';
     public const ACTION_ORDER_CANCELLED = 'order_cancelled';
     public const ACTION_ORDER_DELIVERED = 'order_delivered';

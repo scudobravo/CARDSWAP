@@ -16,6 +16,12 @@ class ReleaseSellerFunds implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    /** Numero di tentativi in caso di errore (es. Stripe temporaneo). */
+    public int $tries = 3;
+
+    /** Secondi di attesa prima di ogni retry (1 min, 5 min, 15 min). */
+    public array $backoff = [60, 300, 900];
+
     public $order;
 
     /**
@@ -203,8 +209,15 @@ class ReleaseSellerFunds implements ShouldQueue
                     'amount_euros' => $order->seller_payout_amount,
                     'amount_cents' => $amountInCents,
                     'error' => $transfer['error'] ?? 'Unknown error',
-                    'stripe_error' => $transfer['stripe_error'] ?? null
+                    'stripe_error' => $transfer['stripe_error'] ?? null,
+                    'attempt' => $this->attempts(),
+                    'max_tries' => $this->tries,
                 ]);
+                // Fallimento: rilancia così la coda ritenta (utile per errori temporanei Stripe).
+                // Dopo $tries tentativi il job va in failed; ProcessScheduledPayouts riproverà comunque.
+                throw new \RuntimeException(
+                    'Trasferimento Stripe fallito: ' . ($transfer['error'] ?? 'Unknown error')
+                );
             }
         } catch (\Exception $e) {
             Log::error('Eccezione durante rilascio fondi', [
@@ -216,6 +229,7 @@ class ReleaseSellerFunds implements ShouldQueue
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString()
             ]);
+            throw $e;
         }
     }
 }

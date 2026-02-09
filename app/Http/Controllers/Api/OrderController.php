@@ -591,13 +591,23 @@ class OrderController extends Controller
                 $updateData['delivered_at'] = now();
             }
 
-            $order->update($updateData);
-
-            // Registra il tracking su AfterShip quando il venditore inserisce il numero (CardSwap V1 - unica fonte tracking)
+            // Se c'è un numero di tracking, verifica con AfterShip prima di salvare; se KO non aggiornare
             if ($request->input('tracking_number')) {
                 $slug = $request->input('carrier_code') ?: $order->carrier_code;
-                app(AfterShipService::class)->createTracking($order, $request->input('tracking_number'), $slug ?: null);
+                $createResult = app(AfterShipService::class)->createTracking(
+                    $order,
+                    $request->input('tracking_number'),
+                    $slug ?: null
+                );
+                if (!($createResult['success'] ?? false)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $createResult['message'] ?? 'Il numero di tracking non è stato accettato. Controlla il codice e il corriere e riprova.',
+                    ], 422);
+                }
             }
+
+            $order->update($updateData);
 
             // Invia notifica all'acquirente
             $this->sendOrderStatusNotification($order, $request->input('status'));
