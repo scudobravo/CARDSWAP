@@ -25,9 +25,11 @@ class ProcessScheduledPayouts implements ShouldQueue
     {
         Log::info('ProcessScheduledPayouts job started');
 
-        // Trova ordini in delivered_pending_72h con payout_scheduled_at <= now() e payout_status = pending_payout
+        // Trova ordini in delivered_pending_72h con payout_scheduled_at <= now(); payout_status pending_payout o null (fallback ordini legacy)
         $orders = Order::where('status', 'delivered_pending_72h')
-            ->where('payout_status', 'pending_payout')
+            ->where(function ($q) {
+                $q->where('payout_status', 'pending_payout')->orWhereNull('payout_status');
+            })
             ->whereNotNull('payout_scheduled_at')
             ->where('payout_scheduled_at', '<=', now())
             ->where('has_dispute', false)
@@ -38,7 +40,8 @@ class ProcessScheduledPayouts implements ShouldQueue
         foreach ($orders as $order) {
             // D5: verifica stato prima di agire – skip se ordine non più modificabile
             $order->refresh();
-            if (!in_array($order->status, ['delivered_pending_72h'], true) || $order->has_dispute || $order->payout_status !== 'pending_payout') {
+            $alreadyPaidOrHold = in_array($order->payout_status, ['paid', 'dispute_hold', 'cancelled'], true);
+            if (!in_array($order->status, ['delivered_pending_72h'], true) || $order->has_dispute || $alreadyPaidOrHold) {
                 Log::info('D5-JOB: ProcessScheduledPayouts skip ordine', [
                     'order_id' => $order->id,
                     'status' => $order->status,

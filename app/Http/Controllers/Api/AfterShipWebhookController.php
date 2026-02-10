@@ -124,6 +124,9 @@ class AfterShipWebhookController extends Controller
             if ($mappedStatus === 'delivered') {
                 ShippingAuditLog::log(ShippingAuditLog::ACTION_ORDER_DELIVERED, ShippingAuditLog::SOURCE_WEBHOOK, (int) $order->id, (int) $order->seller_id, (int) $order->buyer_id);
                 event(new \App\Events\OrderDelivered($order->fresh(['seller', 'buyer'])));
+                // Schedula rilascio fondi tra 72h (ProcessScheduledPayouts resta fallback ogni ora)
+                \App\Jobs\ReleaseSellerFunds::dispatch($order->fresh())->delay(now()->addHours(72));
+                Log::info('AfterShip webhook: job ReleaseSellerFunds schedulato tra 72h', ['order_id' => $order->id]);
             }
         }
 
