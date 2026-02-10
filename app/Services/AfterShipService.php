@@ -56,7 +56,8 @@ class AfterShipService
             'title' => 'Order ' . $order->order_number,
         ];
         if ($slug !== null && $slug !== '') {
-            $tracking['slug'] = $slug;
+            // AfterShip richiede slug tipo "poste-italiane" (minuscolo, trattini)
+            $tracking['slug'] = $this->normalizeCarrierSlug($slug);
         }
 
         $path = "/tracking/{$this->apiVersion}/trackings";
@@ -134,6 +135,19 @@ class AfterShipService
             ]);
             return ['success' => false, 'error' => $e->getMessage()];
         }
+    }
+
+    /**
+     * Normalizza lo slug corriere per AfterShip: minuscolo, spazi → trattini.
+     * Es. "Poste italiane" → "poste-italiane"
+     */
+    private function normalizeCarrierSlug(string $slug): string
+    {
+        $s = trim($slug);
+        $s = preg_replace('/\s+/', '-', $s);
+        $s = strtolower($s);
+        $s = preg_replace('/[^a-z0-9\-]/', '', $s);
+        return $s;
     }
 
     /**

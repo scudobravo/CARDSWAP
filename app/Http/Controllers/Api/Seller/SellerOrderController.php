@@ -230,6 +230,15 @@ class SellerOrderController extends Controller
     public function updateTracking(Request $request, string $orderId): JsonResponse
     {
         try {
+            // Alcuni server/proxy non popolano il body per PATCH: assicuriamo di leggere il JSON raw
+            $content = $request->getContent();
+            if ($content !== '' && $content !== null) {
+                $decoded = json_decode($content, true);
+                if (is_array($decoded)) {
+                    $request->merge($decoded);
+                }
+            }
+
             $validator = Validator::make($request->all(), [
                 'tracking_number' => 'required|string|max:255',
                 'carrier_slug' => 'nullable|string|max:100',
@@ -268,10 +277,10 @@ class SellerOrderController extends Controller
                 ], 409);
             }
 
-            $newTrackingNumber = is_string($request->input('tracking_number')) ? trim($request->input('tracking_number')) : '';
+            $newTrackingNumber = is_string($request->input('tracking_number')) ? trim((string) $request->input('tracking_number')) : '';
             $newCarrierSlug = $request->input('carrier_slug');
             if (is_string($newCarrierSlug)) {
-                $newCarrierSlug = trim($newCarrierSlug) ?: null;
+                $newCarrierSlug = trim($newCarrierSlug) !== '' ? trim($newCarrierSlug) : null;
             } else {
                 $newCarrierSlug = null;
             }
