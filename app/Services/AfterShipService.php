@@ -63,6 +63,15 @@ class AfterShipService
         $path = "/tracking/{$this->apiVersion}/trackings";
         $payload = ['tracking' => $tracking];
 
+        Log::info('AfterShip createTracking: payload inviato', [
+            'order_id' => $order->id,
+            'url' => $this->baseUrl . $path,
+            'payload' => $payload,
+            'tracking_number_in_payload' => $tracking['tracking_number'] ?? null,
+            'tracking_number_length' => strlen((string) ($tracking['tracking_number'] ?? '')),
+            'slug_in_payload' => $tracking['slug'] ?? null,
+        ]);
+
         try {
             $response = $this->client()->timeout(30)->post($this->baseUrl . $path, $payload);
             $body = $response->json();
@@ -82,8 +91,12 @@ class AfterShipService
             $userMessage = $this->userMessageFromAfterShipResponse($body, $response->status());
             Log::warning('AfterShip create tracking non 2xx', [
                 'order_id' => $order->id,
-                'status' => $response->status(),
-                'body' => $body,
+                'tracking_number_sent' => $trackingNumber,
+                'http_status' => $response->status(),
+                'meta_code' => $body['meta']['code'] ?? null,
+                'meta_type' => $body['meta']['type'] ?? null,
+                'meta_message' => $body['meta']['message'] ?? null,
+                'body_full' => $body,
                 'user_message' => $userMessage,
             ]);
             return [

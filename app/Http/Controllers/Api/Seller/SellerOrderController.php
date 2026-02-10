@@ -232,12 +232,25 @@ class SellerOrderController extends Controller
         try {
             // Alcuni server/proxy non popolano il body per PATCH: assicuriamo di leggere il JSON raw
             $content = $request->getContent();
+            $usedRawBody = false;
             if ($content !== '' && $content !== null) {
                 $decoded = json_decode($content, true);
                 if (is_array($decoded)) {
                     $request->merge($decoded);
+                    $usedRawBody = true;
                 }
             }
+
+            Log::info('updateTracking: richiesta ricevuta', [
+                'order_id' => $orderId,
+                'content_type' => $request->header('Content-Type'),
+                'content_length' => $content !== null ? strlen($content) : 0,
+                'used_raw_body' => $usedRawBody,
+                'request_all_keys' => array_keys($request->all()),
+                'tracking_number_from_input' => $request->input('tracking_number'),
+                'tracking_number_length' => is_string($request->input('tracking_number')) ? strlen($request->input('tracking_number')) : null,
+                'carrier_slug_from_input' => $request->input('carrier_slug'),
+            ]);
 
             $validator = Validator::make($request->all(), [
                 'tracking_number' => 'required|string|max:255',
@@ -286,11 +299,19 @@ class SellerOrderController extends Controller
             }
 
             if ($newTrackingNumber === '') {
+                Log::warning('updateTracking: tracking_number vuoto dopo trim', ['order_id' => $orderId]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Inserisci il numero di tracking.',
                 ], 422);
             }
+
+            Log::info('updateTracking: chiamata AfterShip createTracking', [
+                'order_id' => $orderId,
+                'tracking_number' => $newTrackingNumber,
+                'tracking_number_length' => strlen($newTrackingNumber),
+                'carrier_slug' => $newCarrierSlug,
+            ]);
 
             if ($newTrackingNumber === $order->tracking_number && ($newCarrierSlug ?? '') === ($order->carrier_code ?? '')) {
                 return response()->json([
@@ -307,6 +328,12 @@ class SellerOrderController extends Controller
 
             $createResult = app(AfterShipService::class)->createTracking($order, $newTrackingNumber, $newCarrierSlug ?: null);
             if (!($createResult['success'] ?? false)) {
+                Log::warning('updateTracking: AfterShip createTracking fallito', [
+                    'order_id' => $orderId,
+                    'aftership_status' => $createResult['status'] ?? null,
+                    'aftership_message' => $createResult['message'] ?? null,
+                    'aftership_body_keys' => isset($createResult['body']) && is_array($createResult['body']) ? array_keys($createResult['body']) : null,
+                ]);
                 $message = $createResult['message'] ?? 'Il numero di tracking non è stato accettato. Controlla il codice e il corriere e riprova.';
                 return response()->json(['success' => false, 'message' => $message], 422);
             }
