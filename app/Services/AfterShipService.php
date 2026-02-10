@@ -61,7 +61,8 @@ class AfterShipService
         }
 
         $path = "/tracking/{$this->apiVersion}/trackings";
-        $payload = ['tracking' => $tracking];
+        // AfterShip 2026-01: il body è l'oggetto tracking in root, non sotto chiave "tracking"
+        $payload = $tracking;
 
         Log::info('AfterShip createTracking: payload inviato', [
             'order_id' => $order->id,
