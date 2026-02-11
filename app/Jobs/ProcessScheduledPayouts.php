@@ -25,8 +25,17 @@ class ProcessScheduledPayouts implements ShouldQueue
     {
         Log::info('ProcessScheduledPayouts job started');
 
-        // Trova ordini in delivered_pending_72h con payout_scheduled_at <= now(); payout_status pending_payout o null (fallback ordini legacy)
-        $orders = Order::where('status', 'delivered_pending_72h')
+        // (1) Ordini tracciati: delivered_pending_72h con payout_scheduled_at <= now
+        // (2) Ordini non tracciati: shipped senza tracking, payout_scheduled_at <= now (72h da mark-shipped)
+        $orders = Order::where(function ($q) {
+            $q->where('status', 'delivered_pending_72h')
+                ->orWhere(function ($q2) {
+                    $q2->where('status', 'shipped')
+                        ->where(function ($q3) {
+                            $q3->whereNull('tracking_number')->orWhere('tracking_number', '');
+                        });
+                });
+        })
             ->where(function ($q) {
                 $q->where('payout_status', 'pending_payout')->orWhereNull('payout_status');
             })
@@ -41,7 +50,9 @@ class ProcessScheduledPayouts implements ShouldQueue
             // D5: verifica stato prima di agire – skip se ordine non più modificabile
             $order->refresh();
             $alreadyPaidOrHold = in_array($order->payout_status, ['paid', 'dispute_hold', 'cancelled'], true);
-            if (!in_array($order->status, ['delivered_pending_72h'], true) || $order->has_dispute || $alreadyPaidOrHold) {
+            $validForPayout = $order->status === 'delivered_pending_72h'
+                || ($order->status === 'shipped' && empty($order->tracking_number));
+            if (!$validForPayout || $order->has_dispute || $alreadyPaidOrHold) {
                 Log::info('D5-JOB: ProcessScheduledPayouts skip ordine', [
                     'order_id' => $order->id,
                     'status' => $order->status,

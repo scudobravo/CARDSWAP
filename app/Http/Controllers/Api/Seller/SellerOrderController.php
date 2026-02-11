@@ -451,7 +451,11 @@ class SellerOrderController extends Controller
         $order->update([
             'status' => 'shipped',
             'shipped_at' => now(),
+            'payout_scheduled_at' => now()->addHours(72),
         ]);
+
+        \App\Jobs\ReleaseSellerFunds::dispatch($order->fresh())->delay(now()->addHours(72));
+        Log::info('D5: markShipped (untracked) – ReleaseSellerFunds schedulato tra 72h', ['order_id' => $order->id]);
 
         event(new \App\Events\OrderShippedUntracked($order->fresh(['seller', 'buyer'])));
 

@@ -63,12 +63,14 @@ class ReleaseSellerFunds implements ShouldQueue
             'payout_scheduled_hours_ago' => $order->payout_scheduled_at ? now()->diffInHours($order->payout_scheduled_at) : null
         ]);
 
-        // D5: release fondi vietata se ordine non in delivered_pending_72h
-        if ($order->status !== 'delivered_pending_72h') {
+        // D5: release fondi consentita per (1) delivered_pending_72h (tracciato) o (2) shipped senza tracking (non tracciato, 72h da mark-shipped)
+        $isTrackedDelivered = $order->status === 'delivered_pending_72h';
+        $isUntrackedShipped = $order->status === 'shipped' && empty($order->tracking_number);
+        if (!$isTrackedDelivered && !$isUntrackedShipped) {
             Log::warning('D5-JOB: ReleaseSellerFunds skip – stato non valido', [
                 'order_id' => $order->id,
                 'current_status' => $order->status,
-                'expected_status' => 'delivered_pending_72h',
+                'expected' => 'delivered_pending_72h o shipped (untracked)',
                 'source' => 'job',
             ]);
             return;
