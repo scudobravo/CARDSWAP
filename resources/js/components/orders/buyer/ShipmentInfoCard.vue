@@ -68,8 +68,13 @@ const carrierLabel = computed(() => {
   return s.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 })
 
+// URL che apre direttamente la pagina di tracking (numero + corriere), non la pagina generica AfterShip
 const genericTrackingUrl = computed(() => {
   if (!props.trackingNumber) return null
+  const slug = (props.carrierSlug || '').trim().toLowerCase().replace(/\s+/g, '-')
+  if (slug) {
+    return `https://track.aftership.com/${encodeURIComponent(slug)}/${encodeURIComponent(props.trackingNumber)}`
+  }
   return `https://track.aftership.com/?tracking_number=${encodeURIComponent(props.trackingNumber)}`
 })
 
