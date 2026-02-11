@@ -24,8 +24,8 @@ const message = computed(() => {
     if (props.shipmentStatus === 'DELIVERED_HOLD_72H') {
       return 'Pagamento in verifica (72h). Puoi aprire una disputa in questo periodo.'
     }
-    return 'Il pagamento al venditore verrà rilasciato dopo la consegna.'
+    return 'Il pagamento al venditore verrà rilasciato 72h dopo la consegna verificata.'
   }
-  return 'Il pagamento verrà rilasciato automaticamente dopo il periodo di attesa.'
+  return 'Il pagamento verrà rilasciato 72h dopo che il venditore ha segnato come spedito.'
 })
 </script>

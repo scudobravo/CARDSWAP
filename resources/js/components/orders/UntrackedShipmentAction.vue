@@ -2,7 +2,7 @@
   <div class="rounded-lg border border-gray-200 bg-white p-4">
     <h3 class="text-sm font-semibold text-gray-900 mb-3">Spedizione non tracciata</h3>
     <p class="text-sm text-gray-600 mb-4">
-      Spedizione non tracciata: il pagamento verrà rilasciato dopo 14/30 giorni + 72h.
+      Spedizione non tracciata: il pagamento verrà rilasciato 72h dopo che hai segnato come spedito.
     </p>
 
     <template v-if="shippedAt">

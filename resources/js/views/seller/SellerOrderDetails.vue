@@ -68,7 +68,7 @@
           Il pagamento sarà rilasciato 72h dopo la consegna verificata.
         </p>
         <p v-else class="text-sm text-gray-700">
-          Il pagamento sarà rilasciato automaticamente dopo il periodo di attesa.
+          Il pagamento sarà rilasciato 72h dopo che hai segnato come spedito.
         </p>
       </div>
 
