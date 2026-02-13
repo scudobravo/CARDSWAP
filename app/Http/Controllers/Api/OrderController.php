@@ -317,43 +317,32 @@ class OrderController extends Controller
                 ], 400);
             }
 
-            // Aggiorna solo se è ancora pending_payment (se è già paid_funds_held, il webhook è arrivato prima)
-            if ($order->status === 'pending_payment') {
-                Log::info('Confirming payment from frontend (webhook not arrived yet)', [
-                    'order_id' => $order->id,
-                    'order_number' => $order->order_number,
-                    'user_id' => $user->id
+            // Lock per evitare doppie notifiche: solo una tra frontend e webhook può aggiornare e lanciare OrderPaid
+            $weUpdated = false;
+            $order = \Illuminate\Support\Facades\DB::transaction(function () use ($order, &$weUpdated) {
+                $locked = Order::where('id', $order->id)->lockForUpdate()->first();
+                if ($locked->status !== 'pending_payment') {
+                    return $locked->fresh();
+                }
+                $locked->update([
+                    'status' => 'paid_funds_held',
+                    'paid_at' => now(),
                 ]);
+                $weUpdated = true;
+                return $locked->fresh();
+            });
 
-                $order->update([
-                    'status' => 'paid_funds_held', // Nuovo stato: fondi pagati ma trattenuti
-                    'paid_at' => now()
-                ]);
-
-                event(new \App\Events\OrderPaid($order->fresh(['seller', 'buyer'])));
-
+            if ($weUpdated) {
+                event(new \App\Events\OrderPaid($order->load(['seller', 'buyer'])));
                 Log::info('Order updated to paid_funds_held from frontend confirmPayment', [
                     'order_id' => $order->id,
                     'order_number' => $order->order_number
                 ]);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Pagamento confermato',
-                    'order' => $order
-                ]);
             }
-
-            // Se è già paid_funds_held, il webhook è arrivato prima - va bene
-            Log::info('Order already in paid_funds_held (webhook arrived first)', [
-                'order_id' => $order->id,
-                'order_number' => $order->order_number,
-                'user_id' => $user->id
-            ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Pagamento già confermato',
+                'message' => $weUpdated ? 'Pagamento confermato' : 'Pagamento già confermato',
                 'order' => $order
             ]);
 

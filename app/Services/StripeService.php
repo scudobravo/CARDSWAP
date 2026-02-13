@@ -759,51 +759,38 @@ class StripeService
             return;
         }
 
-        // Verifica che l'ordine sia in uno stato valido per essere aggiornato
-        $validStatuses = ['pending', 'pending_payment'];
-        if (!in_array($order->status, $validStatuses)) {
-            Log::warning('Order status not valid for payment succeeded update', [
-                'order_id' => $order->id,
-                'order_number' => $order->order_number,
-                'current_status' => $order->status,
-                'payment_intent_id' => $paymentIntent->id,
-                'valid_statuses' => $validStatuses
-            ]);
-            // Se è già paid_funds_held, potrebbe essere un webhook duplicato - log e continua
-            if ($order->status === 'paid_funds_held') {
-                Log::info('Payment succeeded webhook received but order already in paid_funds_held (duplicate webhook?)', [
-                    'order_id' => $order->id,
-                    'payment_intent_id' => $paymentIntent->id
-                ]);
+        // Lock come in confirmPayment: solo una tra webhook e frontend aggiorna e invia notifiche (evita doppie)
+        $weUpdated = false;
+        $order = \Illuminate\Support\Facades\DB::transaction(function () use ($order, $paymentIntent, &$weUpdated) {
+            $locked = \App\Models\Order::where('id', $order->id)->lockForUpdate()->first();
+            $validStatuses = ['pending', 'pending_payment'];
+            if (!in_array($locked->status, $validStatuses)) {
+                if ($locked->status === 'paid_funds_held') {
+                    Log::info('Payment succeeded webhook: order already paid_funds_held (frontend or duplicate)', [
+                        'order_id' => $locked->id,
+                        'payment_intent_id' => $paymentIntent->id
+                    ]);
+                }
+                return $locked->fresh();
             }
+            $locked->update([
+                'status' => 'paid_funds_held',
+                'paid_at' => now(),
+            ]);
+            $weUpdated = true;
+            return $locked->fresh();
+        });
+
+        if (!$weUpdated) {
             return;
         }
 
         Log::info('Updating order to paid_funds_held from payment succeeded webhook', [
             'order_id' => $order->id,
             'order_number' => $order->order_number,
-            'previous_status' => $order->status,
             'payment_intent_id' => $paymentIntent->id,
             'amount' => $paymentIntent->amount / 100
         ]);
-
-        // Aggiorna stato ordine - FONDI TRATTENUTI, NON TRASFERITI
-        // I fondi vengono trattenuti da CardSwap fino a 72h dopo la consegna
-        $order->update([
-            'status' => 'paid_funds_held', // Nuovo stato: fondi pagati ma trattenuti
-            'paid_at' => now()
-        ]);
-
-        Log::info('Order updated to paid_funds_held successfully', [
-            'order_id' => $order->id,
-            'order_number' => $order->order_number,
-            'seller_payout_amount' => $order->seller_payout_amount,
-            'payout_status' => $order->payout_status
-        ]);
-
-        // NON creare trasferimenti immediati - i fondi devono essere trattenuti
-        // I trasferimenti verranno creati solo dopo 72h dalla consegna (via webhook Shippo DELIVERED)
-        // Questo previene truffe: il venditore riceve i fondi solo dopo che il pacco è stato consegnato
 
         // Conferma prenotazione quantità
         $reservationId = $paymentIntent->metadata->reservation_id ?? null;
@@ -811,8 +798,8 @@ class StripeService
             app(\App\Services\AvailabilityService::class)->confirmReservation($reservationId);
         }
 
-        // Invia notifiche
-        $this->notifyPaymentSuccess($order, $paymentIntent);
+        // Unica fonte notifiche/email: OrderPaid (stessi listener di confirmPayment) – evita doppie notifiche
+        event(new \App\Events\OrderPaid($order->load(['seller', 'buyer'])));
     }
 
     /**
