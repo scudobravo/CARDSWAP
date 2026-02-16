@@ -88,23 +88,80 @@
           </address>
           <p v-else class="text-sm text-gray-500">—</p>
         </div>
-        <div class="rounded-lg border border-gray-200 bg-white p-4">
-          <h2 class="text-sm font-semibold text-gray-900 mb-3">Articoli (tuoi)</h2>
-          <ul class="space-y-2 text-sm text-gray-700">
-            <li v-for="item in order.order_items" :key="item.id" class="flex justify-between">
-              <span>{{ item.card_model?.name ?? 'Articolo' }} × {{ item.quantity }}</span>
-              <span>€{{ formatPrice(item.total_price) }}</span>
+        <div class="rounded-lg border border-gray-200 bg-white p-4 sm:p-6">
+          <h2 class="text-base sm:text-lg font-semibold text-gray-900 mb-4">Articoli (tuoi)</h2>
+          <ul role="list" class="divide-y divide-gray-200 border-t border-b border-gray-200">
+            <li
+              v-for="item in order.order_items"
+              :key="item.id"
+              class="flex py-4 sm:py-5 first:pt-0 last:pb-0"
+            >
+              <div class="shrink-0 relative">
+                <img
+                  v-if="item.image"
+                  :src="normalizeImageUrl(item.image)"
+                  :alt="item.card_model?.name ?? 'Carta'"
+                  class="size-20 rounded-md object-cover sm:size-24"
+                />
+                <div
+                  v-else
+                  class="flex items-center justify-center bg-gray-200 rounded-md size-20 sm:size-24"
+                >
+                  <svg class="w-8 h-8 text-gray-400 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              </div>
+              <div class="ml-3 sm:ml-4 flex flex-1 flex-col min-w-0">
+                <h3 class="text-sm sm:text-base font-medium text-gray-900 break-words">
+                  {{ item.card_model?.name ?? 'Articolo' }}
+                </h3>
+                <!-- Condizione e Set (come nel carrello) -->
+                <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-1 mb-2">
+                  <p class="text-xs sm:text-sm text-gray-500">{{ getConditionLabel(item.condition) }}</p>
+                  <p
+                    v-if="item.card_model?.set_name"
+                    class="text-xs sm:text-sm text-gray-500 border-l-0 sm:border-l border-gray-200 pl-0 sm:pl-4"
+                  >
+                    {{ item.card_model.set_name }}
+                  </p>
+                </div>
+                <!-- Prezzo -->
+                <p class="text-sm sm:text-base font-medium text-gray-900 mb-2">
+                  €{{ formatPrice(item.total_price) }}
+                </p>
+                <!-- Acquirente (invece di "Venditore" nel carrello) -->
+                <p v-if="order.buyer?.name" class="text-xs sm:text-sm text-gray-500 mb-3">
+                  Acquirente: {{ order.buyer.name }}
+                </p>
+                <!-- Da preparare + Quantità (come Disponibilità + Quantità nel carrello) -->
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-auto">
+                  <p class="flex items-center space-x-2 text-xs sm:text-sm text-gray-700">
+                    <CheckIcon class="size-4 shrink-0 text-green-500 sm:size-5" aria-hidden="true" />
+                    <span>Da preparare</span>
+                  </p>
+                  <p class="text-xs sm:text-sm text-gray-600 whitespace-nowrap">
+                    Quantità: {{ item.quantity }}
+                  </p>
+                </div>
+              </div>
             </li>
           </ul>
-          <p class="mt-3 text-sm font-medium text-gray-900">
-            Subtotale: €{{ formatPrice(order.subtotal_eur) }}
-          </p>
-          <p v-if="order.shipping_cost > 0" class="text-sm text-gray-600">
-            Spedizione: €{{ formatPrice(order.shipping_cost) }}
-          </p>
-          <p class="text-sm font-semibold text-gray-900">
-            Totale: €{{ formatPrice(order.total_amount) }}
-          </p>
+          <!-- Riepilogo (come nel carrello) -->
+          <dl class="mt-4 sm:mt-6 space-y-2">
+            <div class="flex justify-between text-sm">
+              <dt class="text-gray-600">Subtotale</dt>
+              <dd class="font-medium text-gray-900">€{{ formatPrice(order.subtotal_eur) }}</dd>
+            </div>
+            <div v-if="order.shipping_cost > 0" class="flex justify-between text-sm">
+              <dt class="text-gray-600">Spedizione</dt>
+              <dd class="font-medium text-gray-900">€{{ formatPrice(order.shipping_cost) }}</dd>
+            </div>
+            <div class="flex justify-between text-base font-semibold border-t border-gray-200 pt-3 mt-2">
+              <dt class="text-gray-900">Totale</dt>
+              <dd class="text-gray-900">€{{ formatPrice(order.total_amount) }}</dd>
+            </div>
+          </dl>
         </div>
       </div>
     </template>
@@ -123,6 +180,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
+import { CheckIcon } from '@heroicons/vue/20/solid'
 import ShipmentStatusBadge from '@/components/orders/ShipmentStatusBadge.vue'
 import TrackingForm from '@/components/orders/TrackingForm.vue'
 import UntrackedShipmentAction from '@/components/orders/UntrackedShipmentAction.vue'
@@ -170,6 +228,25 @@ const existingTracking = computed(() => {
 
 function formatPrice (n) {
   return Number(n).toFixed(2)
+}
+
+function normalizeImageUrl (url) {
+  if (!url) return ''
+  if (url.startsWith('/storage/') || url.startsWith('http') || url.startsWith('//')) return url
+  return '/storage/' + url
+}
+
+function getConditionLabel (condition) {
+  const labels = {
+    mint: 'Mint',
+    near_mint: 'Near Mint',
+    excellent: 'Eccellente',
+    good: 'Buona',
+    light_played: 'Leggermente giocata',
+    played: 'Giocata',
+    poor: 'Scarsa'
+  }
+  return labels[condition] || condition || '—'
 }
 
 async function fetchOrder () {
