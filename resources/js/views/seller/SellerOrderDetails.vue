@@ -130,20 +130,10 @@
                 <p class="text-sm sm:text-base font-medium text-gray-900 mb-2">
                   €{{ formatPrice(item.total_price) }}
                 </p>
-                <!-- Acquirente (invece di "Venditore" nel carrello) -->
-                <p v-if="order.buyer?.name" class="text-xs sm:text-sm text-gray-500 mb-3">
-                  Acquirente: {{ order.buyer.name }}
+                <!-- Quantità -->
+                <p class="text-xs sm:text-sm text-gray-600 whitespace-nowrap mt-auto">
+                  Quantità: {{ item.quantity }}
                 </p>
-                <!-- Da preparare + Quantità (come Disponibilità + Quantità nel carrello) -->
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-auto">
-                  <p class="flex items-center space-x-2 text-xs sm:text-sm text-gray-700">
-                    <CheckIcon class="size-4 shrink-0 text-green-500 sm:size-5" aria-hidden="true" />
-                    <span>Da preparare</span>
-                  </p>
-                  <p class="text-xs sm:text-sm text-gray-600 whitespace-nowrap">
-                    Quantità: {{ item.quantity }}
-                  </p>
-                </div>
               </div>
             </li>
           </ul>
@@ -180,7 +170,6 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
-import { CheckIcon } from '@heroicons/vue/20/solid'
 import ShipmentStatusBadge from '@/components/orders/ShipmentStatusBadge.vue'
 import TrackingForm from '@/components/orders/TrackingForm.vue'
 import UntrackedShipmentAction from '@/components/orders/UntrackedShipmentAction.vue'
