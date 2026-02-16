@@ -14,9 +14,23 @@ use Illuminate\Support\Facades\Mail;
  */
 class NotificationService
 {
-    /** Invia notifica a un utente (DB + email se abilitata). */
+    /** Finestra (minuti) entro cui considerare una notifica duplicata per stesso user + type + order_id. */
+    private const DEDUP_WINDOW_MINUTES = 15;
+
+    /** Invia notifica a un utente (DB + email se abilitata). Evita doppie in-app: stessa user+type+order_id in finestra → nessun nuovo record, nessuna seconda email. */
     public function send(User $user, string $type, array $data): UserNotification
     {
+        $orderId = isset($data['data']['order_id']) ? (int) $data['data']['order_id'] : null;
+        $existing = $orderId !== null ? $this->findDuplicate($user->id, $type, $orderId) : null;
+        if ($existing) {
+            Log::info('NotificationService: notifica duplicata ignorata (in-app)', [
+                'user_id' => $user->id,
+                'type' => $type,
+                'order_id' => $orderId,
+            ]);
+            return $existing;
+        }
+
         $title = $data['title'] ?? $type;
         $message = $data['message'] ?? $data['body'] ?? '';
         $actionUrl = $data['action_url'] ?? null;
@@ -38,6 +52,18 @@ class NotificationService
         }
 
         return $notification;
+    }
+
+    /** Cerca una notifica uguale (stesso user, type e order_id) creata nella finestra di dedup. */
+    private function findDuplicate(int $userId, string $type, ?int $orderId): ?UserNotification
+    {
+        $q = UserNotification::where('user_id', $userId)
+            ->where('type', $type)
+            ->where('created_at', '>=', now()->subMinutes(self::DEDUP_WINDOW_MINUTES));
+        if ($orderId !== null) {
+            $q->where('data->order_id', $orderId);
+        }
+        return $q->first();
     }
 
     protected function sendEmail(User $user, string $title, string $message, ?string $actionUrl, array $data): void
