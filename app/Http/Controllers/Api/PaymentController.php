@@ -647,7 +647,7 @@ class PaymentController extends Controller
     {
         $orderNumber = 'ORD-' . date('Ymd') . '-' . str_pad(Order::count() + 1, 4, '0', STR_PAD_LEFT);
 
-        // Calcola l'importo del payout per ogni venditore (94% del subtotale)
+        // Calcola l'importo del payout per ogni venditore: 94% del subtotale + spedizione (pagata dall'acquirente al venditore)
         $sellerPayoutAmount = 0;
         foreach ($orderData['sellers'] as $sellerData) {
             $sellerSubtotal = 0;
@@ -657,7 +657,8 @@ class PaymentController extends Controller
                     $sellerSubtotal += $listing->price * $itemData['quantity'];
                 }
             }
-            $sellerPayoutAmount += $sellerSubtotal * 0.94; // 94% del subtotale
+            $sellerShipping = (float) ($sellerData['shipping_cost'] ?? 0);
+            $sellerPayoutAmount += $sellerSubtotal * 0.94 + $sellerShipping;
         }
 
         // Crea l'ordine (senza campi shipping_method, package_bucket, logistic_units_total)
