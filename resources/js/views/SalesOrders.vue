@@ -302,6 +302,7 @@
     <OrderDetailsModal 
       v-if="showOrderModal" 
       :order="selectedOrder"
+      :is-seller-view="true"
       @close="closeOrderModal"
       @status-updated="handleStatusUpdated"
     />

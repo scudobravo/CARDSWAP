@@ -139,7 +139,7 @@
               </div>
             </div>
 
-            <!-- Riepilogo Costi -->
+            <!-- Riepilogo Costi (lato venditore: solo subtotale + spedizione; lato acquirente: include costo di gestione) -->
             <div class="bg-gray-50 rounded-lg p-4">
               <h4 class="text-sm font-gill-sans-semibold text-gray-900 mb-3">Riepilogo Costi</h4>
               <div class="space-y-2 text-sm">
@@ -151,13 +151,13 @@
                   <span>Spedizione:</span>
                   <span>€{{ order.shipping_cost }}</span>
                 </div>
-                <div v-if="order.tax_amount > 0" class="flex justify-between">
+                <div v-if="!isSellerView && order.tax_amount > 0" class="flex justify-between">
                   <span>Costo di gestione:</span>
                   <span>€{{ order.tax_amount }}</span>
                 </div>
                 <div class="flex justify-between text-base font-gill-sans-semibold text-gray-900 border-t border-gray-300 pt-2">
                   <span>Totale:</span>
-                  <span>€{{ order.total_amount }}</span>
+                  <span>€{{ displayTotal }}</span>
                 </div>
               </div>
             </div>
@@ -185,14 +185,31 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { XMarkIcon, PhotoIcon } from '@heroicons/vue/24/outline'
 import { formatPriceItaliana } from '../../utils/priceFormatter'
 
-defineProps({
+const props = defineProps({
   order: {
     type: Object,
     required: true
+  },
+  /** Se true, vista venditore: non mostrare costo di gestione (pagato dall'acquirente) e totale = subtotale + spedizione */
+  isSellerView: {
+    type: Boolean,
+    default: false
   }
+})
+
+// Totale da mostrare: per il venditore solo subtotale + spedizione; per l'acquirente il total_amount
+const displayTotal = computed(() => {
+  if (!props.order) return '0.00'
+  if (props.isSellerView) {
+    const sub = parseFloat(props.order.subtotal ?? props.order.subtotal_eur ?? 0) || 0
+    const ship = parseFloat(props.order.shipping_cost ?? 0) || 0
+    return (sub + ship).toFixed(2)
+  }
+  return props.order.total_amount ?? '0.00'
 })
 
 defineEmits(['close', 'status-updated'])

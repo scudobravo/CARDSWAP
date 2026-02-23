@@ -149,7 +149,7 @@
             </div>
             <div class="flex justify-between text-base font-semibold border-t border-gray-200 pt-3 mt-2">
               <dt class="text-gray-900">Totale</dt>
-              <dd class="text-gray-900">€{{ formatPrice(order.total_amount) }}</dd>
+              <dd class="text-gray-900">€{{ formatPrice(sellerTotal) }}</dd>
             </div>
           </dl>
         </div>
@@ -213,6 +213,13 @@ const existingTracking = computed(() => {
     carrier_code: order.value.carrier_code,
     shipped_at: order.value.shipped_at
   }
+})
+
+// Totale per il venditore: solo subtotale + spedizione (senza costi di gestione pagati dall'acquirente)
+const sellerTotal = computed(() => {
+  const o = order.value
+  if (!o) return 0
+  return (parseFloat(o.subtotal_eur) || 0) + (parseFloat(o.shipping_cost) || 0)
 })
 
 function formatPrice (n) {
