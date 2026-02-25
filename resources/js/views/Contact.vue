@@ -214,6 +214,18 @@ const submitForm = async () => {
   isSubmitting.value = true
 
   try {
+    // Il backend si aspetta snake_case
+    const payload = {
+      first_name: form.value.firstName,
+      last_name: form.value.lastName,
+      email: form.value.email,
+      phone: form.value.phone,
+      country: form.value.country,
+      subject: form.value.subject,
+      message: form.value.message,
+      agree_to_privacy: form.value.agreeToPrivacy
+    }
+
     const response = await fetch('/api/contact', {
       method: 'POST',
       headers: {
@@ -221,7 +233,7 @@ const submitForm = async () => {
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
         'Accept': 'application/json'
       },
-      body: JSON.stringify(form.value)
+      body: JSON.stringify(payload)
     })
 
     if (response.ok) {
