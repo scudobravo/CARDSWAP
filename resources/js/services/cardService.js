@@ -40,10 +40,13 @@ class CardService {
 
   /**
    * Get single listing details by ID
+   * Cache-buster per evitare risposte in cache (numero vendite / rating venditore)
    */
   async getListingDetails(listingId) {
     try {
-      const response = await this.axios.get(`/listings/${listingId}`)
+      const response = await this.axios.get(`/listings/${listingId}`, {
+        params: { _t: Date.now() }
+      })
       return response.data
     } catch (error) {
       console.error('Error fetching listing details:', error)
@@ -57,10 +60,13 @@ class CardService {
 
   /**
    * Get single card details by ID
+   * Cache-buster per evitare risposte in cache (numero vendite / rating venditore)
    */
   async getCardDetails(cardId) {
     try {
-      const response = await this.axios.get(`/card/${cardId}`)
+      const response = await this.axios.get(`/card/${cardId}`, {
+        params: { _t: Date.now() }
+      })
       return response.data
     } catch (error) {
       console.error('Error fetching card details:', error)
@@ -74,10 +80,13 @@ class CardService {
 
   /**
    * Get single card details by category and slug
+   * Cache-buster per evitare risposte in cache (numero vendite / rating venditore)
    */
   async getCardDetailsBySlug(category, cardSlug) {
     try {
-      const response = await this.axios.get(`/card/${category}/${cardSlug}`)
+      const response = await this.axios.get(`/card/${category}/${cardSlug}`, {
+        params: { _t: Date.now() }
+      })
       return response.data
     } catch (error) {
       console.error('Error fetching card details by slug:', error)
@@ -86,6 +95,21 @@ class CardService {
         error: error.response?.data?.error || 'Errore nel recupero dei dettagli della carta',
         data: null
       }
+    }
+  }
+
+  /**
+   * Statistiche venditore (numero vendite + rating) - sempre aggiornate, usate per la pagina carta
+   */
+  async getSellerStats(sellerId) {
+    try {
+      const response = await this.axios.get(`/sellers/${sellerId}/stats`, {
+        params: { _t: Date.now() }
+      })
+      return response.data
+    } catch (error) {
+      console.warn('Error fetching seller stats:', error)
+      return { success: false }
     }
   }
 

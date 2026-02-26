@@ -427,6 +427,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{feedback}', [FeedbackController::class, 'update']); // Aggiorna feedback
     });
 
+    // Statistiche venditore (pubbliche, per pagina carta - evita cache su numero vendite/rating)
+    Route::get('/sellers/{sellerId}/stats', [FeedbackController::class, 'sellerStats']);
+
     // Dashboard utente
     Route::get('/dashboard', [UserController::class, 'dashboard']); // Dashboard completa utente
 

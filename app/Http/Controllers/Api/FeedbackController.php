@@ -224,6 +224,25 @@ class FeedbackController extends Controller
     }
 
     /**
+     * Statistiche venditore per visualizzazione (numero vendite + rating).
+     * Endpoint pubblico per aggiornare la pagina carta anche con cache.
+     */
+    public function sellerStats(int $sellerId): JsonResponse
+    {
+        $seller = User::find($sellerId);
+        if (!$seller) {
+            return response()->json(['success' => false, 'message' => 'Venditore non trovato'], 404);
+        }
+        $totalSales = Order::where('seller_id', $sellerId)->where('status', 'completed')->count();
+        $stats = $this->calculateSellerStats($sellerId);
+        return response()->json([
+            'success' => true,
+            'total_sales' => $totalSales,
+            'rating' => $stats['average_rating'],
+        ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    }
+
+    /**
      * Calcola statistiche venditore
      */
     private function calculateSellerStats(int $sellerId): array

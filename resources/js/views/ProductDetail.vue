@@ -817,6 +817,19 @@ const handleModalClose = () => {
   preselectedCardModel.value = null
 }
 
+// Aggiorna numero vendite e rating venditore da API dedicata (evita cache)
+const refreshSellerStats = async () => {
+  const sellerId = listing.value?.seller?.id
+  if (!sellerId) return
+  try {
+    const res = await cardService.getSellerStats(sellerId)
+    if (res?.success && listing.value?.seller) {
+      listing.value.seller.total_sales = res.total_sales ?? 0
+      listing.value.seller.rating = res.rating ?? 0
+    }
+  } catch (_) {}
+}
+
 const loadProductDetails = async () => {
   loading.value = true
   error.value = null
@@ -996,7 +1009,7 @@ const loadProductDetails = async () => {
           // Per sealed-pack/box/lot senza cardModel, usa comunque l'endpoint delle listing correlate
           await loadRelatedProducts(null) // Passiamo null perché useremo la route (listingId)
         }
-        
+        await refreshSellerStats()
         return
       }
     } else if (isSlugRoute.value) {
@@ -1056,6 +1069,7 @@ const loadProductDetails = async () => {
         vendorId.value = listing.value.seller_id
         vendorName.value = listing.value.seller.name
         sellerName.value = listing.value.seller.name
+        await refreshSellerStats()
       } else {
         // Fallback a mock data se non ci sono dati reali
         listing.value = {
