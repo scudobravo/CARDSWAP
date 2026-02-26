@@ -83,7 +83,7 @@
 
         <div class="field">
             <div class="label">Messaggio:</div>
-            <div class="value message-body">{{ $message }}</div>
+            <div class="value message-body">{{ $message_body }}</div>
         </div>
 
         <div class="field">

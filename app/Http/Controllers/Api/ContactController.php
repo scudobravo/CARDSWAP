@@ -56,10 +56,21 @@ class ContactController extends Controller
             ];
 
             $formData['subject_display'] = $subjectMap[$formData['subject']] ?? $formData['subject'];
+            // Evitare conflitto con $message iniettata da Mail nella vista
+            $formData['message_body'] = $formData['message'];
+            unset($formData['message']);
 
             Log::info('Nuovo messaggio di contatto ricevuto:', $formData);
 
-            $contactEmail = config('mail.contact_email');
+            $contactEmail = config('mail.contact_email') ?? config('mail.admin_email') ?? 'info@cardswaptcg.com';
+            if (empty($contactEmail) || !filter_var($contactEmail, FILTER_VALIDATE_EMAIL)) {
+                Log::warning('ContactController: mail.contact_email non valido, uso fallback', [
+                    'contact_email' => config('mail.contact_email'),
+                    'fallback' => 'info@cardswaptcg.com'
+                ]);
+                $contactEmail = 'info@cardswaptcg.com';
+            }
+
             Mail::send('emails.contact', $formData, function ($message) use ($contactEmail) {
                 $message->to($contactEmail)
                     ->subject('Nuovo messaggio Contattaci - CardSwap')
@@ -74,6 +85,9 @@ class ContactController extends Controller
         } catch (\Exception $e) {
             Log::error('Errore durante l\'invio del messaggio di contatto:', [
                 'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
                 'data' => $request->all()
             ]);
 
