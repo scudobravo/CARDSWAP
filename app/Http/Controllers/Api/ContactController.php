@@ -57,12 +57,14 @@ class ContactController extends Controller
 
             $formData['subject_display'] = $subjectMap[$formData['subject']] ?? $formData['subject'];
 
-            // Invia email (per ora solo log, poi si può configurare l'invio reale)
             Log::info('Nuovo messaggio di contatto ricevuto:', $formData);
 
-            // TODO: Implementare l'invio email reale
-            // Mail::to(config('mail.contact_email', 'info@cardswap.it'))
-            //     ->send(new ContactMessage($formData));
+            $contactEmail = config('mail.contact_email');
+            Mail::send('emails.contact', $formData, function ($message) use ($contactEmail) {
+                $message->to($contactEmail)
+                    ->subject('Nuovo messaggio Contattaci - CardSwap')
+                    ->from(config('mail.from.address'), config('mail.from.name'));
+            });
 
             return response()->json([
                 'success' => true,

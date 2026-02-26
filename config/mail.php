@@ -128,4 +128,16 @@ return [
 
     'admin_email' => env('MAIL_ADMIN_EMAIL', 'info@cardswaptcg.com'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Contact Form Email Address
+    |--------------------------------------------------------------------------
+    |
+    | Indirizzo a cui arrivano i messaggi inviati dal modulo "Contattaci".
+    | Se non impostato, viene usato admin_email.
+    |
+    */
+
+    'contact_email' => env('MAIL_CONTACT_EMAIL', env('MAIL_ADMIN_EMAIL', 'info@cardswaptcg.com')),
+
 ];
