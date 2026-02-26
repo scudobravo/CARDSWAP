@@ -881,6 +881,17 @@ class CardController extends Controller
                 ];
             }
 
+            if (!empty($transformedCard['seller'])) {
+                Log::info('[SELLER_STATS] GET /api/card/{id} (getCardDetails)', [
+                    'card_id' => $id,
+                    'listing_id' => $transformedCard['listing_id'] ?? null,
+                    'seller_id' => $transformedCard['seller']['id'] ?? null,
+                    'total_sales' => $transformedCard['seller']['total_sales'] ?? null,
+                    'rating' => $transformedCard['seller']['rating'] ?? null,
+                    'ip' => request()->ip(),
+                ]);
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => $transformedCard
@@ -1043,6 +1054,18 @@ class CardController extends Controller
                     'created_at' => $card->created_at,
                     'updated_at' => $card->updated_at
                 ];
+            }
+
+            if (!empty($transformedCard['seller'])) {
+                Log::info('[SELLER_STATS] GET /api/card/{category}/{slug} (getCardDetailsBySlug)', [
+                    'category' => $category,
+                    'slug' => $slug,
+                    'listing_id' => $transformedCard['listing_id'] ?? null,
+                    'seller_id' => $transformedCard['seller']['id'] ?? null,
+                    'total_sales' => $transformedCard['seller']['total_sales'] ?? null,
+                    'rating' => $transformedCard['seller']['rating'] ?? null,
+                    'ip' => request()->ip(),
+                ]);
             }
 
             return response()->json([

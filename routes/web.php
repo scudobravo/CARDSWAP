@@ -16,7 +16,11 @@ use Illuminate\Support\Facades\DB;
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    $response = response()->view('welcome');
+    $response->header('Cache-Control', 'no-cache, no-store, must-revalidate');
+    $response->header('Pragma', 'no-cache');
+    $response->header('Expires', '0');
+    return $response;
 });
 
 // Debug route per verificare lo stato dell'autenticazione
@@ -102,5 +106,10 @@ Route::get('/debug-tokens', function () {
 // SPA Routes - Catch all routes for Vue.js frontend
 // This must be at the end to catch all frontend routes
 Route::get('/{any}', function () {
-    return view('welcome');
+    $response = response()->view('welcome');
+    // Evita cache HTML così il browser carica sempre il JS aggiornato (numero vendite/rating)
+    $response->header('Cache-Control', 'no-cache, no-store, must-revalidate');
+    $response->header('Pragma', 'no-cache');
+    $response->header('Expires', '0');
+    return $response;
 })->where('any', '.*');

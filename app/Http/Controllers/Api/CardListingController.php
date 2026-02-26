@@ -962,6 +962,15 @@ class CardListingController extends Controller
             ];
         }
 
+        $sellerData = $transformedData['seller'] ?? null;
+        Log::info('[SELLER_STATS] GET /api/listings/{id} (show)', [
+            'listing_id' => $cardListing->id,
+            'seller_id' => $sellerData['id'] ?? null,
+            'total_sales' => $sellerData['total_sales'] ?? null,
+            'rating' => $sellerData['rating'] ?? null,
+            'ip' => request()->ip(),
+        ]);
+
         return response()->json([
             'success' => true,
             'data' => $transformedData

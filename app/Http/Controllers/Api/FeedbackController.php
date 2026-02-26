@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class FeedbackController extends Controller
 {
@@ -231,14 +232,24 @@ class FeedbackController extends Controller
     {
         $seller = User::find($sellerId);
         if (!$seller) {
+            Log::info('[SELLER_STATS] sellerStats venditore non trovato', ['seller_id' => $sellerId]);
             return response()->json(['success' => false, 'message' => 'Venditore non trovato'], 404);
         }
         $totalSales = Order::where('seller_id', $sellerId)->where('status', 'completed')->count();
         $stats = $this->calculateSellerStats($sellerId);
+        $rating = $stats['average_rating'];
+        Log::info('[SELLER_STATS] GET /api/sellers/{id}/stats', [
+            'seller_id' => $sellerId,
+            'seller_name' => $seller->name,
+            'total_sales' => $totalSales,
+            'rating' => $rating,
+            'ip' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+        ]);
         return response()->json([
             'success' => true,
             'total_sales' => $totalSales,
-            'rating' => $stats['average_rating'],
+            'rating' => $rating,
         ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 
