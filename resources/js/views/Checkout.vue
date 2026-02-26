@@ -410,7 +410,7 @@
                 <dd class="text-sm font-medium text-gray-900">€{{ formatPriceItaliana(orderSummary.shipping) }}</dd>
               </div>
               <div class="flex items-center justify-between">
-                <dt class="text-sm">Costo di gestione</dt>
+                <dt class="text-sm">Commissioni di servizio</dt>
                 <dd class="text-sm font-medium text-gray-900">€{{ formatPriceItaliana(orderSummary.tax) }}</dd>
               </div>
               <div class="flex items-center justify-between border-t border-gray-200 pt-6">
@@ -427,13 +427,16 @@
               >
                 Annulla checkout
               </button>
+              <p class="text-sm text-gray-600 text-center">
+                Effettuando l'ordine accetti i <router-link to="/terms-and-conditions" class="text-secondary hover:underline font-medium">Termini e Condizioni</router-link> e la <router-link to="/privacy-policy" class="text-secondary hover:underline font-medium">Privacy Policy</router-link>.
+              </p>
               <button 
                 type="submit" 
                 :disabled="!canProcessPayment || isProcessing"
                 class="w-full rounded-md border border-transparent bg-blue-600 px-4 py-3 text-base font-medium text-white shadow-xs hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-50 focus:outline-hidden disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 <span v-if="isProcessing">Elaborazione...</span>
-                <span v-else>Conferma ordine</span>
+                <span v-else>Conferma e paga ordine</span>
               </button>
             </div>
           </div>
