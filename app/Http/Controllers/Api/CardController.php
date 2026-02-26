@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\CardModel;
 use App\Models\CardListing;
+use App\Models\Order;
+use App\Models\OrderFeedback;
 use App\Models\Player;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -762,6 +764,23 @@ class CardController extends Controller
     }
 
     /**
+     * Calcola total_sales e rating del venditore per la visualizzazione (stessi criteri della pagina Feedback)
+     */
+    private function getSellerDisplayStats(int $sellerId): array
+    {
+        $totalSales = Order::where('seller_id', $sellerId)->where('status', 'completed')->count();
+        $avgRating = OrderFeedback::where('seller_id', $sellerId)
+            ->where('is_public', true)
+            ->where('is_hidden', false)
+            ->avg('rating');
+
+        return [
+            'total_sales' => $totalSales,
+            'rating' => $avgRating !== null ? round((float) $avgRating, 2) : 0,
+        ];
+    }
+
+    /**
      * Get single card details by ID
      * Restituisce i dati dalla CardListing più recente per questa carta
      */
@@ -826,13 +845,11 @@ class CardController extends Controller
                     'is_legend' => $card->is_legend ?? false,
                     'card_number' => $card->card_number,
                     'quantity' => $listing->quantity ?? 1,
-                    'seller' => [
+                    'seller' => array_merge([
                         'id' => $listing->seller->id ?? null,
                         'name' => $listing->seller->name ?? 'Venditore',
                         'email' => $listing->seller->email ?? null,
-                        'total_sales' => $listing->seller->total_sales ?? 0,
-                        'rating' => $listing->seller->rating ?? 0
-                    ],
+                    ], $this->getSellerDisplayStats($listing->seller_id)),
                     'created_at' => $card->created_at,
                     'updated_at' => $card->updated_at
                 ];
@@ -992,13 +1009,11 @@ class CardController extends Controller
                     'is_legend' => $card->is_legend ?? false,
                     'card_number' => $card->card_number,
                     'quantity' => $listing->quantity ?? 1,
-                    'seller' => [
+                    'seller' => array_merge([
                         'id' => $listing->seller->id ?? null,
                         'name' => $listing->seller->name ?? 'Venditore',
                         'email' => $listing->seller->email ?? null,
-                        'total_sales' => $listing->seller->total_sales ?? 0,
-                        'rating' => $listing->seller->rating ?? 0
-                    ],
+                    ], $this->getSellerDisplayStats($listing->seller_id)),
                     'created_at' => $card->created_at,
                     'updated_at' => $card->updated_at
                 ];

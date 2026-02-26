@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\CardListing;
 use App\Models\CardModel;
+use App\Models\Order;
+use App\Models\OrderFeedback;
 use App\Models\User;
 use App\Helpers\ImageHelper;
 use Illuminate\Http\Request;
@@ -866,13 +868,11 @@ class CardListingController extends Controller
                 'card_number_in_set' => null,
                 'category' => 'football', // Default, potrebbe essere determinato dalla categoria selezionata
                 'listing_type' => $cardListing->listing_type,
-                'seller' => $cardListing->seller ? [
+                'seller' => $cardListing->seller ? array_merge([
                     'id' => $cardListing->seller->id,
                     'name' => $cardListing->seller->name,
                     'email' => $cardListing->seller->email,
-                    'total_sales' => $cardListing->seller->total_sales ?? 0,
-                    'rating' => $cardListing->seller->rating ?? 0,
-                ] : null,
+                ], $this->getSellerDisplayStats($cardListing->seller_id)) : null,
                 'card_model' => null,
                 'status' => $cardListing->status,
                 'created_at' => $cardListing->created_at,
@@ -943,13 +943,11 @@ class CardListingController extends Controller
                     'pokemon' => 'pokemon',
                     default => 'football'
                 } : 'football',
-                'seller' => $cardListing->seller ? [
+                'seller' => $cardListing->seller ? array_merge([
                     'id' => $cardListing->seller->id,
                     'name' => $cardListing->seller->name,
                     'email' => $cardListing->seller->email,
-                    'total_sales' => $cardListing->seller->total_sales ?? 0,
-                    'rating' => $cardListing->seller->rating ?? 0,
-                ] : null,
+                ], $this->getSellerDisplayStats($cardListing->seller_id)) : null,
                 'card_model' => $cardModel,
                 'status' => $cardListing->status,
                 'created_at' => $cardListing->created_at,
@@ -968,6 +966,23 @@ class CardListingController extends Controller
             'success' => true,
             'data' => $transformedData
         ]);
+    }
+
+    /**
+     * Calcola total_sales e rating del venditore per la visualizzazione (stessi criteri della pagina Feedback)
+     */
+    private function getSellerDisplayStats(int $sellerId): array
+    {
+        $totalSales = Order::where('seller_id', $sellerId)->where('status', 'completed')->count();
+        $avgRating = OrderFeedback::where('seller_id', $sellerId)
+            ->where('is_public', true)
+            ->where('is_hidden', false)
+            ->avg('rating');
+
+        return [
+            'total_sales' => $totalSales,
+            'rating' => $avgRating !== null ? round((float) $avgRating, 2) : 0,
+        ];
     }
 
     /**
