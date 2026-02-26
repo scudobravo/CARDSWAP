@@ -178,6 +178,9 @@ class ReleaseSellerFunds implements ShouldQueue
                     'stripe_transfer_id' => $transfer['transfer']->id
                 ]);
 
+                // Aggiorna il numero di vendite del venditore (per badge "Numero di vendite" in Seller Details)
+                $order->seller->increment('total_sales');
+
                 event(new \App\Events\OrderReleased($order->fresh(['seller', 'buyer'])));
 
                 ShippingAuditLog::log(

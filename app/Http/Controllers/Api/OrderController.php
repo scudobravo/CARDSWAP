@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Helpers\ShippingAuditLog;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\OrderFeedback;
 use App\Models\OrderItem;
 use App\Services\AfterShipService;
 use Illuminate\Http\Request;
@@ -121,6 +122,14 @@ class OrderController extends Controller
             $orderArray['shipment_status'] = $this->deriveShipmentStatusForBuyer($order);
             $orderArray['insurance_fee'] = (float) $order->orderShippings->sum('insurance_fee');
             $orderArray['is_tracked'] = !empty($order->tracking_number);
+
+            // Feedback: l'acquirente può lasciare feedback solo per ordini consegnati/completati/rimborsati e se non l'ha già fatto
+            $feedbackLeft = OrderFeedback::where('order_id', $order->id)
+                ->where('buyer_id', $user->id)
+                ->where('seller_id', $order->seller_id)
+                ->exists();
+            $orderArray['feedback_left'] = $feedbackLeft;
+            $orderArray['can_leave_feedback'] = in_array($order->status, ['delivered', 'refunded', 'delivered_pending_72h', 'completed'], true) && !$feedbackLeft;
 
             return response()->json([
                 'success' => true,

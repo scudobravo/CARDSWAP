@@ -65,6 +65,25 @@
         />
       </div>
 
+      <!-- 5b. Blocco Lascia feedback (acquirente) -->
+      <div v-if="order.seller && (order.can_leave_feedback || order.feedback_left)" class="mb-6 rounded-lg border border-gray-200 bg-white p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-2">Valuta il venditore</h2>
+        <p v-if="order.feedback_left" class="text-sm text-gray-600">
+          Hai già lasciato un feedback per questo ordine. Grazie per aver aiutato la community!
+        </p>
+        <button
+          v-else-if="order.can_leave_feedback"
+          type="button"
+          @click="openFeedbackModal"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+        >
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+          </svg>
+          Lascia feedback per {{ order.seller?.name || 'il venditore' }}
+        </button>
+      </div>
+
       <!-- 6. Timeline ordine -->
       <div class="mb-8">
         <OrderTimeline
@@ -138,6 +157,82 @@
             <dd class="text-gray-900">€{{ formatPrice(order.total_amount) }}</dd>
           </div>
         </dl>
+      </div>
+
+      <!-- Modal Lascia feedback -->
+      <div
+        v-if="showFeedbackModal"
+        class="fixed inset-0 z-50 overflow-y-auto"
+        aria-labelledby="feedback-modal-title"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+          <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="closeFeedbackModal" />
+          <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+          <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+              <div class="flex justify-between items-center mb-4">
+                <h3 id="feedback-modal-title" class="text-lg font-medium text-gray-900">Lascia un feedback</h3>
+                <button type="button" class="text-gray-400 hover:text-gray-600" @click="closeFeedbackModal">
+                  <span class="sr-only">Chiudi</span>
+                  <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <p class="text-sm text-gray-600 mb-4">
+                Valuta la tua esperienza con <strong>{{ order?.seller?.name || 'il venditore' }}</strong>. Il feedback è visibile sul profilo del venditore.
+              </p>
+              <form @submit.prevent="submitFeedback" class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Valutazione (1-5 stelle)</label>
+                  <div class="flex gap-1">
+                    <button
+                      v-for="star in 5"
+                      :key="star"
+                      type="button"
+                      :class="feedbackForm.rating >= star ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-200'"
+                      class="p-1 focus:outline-none"
+                      @click="feedbackForm.rating = star"
+                    >
+                      <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label for="feedback-comment" class="block text-sm font-medium text-gray-700 mb-1">Commento (opzionale)</label>
+                  <textarea
+                    id="feedback-comment"
+                    v-model="feedbackForm.comment"
+                    rows="3"
+                    maxlength="1000"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+                    placeholder="Racconta la tua esperienza..."
+                  />
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                    @click="closeFeedbackModal"
+                  >
+                    Annulla
+                  </button>
+                  <button
+                    type="submit"
+                    :disabled="feedbackLoading || feedbackForm.rating < 1"
+                    class="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
+                  >
+                    {{ feedbackLoading ? 'Invio...' : 'Invia feedback' }}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Modal Disputa -->
@@ -223,6 +318,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
+import { useAuthStore } from '@/stores/auth'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import OrderStatusHeader from '@/components/orders/buyer/OrderStatusHeader.vue'
 import ShipmentInfoCard from '@/components/orders/buyer/ShipmentInfoCard.vue'
@@ -232,6 +328,7 @@ import DisputeButton from '@/components/orders/buyer/DisputeButton.vue'
 import OrderTimeline from '@/components/orders/buyer/OrderTimeline.vue'
 
 const route = useRoute()
+const authStore = useAuthStore()
 const orderId = computed(() => route.params.orderId)
 
 const order = ref(null)
@@ -241,6 +338,9 @@ const error = ref(null)
 const disputeLoading = ref(false)
 const showDisputeModal = ref(false)
 const disputeForm = ref({ reason: '', description: '' })
+const showFeedbackModal = ref(false)
+const feedbackLoading = ref(false)
+const feedbackForm = ref({ rating: 0, comment: '' })
 
 const insuranceFee = computed(() => {
   const v = order.value?.insurance_fee
@@ -271,7 +371,9 @@ async function loadOrder () {
   loading.value = true
   error.value = null
   try {
-    const { data } = await axios.get(`/api/orders/${orderId.value}`)
+    const { data } = await axios.get(`/api/orders/${orderId.value}`, {
+      headers: { Authorization: `Bearer ${authStore.token}`, Accept: 'application/json' }
+    })
     if (data.success) {
       order.value = data.order
       orderItems.value = data.order_items || []
@@ -299,6 +401,41 @@ function closeDisputeModal () {
   disputeForm.value = { reason: '', description: '' }
 }
 
+function openFeedbackModal () {
+  showFeedbackModal.value = true
+  feedbackForm.value = { rating: 0, comment: '' }
+}
+
+function closeFeedbackModal () {
+  showFeedbackModal.value = false
+  feedbackForm.value = { rating: 0, comment: '' }
+}
+
+async function submitFeedback () {
+  if (feedbackForm.value.rating < 1 || !order.value?.seller?.id) return
+  feedbackLoading.value = true
+  try {
+    const { data } = await axios.post('/api/feedback', {
+      order_id: order.value.id,
+      seller_id: order.value.seller_id || order.value.seller?.id,
+      rating: feedbackForm.value.rating,
+      comment: feedbackForm.value.comment || null
+    }, {
+      headers: { Authorization: `Bearer ${authStore.token}`, Accept: 'application/json' }
+    })
+    if (data.success) {
+      closeFeedbackModal()
+      await loadOrder()
+    } else {
+      throw new Error(data.message || 'Errore nell\'invio del feedback')
+    }
+  } catch (err) {
+    alert(err.response?.data?.message || err.message || 'Errore nell\'invio del feedback')
+  } finally {
+    feedbackLoading.value = false
+  }
+}
+
 async function submitDispute () {
   if (!disputeForm.value.reason) return
   disputeLoading.value = true
@@ -306,6 +443,8 @@ async function submitDispute () {
     const { data } = await axios.post(`/api/orders/${order.value.id}/dispute`, {
       reason: disputeForm.value.reason,
       description: disputeForm.value.description || null
+    }, {
+      headers: { Authorization: `Bearer ${authStore.token}`, Accept: 'application/json' }
     })
     if (data.success) {
       await loadOrder()

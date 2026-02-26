@@ -88,8 +88,8 @@ class FeedbackController extends Controller
             ], 403);
         }
 
-        // Verifica che l'ordine sia in stato "delivered" o "refunded"
-        if (!in_array($order->status, ['delivered', 'refunded'])) {
+        // Verifica che l'ordine sia in stato consegnato/completato o rimborsato (include delivered_pending_72h e completed usati dal flusso reale)
+        if (!in_array($order->status, ['delivered', 'refunded', 'delivered_pending_72h', 'completed'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Puoi lasciare feedback solo per ordini consegnati o rimborsati'
