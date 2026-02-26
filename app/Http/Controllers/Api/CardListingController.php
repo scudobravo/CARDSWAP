@@ -965,7 +965,7 @@ class CardListingController extends Controller
         return response()->json([
             'success' => true,
             'data' => $transformedData
-        ]);
+        ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
     }
 
     /**

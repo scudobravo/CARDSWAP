@@ -884,7 +884,7 @@ class CardController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $transformedCard
-            ]);
+            ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
 
         } catch (\Exception $e) {
             Log::error('Error fetching card details', [
@@ -1048,7 +1048,7 @@ class CardController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $transformedCard
-            ]);
+            ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
 
         } catch (\Exception $e) {
             Log::error('Error fetching card details by slug', [
