@@ -261,6 +261,9 @@ Route::prefix('category')->group(function () {
     Route::get('/categories', [CardController::class, 'getCategories']);
 });
 
+// Statistiche venditore (pubbliche – per numero vendite/rating sulla pagina carta)
+Route::get('/sellers/{sellerId}/stats', [FeedbackController::class, 'sellerStats']);
+
 // Rotte protette
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
@@ -426,9 +429,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{feedback}', [FeedbackController::class, 'show']); // Mostra feedback specifico
         Route::put('/{feedback}', [FeedbackController::class, 'update']); // Aggiorna feedback
     });
-
-    // Statistiche venditore (pubbliche, per pagina carta - evita cache su numero vendite/rating)
-    Route::get('/sellers/{sellerId}/stats', [FeedbackController::class, 'sellerStats']);
 
     // Dashboard utente
     Route::get('/dashboard', [UserController::class, 'dashboard']); // Dashboard completa utente
