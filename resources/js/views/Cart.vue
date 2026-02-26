@@ -130,7 +130,7 @@
             </div>
             <div class="flex items-center justify-between border-t border-gray-200 pt-4">
               <dt class="flex text-sm text-gray-600">
-                <span>Costo di gestione</span>
+                <span>Commissioni di servizio</span>
                 <a href="#" class="ml-2 shrink-0 text-gray-400 hover:text-gray-500">
                   <span class="sr-only">Scopri di più su come viene calcolato il costo di gestione</span>
                   <QuestionMarkCircleIcon class="size-5" aria-hidden="true" />
