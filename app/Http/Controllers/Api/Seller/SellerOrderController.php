@@ -81,6 +81,7 @@ class SellerOrderController extends Controller
                 'subtotal_eur' => (float) $order->subtotal,
                 'shipping_cost' => (float) $order->shipping_cost,
                 'total_amount' => (float) $order->total_amount,
+                'seller_payout_amount' => $order->seller_payout_amount !== null ? (float) $order->seller_payout_amount : null,
                 'tracking_number' => $order->tracking_number,
                 'carrier_code' => $order->carrier_code,
                 'shipped_at' => $order->shipped_at?->toIso8601String(),

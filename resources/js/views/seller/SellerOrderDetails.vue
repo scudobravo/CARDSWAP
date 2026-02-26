@@ -147,6 +147,10 @@
               <dt class="text-gray-600">Spedizione</dt>
               <dd class="font-medium text-gray-900">€{{ formatPrice(order.shipping_cost) }}</dd>
             </div>
+            <div v-if="sellerCommission > 0" class="flex justify-between text-sm">
+              <dt class="text-gray-600">Commissione</dt>
+              <dd class="font-medium text-red-600">-€{{ formatPrice(sellerCommission) }}</dd>
+            </div>
             <div class="flex justify-between text-base font-semibold border-t border-gray-200 pt-3 mt-2">
               <dt class="text-gray-900">Totale</dt>
               <dd class="text-gray-900">€{{ formatPrice(sellerTotal) }}</dd>
@@ -215,11 +219,28 @@ const existingTracking = computed(() => {
   }
 })
 
-// Totale per il venditore: solo subtotale + spedizione (senza costi di gestione pagati dall'acquirente)
-const sellerTotal = computed(() => {
+// Lordo (subtotale + spedizione) prima della commissione
+const sellerGross = computed(() => {
   const o = order.value
   if (!o) return 0
   return (parseFloat(o.subtotal_eur) || 0) + (parseFloat(o.shipping_cost) || 0)
+})
+
+// Commissione trattenuta (positiva: importo sottratto al venditore). Se non c'è payout_amount usiamo 0.
+const sellerCommission = computed(() => {
+  const o = order.value
+  if (!o) return 0
+  const payout = o.seller_payout_amount != null ? parseFloat(o.seller_payout_amount) : null
+  if (payout == null) return 0
+  return Math.max(0, sellerGross.value - payout)
+})
+
+// Totale = pagamento rilasciato (seller_payout_amount). Se assente, fallback a lordo per ordini legacy.
+const sellerTotal = computed(() => {
+  const o = order.value
+  if (!o) return 0
+  if (o.seller_payout_amount != null) return parseFloat(o.seller_payout_amount)
+  return sellerGross.value
 })
 
 function formatPrice (n) {

@@ -139,20 +139,24 @@
               </div>
             </div>
 
-            <!-- Riepilogo Costi (lato venditore: solo subtotale + spedizione; lato acquirente: include costo di gestione) -->
+            <!-- Riepilogo Costi (lato venditore: subtotale + spedizione - commissione = totale pagamento; lato acquirente: include costo di gestione) -->
             <div class="bg-gray-50 rounded-lg p-4">
               <h4 class="text-sm font-gill-sans-semibold text-gray-900 mb-3">Riepilogo Costi</h4>
               <div class="space-y-2 text-sm">
                 <div class="flex justify-between">
                   <span>Subtotale:</span>
-                  <span>€{{ order.subtotal }}</span>
+                  <span>€{{ order.subtotal ?? order.subtotal_eur }}</span>
                 </div>
                 <div class="flex justify-between">
                   <span>Spedizione:</span>
                   <span>€{{ order.shipping_cost }}</span>
                 </div>
+                <div v-if="isSellerView && sellerCommissionAmount > 0" class="flex justify-between">
+                  <span>Commissione:</span>
+                  <span class="text-red-600">-€{{ sellerCommissionAmount.toFixed(2) }}</span>
+                </div>
                 <div v-if="!isSellerView && order.tax_amount > 0" class="flex justify-between">
-                  <span>Costo di gestione:</span>
+                  <span>Commissioni di servizio:</span>
                   <span>€{{ order.tax_amount }}</span>
                 </div>
                 <div class="flex justify-between text-base font-gill-sans-semibold text-gray-900 border-t border-gray-300 pt-2">
@@ -201,13 +205,28 @@ const props = defineProps({
   }
 })
 
-// Totale da mostrare: per il venditore solo subtotale + spedizione; per l'acquirente il total_amount
+// Lordo venditore (subtotale + spedizione)
+const sellerGross = computed(() => {
+  if (!props.order) return 0
+  const sub = parseFloat(props.order.subtotal ?? props.order.subtotal_eur ?? 0) || 0
+  const ship = parseFloat(props.order.shipping_cost ?? 0) || 0
+  return sub + ship
+})
+
+// Commissione trattenuta (venditore): lordo - pagamento rilasciato
+const sellerCommissionAmount = computed(() => {
+  if (!props.order || !props.isSellerView) return 0
+  const payout = props.order.seller_payout_amount != null ? parseFloat(props.order.seller_payout_amount) : null
+  if (payout == null) return 0
+  return Math.max(0, sellerGross.value - payout)
+})
+
+// Totale da mostrare: per il venditore = pagamento rilasciato (seller_payout_amount) se presente, altrimenti lordo; per l'acquirente il total_amount
 const displayTotal = computed(() => {
   if (!props.order) return '0.00'
   if (props.isSellerView) {
-    const sub = parseFloat(props.order.subtotal ?? props.order.subtotal_eur ?? 0) || 0
-    const ship = parseFloat(props.order.shipping_cost ?? 0) || 0
-    return (sub + ship).toFixed(2)
+    if (props.order.seller_payout_amount != null) return parseFloat(props.order.seller_payout_amount).toFixed(2)
+    return sellerGross.value.toFixed(2)
   }
   return props.order.total_amount ?? '0.00'
 })
