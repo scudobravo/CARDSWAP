@@ -17,11 +17,13 @@
           <section class="mb-8">
             <h2 class="text-2xl font-futura-bold text-primary mb-4">1. Cosa sono i Cookie</h2>
             <p class="mb-4">
-              I cookie sono piccoli file di testo che vengono memorizzati sul tuo dispositivo quando visiti un sito web. 
-              Vengono utilizzati per migliorare la tua esperienza di navigazione, ricordare le tue preferenze e fornire funzionalità personalizzate.
+              I cookie sono piccoli file di testo che vengono memorizzati sul tuo dispositivo quando visiti un sito web. Vengono utilizzati per migliorare la tua esperienza di navigazione, ricordare le tue preferenze e fornire funzionalità personalizzate.
+            </p>
+            <p class="mb-4">
+              Cardswap S.r.l. utilizza cookie per garantire il corretto funzionamento del sito e per offrirti la migliore esperienza possibile.
             </p>
             <p>
-              CARDSWAP utilizza cookie per garantire il corretto funzionamento del sito e per offrirti la migliore esperienza possibile.
+              I cookie di prestazione, funzionali e di marketing vengono utilizzati solo previo consenso dell'utente, che può essere espresso o modificato tramite il banner cookie.
             </p>
           </section>
 
@@ -30,8 +32,7 @@
             
             <h3 class="text-xl font-gill-sans-semibold text-primary mb-3">2.1 Cookie Essenziali (Necessari)</h3>
             <p class="mb-4">
-              Questi cookie sono necessari per il funzionamento del sito e non possono essere disabilitati. 
-              Includono cookie per:
+              Questi cookie sono necessari per il funzionamento del sito e non possono essere disabilitati. Includono cookie per:
             </p>
             <ul class="list-disc pl-6 mb-6">
               <li>Mantenere la sessione di login</li>
@@ -56,12 +57,15 @@
             <p class="mb-4">
               Questi cookie permettono al sito di ricordare le tue scelte e fornire funzionalità migliorate:
             </p>
-            <ul class="list-disc pl-6 mb-6">
+            <ul class="list-disc pl-6 mb-4">
               <li>Preferenze di lingua</li>
               <li>Impostazioni di visualizzazione</li>
               <li>Filtri di ricerca salvati</li>
               <li>Preferenze di notifica</li>
             </ul>
+            <p class="mb-6">
+              Alcuni cookie funzionali possono richiedere il consenso dell'utente, in base alle funzionalità attivate.
+            </p>
 
             <h3 class="text-xl font-gill-sans-semibold text-primary mb-3">2.4 Cookie di Marketing</h3>
             <p class="mb-4">
@@ -78,26 +82,8 @@
           <section class="mb-8">
             <h2 class="text-2xl font-futura-bold text-primary mb-4">3. Cookie di Terze Parti</h2>
             <p class="mb-4">
-              Utilizziamo servizi di terze parti che possono impostare cookie sul tuo dispositivo:
+              L'elenco aggiornato dei cookie utilizzati, inclusi quelli di terze parti, è disponibile tramite il banner di gestione del consenso (Cookiebot).
             </p>
-            
-            <div class="bg-gray-50 p-6 rounded-lg mb-6">
-              <h4 class="font-gill-sans-semibold text-primary mb-2">Google Analytics</h4>
-              <p class="mb-2">Utilizzato per analizzare il traffico del sito</p>
-              <p class="text-sm text-gray-600">Cookie: _ga, _gid, _gat</p>
-            </div>
-
-            <div class="bg-gray-50 p-6 rounded-lg mb-6">
-              <h4 class="font-gill-sans-semibold text-primary mb-2">Stripe</h4>
-              <p class="mb-2">Utilizzato per processare i pagamenti</p>
-              <p class="text-sm text-gray-600">Cookie: __stripe_mid, __stripe_sid</p>
-            </div>
-
-            <div class="bg-gray-50 p-6 rounded-lg mb-6">
-              <h4 class="font-gill-sans-semibold text-primary mb-2">Facebook Pixel</h4>
-              <p class="mb-2">Utilizzato per il marketing e l'analisi</p>
-              <p class="text-sm text-gray-600">Cookie: _fbp, _fbc</p>
-            </div>
           </section>
 
           <section class="mb-8">
@@ -108,7 +94,7 @@
             <ul class="list-disc pl-6 mb-4">
               <li><strong>Cookie di sessione:</strong> Vengono eliminati quando chiudi il browser</li>
               <li><strong>Cookie persistenti:</strong> Rimangono sul dispositivo per un periodo specifico</li>
-              <li><strong>Cookie di prima parte:</strong> Impostati direttamente da CARDSWAP</li>
+              <li><strong>Cookie di prima parte:</strong> Impostati direttamente da Cardswap S.r.l.</li>
               <li><strong>Cookie di terze parti:</strong> Impostati da servizi esterni</li>
             </ul>
           </section>
@@ -131,9 +117,8 @@
             </ul>
 
             <h3 class="text-xl font-gill-sans-semibold text-primary mb-3">5.2 Banner di Consenso</h3>
-            <p class="mb-4">
-              Al primo accesso al sito, ti mostreremo un banner per gestire le tue preferenze sui cookie. 
-              Puoi modificare le tue scelte in qualsiasi momento.
+            <p class="mb-6">
+              Al primo accesso al sito, ti mostreremo un banner per gestire le tue preferenze sui cookie. L'utente può modificare o revocare il proprio consenso in qualsiasi momento tramite le impostazioni del banner cookie.
             </p>
 
             <h3 class="text-xl font-gill-sans-semibold text-primary mb-3">5.3 Link Utili per la Gestione</h3>
@@ -161,8 +146,7 @@
           <section class="mb-8">
             <h2 class="text-2xl font-futura-bold text-primary mb-4">7. Cookie e Minori</h2>
             <p class="mb-4">
-              Il nostro servizio non è destinato a minori di 16 anni. 
-              Non raccogliamo consapevolmente informazioni personali da minori di 16 anni attraverso i cookie.
+              Il nostro servizio non è destinato a minori di 16 anni. Non raccogliamo consapevolmente informazioni personali da minori di 16 anni attraverso i cookie.
             </p>
             <p>
               Se sei un genitore e ritieni che tuo figlio abbia fornito informazioni personali, contattaci immediatamente.
@@ -172,8 +156,7 @@
           <section class="mb-8">
             <h2 class="text-2xl font-futura-bold text-primary mb-4">8. Aggiornamenti a Questa Policy</h2>
             <p class="mb-4">
-              Questa Cookie Policy può essere aggiornata periodicamente per riflettere cambiamenti nelle nostre pratiche 
-              o per altri motivi operativi, legali o normativi.
+              Questa Cookie Policy può essere aggiornata periodicamente per riflettere cambiamenti nelle nostre pratiche o per altri motivi operativi, legali o normativi.
             </p>
             <p>
               Ti consigliamo di rivedere questa pagina regolarmente per rimanere informato sui nostri utilizzi dei cookie.
@@ -186,10 +169,9 @@
               Per domande sui cookie o per esercitare i tuoi diritti:
             </p>
             <div class="bg-gray-50 p-6 rounded-lg">
-              <p class="font-gill-sans-semibold text-primary">CARDSWAP</p>
-              <p>Email: privacy@cardswap.it</p>
-              <p>Telefono: +39 02 1234567</p>
-              <p>Indirizzo: Via delle Carte, 123 - 20100 Milano (MI)</p>
+              <p class="font-gill-sans-semibold text-primary mb-2">Cardswap S.r.l.</p>
+              <p class="mb-1">Via Umberto Eco 2, 40012 Calderara di Reno (BO)</p>
+              <p>E-mail: <a href="mailto:info@cardswaptcg.com" class="text-secondary hover:underline">info@cardswaptcg.com</a></p>
             </div>
           </section>
         </div>
@@ -206,5 +188,5 @@ import { ref } from 'vue'
 import Header from '../components/Header.vue'
 import Footer from '../components/Footer.vue'
 
-const lastUpdated = ref('15 Gennaio 2025')
+const lastUpdated = ref('27 febbraio 2026')
 </script>

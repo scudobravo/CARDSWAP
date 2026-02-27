@@ -15,7 +15,7 @@
         <!-- Intro -->
         <div class="prose prose-lg max-w-none font-gill-sans text-gray-700 mb-8">
           <p class="mb-4">
-            La presente informativa è resa ai sensi del Regolamento (UE) 2016/679 (GDPR) e descrive le modalità di trattamento dei dati personali effettuato da <strong>Cardswap S.r.l.</strong>, con sede in <strong>Via Umberto Eco 2, 40012 Calderara di Reno (BO)</strong>, P.IVA / C.F. <strong>04320241203</strong>, e-mail: <a href="mailto:info@cardswaptcg.com" class="text-secondary hover:underline">info@cardswaptcg.com</a> (di seguito, il "Titolare"), tramite il sito web <a href="https://www.cardswaptcg.com" class="text-secondary hover:underline">www.cardswaptcg.com</a> (la "Piattaforma").
+            La presente informativa è resa ai sensi del Regolamento (UE) 2016/679 (GDPR) e descrive le modalità di trattamento dei dati personali effettuato da Cardswap S.r.l., con sede in Via Umberto Eco 2, 40012 Calderara di Reno (BO), P.IVA / C.F. 04320241203, e-mail: <a href="mailto:info@cardswaptcg.com" class="text-secondary hover:underline">info@cardswaptcg.com</a> (di seguito, il "Titolare"), tramite il sito web <a href="https://www.cardswaptcg.com" class="text-secondary hover:underline">www.cardswaptcg.com</a> (la "Piattaforma").
           </p>
         </div>
 
@@ -31,7 +31,7 @@
             <ul class="list-disc pl-6 mb-4">
               <li>Dati identificativi: nome, cognome, data di nascita, indirizzo, e-mail, numero di telefono;</li>
               <li>Credenziali di accesso e identificazione;</li>
-              <li>Dati fiscali e di pagamento (es. codice fiscale, IBAN o estremi di pagamento);</li>
+              <li>Dati fiscali (es. codice fiscale). I dati di pagamento sono trattati esclusivamente dal fornitore di servizi di pagamento (es. Stripe). CardSwap non raccoglie né conserva direttamente tali dati;</li>
               <li>Dati relativi agli annunci pubblicati o ai prodotti venduti/acquistati;</li>
               <li>Eventuali immagini o descrizioni caricate dall'utente.</li>
             </ul>
@@ -52,7 +52,7 @@
           <section class="mb-8">
             <h2 class="text-2xl font-futura-bold text-primary mb-4">2. Cookie e tecnologie simili</h2>
             <p class="mb-4">
-              La Piattaforma utilizza cookie tecnici e di profilazione per garantire il corretto funzionamento del sito, migliorare i servizi e personalizzare l'esperienza d'uso. Per maggiori informazioni consultare la <router-link to="/cookie-policy" class="text-secondary hover:underline">Cookie Policy</router-link>.
+              La Piattaforma utilizza cookie tecnici e, previo consenso dell'utente, cookie analitici e di marketing. Per maggiori informazioni consultare la <router-link to="/cookie-policy" class="text-secondary hover:underline">Cookie Policy</router-link>.
             </p>
           </section>
 
@@ -99,7 +99,10 @@
           <section class="mb-8">
             <h2 class="text-2xl font-futura-bold text-primary mb-4">4. Modalità del trattamento e destinatari dei dati</h2>
             <p class="mb-4">
-              I Dati sono trattati con strumenti elettronici e modalità organizzative adeguate a garantirne la sicurezza e la riservatezza. I Dati possono essere trattati da:
+              I Dati sono trattati con strumenti elettronici e modalità organizzative adeguate a garantirne la sicurezza e la riservatezza.
+            </p>
+            <p class="mb-4">
+              I Dati possono essere trattati da:
             </p>
             <ul class="list-disc pl-6 mb-4">
               <li>personale interno del Titolare debitamente autorizzato e formato;</li>
@@ -107,14 +110,26 @@
               <li>soggetti terzi autonomi titolari, nei limiti delle finalità connesse all'erogazione dei servizi (es. corrieri, istituti bancari, enti pubblici, autorità giudiziarie, quando previsto dalla legge).</li>
             </ul>
             <p class="mb-4">
-              Tutti i soggetti designati garantiscono adeguati livelli di protezione dei dati ai sensi del GDPR. I Dati non saranno diffusi pubblicamente.
+              Tra i fornitori di servizi esterni rientrano, a titolo esemplificativo, fornitori di servizi di pagamento come Stripe, che trattano i dati necessari all'elaborazione delle transazioni in qualità di titolari autonomi o responsabili del trattamento, secondo i propri termini e condizioni.
+            </p>
+            <p class="mb-4">
+              Nell'ambito delle transazioni tra utenti, alcuni dati personali (es. nome, indirizzo di spedizione) possono essere comunicati tra acquirente e venditore al solo fine di consentire l'esecuzione della transazione.
+            </p>
+            <p class="mb-4">
+              Il Titolare non effettua processi decisionali automatizzati o profilazione con effetti giuridici significativi sull'utente.
+            </p>
+            <p class="mb-4">
+              Tutti i soggetti designati garantiscono adeguati livelli di protezione dei dati ai sensi del GDPR. I Dati non sono soggetti a diffusione.
             </p>
           </section>
 
           <section class="mb-8">
             <h2 class="text-2xl font-futura-bold text-primary mb-4">5. Luogo del trattamento</h2>
             <p class="mb-4">
-              Il trattamento dei Dati avviene all'interno dello Spazio Economico Europeo (SEE). Qualora fosse necessario trasferire Dati verso paesi extra SEE, il Titolare assicurerà che il trasferimento avvenga nel rispetto delle clausole contrattuali standard approvate dalla Commissione Europea.
+              Il trattamento dei Dati avviene all'interno dello Spazio Economico Europeo (SEE).
+            </p>
+            <p class="mb-4">
+              Qualora fosse necessario trasferire Dati verso paesi extra SEE, il Titolare assicurerà che il trasferimento avvenga nel rispetto delle clausole contrattuali standard approvate dalla Commissione Europea.
             </p>
           </section>
 
@@ -146,7 +161,7 @@
               <li>limitare o opporsi al trattamento;</li>
               <li>richiedere la portabilità dei dati a un altro titolare;</li>
               <li>revocare il consenso prestato, senza pregiudicare la liceità del trattamento già effettuato;</li>
-              <li>proporre reclamo al Garante per la Protezione dei Dati Personali (<a href="https://www.garanteprivacy.it" target="_blank" class="text-secondary hover:underline">www.garanteprivacy.it</a>).</li>
+              <li>proporre reclamo al Garante per la Protezione dei Dati Personali (<a href="https://www.garanteprivacy.it" target="_blank" rel="noopener noreferrer" class="text-secondary hover:underline">www.garanteprivacy.it</a>).</li>
             </ul>
             <p class="mb-4">
               Le richieste possono essere inviate a: <a href="mailto:info@cardswaptcg.com" class="text-secondary hover:underline">info@cardswaptcg.com</a>
@@ -159,7 +174,13 @@
           <section class="mb-8">
             <h2 class="text-2xl font-futura-bold text-primary mb-4">8. Aggiornamenti della presente Informativa</h2>
             <p class="mb-4">
-              Il Titolare può modificare la presente Informativa in qualsiasi momento. Le modifiche saranno pubblicate sulla Piattaforma con indicazione della data di aggiornamento. L'uso continuato della Piattaforma dopo la pubblicazione delle modifiche implica l'accettazione della nuova versione dell'Informativa.
+              Il Titolare può modificare la presente Informativa in qualsiasi momento.
+            </p>
+            <p class="mb-4">
+              Le modifiche saranno pubblicate sulla Piattaforma con indicazione della data di aggiornamento.
+            </p>
+            <p class="mb-4">
+              L'uso continuato della Piattaforma dopo la pubblicazione delle modifiche implica l'accettazione della nuova versione dell'Informativa.
             </p>
           </section>
 
@@ -167,9 +188,7 @@
             <h2 class="text-2xl font-futura-bold text-primary mb-4">Titolare del Trattamento</h2>
             <div class="bg-gray-50 p-6 rounded-lg">
               <p class="font-gill-sans-semibold text-primary mb-2">Cardswap S.r.l.</p>
-              <p class="mb-1">Via Umberto Eco 2</p>
-              <p class="mb-1">40012 Calderara di Reno (BO)</p>
-              <p class="mb-1">P.IVA / C.F.: 04320241203</p>
+              <p class="mb-1">Via Umberto Eco 2, 40012 Calderara di Reno (BO)</p>
               <p>E-mail: <a href="mailto:info@cardswaptcg.com" class="text-secondary hover:underline">info@cardswaptcg.com</a></p>
             </div>
           </section>
@@ -187,5 +206,5 @@ import { ref } from 'vue'
 import Header from '../components/Header.vue'
 import Footer from '../components/Footer.vue'
 
-const lastUpdated = ref('7 ottobre 2025')
+const lastUpdated = ref('27 febbraio 2026')
 </script>
