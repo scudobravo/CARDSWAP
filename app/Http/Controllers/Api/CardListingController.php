@@ -978,6 +978,20 @@ class CardListingController extends Controller
     }
 
     /**
+     * Statistiche venditore per una singola inserzione (pubblico, usa solo listingId dall'URL).
+     * Usato dalla pagina prodotto quando non si può dipendere da listing.seller (es. utente non loggato).
+     */
+    public function sellerStatsByListing(CardListing $cardListing): JsonResponse
+    {
+        $stats = $this->getSellerDisplayStats($cardListing->seller_id);
+        return response()->json([
+            'success' => true,
+            'total_sales' => $stats['total_sales'],
+            'rating' => $stats['rating'],
+        ])->header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    }
+
+    /**
      * Calcola total_sales e rating del venditore per la visualizzazione (stessi criteri della pagina Feedback)
      */
     private function getSellerDisplayStats(int $sellerId): array

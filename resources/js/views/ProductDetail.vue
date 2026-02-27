@@ -371,9 +371,9 @@
               </router-link>
             </div>
             
-            <!-- Badge vendite e stelle: dati sempre dall'endpoint /api/sellers/{id}/stats (evita cache) -->
+            <!-- Badge vendite e stelle: da listingId (URL) quando disponibile, altrimenti da sellerId -->
             <div class="flex items-center space-x-3 md:space-x-4 flex-wrap gap-2">
-              <SellerStatsBadge :seller-id="listing?.seller?.id" />
+              <SellerStatsBadge :listing-id="route.params.listingId" :seller-id="listing?.seller?.id" />
             </div>
           </div>
           

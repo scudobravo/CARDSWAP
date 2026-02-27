@@ -201,6 +201,7 @@ Route::prefix('card-models')->group(function () {
 Route::prefix('listings')->group(function () {
     Route::get('/', [CardListingController::class, 'index']);
     Route::get('/search', [CardListingController::class, 'search']);
+    Route::get('/{cardListing}/seller-stats', [CardListingController::class, 'sellerStatsByListing']);
     Route::get('/{cardListing}', [CardListingController::class, 'show']);
     Route::get('/{cardListing}/price-history', [CardListingController::class, 'getPriceHistory']);
     Route::get('/{cardListing}/related', [CardListingController::class, 'getRelatedListings']);

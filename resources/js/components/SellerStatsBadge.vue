@@ -22,6 +22,7 @@ import { ref, watch, onMounted } from 'vue'
 import cardService from '../services/cardService.js'
 
 const props = defineProps({
+  listingId: { type: [Number, String], default: null },
   sellerId: { type: [Number, String], default: null }
 })
 
@@ -29,6 +30,16 @@ const totalSales = ref(0)
 const rating = ref(0)
 
 async function fetchStats () {
+  if (props.listingId) {
+    try {
+      const res = await cardService.getListingSellerStats(Number(props.listingId))
+      if (res?.success) {
+        totalSales.value = res.total_sales ?? 0
+        rating.value = parseFloat(res.rating) || 0
+      }
+    } catch (_) {}
+    return
+  }
   if (!props.sellerId) return
   try {
     const res = await cardService.getSellerStats(Number(props.sellerId))
@@ -39,8 +50,12 @@ async function fetchStats () {
   } catch (_) {}
 }
 
-watch(() => props.sellerId, (id) => {
-  if (id) fetchStats()
+function hasSource () {
+  return props.listingId != null && props.listingId !== '' || props.sellerId != null && props.sellerId !== ''
+}
+
+watch([() => props.listingId, () => props.sellerId], () => {
+  if (hasSource()) fetchStats()
   else {
     totalSales.value = 0
     rating.value = 0
@@ -48,6 +63,6 @@ watch(() => props.sellerId, (id) => {
 }, { immediate: true })
 
 onMounted(() => {
-  if (props.sellerId) fetchStats()
+  if (hasSource()) fetchStats()
 })
 </script>

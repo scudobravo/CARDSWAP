@@ -114,6 +114,22 @@ class CardService {
   }
 
   /**
+   * Statistiche venditore per inserzione (usa solo listingId dall'URL, non dipende da listing.seller)
+   * Preferibile quando si è sulla route listing (es. utente non loggato).
+   */
+  async getListingSellerStats(listingId) {
+    try {
+      const response = await this.axios.get(`/listings/${listingId}/seller-stats`, {
+        params: { _t: Date.now() }
+      })
+      return response.data
+    } catch (error) {
+      console.warn('Error fetching listing seller stats:', error)
+      return { success: false }
+    }
+  }
+
+  /**
    * Get related products for a specific card
    */
   async getRelatedProducts(cardId, limit = 8) {
