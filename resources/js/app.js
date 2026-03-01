@@ -79,6 +79,9 @@ const routes = [
     { path: '/', component: Home, name: 'home' },
     { path: '/login', component: Login, name: 'login' },
     { path: '/register', component: Register, name: 'register' },
+    { path: '/forgot-password', component: () => import('./views/ForgotPassword.vue'), name: 'forgot-password' },
+    { path: '/reset-password', component: () => import('./views/ResetPassword.vue'), name: 'reset-password' },
+    { path: '/verify-email', component: () => import('./views/VerifyEmail.vue'), name: 'verify-email' },
     { path: '/categories', component: Categories, name: 'categories' },
     { path: '/categories/:id', component: Categories, name: 'category.show' },
     { path: '/category/football', component: FootballCategory, name: 'football.category' },
@@ -189,7 +192,7 @@ const authStore = useAuthStore();
 // Navigation guard per verificare l'autenticazione solo sulle pagine protette
 router.beforeEach(async (to, from, next) => {
   // Pagine pubbliche che non richiedono autenticazione
-  const publicPages = ['/', '/login', '/register', '/categories', '/category/football', '/category/basketball', '/category/pokemon', '/category/disney', '/category/spongebob', '/category/labubu', '/terms-and-conditions', '/privacy-policy', '/cookie-policy', '/contact', '/search']
+  const publicPages = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/categories', '/category/football', '/category/basketball', '/category/pokemon', '/category/disney', '/category/spongebob', '/category/labubu', '/terms-and-conditions', '/privacy-policy', '/cookie-policy', '/contact', '/search']
   const isPublicPage = publicPages.includes(to.path) || to.path.startsWith('/category/') || to.path.startsWith('/categories/') || to.path.startsWith('/top/') || to.path.match(/^\/[^\/]+\/[^\/]+$/)
   
   // Se è una pagina pubblica, lascia passare senza controlli

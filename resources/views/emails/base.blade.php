@@ -21,7 +21,7 @@
             overflow: hidden;
         }
         .header {
-            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            background-color: #0B1D3A;
             padding: 30px 20px;
             text-align: center;
         }
@@ -35,7 +35,7 @@
         .greeting {
             font-size: 18px;
             font-weight: 600;
-            color: #1e40af;
+            color: #0B1D3A;
             margin-bottom: 20px;
         }
         .message {
@@ -45,7 +45,7 @@
         }
         .button {
             display: inline-block;
-            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            background-color: #C9A14A;
             color: #ffffff;
             text-decoration: none;
             padding: 12px 24px;
@@ -72,7 +72,7 @@
             margin-top: 15px;
         }
         .footer-links a {
-            color: #1e40af;
+            color: #0B1D3A;
             text-decoration: none;
             margin: 0 10px;
             font-size: 14px;
@@ -101,7 +101,7 @@
         }
         .card-title {
             font-weight: 600;
-            color: #1e40af;
+            color: #0B1D3A;
             margin-bottom: 10px;
         }
         .card-details {
@@ -117,9 +117,9 @@
 </head>
 <body>
     <div class="email-container">
-        <!-- Header -->
+        <!-- Header blu #0B1D3A con logo bianco -->
         <div class="header">
-            <img src="{{ asset('images/logos/logo-blu.svg') }}" alt="CardSwap" class="logo">
+            <img src="{{ asset('images/logos/SOLO SIMBOLO - BIANCO.png') }}" alt="CardSwap" class="logo">
         </div>
 
         <!-- Content -->
@@ -130,22 +130,20 @@
         <!-- Footer -->
         <div class="footer">
             <div class="footer-text">
-                <strong>CardSwap</strong> - La piattaforma per il trading di carte sportive
+                <strong>CardSwap</strong> - Compra e vendi le tue carte collezionabili
             </div>
             <div class="footer-text">
-                Ricevi questa email perché hai un account su CardSwap
+                Hai ricevuto questa email in seguito a un'attività sul tuo account.
             </div>
             <div class="footer-links">
-                <a href="{{ url('/') }}">Visita il sito</a>
+                <a href="{{ url('/') }}">Sito</a>
                 <a href="{{ url('/dashboard') }}">Dashboard</a>
-                <a href="{{ url('/support') }}">Supporto</a>
-                <a href="{{ url('/privacy') }}">Privacy</a>
+                <a href="mailto:support@cardswaptcg.com">Supporto</a>
+                <a href="{{ url('/terms-and-conditions') }}">Termini</a>
+                <a href="{{ url('/privacy-policy') }}">Privacy</a>
             </div>
             <div class="footer-text" style="margin-top: 15px; font-size: 12px;">
-                Questa email è automatica. Non rispondere.
-            </div>
-            <div class="footer-text" style="font-size: 12px;">
-                © {{ date('Y') }} CardSwap. Tutti i diritti riservati.
+                © 2026 CardSwap. Tutti i diritti riservati.
             </div>
         </div>
     </div>

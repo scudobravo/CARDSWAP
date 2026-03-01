@@ -38,7 +38,7 @@
           <div class="flex items-center justify-between">
             <label for="password" class="block text-sm/6 font-gill-sans-semibold text-gray-900">Password</label>
             <div class="text-sm">
-              <a href="#" class="font-gill-sans-semibold text-primary hover:text-secondary">Password dimenticata?</a>
+              <router-link to="/forgot-password" class="font-gill-sans-semibold text-primary hover:text-secondary">Password dimenticata?</router-link>
             </div>
           </div>
           <div class="mt-2">

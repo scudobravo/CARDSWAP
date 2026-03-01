@@ -84,6 +84,10 @@ Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'user'])
 // Rotte pubbliche
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/verify-email', [AuthController::class, 'verifyEmail']);
+Route::post('/auth/resend-verification', [AuthController::class, 'resendVerificationEmail']);
+Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
 
 // Rotte per top players/pokemon (pubbliche) - devono essere prima per evitare conflitti
 Route::get('/top/football/{playerName}', [FootballFilterController::class, 'getListingsByPlayerName']);

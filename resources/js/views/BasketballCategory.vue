@@ -22,9 +22,10 @@
     <!-- Product Types Grid -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-        <div 
-          v-for="productType in productTypes" 
+        <router-link
+          v-for="productType in productTypes"
           :key="productType.id"
+          :to="'/categories/basketball/' + productType.slug"
           class="bg-white rounded-xl shadow-sm p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:shadow-md transition-all duration-300 group border border-gray-100"
         >
           <div class="w-24 h-24 mb-6 flex items-center justify-center transition-all duration-300">
@@ -33,7 +34,7 @@
           <h3 class="text-xl font-futura-bold text-primary group-hover:text-secondary transition-colors duration-300">
             {{ productType.name }}
           </h3>
-        </div>
+        </router-link>
       </div>
 
       <!-- Top Player Section -->
@@ -102,27 +103,11 @@ import Header from '../components/Header.vue'
 import Footer from '../components/Footer.vue'
 import ProductCarousel from '../components/ProductCarousel.vue'
 
-// Product types data
+// Product types data (slug per rotta /categories/basketball/:subcategory)
 const productTypes = ref([
-  {
-    id: 1,
-    name: "SINGLES",
-    icon: "/images/icons/Sottocategorie/card.png"
-  },
-  {
-    id: 2,
-    name: "SEALED PACKS",
-    icon: "/images/icons/Sottocategorie/Pack.png"
-  },
-  {
-    id: 3,
-    name: "SEALED BOXES",
-    icon: "/images/icons/Sottocategorie/Box.png"
-  },
-  {
-    id: 4,
-    name: "LOT",
-    icon: "/images/icons/Sottocategorie/Lot.png"
-  }
+  { id: 1, name: 'SINGLES', slug: 'singles', icon: '/images/icons/Sottocategorie/card.png' },
+  { id: 2, name: 'SEALED PACKS', slug: 'sealed-packs', icon: '/images/icons/Sottocategorie/Pack.png' },
+  { id: 3, name: 'SEALED BOXES', slug: 'sealed-boxes', icon: '/images/icons/Sottocategorie/Box.png' },
+  { id: 4, name: 'LOT', slug: 'lot', icon: '/images/icons/Sottocategorie/Lot.png' }
 ])
 </script>

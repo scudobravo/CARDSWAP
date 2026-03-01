@@ -6,10 +6,10 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="stripe-publishable-key" content="{{ config('services.stripe.key') }}">
 
-    <title>{{ config('app.name', 'CARDSWAP') }}</title>
-    <meta name="description" content="CARDSWAP - La piattaforma definitiva per collezionisti di carte da collezione. Compra e vendi carte in modo sicuro e affidabile.">
+    <title>CardSwap | Compra e Vendi Carte Calcio e Collezionabili</title>
+    <meta name="description" content="Compra e vendi carte calcio rare e carte collezionabili in modo sicuro. Pagamenti protetti, spedizioni tracciate e protezione per venditori.">
     <meta name="keywords" content="carte da collezione, calcio, pokemon, basketball, trading cards, collezionismo">
-    <meta name="author" content="CARDSWAP">
+    <meta name="author" content="CardSwap">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
@@ -25,7 +25,8 @@
     <meta property="twitter:description" content="La piattaforma definitiva per collezionisti di carte da collezione">
     <meta property="twitter:image" content="{{ asset('images/logos/cardswap-og-image.png') }}">
 
-    <!-- Favicon dinamico per dark mode -->
+    <!-- Favicon CardSwap (SERP e tab) -->
+    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-light-16x16.png') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-light-32x32.png') }}">

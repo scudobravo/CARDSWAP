@@ -163,8 +163,14 @@
               <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
 
+            <!-- Empty state: nessuna carta -->
+            <div v-else-if="displayedProducts.length === 0" class="py-16 text-center">
+              <p class="text-lg font-gill-sans text-gray-600">Non ci sono carte in questa categoria al momento.</p>
+              <router-link :to="'/category/' + category" class="mt-4 inline-block text-primary font-gill-sans-semibold hover:text-secondary">Torna alla categoria</router-link>
+            </div>
+
             <!-- Desktop Grid View -->
-            <div v-if="viewMode === 'grid'" class="hidden lg:grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-8">
+            <div v-else-if="viewMode === 'grid'" class="hidden lg:grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-8">
               <ProductCard 
                 v-for="product in displayedProducts" 
                 :key="product.id" 
@@ -177,7 +183,7 @@
             </div>
 
             <!-- Mobile Horizontal Cards -->
-            <div class="lg:hidden space-y-3">
+            <div v-if="displayedProducts.length > 0" class="lg:hidden space-y-3">
               <div v-for="product in displayedProducts" :key="product.id" class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
                 <div class="flex">
                   <!-- Small Image Area -->
@@ -267,7 +273,7 @@
             </div>
 
             <!-- Desktop List View -->
-            <div v-if="viewMode === 'list'" class="hidden lg:block space-y-4">
+            <div v-if="displayedProducts.length > 0 && viewMode === 'list'" class="hidden lg:block space-y-4">
               <div v-for="product in displayedProducts" :key="product.id" class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
                 <div class="flex">
                   <!-- Image Area -->

@@ -223,9 +223,9 @@
           />
           <label for="terms" class="ml-2 block text-sm font-gill-sans text-gray-900">
             Accetto i
-            <a href="#" class="text-primary hover:text-secondary">Termini e Condizioni</a>
+            <router-link to="/terms-and-conditions" class="text-primary hover:text-secondary underline">Termini e Condizioni</router-link>
             e la
-            <a href="#" class="text-primary hover:text-secondary">Privacy Policy</a>
+            <router-link to="/privacy-policy" class="text-primary hover:text-secondary underline">Privacy Policy</router-link>
           </label>
         </div>
 
