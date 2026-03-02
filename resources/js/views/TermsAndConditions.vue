@@ -231,6 +231,25 @@
           </section>
 
           <section class="mb-8">
+            <h2 class="text-2xl font-futura-bold text-primary mb-4">14. Uso di marchi e diritti di proprietà intellettuale</h2>
+            <p class="mb-4">
+              I marchi, loghi e nomi commerciali eventualmente presenti sulla Piattaforma (es. Topps, Disney, Spongebob ecc.) appartengono ai rispettivi titolari dei diritti.
+            </p>
+            <p class="mb-4">
+              CardSwap non è affiliata, sponsorizzata o autorizzata da tali marchi, salvo ove espressamente indicato.
+            </p>
+            <p class="mb-4">
+              Gli utenti sono responsabili dei contenuti pubblicati e garantiscono che la vendita dei prodotti non viola diritti di proprietà intellettuale di terzi.
+            </p>
+            <p class="mb-4">
+              CardSwap si riserva il diritto di rimuovere contenuti che violino diritti di proprietà intellettuale su segnalazione dei titolari dei diritti o di terzi.
+            </p>
+            <p class="mb-4">
+              I marchi citati appartengono ai rispettivi proprietari e sono utilizzati esclusivamente a fini descrittivi.
+            </p>
+          </section>
+
+          <section class="mb-8">
             <h2 class="text-2xl font-futura-bold text-primary mb-4">Contatti</h2>
             <div class="bg-gray-50 p-6 rounded-lg">
               <p>Contatti: <a href="mailto:info@cardswaptcg.com" class="text-secondary hover:underline">info@cardswaptcg.com</a></p>
@@ -250,5 +269,5 @@ import { ref } from 'vue'
 import Header from '../components/Header.vue'
 import Footer from '../components/Footer.vue'
 
-const lastUpdated = ref('25 febbraio 2026')
+const lastUpdated = ref('02 marzo 2026')
 </script>

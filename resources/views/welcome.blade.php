@@ -7,16 +7,35 @@
         <meta http-equiv="Pragma" content="no-cache">
         <meta http-equiv="Expires" content="0">
 
-        <title>{{ config('app.name', 'CARDSWAP') }}</title>
+        <title>CardSwap | Compra e Vendi Carte Calcio e Collezionabili</title>
+        <meta name="description" content="Compra e vendi carte calcio rare e carte collezionabili in modo sicuro. Pagamenti protetti, spedizioni tracciate e protezione per venditori.">
+        <meta name="keywords" content="carte da collezione, calcio, pokemon, basketball, trading cards, collezionismo">
+        <meta name="author" content="CardSwap">
+        
+        <!-- Open Graph / Facebook (SERP e condivisioni) -->
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="{{ url()->current() }}">
+        <meta property="og:title" content="CardSwap | Compra e Vendi Carte Calcio e Collezionabili">
+        <meta property="og:description" content="Compra e vendi carte calcio rare e carte collezionabili in modo sicuro. Pagamenti protetti, spedizioni tracciate e protezione per venditori.">
+        <meta property="og:image" content="{{ asset('images/logos/cardswap-og-image.png') }}">
+        
+        <!-- Twitter -->
+        <meta property="twitter:card" content="summary_large_image">
+        <meta property="twitter:url" content="{{ url()->current() }}">
+        <meta property="twitter:title" content="CardSwap | Compra e Vendi Carte Calcio e Collezionabili">
+        <meta property="twitter:description" content="Compra e vendi carte calcio rare e carte collezionabili in modo sicuro. Pagamenti protetti, spedizioni tracciate e protezione per venditori.">
+        <meta property="twitter:image" content="{{ asset('images/logos/cardswap-og-image.png') }}">
         
         <!-- CSRF Token -->
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <meta name="stripe-publishable-key" content="{{ config('services.stripe.key') }}">
 
-        <!-- Favicon dinamico per dark mode -->
-        <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
-        <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-light-16x16.png') }}">
+        <!-- Favicon CardSwap: logo blu per SERP (visibile su sfondo bianco) -->
         <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-light-32x32.png') }}">
+        <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-light-16x16.png') }}">
+        <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+        <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+        <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('images/icons/apple-touch-icon.png') }}">
         
         <!-- Script per favicon dinamico (fallback per browser che non supportano SVG) -->
         <script src="{{ asset('js/dynamic-favicon.js') }}" defer></script>
