@@ -4,9 +4,9 @@
     <div class="mb-4">
       <h2 class="text-xl md:text-3xl font-futura-bold text-primary">{{ title }}</h2>
       <div v-if="!shouldHideSeeAll" class="mt-0 text-right">
-        <a :href="seeAllUrl || (category ? `/category/${category}` : '#')" class="text-primary hover:text-secondary transition-colors font-gill-sans-semibold text-sm">
+        <a :href="seeAllUrl || (category ? `/category/${category}` : '#')" class="text-primary hover:text-secondary transition-colors font-gill-sans-semibold text-xs">
           {{ seeAllText }}
-          <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-3 h-3 inline ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
           </svg>
         </a>
@@ -47,11 +47,11 @@
                     <div 
                       v-for="(product, index) in displayProducts" 
                       :key="product.id + '-' + index"
-                      class="flex-shrink-0 w-40 sm:w-60 lg:w-72 group cursor-pointer"
+                      class="flex-shrink-0 w-32 sm:w-48 lg:w-56 group cursor-pointer"
                       @click="goToProduct(product)"
                     >
                       <!-- Product Card -->
-                      <div class="h-60 sm:h-80 lg:h-96 rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 relative">
+                      <div class="h-44 sm:h-64 lg:h-72 rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 relative">
                         <!-- NEW tag -->
                         <div v-if="index < 2" class="absolute top-3 right-3 z-10 bg-primary text-white text-xs font-futura-bold px-2 py-1 rounded">
                           NEW
@@ -64,13 +64,13 @@
                             v-if="product.icon_path"
                             :src="product.icon_path" 
                             :alt="product.player_name || product.name"
-                            class="w-full h-full object-contain p-4"
+                            class="w-full h-full object-contain p-2 sm:p-3"
                             @error="(e) => { 
                               e.target.style.display = 'none' 
                             }"
                           />
-                          <div v-else class="text-center text-gray-500 p-4">
-                            <p class="text-sm">Icona non disponibile</p>
+                          <div v-else class="text-center text-gray-500 p-2 sm:p-3">
+                            <p class="text-xs">Icona non disponibile</p>
                             <p class="text-xs">{{ product.player_name || product.name }}</p>
                           </div>
                         </div>
@@ -95,8 +95,8 @@
                       </div>
                       
                       <!-- Player Name Below Card -->
-                      <div class="mt-3 text-center">
-                        <h4 class="text-lg font-futura-bold text-primary group-hover:text-secondary transition-colors duration-300">
+                      <div class="mt-2 text-center">
+                        <h4 class="text-sm font-futura-bold text-primary group-hover:text-secondary transition-colors duration-300">
                           {{ shouldShowPlayerIcon && product.player_name ? product.player_name : product.name }}
                         </h4>
                         <!-- <p class="text-sm text-gray-600 font-gill-sans">{{ product.team || product.type || 'Carta da collezione' }}</p> -->
@@ -198,19 +198,8 @@ const shouldHideSeeAll = computed(() => {
   return false
 })
 
-// Computed property for "VEDI TUTTO" text based on category
-const seeAllText = computed(() => {
-  switch (props.category) {
-    case 'football':
-      return 'VEDI TUTTO CALCIO'
-    case 'basketball':
-      return 'VEDI TUTTO BASKETBALL'
-    case 'pokemon':
-      return 'VEDI TUTTO POKEMON'
-    default:
-      return 'VEDI TUTTO'
-  }
-})
+// Testo unico "Vedi tutto" per tutte le categorie
+const seeAllText = computed(() => 'Vedi tutto')
 
 // Methods
 const loadDynamicData = async () => {
