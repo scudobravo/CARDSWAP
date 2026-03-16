@@ -291,6 +291,7 @@
                 </div>
                 <div class="flex space-x-2">
                   <button
+                    v-if="statusFilter !== 'sold'"
                     @click="editListing(listing)"
                     class="text-gray-400 hover:text-gray-600 transition-colors"
                     title="Modifica"
@@ -428,6 +429,7 @@
                   </p>
                   <div class="flex space-x-2">
                     <button
+                      v-if="statusFilter !== 'sold'"
                       @click="editListing(listing)"
                       class="w-8 h-8 bg-primary rounded flex items-center justify-center hover:bg-primary/90 transition-colors flex-shrink-0"
                       title="Modifica"
