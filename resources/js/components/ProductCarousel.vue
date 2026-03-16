@@ -1,16 +1,18 @@
 <template>
   <div class="relative">
-    <!-- Section header -->
-    <div class="mb-4">
+    <!-- Section header: titolo e "Vedi tutto" sulla stessa riga -->
+    <div class="mb-4 flex flex-row items-center justify-between gap-3">
       <h2 class="text-xl md:text-3xl font-futura-bold text-primary">{{ title }}</h2>
-      <div v-if="!shouldHideSeeAll" class="mt-0 text-right">
-        <a :href="seeAllUrl || (category ? `/category/${category}` : '#')" class="text-primary hover:text-secondary transition-colors font-gill-sans-semibold text-xs">
-          {{ seeAllText }}
-          <svg class="w-3 h-3 inline ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-          </svg>
-        </a>
-      </div>
+      <a 
+        v-if="!shouldHideSeeAll" 
+        :href="seeAllUrl || (category ? `/category/${category}` : '#')" 
+        class="text-primary hover:text-secondary transition-colors font-gill-sans-semibold text-xs shrink-0"
+      >
+        {{ seeAllText }}
+        <svg class="w-3 h-3 inline ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </a>
     </div>
 
     <!-- Carousel container -->
