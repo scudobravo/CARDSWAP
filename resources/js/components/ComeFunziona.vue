@@ -16,9 +16,11 @@
               class="come-funziona-card-icon"
             />
           </div>
-          <h3 class="come-funziona-card-title">{{ card.title }}</h3>
-          <div class="come-funziona-card-accent" />
-          <p class="come-funziona-card-desc">{{ card.description }}</p>
+          <div class="come-funziona-card-content">
+            <h3 class="come-funziona-card-title">{{ card.title }}</h3>
+            <div class="come-funziona-card-accent" />
+            <p class="come-funziona-card-desc">{{ card.description }}</p>
+          </div>
         </article>
       </div>
     </div>
@@ -56,8 +58,8 @@ const cards = [
 
 <style scoped>
 .come-funziona {
-  background-color: #F4F4F4;
-  padding: 80px 20px;
+  background-color: var(--color-gray-light);
+  padding: 48px 20px;
 }
 
 @media (min-width: 768px) {
@@ -72,19 +74,20 @@ const cards = [
   margin-right: auto;
 }
 
+/* Titolo sezione: stessi font e scala del resto del sito (es. Categorie) */
 .come-funziona-title {
-  font-size: 28px;
+  font-size: 1.5rem;
   font-weight: 700;
-  color: #1a1a2e;
   text-align: center;
-  margin-bottom: 40px;
-  font-family: 'Instrument Sans', sans-serif;
+  margin-bottom: 2rem;
+  font-family: 'Futura', 'Futura PT', 'Trebuchet MS', Arial, sans-serif;
+  color: var(--color-primary);
 }
 
 @media (min-width: 768px) {
   .come-funziona-title {
-    font-size: 40px;
-    margin-bottom: 60px;
+    font-size: 1.875rem;
+    margin-bottom: 3.75rem;
   }
 }
 
@@ -124,13 +127,19 @@ const cards = [
   }
 }
 
-/* Mobile: layout orizzontale con icona 48px a sinistra */
+/* Mobile: layout orizzontale, icona 48px a sinistra centrata in altezza alla card */
 @media (max-width: 767px) {
   .come-funziona-card {
     flex-direction: row;
     text-align: left;
-    align-items: flex-start;
+    align-items: center;
     gap: 16px;
+    padding: 20px 16px;
+  }
+  
+  .come-funziona-card-content {
+    flex: 1;
+    min-width: 0;
   }
   
   .come-funziona-card-icon-wrap {
@@ -146,6 +155,10 @@ const cards = [
   .come-funziona-card-title {
     margin-top: 0;
   }
+  
+  .come-funziona-card-accent {
+    margin: 6px 0 8px;
+  }
 }
 
 .come-funziona-card-icon-wrap {
@@ -159,33 +172,35 @@ const cards = [
   object-fit: contain;
 }
 
+/* Titolo card: Futura bold come il resto del sito */
 .come-funziona-card-title {
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 700;
-  color: #1a1a2e;
   margin-top: 0;
   margin-bottom: 0;
-  font-family: 'Instrument Sans', sans-serif;
+  font-family: 'Futura', 'Futura PT', 'Trebuchet MS', Arial, sans-serif;
+  color: var(--color-primary);
+}
+
+@media (min-width: 768px) {
+  .come-funziona-card-title {
+    font-size: 1.125rem;
+  }
 }
 
 .come-funziona-card-accent {
   width: 40px;
   height: 3px;
-  background-color: #f59e0b;
+  background-color: var(--color-secondary);
   margin: 8px 0 12px;
 }
 
-@media (max-width: 767px) {
-  .come-funziona-card-accent {
-    margin: 6px 0 8px;
-  }
-}
-
+/* Descrizione: Gill Sans come il resto del sito */
 .come-funziona-card-desc {
-  font-size: 0.9375rem;
-  color: #6b7280;
+  font-size: 0.875rem;
   line-height: 1.5;
   margin: 0;
-  font-family: 'Instrument Sans', sans-serif;
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+  color: var(--color-text-light);
 }
 </style>

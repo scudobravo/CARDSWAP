@@ -8,7 +8,7 @@
     
     <div class="hero-container relative z-10 w-full">
       <!-- Logo -->
-      <div class="hero-logo mb-6">
+      <div class="hero-logo mb-4">
         <img 
           src="/images/logos/logo-colorato.svg" 
           alt="CARDSWAP" 
@@ -22,7 +22,7 @@
       </h1>
       
       <!-- Sottotitolo Hero -->
-      <p class="hero-subtitle text-primary/90 text-center font-gill-sans mt-4">
+      <p class="hero-subtitle text-primary/90 text-center font-gill-sans mt-3">
         Pubblica le tue carte e trova quelle che cerchi
       </p>
     </div>
@@ -39,14 +39,16 @@ const heroBgUrl = '/images/hero/hero-cardswap.svg'
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  min-height: 600px;
-  padding-top: 80px;
-  padding-bottom: 80px;
+  min-height: 380px;
+  padding-top: 40px;
+  padding-bottom: 40px;
 }
 
 @media (min-width: 768px) {
   .hero-section {
-    min-height: 850px;
+    min-height: 480px;
+    padding-top: 56px;
+    padding-bottom: 56px;
   }
 }
 
@@ -65,9 +67,9 @@ const heroBgUrl = '/images/hero/hero-cardswap.svg'
   }
 }
 
-/* Logo: desktop 43px, mobile 32px, margin-bottom 24px */
+/* Logo: desktop 43px, mobile 32px */
 .hero-logo {
-  margin-bottom: 24px;
+  margin-bottom: 1rem;
 }
 
 .hero-logo-img {

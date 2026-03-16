@@ -2,7 +2,7 @@
   <div class="relative">
     <!-- Section header -->
     <div class="mb-4">
-      <h2 class="text-3xl font-futura-bold text-primary">{{ title }}</h2>
+      <h2 class="text-xl md:text-3xl font-futura-bold text-primary">{{ title }}</h2>
       <div v-if="!shouldHideSeeAll" class="mt-0 text-right">
         <a :href="seeAllUrl || (category ? `/category/${category}` : '#')" class="text-primary hover:text-secondary transition-colors font-gill-sans-semibold text-sm">
           {{ seeAllText }}
