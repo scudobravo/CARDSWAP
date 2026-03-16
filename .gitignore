@@ -72,6 +72,9 @@ backup_*.sql
 /update_rarities*.php
 /public/test-*.html
 
+# Cartella mockup/design (asset già copiati in public/images/hero e public/images/come-funziona)
+/immagini sito (hero - come funziona)/
+
 # File accidentalmente creati in root (echo/typo)
 /LeBron
 /Lionel

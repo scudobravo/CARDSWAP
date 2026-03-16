@@ -4,7 +4,7 @@
     <Header />
     
     <!-- Hero Section -->
-    <HeroSlideshow :slides="heroSlides" />
+    <HomeHero />
     
     <!-- Linea di separazione -->
     <div class="border-t-2 border-gray-300 mx-8"></div>
@@ -82,8 +82,8 @@
       </div>
     </section> -->
     
-    <!-- Referral Banner -->
-    <ReferralBanner />
+    <!-- Come funziona -->
+    <ComeFunziona />
 
     <!-- Latest Releases Section -->
     <section class="py-16 bg-white">
@@ -105,43 +105,12 @@
 <script setup>
 import { ref } from 'vue'
 import Header from '../components/Header.vue'
-import HeroSlideshow from '../components/HeroSlideshow.vue'
+import HomeHero from '../components/HomeHero.vue'
 import CategoryCard from '../components/CategoryCard.vue'
 import SubcategoryCard from '../components/SubcategoryCard.vue'
 import ProductCarousel from '../components/ProductCarousel.vue'
-import ReferralBanner from '../components/ReferralBanner.vue'
+import ComeFunziona from '../components/ComeFunziona.vue'
 import Footer from '../components/Footer.vue'
-
-// Hero slides data
-const heroSlides = ref([
-  {
-    id: 1,
-    title: "Buy. Collect. Swap.",
-    description: "Il primo Ecommerce per comprare e vendere carte sportive",
-    primaryButton: {
-      text: "START NOW",
-      link: "/register"
-    }
-  },
-  {
-    id: 2,
-    title: "Scambia le tue carte da collezione",
-    description: "Entra nella più grande community di collezionisti di carte. Trova, scambia e colleziona le tue carte preferite con altri appassionati.",
-    primaryButton: {
-      text: "Inizia ora",
-      link: "/register"
-    }
-  },
-  {
-    id: 3,
-    title: "Esplora categorie",
-    description: "Scopri le nostre categorie di carte: calcio, basket, Pokemon e molto altro. Trova la tua passione.",
-    primaryButton: {
-      text: "Esplora",
-      link: "/categories"
-    }
-  }
-])
 
 // Categories data
 const categories = ref([
