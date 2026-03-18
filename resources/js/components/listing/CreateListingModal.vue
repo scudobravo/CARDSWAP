@@ -5,7 +5,7 @@
     
     <!-- Modal -->
     <div class="flex min-h-full items-center justify-center p-4">
-      <div class="relative w-full max-w-4xl transform overflow-hidden rounded-lg bg-white shadow-xl transition-all">
+      <div class="relative w-full max-w-4xl transform overflow-visible rounded-lg bg-white shadow-xl transition-all">
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
           <div class="flex items-center space-x-3">
