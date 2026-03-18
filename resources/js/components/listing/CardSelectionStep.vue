@@ -16,7 +16,7 @@
               class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
               @input="searchPlayers"
             />
-            <div v-if="filteredPlayers.length > 0 && localFilters.playerSearch" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+            <div v-if="filteredPlayers.length > 0 && localFilters.playerSearch" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-80 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-y-scroll focus:outline-none" style="scrollbar-width: thin; scrollbar-color: #9ca3af #f3f4f6;">
               <div v-for="player in filteredPlayers" :key="player.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectPlayer(player)">
                 <span class="font-normal block truncate">{{ player.name }}</span>
               </div>
@@ -45,7 +45,7 @@
               class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
               @input="searchCardSets"
             />
-            <div v-if="filteredCardSets.length > 0 && localFilters.setSearch" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+            <div v-if="filteredCardSets.length > 0 && localFilters.setSearch" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-80 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-y-scroll focus:outline-none" style="scrollbar-width: thin; scrollbar-color: #9ca3af #f3f4f6;">
               <div v-for="set in filteredCardSets" :key="set.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectCardSet(set)">
                 <span class="font-normal block truncate">{{ set.name }}</span>
               </div>
@@ -74,7 +74,7 @@
               class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
               @input="searchTeams"
             />
-            <div v-if="filteredTeams.length > 0 && localFilters.teamSearch" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+            <div v-if="filteredTeams.length > 0 && localFilters.teamSearch" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-80 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-y-scroll focus:outline-none" style="scrollbar-width: thin; scrollbar-color: #9ca3af #f3f4f6;">
               <div v-for="team in filteredTeams" :key="team.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectTeam(team)">
                 <span class="font-normal block truncate">{{ team.name }}</span>
               </div>

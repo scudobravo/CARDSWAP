@@ -14,7 +14,7 @@
             @focus="onPlayerFocus"
             @blur="onPlayerBlur"
           />
-          <div v-if="filteredPlayers.length > 0 && showPlayerDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+          <div v-if="filteredPlayers.length > 0 && showPlayerDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-80 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-y-scroll focus:outline-none" style="scrollbar-width: thin; scrollbar-color: #9ca3af #f3f4f6;">
             <div v-for="player in filteredPlayers" :key="player.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @mousedown="selectPlayer(player)">
               <div class="flex flex-col">
                 <span class="font-normal block truncate">{{ player.display_name || player.name }}</span>
@@ -46,7 +46,7 @@
             @focus="onTeamFocus"
             @blur="onTeamBlur"
           />
-          <div v-if="filteredTeams.length > 0 && showTeamDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+          <div v-if="filteredTeams.length > 0 && showTeamDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-80 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-y-scroll focus:outline-none" style="scrollbar-width: thin; scrollbar-color: #9ca3af #f3f4f6;">
             <div v-for="team in filteredTeams" :key="team.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @mousedown="selectTeam(team)">
               <span class="font-normal block truncate">{{ team.name }}</span>
             </div>
@@ -76,7 +76,7 @@
             @focus="onSetFocus"
             @blur="onSetBlur"
           />
-          <div v-if="filteredCardSets.length > 0 && showSetDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-sm ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+          <div v-if="filteredCardSets.length > 0 && showSetDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-80 rounded-md py-1 text-sm ring-1 ring-black ring-opacity-5 overflow-y-scroll focus:outline-none" style="scrollbar-width: thin; scrollbar-color: #9ca3af #f3f4f6;">
             <div v-for="set in filteredCardSets" :key="set.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @mousedown="selectCardSet(set)">
               <div class="font-normal">
                 <div class="font-medium text-gray-900 truncate">{{ set.name }}</div>
