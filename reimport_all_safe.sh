@@ -118,6 +118,16 @@ else
     echo -e "${RED}❌ File TOIMPORT/Elenco2.csv non trovato${NC}"
 fi
 
+# Elenco Set Calcio 3 - Foglio1.csv
+if [ -f "TOIMPORT/Elenco Set Calcio 3 - Foglio1.csv" ]; then
+    echo -e "${YELLOW}📄 Importazione Elenco Set Calcio 3 - Foglio1.csv...${NC}"
+    php artisan import:football-excel-cards --file="TOIMPORT/Elenco Set Calcio 3 - Foglio1.csv"
+    echo -e "${GREEN}✅ Elenco Set Calcio 3 importato${NC}"
+    echo ""
+else
+    echo -e "${RED}❌ File TOIMPORT/Elenco Set Calcio 3 - Foglio1.csv non trovato${NC}"
+fi
+
 # Altri CSV (basketball, spongebob, disney, etc.)
 if [ -f "TOIMPORT/Elenco Set Basket 1 - Foglio1.csv" ]; then
     echo -e "${YELLOW}📄 Importazione Elenco Set Basket 1 - Foglio1.csv...${NC}"

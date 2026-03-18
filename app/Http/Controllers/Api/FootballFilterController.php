@@ -454,7 +454,8 @@ class FootballFilterController extends Controller
                 }
             })
             ->active()
-            ->orderBy('name');
+            ->orderBy('name')
+            ->orderByDesc('year'); // Anni più recenti prima
         
         // Se c'è una query di ricerca, filtra i risultati
         if (!empty($query)) {
