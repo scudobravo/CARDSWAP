@@ -31,7 +31,7 @@
 const cards = [
   {
     id: 1,
-    title: 'Crea il tuo account',
+    title: 'Crea il tuo\naccount',
     description: 'Registrati in pochi secondi e inizia ad esplorare.',
     icon: '/images/come-funziona/crea-account.svg',
   },
@@ -195,6 +195,7 @@ const cards = [
     display: flex;
     align-items: center;
     justify-content: center;
+    white-space: pre-line;
   }
 }
 
