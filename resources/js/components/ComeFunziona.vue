@@ -188,11 +188,21 @@ const cards = [
   }
 }
 
+/* Desktop: altezza fissa per i titoli così stanno tutti allineati (2 righe) */
+@media (min-width: 1024px) {
+  .come-funziona-card-title {
+    min-height: 2.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
 .come-funziona-card-accent {
   width: 40px;
   height: 3px;
   background-color: var(--color-secondary);
-  margin: 8px 0 12px;
+  margin: 8px auto 12px;
 }
 
 /* Descrizione: Gill Sans come il resto del sito */
