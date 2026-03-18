@@ -13,7 +13,7 @@
           @focus="onCardNameFocus"
           @blur="onCardNameBlur"
         />
-        <div v-if="filteredCardNames.length > 0 && showCardNameDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-80 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-y-scroll focus:outline-none" style="scrollbar-width: thin; scrollbar-color: #9ca3af #f3f4f6;">
+        <div v-if="filteredCardNames.length > 0 && showCardNameDropdown" class="absolute z-50 mt-1 w-full bg-white shadow-lg max-h-96 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-y-auto focus:outline-none dropdown-scroll" @wheel.stop>
           <div v-for="(cardName, index) in filteredCardNames" :key="index" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectCardName(cardName)">
             <span class="font-normal block truncate">{{ cardName }}</span>
           </div>
@@ -45,7 +45,7 @@
           @blur="onPlayerBlur"
           @change="onPlayerInputChange"
         />
-        <div v-if="filteredPlayers.length > 0 && showPlayerDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-80 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-y-scroll focus:outline-none" style="scrollbar-width: thin; scrollbar-color: #9ca3af #f3f4f6;">
+        <div v-if="filteredPlayers.length > 0 && showPlayerDropdown" class="absolute z-50 mt-1 w-full bg-white shadow-lg max-h-96 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-y-auto focus:outline-none dropdown-scroll" @wheel.stop>
           <div v-for="player in filteredPlayers" :key="player.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectPlayer(player)">
             <div class="flex flex-col">
               <span class="font-normal block truncate">{{ player.display_name || player.name }}</span>
@@ -81,7 +81,7 @@
             @focus="onTeamFocus"
             @blur="onTeamBlur"
           />
-          <div v-if="filteredTeams.length > 0 && showTeamDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-80 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-y-scroll focus:outline-none" style="scrollbar-width: thin; scrollbar-color: #9ca3af #f3f4f6;">
+          <div v-if="filteredTeams.length > 0 && showTeamDropdown" class="absolute z-50 mt-1 w-full bg-white shadow-lg max-h-96 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-y-auto focus:outline-none dropdown-scroll" @wheel.stop>
             <div v-for="team in filteredTeams" :key="team.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectTeam(team)">
               <span class="font-normal block truncate">{{ team.name }}</span>
             </div>
@@ -112,12 +112,14 @@
             @focus="onSetFocus"
             @blur="onSetBlur"
           />
-          <div v-if="filteredCardSets.length > 0 && showSetDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-80 rounded-md py-1 text-sm md:text-base ring-1 ring-black ring-opacity-5 overflow-y-scroll focus:outline-none" style="scrollbar-width: thin; scrollbar-color: #9ca3af #f3f4f6;">
+          <div 
+            v-if="filteredCardSets.length > 0 && showSetDropdown" 
+            class="absolute z-50 mt-1 w-full bg-white shadow-lg max-h-96 rounded-md py-1 text-sm md:text-base ring-1 ring-black ring-opacity-5 overflow-y-auto focus:outline-none dropdown-scroll"
+            @wheel.stop
+          >
             <div v-for="set in filteredCardSets" :key="set.id" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectCardSet(set)">
               <span class="font-normal block truncate text-xs md:text-sm">{{ set.name }} ({{ set.year }})</span>
             </div>
-            <!-- Indicatore scroll se ci sono molti risultati -->
-            <div v-if="filteredCardSets.length > 8" class="sticky bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
           </div>
         </div>
         <div v-if="selectedCardSet" class="flex flex-wrap gap-2 mt-2">
@@ -163,7 +165,7 @@
             @focus="onRarityFocus"
             @blur="onRarityBlur"
           />
-          <div v-if="filteredRarities.length > 0 && showRarityDropdown" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-80 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-y-scroll focus:outline-none" style="scrollbar-width: thin; scrollbar-color: #9ca3af #f3f4f6;">
+          <div v-if="filteredRarities.length > 0 && showRarityDropdown" class="absolute z-50 mt-1 w-full bg-white shadow-lg max-h-96 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-y-auto focus:outline-none dropdown-scroll" @wheel.stop>
             <div v-for="rarity in filteredRarities" :key="rarity" class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100" @click="selectRarity(rarity)">
               <span class="font-normal block truncate">{{ rarity }}</span>
             </div>
