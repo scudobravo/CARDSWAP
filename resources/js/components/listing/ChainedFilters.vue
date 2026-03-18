@@ -535,6 +535,7 @@ const showTeamDropdown = ref(false)
 const showSetDropdown = ref(false)
 const showRarityDropdown = ref(false)
 const showCardNameDropdown = ref(false)
+const isActivelySearchingSet = ref(false) // Flag per proteggere la ricerca attiva nel campo Set
 const filteredCardsByName = ref([])
 const filteredCardNames = ref([]) // Nomi base unici per il dropdown
 const selectedCardName = ref(null) // Nome base selezionato
@@ -891,14 +892,27 @@ const onTeamBlur = () => {
   }, 200)
 }
 
+let setSearchTimeout = null
+
 const searchCardSets = async () => {
   const query = localFilters.value.setSearch || ''
   
   // Skip search if query is too short
   if (query.length < 2) {
+    isActivelySearchingSet.value = false
     filteredCardSets.value = []
     return
   }
+  
+  // Attiva il flag di ricerca attiva
+  isActivelySearchingSet.value = true
+  
+  // Debounce per evitare troppe chiamate
+  if (setSearchTimeout) {
+    clearTimeout(setSearchTimeout)
+  }
+  
+  setSearchTimeout = setTimeout(async () => {
   
   console.log(' Ricerca set per:', query)
   
@@ -934,9 +948,16 @@ const searchCardSets = async () => {
     console.error(' Errore nella ricerca set:', error)
     filteredCardSets.value = []
   }
+  }, 300) // Debounce di 300ms
 }
 
 const loadAllCardSets = async () => {
+  // Non sovrascrivere i risultati se l'utente sta cercando attivamente
+  if (isActivelySearchingSet.value) {
+    console.log(' Skip loadAllCardSets - utente sta cercando attivamente')
+    return
+  }
+  
   console.log(' Caricamento tutti i set disponibili')
   
   try {
@@ -999,6 +1020,10 @@ const onSetBlur = () => {
   // Ritarda la chiusura per permettere il click su un elemento
   setTimeout(() => {
     showSetDropdown.value = false
+    // Resetta il flag di ricerca attiva dopo un po' più di tempo
+    setTimeout(() => {
+      isActivelySearchingSet.value = false
+    }, 500)
   }, 200)
 }
 
@@ -1292,6 +1317,9 @@ const selectCardSet = async (set) => {
   // Questo deve essere fatto PRIMA di impostare selectedCardSet per evitare che venga sovrascritto
   const userSelectedYear = localFilters.value.year
   
+  // Resetta il flag di ricerca attiva
+  isActivelySearchingSet.value = false
+  
   selectedCardSet.value = set
   localFilters.value.set = set.id
   localFilters.value.setSearch = ''
@@ -1509,9 +1537,13 @@ const updateAvailableOptions = async () => {
         }
         
         if (data.card_sets && data.card_sets.length > 0) {
-          // Aggiorna i set disponibili
-          filteredCardSets.value = data.card_sets
-          console.log(' Set aggiornati per logica a cascata:', data.card_sets.length)
+          // Non sovrascrivere i risultati se l'utente sta cercando attivamente
+          if (!isActivelySearchingSet.value) {
+            filteredCardSets.value = data.card_sets
+            console.log(' Set aggiornati per logica a cascata:', data.card_sets.length)
+          } else {
+            console.log(' Skip aggiornamento set per logica a cascata - utente sta cercando attivamente')
+          }
         } else {
           // Se non ci sono set, mantieni quelli esistenti
           console.log(' Nessun set nei filtri a catena, mantengo quelli esistenti')
@@ -1875,6 +1907,12 @@ const loadAllTeamsForPlayer = async (player) => {
 }
 
 const loadCardSetsForPlayer = async () => {
+  // Non sovrascrivere i risultati se l'utente sta cercando attivamente
+  if (isActivelySearchingSet.value) {
+    console.log(' Skip loadCardSetsForPlayer - utente sta cercando attivamente')
+    return
+  }
+  
   if (!localFilters.value.player) {
     console.log(' Nessun player ID per caricare set')
     return
@@ -1999,9 +2037,13 @@ const loadChainedData = async () => {
     }
     
     if (data.card_sets && data.card_sets.length > 0) {
-      // Aggiorna i set disponibili
-      filteredCardSets.value = data.card_sets
-      console.log(' Set aggiornati da filtri a catena:', data.card_sets.length)
+      // Non sovrascrivere i risultati se l'utente sta cercando attivamente
+      if (!isActivelySearchingSet.value) {
+        filteredCardSets.value = data.card_sets
+        console.log(' Set aggiornati da filtri a catena:', data.card_sets.length)
+      } else {
+        console.log(' Skip aggiornamento set da filtri a catena - utente sta cercando attivamente')
+      }
     } else {
       console.log(' Nessun set nei filtri a catena, mantengo quelli esistenti')
     }
