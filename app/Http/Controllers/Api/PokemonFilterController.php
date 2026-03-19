@@ -10,6 +10,7 @@ use App\Models\CardSet;
 use App\Models\GradingCompany;
 use App\Models\GradingScore;
 use App\Models\CardModel;
+use App\Support\PlayerSearchQuery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -142,7 +143,7 @@ class PokemonFilterController extends Controller
             ->orderBy('name');
         
         if (!empty($query)) {
-            $playersQuery->where('name', 'LIKE', "%{$query}%");
+            PlayerSearchQuery::wherePlayerNameMatches($playersQuery, 'name', $query);
         }
         
         $players = $playersQuery->with(['team', 'cardModels' => function($query) {

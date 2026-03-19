@@ -10,6 +10,7 @@ use App\Models\CardSet;
 use App\Models\GradingCompany;
 use App\Models\GradingScore;
 use App\Models\CardModel;
+use App\Support\PlayerSearchQuery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -218,9 +219,9 @@ class FootballFilterController extends Controller
             ->active()
             ->orderBy('name');
         
-        // Se c'è una query di ricerca, filtra i risultati
+        // Se c'è una query di ricerca, filtra i risultati (spazi e "/" equivalgono come separatori)
         if (!empty($query)) {
-            $playersQuery->where('name', 'LIKE', "%{$query}%");
+            PlayerSearchQuery::wherePlayerNameMatches($playersQuery, 'name', $query);
         }
         
         $players = $playersQuery->with(['team', 'cardModels' => function($query) {
