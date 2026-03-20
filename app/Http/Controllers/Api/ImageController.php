@@ -5,12 +5,29 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 class ImageController extends Controller
 {
+    private function userBasePath(Request $request): string
+    {
+        return sprintf('public/users/%d', $request->user()->id);
+    }
+
+    private function normalizedPath(string $path): string
+    {
+        return ltrim(str_replace('\\', '/', $path), '/');
+    }
+
+    private function authorizeFilePath(Request $request, string $path): void
+    {
+        Gate::authorize('manage-user-file', $this->normalizedPath($path));
+    }
+
     /**
      * Upload image for card model or listing
      */
@@ -39,16 +56,17 @@ class ImageController extends Controller
             // Genera nome file univoco
             $fileName = Str::uuid() . '.' . $file->getClientOriginalExtension();
             
-            // Determina il percorso di storage
+            // Determina il percorso di storage nel namespace privato dell'utente
             $path = match($type) {
                 'card_model' => 'card-models',
                 'listing' => 'listings',
                 'avatar' => 'avatars',
                 default => 'uploads'
             };
+            $userScopedPath = $this->userBasePath($request) . "/{$path}";
 
             // Salva l'immagine
-            $filePath = $file->storeAs("public/{$path}", $fileName);
+            $filePath = $file->storeAs($userScopedPath, $fileName);
             
             // Genera URL pubblico
             $publicUrl = Storage::url($filePath);
@@ -109,15 +127,16 @@ class ImageController extends Controller
                 // Genera nome file univoco
                 $fileName = Str::uuid() . '.' . $file->getClientOriginalExtension();
                 
-                // Determina il percorso di storage
+                // Determina il percorso di storage nel namespace privato dell'utente
                 $path = match($type) {
                     'card_model' => 'card-models',
                     'listing' => 'listings',
                     default => 'uploads'
                 };
+                $userScopedPath = $this->userBasePath($request) . "/{$path}";
 
                 // Salva l'immagine
-                $filePath = $file->storeAs("public/{$path}", $fileName);
+                $filePath = $file->storeAs($userScopedPath, $fileName);
                 
                 // Genera URL pubblico
                 $publicUrl = Storage::url($filePath);
@@ -167,8 +186,8 @@ class ImageController extends Controller
         }
 
         try {
-            $filename = $request->filename;
             $path = $request->path;
+            $this->authorizeFilePath($request, $path);
 
             // Verifica che il file esista
             if (!Storage::exists($path)) {
@@ -186,6 +205,11 @@ class ImageController extends Controller
                 'message' => 'Immagine eliminata con successo'
             ]);
 
+        } catch (AuthorizationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Non autorizzato ad accedere a questo file'
+            ], 403);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -213,6 +237,7 @@ class ImageController extends Controller
 
         try {
             $path = $request->path;
+            $this->authorizeFilePath($request, $path);
 
             // Verifica che il file esista
             if (!Storage::exists($path)) {
@@ -236,6 +261,11 @@ class ImageController extends Controller
                 'data' => $fileInfo
             ]);
 
+        } catch (AuthorizationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Non autorizzato ad accedere a questo file'
+            ], 403);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -266,6 +296,7 @@ class ImageController extends Controller
 
         try {
             $path = $request->path;
+            $this->authorizeFilePath($request, $path);
             $width = $request->get('width', 800);
             $height = $request->get('height', 600);
             $quality = $request->get('quality', 85);
@@ -292,6 +323,11 @@ class ImageController extends Controller
                 ]
             ]);
 
+        } catch (AuthorizationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Non autorizzato ad accedere a questo file'
+            ], 403);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

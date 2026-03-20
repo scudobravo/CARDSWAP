@@ -2,13 +2,20 @@
 
 namespace App\Services;
 
+use App\Support\SensitiveDataMasker;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Auth;
-use Carbon\Carbon;
 
 class LoggingService
 {
+    private static function sanitizeContext(array $context): array
+    {
+        /** @var array $sanitized */
+        $sanitized = SensitiveDataMasker::mask($context);
+        return $sanitized;
+    }
+
     /**
      * Livelli di log
      */
@@ -41,7 +48,7 @@ class LoggingService
             'trace' => $exception->getTraceAsString(),
         ], $context);
 
-        Log::error($exception->getMessage(), $context);
+        Log::error($exception->getMessage(), self::sanitizeContext($context));
     }
 
     /**
@@ -63,9 +70,9 @@ class LoggingService
 
         // Log solo se la durata supera una soglia
         if ($duration > 1.0) { // > 1 secondo
-            Log::warning("Slow operation: {$operation}", $context);
+            Log::warning("Slow operation: {$operation}", self::sanitizeContext($context));
         } else {
-            Log::info("Performance: {$operation}", $context);
+            Log::info("Performance: {$operation}", self::sanitizeContext($context));
         }
     }
 
@@ -84,7 +91,7 @@ class LoggingService
             'action' => $action,
         ], $context);
 
-        Log::info("User activity: {$action}", $context);
+        Log::info("User activity: {$action}", self::sanitizeContext($context));
     }
 
     /**
@@ -102,7 +109,7 @@ class LoggingService
             'security_event' => $event,
         ], $context);
 
-        Log::warning("Security event: {$event}", $context);
+        Log::warning("Security event: {$event}", self::sanitizeContext($context));
     }
 
     /**
@@ -117,7 +124,7 @@ class LoggingService
             'data' => $data,
         ];
 
-        Log::info("Business event: {$event}", $context);
+        Log::info("Business event: {$event}", self::sanitizeContext($context));
     }
 
     /**
@@ -137,9 +144,9 @@ class LoggingService
         ], $context);
 
         if ($statusCode >= 400) {
-            Log::error("API error: {$method} {$endpoint}", $context);
+            Log::error("API error: {$method} {$endpoint}", self::sanitizeContext($context));
         } else {
-            Log::info("API call: {$method} {$endpoint}", $context);
+            Log::info("API call: {$method} {$endpoint}", self::sanitizeContext($context));
         }
     }
 
@@ -157,7 +164,7 @@ class LoggingService
 
         // Log solo query lente
         if ($duration > 0.5) { // > 500ms
-            Log::warning("Slow query detected", $context);
+            Log::warning("Slow query detected", self::sanitizeContext($context));
         }
     }
 
@@ -174,7 +181,7 @@ class LoggingService
             'cache_hit' => $hit,
         ], $context);
 
-        Log::debug("Cache {$operation}: {$key}", $context);
+        Log::debug("Cache {$operation}: {$key}", self::sanitizeContext($context));
     }
 
     /**
@@ -190,7 +197,7 @@ class LoggingService
             'email_status' => $status,
         ], $context);
 
-        Log::info("Email sent: {$subject}", $context);
+        Log::info("Email sent: {$subject}", self::sanitizeContext($context));
     }
 
     /**
@@ -208,7 +215,7 @@ class LoggingService
             'upload_status' => $status,
         ], $context);
 
-        Log::info("File upload: {$filename}", $context);
+        Log::info("File upload: {$filename}", self::sanitizeContext($context));
     }
 
     /**
@@ -225,7 +232,7 @@ class LoggingService
             'currency' => $currency,
         ], $context);
 
-        Log::info("Payment: {$status}", $context);
+        Log::info("Payment: {$status}", self::sanitizeContext($context));
     }
 
     /**
@@ -242,7 +249,7 @@ class LoggingService
             'memory_peak' => memory_get_peak_usage(true),
         ], $context);
 
-        Log::info("System: {$component} - {$event}", $context);
+        Log::info("System: {$component} - {$event}", self::sanitizeContext($context));
     }
 
     /**
@@ -254,10 +261,10 @@ class LoggingService
         
         // Implementazione dipende dal driver di log utilizzato
         // Per file-based logging, potresti voler implementare una rotazione
-        Log::info("Cleaning logs older than {$days} days", [
+        Log::info("Cleaning logs older than {$days} days", self::sanitizeContext([
             'cutoff_date' => $cutoffDate->toISOString(),
             'timestamp' => now()->toISOString(),
-        ]);
+        ]));
     }
 
     /**

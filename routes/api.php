@@ -36,7 +36,6 @@ use App\Http\Controllers\Api\Seller\SellerOrderController;
 use App\Http\Controllers\Api\Shipping\CardSwapShippingController;
 use App\Http\Controllers\Api\UserNotificationController;
 use App\Http\Controllers\Api\MiscController;
-use App\Http\Controllers\Api\DebugController;
 
 // Grading Companies (controller per consentire route:cache)
 Route::get('/grading-companies', [MiscController::class, 'gradingCompanies']);
@@ -64,10 +63,6 @@ Route::middleware('auth:sanctum')->get('/user/shipping-zones', [MiscController::
 // Check if shipping zones exist for authenticated user
 Route::get('/shipping-zones/check', [MiscController::class, 'shippingZonesCheck'])->middleware('auth:sanctum');
 
-// Debug routes (controller per consentire route:cache)
-Route::get('/debug-tokens', [DebugController::class, 'debugTokens']);
-Route::get('/debug-auth', [DebugController::class, 'debugAuth']);
-
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -82,13 +77,14 @@ Route::get('/debug-auth', [DebugController::class, 'debugAuth']);
 Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'user']);
 
 // Rotte pubbliche
-Route::post('/auth/register', [AuthController::class, 'register']);
-Route::post('/auth/login', [AuthController::class, 'login']);
-Route::post('/auth/verify-email', [AuthController::class, 'verifyEmail']);
-Route::post('/auth/resend-verification', [AuthController::class, 'resendVerificationEmail']);
-Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
-Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
+Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:auth');
+Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:auth');
+Route::post('/auth/verify-email', [AuthController::class, 'verifyEmail'])->middleware('throttle:auth');
+Route::post('/auth/resend-verification', [AuthController::class, 'resendVerificationEmail'])->middleware('throttle:auth');
+Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:auth');
+Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:auth');
 
+Route::middleware('throttle:public')->group(function () {
 // Rotte per top players/pokemon (pubbliche) - devono essere prima per evitare conflitti
 Route::get('/top/football/{playerName}', [FootballFilterController::class, 'getListingsByPlayerName']);
 Route::get('/top/basketball/{playerName}', [BasketballFilterController::class, 'getListingsByPlayerName']);
@@ -237,7 +233,7 @@ Route::prefix('availability')->group(function () {
 });
 
 // Rotte per gestione immagini (pubbliche per visualizzazione)
-Route::prefix('images')->group(function () {
+Route::prefix('images')->middleware(['auth:sanctum'])->group(function () {
     Route::get('/info', [ImageController::class, 'info']);
 });
 
@@ -268,6 +264,7 @@ Route::prefix('category')->group(function () {
 
 // Statistiche venditore (pubbliche – per numero vendite/rating sulla pagina carta)
 Route::get('/sellers/{sellerId}/stats', [FeedbackController::class, 'sellerStats']);
+});
 
 // Rotte protette
 Route::middleware('auth:sanctum')->group(function () {
@@ -475,12 +472,12 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Rotte webhook Stripe (non protette)
-Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle'])->middleware('throttle:public');
 
 // Webhook AfterShip Tracking (CardSwap V1 - unica fonte aggiornamenti tracking)
 // URL da configurare in AfterShip: POST /api/webhooks/aftership
 // Verifica firma: header aftership-hmac-sha256 con AFTERSHIP_WEBHOOK_SECRET
-Route::post('/webhooks/aftership', [AfterShipWebhookController::class, 'handle']);
+Route::post('/webhooks/aftership', [AfterShipWebhookController::class, 'handle'])->middleware('throttle:public');
 
 // Rotte webhook test (solo in sviluppo)
 if (config('app.env') === 'local') {
@@ -488,24 +485,24 @@ if (config('app.env') === 'local') {
 }
 
 // Public API routes for category pages
-Route::get('/category/categories', [App\Http\Controllers\Api\CardController::class, 'getCategories']);
-Route::get('/category/cards', [App\Http\Controllers\Api\CardController::class, 'getCardsByCategory']);
-Route::get('/card/{id}', [App\Http\Controllers\Api\CardController::class, 'getCardDetails']);
-Route::get('/card/{category}/{slug}', [App\Http\Controllers\Api\CardController::class, 'getCardDetailsBySlug']);
-Route::get('/card/{id}/related', [App\Http\Controllers\Api\CardController::class, 'getRelatedProducts']);
-Route::get('/card/{category}/{slug}/related', [App\Http\Controllers\Api\CardController::class, 'getRelatedProductsBySlug']);
+Route::get('/category/categories', [App\Http\Controllers\Api\CardController::class, 'getCategories'])->middleware('throttle:public');
+Route::get('/category/cards', [App\Http\Controllers\Api\CardController::class, 'getCardsByCategory'])->middleware('throttle:public');
+Route::get('/card/{id}', [App\Http\Controllers\Api\CardController::class, 'getCardDetails'])->middleware('throttle:public');
+Route::get('/card/{category}/{slug}', [App\Http\Controllers\Api\CardController::class, 'getCardDetailsBySlug'])->middleware('throttle:public');
+Route::get('/card/{id}/related', [App\Http\Controllers\Api\CardController::class, 'getRelatedProducts'])->middleware('throttle:public');
+Route::get('/card/{category}/{slug}/related', [App\Http\Controllers\Api\CardController::class, 'getRelatedProductsBySlug'])->middleware('throttle:public');
 
 // Report API routes
-Route::post('/reports', [App\Http\Controllers\Api\ReportController::class, 'submitReport']);
+Route::post('/reports', [App\Http\Controllers\Api\ReportController::class, 'submitReport'])->middleware('throttle:public');
 
 // Rotte per controllo disponibilità (pubbliche)
 Route::prefix('availability')->group(function () {
-    Route::post('/check-single', [AvailabilityController::class, 'checkSingle']);
-    Route::post('/check-multiple', [AvailabilityController::class, 'checkMultiple']);
-    Route::post('/reserve', [AvailabilityController::class, 'reserve']);
-    Route::post('/release', [AvailabilityController::class, 'release']);
-    Route::post('/confirm', [AvailabilityController::class, 'confirm']);
-    Route::post('/clean-expired', [AvailabilityController::class, 'cleanExpired']);
+    Route::post('/check-single', [AvailabilityController::class, 'checkSingle'])->middleware('throttle:public');
+    Route::post('/check-multiple', [AvailabilityController::class, 'checkMultiple'])->middleware('throttle:public');
+    Route::post('/reserve', [AvailabilityController::class, 'reserve'])->middleware('throttle:public');
+    Route::post('/release', [AvailabilityController::class, 'release'])->middleware('throttle:public');
+    Route::post('/confirm', [AvailabilityController::class, 'confirm'])->middleware('throttle:public');
+    Route::post('/clean-expired', [AvailabilityController::class, 'cleanExpired'])->middleware('throttle:public');
 });
 
 // Rotte per checkout (protette)
@@ -555,14 +552,14 @@ Route::post('/webhooks/shippo', [App\Http\Controllers\Api\ShippoWebhookControlle
     ->middleware('log.shippo.deprecated:error');
 
 // Contact form (no auth required)
-Route::post('/contact', [App\Http\Controllers\Api\ContactController::class, 'sendMessage']);
+Route::post('/contact', [App\Http\Controllers\Api\ContactController::class, 'sendMessage'])->middleware('throttle:public');
 
 // ============================================
 // CardSwap Spedizioni V1 - Nuovo Sistema Pricing
 // ============================================
 
 // Calcolo tariffe per checkout (pubblico, ma può essere protetto se necessario)
-Route::post('/shipping/v1/calculate-rates', [CardSwapShippingController::class, 'calculateRates']);
+Route::post('/shipping/v1/calculate-rates', [CardSwapShippingController::class, 'calculateRates'])->middleware('throttle:public');
 
 // Gestione tabelle prezzi venditore (protette, solo seller autenticati)
 Route::middleware('auth:sanctum')->prefix('seller/shipping/price-tables')->group(function () {

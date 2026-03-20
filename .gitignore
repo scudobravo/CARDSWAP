@@ -71,6 +71,7 @@ backup_*.sql
 /fix_*.sql
 /update_rarities*.php
 /public/test-*.html
+/public/debug-*.html
 
 # Cartella mockup/design (asset già copiati in public/images/hero e public/images/come-funziona)
 /immagini sito (hero - come funziona)/
