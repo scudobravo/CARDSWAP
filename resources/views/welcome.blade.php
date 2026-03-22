@@ -30,6 +30,8 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <meta name="stripe-publishable-key" content="{{ config('services.stripe.key') }}">
 
+        @include('partials.iubenda-head')
+
         <!-- Favicon CardSwap: logo blu per SERP (visibile su sfondo bianco) -->
         <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-light-32x32.png') }}">
         <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-light-16x16.png') }}">

@@ -6,6 +6,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="stripe-publishable-key" content="{{ config('services.stripe.key') }}">
 
+    @include('partials.iubenda-head')
+
     <title>CardSwap | Compra e Vendi Carte Calcio e Collezionabili</title>
     <meta name="description" content="Compra e vendi carte calcio rare e carte collezionabili in modo sicuro. Pagamenti protetti, spedizioni tracciate e protezione per venditori.">
     <meta name="keywords" content="carte da collezione, calcio, pokemon, basketball, trading cards, collezionismo">
@@ -46,26 +48,5 @@
 </head>
 <body class="font-sans antialiased">
     <div id="app"></div>
-
-    {{-- Iubenda: widget unificato (Cookie Solution / GDPR) --}}
-    <script type="text/javascript" src="https://embeds.iubenda.com/widgets/f6075db0-c21a-415e-b3c2-f1bf0e6d4ecd.js" defer></script>
-    {{-- Iubenda: loader per link legali con classe iubenda-embed --}}
-    <script type="text/javascript">
-        (function (w, d) {
-            var loader = function () {
-                var s = d.createElement('script'),
-                    tag = d.getElementsByTagName('script')[0];
-                s.src = 'https://cdn.iubenda.com/iubenda.js';
-                tag.parentNode.insertBefore(s, tag);
-            };
-            if (w.addEventListener) {
-                w.addEventListener('load', loader, false);
-            } else if (w.attachEvent) {
-                w.attachEvent('onload', loader);
-            } else {
-                w.onload = loader;
-            }
-        })(window, document);
-    </script>
 </body>
 </html>
