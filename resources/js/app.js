@@ -137,7 +137,8 @@ const routes = [
     // Contact Route
     { path: '/contact', component: Contact, name: 'contact' },
     
-    // Legal Routes
+    // Legal Routes (terms-of-service = URL usata da Iubenda/sitemap → stessa pagina)
+    { path: '/terms-of-service', redirect: '/terms-and-conditions' },
     { path: '/terms-and-conditions', component: TermsAndConditions, name: 'terms' },
     { path: '/privacy-policy', component: PrivacyPolicy, name: 'privacy' },
     { path: '/cookie-policy', component: CookiePolicy, name: 'cookies' },
@@ -192,7 +193,7 @@ const authStore = useAuthStore();
 // Navigation guard per verificare l'autenticazione solo sulle pagine protette
 router.beforeEach(async (to, from, next) => {
   // Pagine pubbliche che non richiedono autenticazione
-  const publicPages = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/categories', '/category/football', '/category/basketball', '/category/pokemon', '/category/disney', '/category/spongebob', '/category/labubu', '/terms-and-conditions', '/privacy-policy', '/cookie-policy', '/contact', '/search']
+  const publicPages = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/categories', '/category/football', '/category/basketball', '/category/pokemon', '/category/disney', '/category/spongebob', '/category/labubu', '/terms-of-service', '/terms-and-conditions', '/privacy-policy', '/cookie-policy', '/contact', '/search']
   const isPublicPage = publicPages.includes(to.path) || to.path.startsWith('/category/') || to.path.startsWith('/categories/') || to.path.startsWith('/top/') || to.path.match(/^\/[^\/]+\/[^\/]+$/)
   
   // Se è una pagina pubblica, lascia passare senza controlli
