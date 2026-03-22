@@ -137,11 +137,11 @@ const routes = [
     // Contact Route
     { path: '/contact', component: Contact, name: 'contact' },
     
-    // Legal Routes (terms-of-service = URL usata da Iubenda/sitemap → stessa pagina)
-    { path: '/terms-of-service', redirect: '/terms-and-conditions' },
-    { path: '/terms-and-conditions', component: TermsAndConditions, name: 'terms' },
-    { path: '/privacy-policy', component: PrivacyPolicy, name: 'privacy' },
-    { path: '/cookie-policy', component: CookiePolicy, name: 'cookies' },
+    // Legal Routes — stessa vista per /terms-of-service (Iubenda, sitemap) e /terms-and-conditions
+    { path: '/terms-of-service', component: TermsAndConditions, name: 'terms-of-service', meta: { public: true } },
+    { path: '/terms-and-conditions', component: TermsAndConditions, name: 'terms', meta: { public: true } },
+    { path: '/privacy-policy', component: PrivacyPolicy, name: 'privacy', meta: { public: true } },
+    { path: '/cookie-policy', component: CookiePolicy, name: 'cookies', meta: { public: true } },
     
     // Search Routes
     { path: '/search', component: SearchResults, name: 'search' },
@@ -192,9 +192,16 @@ const authStore = useAuthStore();
 
 // Navigation guard per verificare l'autenticazione solo sulle pagine protette
 router.beforeEach(async (to, from, next) => {
+  // Route esplicitamente pubbliche (meta) — risolve redirect/slash e Iubenda senza whitelist fragile
+  if (to.matched.some((record) => record.meta.public)) {
+    next()
+    return
+  }
+
+  const path = to.path.replace(/\/$/, '') || '/'
   // Pagine pubbliche che non richiedono autenticazione
   const publicPages = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/categories', '/category/football', '/category/basketball', '/category/pokemon', '/category/disney', '/category/spongebob', '/category/labubu', '/terms-of-service', '/terms-and-conditions', '/privacy-policy', '/cookie-policy', '/contact', '/search']
-  const isPublicPage = publicPages.includes(to.path) || to.path.startsWith('/category/') || to.path.startsWith('/categories/') || to.path.startsWith('/top/') || to.path.match(/^\/[^\/]+\/[^\/]+$/)
+  const isPublicPage = publicPages.includes(path) || to.path.startsWith('/category/') || to.path.startsWith('/categories/') || to.path.startsWith('/top/') || to.path.match(/^\/[^\/]+\/[^\/]+$/)
   
   // Se è una pagina pubblica, lascia passare senza controlli
   if (isPublicPage) {
