@@ -10,9 +10,21 @@
 
         <!-- Link legali -->
         <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-6">
-          <router-link to="/terms-and-conditions" class="text-white font-gill-sans text-sm hover:text-secondary transition-colors">Termini e Condizioni</router-link>
-          <router-link to="/privacy-policy" class="text-white font-gill-sans text-sm hover:text-secondary transition-colors">Privacy Policy</router-link>
-          <router-link to="/cookie-policy" class="text-white font-gill-sans text-sm hover:text-secondary transition-colors">Cookie Policy</router-link>
+          <a
+            href="https://www.iubenda.com/termini-e-condizioni/75467782"
+            class="iubenda-white iubenda-noiframe iubenda-embed text-white font-gill-sans text-sm hover:text-secondary transition-colors"
+            title="Termini e Condizioni"
+          >Termini e Condizioni</a>
+          <a
+            href="https://www.iubenda.com/privacy-policy/75467782"
+            class="iubenda-white iubenda-noiframe iubenda-embed text-white font-gill-sans text-sm hover:text-secondary transition-colors"
+            title="Privacy Policy"
+          >Privacy Policy</a>
+          <a
+            href="https://www.iubenda.com/privacy-policy/75467782/cookie-policy"
+            class="iubenda-white iubenda-noiframe iubenda-embed text-white font-gill-sans text-sm hover:text-secondary transition-colors"
+            title="Cookie Policy"
+          >Cookie Policy</a>
         </div>
 
         <!-- Hai domande? + Contattaci (CTA oro #C9A14A) -->
