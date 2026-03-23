@@ -292,23 +292,73 @@ class CardController extends Controller
                 }
             }
 
-            // Apply section-specific ordering
-            switch ($section) {
-                case 'new':
-                    // Get newest listings (most recently created)
-                    $query->orderBy('created_at', 'desc');
-                    break;
-                
-                case 'most_expensive':
-                    // Get most expensive listings (highest price first)
-                    $query->orderBy('price', 'desc');
-                    break;
-                
-                default:
-                    $query->orderBy('created_at', 'desc');
-            }
+            // Caso speciale homepage: "sports" + "new" deve pescare da Calcio e Basket
+            // mantenendo il feed aggiornato e bilanciato tra le due categorie quando possibile.
+            if ($category === 'sports' && $section === 'new') {
+                $footballFilter = function ($q) {
+                    $q->where('name', 'Calcio')
+                        ->orWhere('slug', 'calcio')
+                        ->orWhere('slug', 'football');
+                };
+                $basketFilter = function ($q) {
+                    $q->where('name', 'Basketball')
+                        ->orWhere('slug', 'basketball')
+                        ->orWhere('slug', 'basket');
+                };
 
-            $listings = $query->limit($limit)->get();
+                $footballTarget = (int) ceil($limit / 2);
+                $basketTarget = (int) floor($limit / 2);
+
+                $footballListings = (clone $query)
+                    ->whereHas('cardModel.category', $footballFilter)
+                    ->orderBy('created_at', 'desc')
+                    ->limit($footballTarget)
+                    ->get();
+
+                $basketListings = (clone $query)
+                    ->whereHas('cardModel.category', $basketFilter)
+                    ->orderBy('created_at', 'desc')
+                    ->limit($basketTarget)
+                    ->get();
+
+                $listings = $footballListings
+                    ->concat($basketListings)
+                    ->sortByDesc('created_at')
+                    ->values();
+
+                // Se una categoria non ha abbastanza elementi, completa con le più recenti disponibili.
+                if ($listings->count() < $limit) {
+                    $missing = $limit - $listings->count();
+                    $extraListings = (clone $query)
+                        ->whereNotIn('id', $listings->pluck('id')->all())
+                        ->orderBy('created_at', 'desc')
+                        ->limit($missing)
+                        ->get();
+
+                    $listings = $listings
+                        ->concat($extraListings)
+                        ->sortByDesc('created_at')
+                        ->values();
+                }
+            } else {
+                // Apply section-specific ordering
+                switch ($section) {
+                    case 'new':
+                        // Get newest listings (most recently created)
+                        $query->orderBy('created_at', 'desc');
+                        break;
+                    
+                    case 'most_expensive':
+                        // Get most expensive listings (highest price first)
+                        $query->orderBy('price', 'desc');
+                        break;
+                    
+                    default:
+                        $query->orderBy('created_at', 'desc');
+                }
+
+                $listings = $query->limit($limit)->get();
+            }
 
             // Transform data for frontend
             $transformedCards = $listings->map(function ($listing) {
