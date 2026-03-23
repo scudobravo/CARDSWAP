@@ -37,19 +37,19 @@ const cards = [
   },
   {
     id: 2,
-    title: 'Pubblica o trova carte',
+    title: 'Pubblica o\ntrova carte',
     description: 'Carica le tue carte oppure sfoglia migliaia di annunci.',
     icon: '/images/come-funziona/trova-carte.svg',
   },
   {
     id: 3,
-    title: 'Utenti reali e verificati',
+    title: 'Utenti reali e\nverificati',
     description: 'Verifichiamo l\'identità degli utenti per mantenere il marketplace autentico e affidabile.',
     icon: '/images/come-funziona/utenti-sicuri.svg',
   },
   {
     id: 4,
-    title: 'Compra. Vendi. Colleziona.',
+    title: 'Compra. Vendi.\nColleziona.',
     description: 'Tutto ciò che ti serve per comprare o vendere carte in un unico posto.',
     icon: '/images/come-funziona/compra-vendi-colleziona.svg',
   },
