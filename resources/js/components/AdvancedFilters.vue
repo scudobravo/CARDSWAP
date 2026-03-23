@@ -181,7 +181,7 @@
         <div class="space-y-4">
           <!-- Autograph -->
           <div class="space-y-2">
-            <select v-model="localFilters.autograph" class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white py-2 pr-8 pl-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-primary sm:text-sm/6">
+            <select v-model="localFilters.autograph" class="col-start-1 row-start-1 w-full appearance-none rounded-md border border-gray-300 bg-white py-2 pr-8 pl-3 text-base text-gray-900 focus:border-primary focus:outline-none sm:text-sm/6">
               <option value="">Autograph</option>
               <option value="yes">Sì</option>
               <option value="no">No</option>
