@@ -60,6 +60,7 @@ import Contact from './views/Contact.vue';
 
 // Import Legal Views
 import TermsAndConditions from './views/TermsAndConditions.vue';
+import PlatformTerms from './views/PlatformTerms.vue';
 import PrivacyPolicy from './views/PrivacyPolicy.vue';
 import CookiePolicy from './views/CookiePolicy.vue';
 
@@ -140,6 +141,7 @@ const routes = [
     // Legal Routes — stessa vista per /terms-of-service (Iubenda, sitemap) e /terms-and-conditions
     { path: '/terms-of-service', component: TermsAndConditions, name: 'terms-of-service', meta: { public: true } },
     { path: '/terms-and-conditions', component: TermsAndConditions, name: 'terms', meta: { public: true } },
+    { path: '/platform-terms', component: PlatformTerms, name: 'platform-terms', meta: { public: true } },
     { path: '/privacy-policy', component: PrivacyPolicy, name: 'privacy', meta: { public: true } },
     { path: '/cookie-policy', component: CookiePolicy, name: 'cookies', meta: { public: true } },
     
@@ -200,7 +202,7 @@ router.beforeEach(async (to, from, next) => {
 
   const path = to.path.replace(/\/$/, '') || '/'
   // Pagine pubbliche che non richiedono autenticazione
-  const publicPages = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/categories', '/category/football', '/category/basketball', '/category/pokemon', '/category/disney', '/category/spongebob', '/category/labubu', '/terms-of-service', '/terms-and-conditions', '/privacy-policy', '/cookie-policy', '/contact', '/search']
+  const publicPages = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/categories', '/category/football', '/category/basketball', '/category/pokemon', '/category/disney', '/category/spongebob', '/category/labubu', '/terms-of-service', '/terms-and-conditions', '/platform-terms', '/privacy-policy', '/cookie-policy', '/contact', '/search']
   const isPublicPage = publicPages.includes(path) || to.path.startsWith('/category/') || to.path.startsWith('/categories/') || to.path.startsWith('/top/') || to.path.match(/^\/[^\/]+\/[^\/]+$/)
   
   // Se è una pagina pubblica, lascia passare senza controlli

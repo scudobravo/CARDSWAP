@@ -118,7 +118,7 @@ const isInDashboard = computed(() => route.path === '/dashboard')
 
 // Computed per determinare se nascondere la barra secondaria (pagine di solo testo e contatti)
 const hideSecondaryBar = computed(() => {
-  const textOnlyPages = ['/privacy-policy', '/terms-and-conditions', '/cookie-policy', '/contact']
+  const textOnlyPages = ['/privacy-policy', '/terms-and-conditions', '/platform-terms', '/cookie-policy', '/contact']
   return textOnlyPages.includes(route.path)
 })
 

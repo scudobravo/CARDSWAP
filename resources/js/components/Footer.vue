@@ -25,6 +25,9 @@
             class="iubenda-white iubenda-noiframe iubenda-embed text-white font-gill-sans text-sm hover:text-secondary transition-colors"
             title="Cookie Policy"
           >Cookie Policy</a>
+          <router-link to="/platform-terms" class="text-white font-gill-sans text-sm hover:text-secondary transition-colors">
+            Termini Piattaforma
+          </router-link>
         </div>
 
         <!-- Hai domande? + Contattaci (CTA oro #C9A14A) -->
