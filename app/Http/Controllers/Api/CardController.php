@@ -11,6 +11,7 @@ use App\Models\Player;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class CardController extends Controller
 {
@@ -39,6 +40,16 @@ class CardController extends Controller
             // Filter by category using the relationship
             if ($category) {
                 switch ($category) {
+                    case 'sports':
+                        $query->whereHas('category', function($q) {
+                            $q->where('name', 'Calcio')
+                              ->orWhere('slug', 'calcio')
+                              ->orWhere('slug', 'football')
+                              ->orWhere('name', 'Basketball')
+                              ->orWhere('slug', 'basketball')
+                              ->orWhere('slug', 'basket');
+                        });
+                        break;
                     case 'football':
                         $query->whereHas('category', function($q) {
                             $q->where('name', 'Calcio')
@@ -221,11 +232,24 @@ class CardController extends Controller
                 'cardModel.player',
                 'cardModel.team',
                 'cardModel.cardSet'
-            ])->where('status', 'active');
+            ])->where('status', 'active')
+              ->whereHas('cardModel', function ($q) {
+                  $q->where('is_active', true);
+              });
 
             // Filter by category using the relationship
             if ($category) {
                 switch ($category) {
+                    case 'sports':
+                        $query->whereHas('cardModel.category', function($q) {
+                            $q->where('name', 'Calcio')
+                              ->orWhere('slug', 'calcio')
+                              ->orWhere('slug', 'football')
+                              ->orWhere('name', 'Basketball')
+                              ->orWhere('slug', 'basketball')
+                              ->orWhere('slug', 'basket');
+                        });
+                        break;
                     case 'football':
                         $query->whereHas('cardModel.category', function($q) {
                             $q->where('name', 'Calcio')
@@ -318,6 +342,9 @@ class CardController extends Controller
                 } elseif ($cardModel->set_name) {
                     $teamName = $cardModel->set_name;
                 }
+                
+                $categorySlug = $this->getCategorySlug($cardModel->category->slug ?? '');
+                $playerSlugSource = $cardModel->player->name ?? $cardModel->name ?? '';
 
                 return [
                     'id' => $cardModel->id,
@@ -333,6 +360,8 @@ class CardController extends Controller
                     'created_at' => $listing->created_at,
                     'rarity' => $cardModel->rarity ?? null,
                     'set_name' => $cardModel->cardSet->name ?? $cardModel->set_name ?? null,
+                    'category_slug' => $categorySlug,
+                    'slug' => $cardModel->slug ?: Str::slug($playerSlugSource),
                 ];
             })->filter(); // Remove null entries
 

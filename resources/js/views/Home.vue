@@ -91,8 +91,11 @@
         <ProductCarousel 
           title="Ultime uscite" 
           :products="latestReleases"
-          category="basketball"
-          see-all-url="/category/basketball"
+          category="sports"
+          section="new"
+          :use-dynamic-data="true"
+          :limit="10"
+          see-all-url="/categories"
         />
       </div>
     </section>
@@ -346,86 +349,5 @@ const topPokemon = ref([
   }
 ])
 
-const latestReleases = ref([
-  {
-    id: 1,
-    name: "LeBron James",
-    team: "Los Angeles Lakers",
-    type: "Basketball",
-    description: "Carta Panini del re del basket",
-    price: "€55.00",
-    rating: "4.9",
-    image_url: null // Campo per l'immagine dal database
-  },
-  {
-    id: 2,
-    name: "Stephen Curry",
-    team: "Golden State Warriors",
-    type: "Basketball",
-    description: "Carta Topps del baby-faced assassin",
-    price: "€48.50",
-    rating: "4.8",
-    image_url: null // Campo per l'immagine dal database
-  },
-  {
-    id: 3,
-    name: "Kevin Durant",
-    team: "Phoenix Suns",
-    type: "Basketball",
-    description: "Carta Panini del snake",
-    price: "€52.00",
-    rating: "4.7",
-    image_url: null // Campo per l'immagine dal database
-  },
-  {
-    id: 4,
-    name: "Giannis Antetokounmpo",
-    team: "Milwaukee Bucks",
-    type: "Basketball",
-    description: "Carta Topps del Greek Freak",
-    price: "€58.00",
-    rating: "4.6",
-    image_url: null // Campo per l'immagine dal database
-  },
-  {
-    id: 5,
-    name: "Luka Dončić",
-    team: "Dallas Mavericks",
-    type: "Basketball",
-    description: "Carta Panini del Wonder Boy",
-    price: "€45.00",
-    rating: "4.5",
-    image_url: null // Campo per l'immagine dal database
-  },
-  {
-    id: 6,
-    name: "Joel Embiid",
-    team: "Philadelphia 76ers",
-    type: "Basketball",
-    description: "Carta Topps del Process",
-    price: "€42.50",
-    rating: "4.4",
-    image_url: null // Campo per l'immagine dal database
-  },
-  {
-    id: 7,
-    name: "Nikola Jokić",
-    team: "Denver Nuggets",
-    type: "Basketball",
-    description: "Carta Panini del Joker",
-    price: "€50.00",
-    rating: "4.3",
-    image_url: null // Campo per l'immagine dal database
-  },
-  {
-    id: 8,
-    name: "Ja Morant",
-    team: "Memphis Grizzlies",
-    type: "Basketball",
-    description: "Carta Topps di 12",
-    price: "€38.00",
-    rating: "4.2",
-    image_url: null // Campo per l'immagine dal database
-  }
-])
+const latestReleases = ref([])
 </script>

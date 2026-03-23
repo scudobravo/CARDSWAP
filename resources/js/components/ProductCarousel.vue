@@ -55,7 +55,7 @@
                       <!-- Product Card -->
                       <div class="h-44 sm:h-64 lg:h-72 rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 relative">
                         <!-- NEW tag -->
-                        <div v-if="index < 2" class="absolute top-3 right-3 z-10 bg-primary text-white text-xs font-futura-bold px-2 py-1 rounded">
+                        <div v-if="section === 'new' || index < 2" class="absolute top-3 right-3 z-10 bg-primary text-white text-xs font-futura-bold px-2 py-1 rounded">
                           NEW
                         </div>
                         
