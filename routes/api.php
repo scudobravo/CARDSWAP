@@ -436,7 +436,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard', [UserController::class, 'dashboard']); // Dashboard completa utente
 
     // Pannello amministrazione (solo admin)
-    Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
+    Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
         Route::get('/dashboard', [AdminController::class, 'dashboard']); // Statistiche dashboard
         Route::get('/users', [AdminController::class, 'users']); // Lista utenti
         Route::get('/users/{user}', [AdminController::class, 'user']); // Dettaglio utente
@@ -445,6 +445,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/orders/{order}', [AdminController::class, 'order']); // Dettaglio ordine
         Route::get('/feedbacks', [AdminController::class, 'feedbacks']); // Lista feedback per moderazione
         Route::put('/feedbacks/{feedback}/moderate', [AdminController::class, 'moderateFeedback']); // Moderazione feedback
+        Route::get('/listings', [AdminController::class, 'listings']);
+        Route::get('/listings/{cardListing}', [AdminController::class, 'listing']);
+        Route::patch('/listings/{cardListing}', [AdminController::class, 'updateListing']);
         
         // Gestione KYC
         Route::get('/kyc/pending', [KycController::class, 'pendingDocuments']); // Documenti KYC in attesa

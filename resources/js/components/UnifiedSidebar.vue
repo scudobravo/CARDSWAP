@@ -285,6 +285,73 @@
           </ul>
         </li>
 
+        <!-- Amministrazione (solo admin) -->
+        <li v-if="user?.role === 'admin'">
+          <div class="text-xs/6 font-futura-bold text-gray-400 uppercase tracking-wider">Amministrazione</div>
+          <ul role="list" class="-mx-2 mt-2 space-y-1">
+            <li>
+              <router-link
+                to="/admin/listings"
+                :class="[
+                  $route.path === '/admin/listings' ? 'bg-gray-50 text-primary' : 'text-gray-700 hover:bg-gray-50 hover:text-primary',
+                  'group flex gap-x-3 rounded-md p-2 text-sm/6 font-gill-sans-semibold'
+                ]"
+              >
+                <RectangleStackIcon :class="[$route.path === '/admin/listings' ? 'text-primary' : 'text-gray-400 group-hover:text-primary', 'size-6 shrink-0']" aria-hidden="true" />
+                Inserzioni
+              </router-link>
+            </li>
+            <li>
+              <router-link
+                to="/admin/users"
+                :class="[
+                  $route.path === '/admin/users' ? 'bg-gray-50 text-primary' : 'text-gray-700 hover:bg-gray-50 hover:text-primary',
+                  'group flex gap-x-3 rounded-md p-2 text-sm/6 font-gill-sans-semibold'
+                ]"
+              >
+                <UsersIcon :class="[$route.path === '/admin/users' ? 'text-primary' : 'text-gray-400 group-hover:text-primary', 'size-6 shrink-0']" aria-hidden="true" />
+                Utenti
+              </router-link>
+            </li>
+            <li>
+              <router-link
+                to="/admin/orders"
+                :class="[
+                  $route.path === '/admin/orders' ? 'bg-gray-50 text-primary' : 'text-gray-700 hover:bg-gray-50 hover:text-primary',
+                  'group flex gap-x-3 rounded-md p-2 text-sm/6 font-gill-sans-semibold'
+                ]"
+              >
+                <ShoppingBagIcon :class="[$route.path === '/admin/orders' ? 'text-primary' : 'text-gray-400 group-hover:text-primary', 'size-6 shrink-0']" aria-hidden="true" />
+                Ordini
+              </router-link>
+            </li>
+            <li>
+              <router-link
+                to="/admin/feedbacks"
+                :class="[
+                  $route.path === '/admin/feedbacks' ? 'bg-gray-50 text-primary' : 'text-gray-700 hover:bg-gray-50 hover:text-primary',
+                  'group flex gap-x-3 rounded-md p-2 text-sm/6 font-gill-sans-semibold'
+                ]"
+              >
+                <ChatBubbleBottomCenterTextIcon :class="[$route.path === '/admin/feedbacks' ? 'text-primary' : 'text-gray-400 group-hover:text-primary', 'size-6 shrink-0']" aria-hidden="true" />
+                Feedback
+              </router-link>
+            </li>
+            <li>
+              <router-link
+                to="/admin/kyc"
+                :class="[
+                  $route.path === '/admin/kyc' ? 'bg-gray-50 text-primary' : 'text-gray-700 hover:bg-gray-50 hover:text-primary',
+                  'group flex gap-x-3 rounded-md p-2 text-sm/6 font-gill-sans-semibold'
+                ]"
+              >
+                <ShieldCheckIcon :class="[$route.path === '/admin/kyc' ? 'text-primary' : 'text-gray-400 group-hover:text-primary', 'size-6 shrink-0']" aria-hidden="true" />
+                KYC
+              </router-link>
+            </li>
+          </ul>
+        </li>
+
 
         <!-- Logout -->
         <li class="mt-auto">
@@ -325,7 +392,10 @@ import {
   ArrowRightOnRectangleIcon,
   PlusIcon,
   TruckIcon,
-  ChatBubbleLeftRightIcon
+  ChatBubbleLeftRightIcon,
+  ChatBubbleBottomCenterTextIcon,
+  RectangleStackIcon,
+  UsersIcon
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()

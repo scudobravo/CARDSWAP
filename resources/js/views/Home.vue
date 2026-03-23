@@ -89,7 +89,7 @@
     <section class="py-16 bg-white">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <ProductCarousel 
-          title="Ultime uscite" 
+          title="Nuove Inserzioni" 
           :products="latestReleases"
           category="sports"
           section="new"

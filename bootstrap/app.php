@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
+            'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'role' => \App\Http\Middleware\CheckRole::class,
             'require.kyc' => \App\Http\Middleware\RequireKyc::class,
             'check.availability' => \App\Http\Middleware\CheckAvailability::class,

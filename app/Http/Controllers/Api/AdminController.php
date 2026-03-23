@@ -538,4 +538,165 @@ class AdminController extends Controller
             'zones_count' => $zonesCount
         ]);
     }
+
+    private const LISTING_STATUSES = [
+        'draft',
+        'pending_review',
+        'approved',
+        'active',
+        'paused',
+        'rejected',
+        'expired',
+        'sold',
+        'inactive',
+    ];
+
+    /**
+     * Lista inserzioni (moderazione)
+     */
+    public function listings(Request $request): JsonResponse
+    {
+        if (!$this->checkAdminAccess()) {
+            return response()->json(['message' => 'Accesso negato'], 403);
+        }
+
+        $query = CardListing::query()
+            ->with(['seller:id,name,email,username', 'cardModel.category:id,name,slug', 'cardSet:id,name', 'gradingCompany:id,name']);
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('seller_id')) {
+            $query->where('seller_id', $request->integer('seller_id'));
+        }
+
+        if ($request->filled('listing_type')) {
+            $query->where('listing_type', $request->listing_type);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        if ($request->filled('category_slug')) {
+            $slug = $request->category_slug;
+            $query->where(function ($q) use ($slug) {
+                $q->whereHas('cardModel.category', function ($q) use ($slug) {
+                    $q->where('slug', $slug);
+                })->orWhereHas('cardSet.category', function ($q) use ($slug) {
+                    $q->where('slug', $slug);
+                });
+            });
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('id', $search)
+                    ->orWhereHas('seller', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhere('username', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $listings = $query->orderByDesc('created_at')
+            ->paginate($request->integer('per_page', 20));
+
+        return response()->json([
+            'success' => true,
+            'data' => $listings,
+        ]);
+    }
+
+    /**
+     * Dettaglio inserzione (admin)
+     */
+    public function listing(CardListing $cardListing): JsonResponse
+    {
+        if (!$this->checkAdminAccess()) {
+            return response()->json(['message' => 'Accesso negato'], 403);
+        }
+
+        $cardListing->load([
+            'seller',
+            'cardModel.category',
+            'cardSet.category',
+            'gradingCompany',
+            'shippingZones',
+            'orderItems.order',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $cardListing,
+        ]);
+    }
+
+    /**
+     * Aggiorna stato inserzione (moderazione)
+     */
+    public function updateListing(Request $request, CardListing $cardListing): JsonResponse
+    {
+        if (!$this->checkAdminAccess()) {
+            return response()->json(['message' => 'Accesso negato'], 403);
+        }
+
+        $statusRule = 'required|in:' . implode(',', self::LISTING_STATUSES);
+
+        $validator = Validator::make($request->all(), [
+            'status' => $statusRule,
+            'rejection_reason' => 'nullable|string|max:2000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dati non validi',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        if ($cardListing->status === 'sold' && $request->status !== 'sold') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Non è possibile modificare un\'inserzione già venduta.',
+            ], 422);
+        }
+
+        $newStatus = $request->status;
+        $update = ['status' => $newStatus];
+
+        if ($newStatus === 'rejected') {
+            $update['rejection_reason'] = $request->input('rejection_reason');
+        } elseif ($request->has('rejection_reason')) {
+            $update['rejection_reason'] = $request->input('rejection_reason');
+        }
+
+        if (in_array($newStatus, ['active', 'approved'], true) && !$cardListing->published_at) {
+            $update['published_at'] = now();
+        }
+
+        if (in_array($newStatus, ['draft', 'pending_review', 'rejected', 'inactive', 'paused'], true)) {
+            // published_at lasciato per storico; opzionale azzeramento solo per draft/rejected
+            if (in_array($newStatus, ['draft', 'rejected'], true)) {
+                $update['published_at'] = null;
+            }
+        }
+
+        $cardListing->update($update);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Inserzione aggiornata',
+            'data' => $cardListing->fresh()->load(['seller:id,name,email', 'cardModel.category:id,name,slug']),
+        ]);
+    }
 }

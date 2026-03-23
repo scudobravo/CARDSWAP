@@ -94,6 +94,11 @@ const routes = [
     { path: '/categories/:category/:subcategory', component: SubcategoryPage, name: 'subcategory' },
     { path: '/product/:id', component: ProductDetail, name: 'product.detail' },
     { path: '/dashboard', component: Dashboard, name: 'dashboard' },
+    { path: '/admin/users', component: () => import('./views/admin/AdminUsersPage.vue'), name: 'admin.users', meta: { requiresAdmin: true } },
+    { path: '/admin/orders', component: () => import('./views/admin/AdminOrdersPage.vue'), name: 'admin.orders', meta: { requiresAdmin: true } },
+    { path: '/admin/listings', component: () => import('./views/admin/AdminListingsPage.vue'), name: 'admin.listings', meta: { requiresAdmin: true } },
+    { path: '/admin/feedbacks', component: () => import('./views/admin/AdminFeedbacksPage.vue'), name: 'admin.feedbacks', meta: { requiresAdmin: true } },
+    { path: '/admin/kyc', component: () => import('./views/admin/AdminKycPage.vue'), name: 'admin.kyc', meta: { requiresAdmin: true } },
     { path: '/notifications', component: () => import('./views/NotificationsPage.vue'), name: 'notifications' },
     { path: '/cart', component: Cart, name: 'cart' },
     { path: '/checkout', component: Checkout, name: 'checkout' },
@@ -232,6 +237,13 @@ router.beforeEach(async (to, from, next) => {
   if (!authStore.isAuthenticated && !isPublicPage) {
     next('/login')
     return
+  }
+
+  if (to.matched.some((record) => record.meta.requiresAdmin)) {
+    if (authStore.user?.role !== 'admin') {
+      next('/dashboard')
+      return
+    }
   }
   
   next()

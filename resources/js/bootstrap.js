@@ -41,7 +41,7 @@ window.axios.interceptors.response.use(
             // NON reindirizzare automaticamente al login
             // Lascia che sia l'applicazione a decidere come gestire l'errore 401
             // Solo se siamo su una pagina protetta (dashboard, account, etc)
-            const protectedPaths = ['/dashboard', '/account/', '/purchases/', '/sales/', '/settings/', '/checkout', '/orders'];
+            const protectedPaths = ['/dashboard', '/admin/', '/account/', '/purchases/', '/sales/', '/settings/', '/checkout', '/orders'];
             const isProtectedPath = protectedPaths.some(path => window.location.pathname.startsWith(path));
             
             if (isProtectedPath && window.location.pathname !== '/login') {
