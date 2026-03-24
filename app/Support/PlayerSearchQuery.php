@@ -55,4 +55,29 @@ class PlayerSearchQuery
             $query->where($column, 'LIKE', '%'.$escaped.'%');
         }
     }
+
+    /**
+     * Ordina i risultati dell'autocomplete quando c'è testo di ricerca:
+     * prima nomi "semplici" (senza più giocatori separati da "/"), poi i più corti,
+     * infine alfabetico — così "Ronaldo" non resta fuori dal limite a favore di stringhe lunghe tipo "Pele / Cristiano Ronaldo / ...".
+     */
+    public static function orderPlayerNameForAutocomplete(Builder $query, ?string $rawSearch): void
+    {
+        if ($rawSearch === null || trim($rawSearch) === '') {
+            $query->orderBy('name');
+
+            return;
+        }
+
+        $query->orderByRaw('CASE WHEN name NOT LIKE ? THEN 0 ELSE 1 END', ['%/%']);
+
+        $driver = $query->getConnection()->getDriverName();
+        if ($driver === 'sqlite') {
+            $query->orderByRaw('length(name) ASC');
+        } else {
+            $query->orderByRaw('CHAR_LENGTH(name) ASC');
+        }
+
+        $query->orderBy('name');
+    }
 }

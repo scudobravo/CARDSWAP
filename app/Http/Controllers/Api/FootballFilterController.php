@@ -216,21 +216,22 @@ class FootballFilterController extends Controller
                     });
                 }
             })
-            ->active()
-            ->orderBy('name');
-        
+            ->active();
+
         // Se c'è una query di ricerca, filtra i risultati (spazi e "/" equivalgono come separatori)
         if (!empty($query)) {
             PlayerSearchQuery::wherePlayerNameMatches($playersQuery, 'name', $query);
         }
-        
+
+        PlayerSearchQuery::orderPlayerNameForAutocomplete($playersQuery, $query);
+
         $players = $playersQuery->with(['team', 'cardModels' => function($query) {
                 $query->whereHas('category', function($catQuery) {
                     $catQuery->where('slug', 'calcio');
                 })->select('id', 'player_id', 'card_number', 'card_number_in_set', 'name', 'year', 'rarity', 'rarity_variation', 'is_rookie', 'is_autograph', 'is_relic', 'is_on_card_auto', 'is_jewel', 'is_booklet', 'is_multi_player_dual', 'is_multi_player_triple', 'is_multi_player_quad', 'card_set_id', 'team_id')
                 ->with(['cardSet:id,name,brand', 'team:id,name']);
             }])
-            ->limit(100) // Limite ragionevole per evitare errori di memoria
+            ->limit(200)
             ->get(['id', 'name', 'slug', 'position', 'nationality', 'team_id']);
 
         // Raggruppa i giocatori per nome per evitare duplicati
