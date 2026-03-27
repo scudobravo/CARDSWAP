@@ -442,7 +442,9 @@ class CardListing extends Model
         }
         
         if ($this->is_altered) {
-            $title .= ' (Alterata)';
+            // Compatibilita' con il flusso attuale: le carte relic possono usare is_altered nel listing.
+            $isRelic = (bool) ($this->cardModel->is_relic ?? false);
+            $title .= $isRelic ? ' (Relic)' : ' (Alterata)';
         }
         
         if ($this->is_first_edition) {
