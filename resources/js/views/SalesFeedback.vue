@@ -184,7 +184,7 @@
                 </span>
               </div>
               <div v-if="feedback.order?.orderItems" class="mt-2 text-sm text-gray-600">
-                <p>{{ feedback.order.orderItems.length }} articoli • €{{ feedback.order.total_amount }}</p>
+                <p>{{ feedback.order.orderItems.length }} articoli • €{{ formatPriceItaliana(sellerOrderGoodsAndShippingTotal(feedback.order)) }}</p>
               </div>
             </div>
 
@@ -304,6 +304,7 @@ import { ref, onMounted } from 'vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import FeedbackResponseModal from '@/components/feedback/FeedbackResponseModal.vue'
 import OrderDetailsModal from '@/components/orders/OrderDetailsModal.vue'
+import { formatPriceItaliana, sellerOrderGoodsAndShippingTotal } from '@/utils/priceFormatter'
 import { 
   StarIcon, 
   ChatBubbleLeftRightIcon,

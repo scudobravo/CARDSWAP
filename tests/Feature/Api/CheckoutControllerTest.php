@@ -339,14 +339,14 @@ class CheckoutControllerTest extends TestCase
         
         // Verifica i calcoli
         // Subtotale: 10.00 * 2 = 20.00
-        // Spedizione standard: 5.00
-        // IVA (22%): 20.00 * 0.22 = 4.40
-        // Totale: 20.00 + 5.00 + 4.40 = 29.40
+        // Spedizione standard (legacy placeholder): 5.00
+        // Costo di gestione acquirente: 3,5% su (20 + 5) = 0,875 → 0,88
+        // Totale: 20.00 + 5.00 + 0.88 = 25.88
 
         $this->assertEquals(20.00, $order->subtotal);
         $this->assertEquals(5.00, $order->shipping_cost);
-        $this->assertEquals(4.40, $order->tax_amount);
-        $this->assertEquals(29.40, $order->total_amount);
+        $this->assertEquals(0.88, $order->tax_amount);
+        $this->assertEquals(25.88, $order->total_amount);
     }
 
     /** @test */

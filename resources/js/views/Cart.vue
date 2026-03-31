@@ -205,10 +205,13 @@ const totalShippingCost = computed(() => {
   // Normalizza il costo di spedizione dal cartStore
   return normalizePrice(cartStore.totalShippingCost)
 })
+const BUYER_MANAGEMENT_FEE_RATE = 0.035 // Allineare a config/services.php → services.cardswap.buyer_management_fee_rate
+
 const taxAmount = computed(() => {
-  // Calcola la commissione acquirente (1.5% del subtotale)
   const subtotalValue = normalizePrice(subtotal.value)
-  return subtotalValue * 0.015 // 1.5% Commissione acquirente (copre parzialmente i costi Stripe)
+  const shippingValue = normalizePrice(totalShippingCost.value)
+  const base = subtotalValue + shippingValue
+  return Math.round(base * BUYER_MANAGEMENT_FEE_RATE * 100) / 100
 })
 const grandTotal = computed(() => {
   // Assicurati che tutti i valori siano numeri normalizzati

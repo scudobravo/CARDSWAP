@@ -57,7 +57,7 @@
             <p><strong>4.3</strong> Commissioni applicate:</p>
             <ul>
               <li>venditore: commissione fissa del 6% sul valore della carta venduta (esclusa spedizione), trattenuta automaticamente al pagamento;</li>
-              <li>acquirente: commissione dell'1,5% sul valore della carta, chiaramente indicata prima della conferma ordine.</li>
+              <li>acquirente: commissione del 3,5% sul totale merce e spedizione, chiaramente indicata prima della conferma ordine.</li>
             </ul>
             <p><strong>4.4</strong> Le commissioni e i costi di servizio coprono la gestione della Piattaforma e il supporto tecnico; salvo obblighi di legge, non sono rimborsabili.</p>
             <p><strong>4.5</strong> I pagamenti possono essere effettuati in diverse valute supportate dal provider; eventuali costi di conversione restano a carico dell'utente.</p>

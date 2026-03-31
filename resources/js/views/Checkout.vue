@@ -546,8 +546,8 @@ const orderSummary = computed(() => {
     return sum + normalizePrice(shippingCost)
   }, 0)
   
-  // Calcola la commissione acquirente (1.5% del subtotale)
-  const tax = subtotal * 0.015 // 1.5% Commissione acquirente (copre parzialmente i costi Stripe)
+  const BUYER_MANAGEMENT_FEE_RATE = 0.035 // Allineare a config/services.php → services.cardswap.buyer_management_fee_rate
+  const tax = Math.round((subtotal + shipping) * BUYER_MANAGEMENT_FEE_RATE * 100) / 100
   const total = subtotal + shipping + tax
   
   return {

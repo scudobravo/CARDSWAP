@@ -196,7 +196,7 @@
                 <div class="flex items-center space-x-4 text-sm text-gray-600">
                   <span>{{ getOrderItems(order)?.length || 0 }} articoli</span>
                   <span>•</span>
-                  <span class="font-gill-sans-semibold text-gray-900">€{{ formatPriceItaliana(order.total_amount) }}</span>
+                  <span class="font-gill-sans-semibold text-gray-900">€{{ formatPriceItaliana(sellerOrderGoodsAndShippingTotal(order)) }}</span>
                 </div>
                 
                 <!-- Lista Prodotti -->
@@ -322,7 +322,7 @@ import { ref, onMounted, computed } from 'vue'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import OrderDetailsModal from '@/components/orders/OrderDetailsModal.vue'
 import UpdateStatusModal from '@/components/orders/UpdateStatusModal.vue'
-import { formatPriceItaliana } from '../utils/priceFormatter'
+import { formatPriceItaliana, sellerOrderGoodsAndShippingTotal } from '../utils/priceFormatter'
 import { 
   DocumentDuplicateIcon, 
   ClockIcon, 
@@ -423,7 +423,7 @@ const calculateStats = () => {
     pending: orders.value.filter(o => o.status === 'pending').length,
     shipped: orders.value.filter(o => o.status === 'shipped').length,
     delivered: orders.value.filter(o => o.status === 'delivered').length,
-    total_sales: orders.value.reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0)
+    total_sales: orders.value.reduce((sum, order) => sum + sellerOrderGoodsAndShippingTotal(order), 0)
   }
 }
 

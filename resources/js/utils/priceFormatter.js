@@ -68,9 +68,20 @@ export function formatPriceItaliana(price, includeSymbol = false) {
 }
 
 /**
+ * Valore ordine lato venditore: merce + spedizione (senza costo di gestione pagato dall'acquirente).
+ * Allineato a subtotal + shipping_cost sul modello Order.
+ */
+export function sellerOrderGoodsAndShippingTotal(order) {
+  if (!order) return 0
+  const sub = normalizePrice(order.subtotal ?? order.subtotal_eur)
+  const ship = normalizePrice(order.shipping_cost)
+  return sub + ship
+}
+
+/**
  * Formatta un prezzo senza decimali (per quantità, ecc.)
  * Esempio: 15000 -> "15.000"
- * 
+ *
  * @param {number|string} value - Il valore da formattare
  * @returns {string} Il valore formattato
  */

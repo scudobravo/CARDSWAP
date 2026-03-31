@@ -345,7 +345,8 @@ class CheckoutController extends Controller
             $shipping += 5.00; // Valore placeholder - NON usare in produzione
         }
 
-        $tax = $subtotal * 0.015; // 1.5% Commissione acquirente (copre parzialmente i costi Stripe)
+        $feeRate = (float) config('services.cardswap.buyer_management_fee_rate', 0.035);
+        $tax = round(($subtotal + $shipping) * $feeRate, 2);
         $total = $subtotal + $shipping + $tax;
 
         return [
@@ -374,7 +375,8 @@ class CheckoutController extends Controller
         ]);
         // Fallback temporaneo per compatibilità (da rimuovere in futuro)
         $shipping = 5.00; // Valore placeholder - NON usare in produzione
-        $tax = $subtotal * 0.015; // 1.5% Commissione acquirente (copre parzialmente i costi Stripe)
+        $feeRate = (float) config('services.cardswap.buyer_management_fee_rate', 0.035);
+        $tax = round(($subtotal + $shipping) * $feeRate, 2);
         $total = $subtotal + $shipping + $tax;
 
         return [
@@ -471,13 +473,13 @@ class CheckoutController extends Controller
             // application_fee = amount - (subtotale * 0.94)
             // = (subtotale + spedizione + buyer_tax) - (subtotale * 0.94)
             // = subtotale * 0.06 + spedizione + buyer_tax
-            $buyerTax = $totalAmount - $totalSellerAmount; // Spedizione + Tassa acquirente (1.5%)
+            $buyerTax = $totalAmount - $totalSellerAmount; // Spedizione + costo di gestione acquirente
             $applicationFee = ($totalSellerAmount * 0.06) + $buyerTax;
             
             // NOTA: Oltre a queste commissioni, ci saranno anche:
             // - Trattenuta Stripe: ~3,5% + 0,30€ (dedotta automaticamente da Stripe sul totale pagato)
             // - Trattenuta Shippo: costo spedizione (dedotta quando viene creato il label di spedizione)
-            // Il netto per CardSwap sarà: 6% + 1,5% + spedizione - costi Stripe - costi Shippo
+            // Il netto per CardSwap sarà: 6% + costo gestione acquirente + spedizione - costi Stripe - costi Shippo
 
             $stripeData = [
                 'amount' => $totalAmount,

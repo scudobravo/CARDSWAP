@@ -696,7 +696,7 @@ class OrderController extends Controller
                 'total_sales' => Order::whereHas('orderItems.cardListing', function ($q) use ($user) {
                     $q->where('seller_id', $user->id);
                 })->whereIn('status', ['delivered', 'shipped', 'completed', 'delivered_pending_72h'])
-                    ->sum('total_amount'),
+                    ->sum(DB::raw('subtotal + shipping_cost')),
                 'total_orders' => Order::whereHas('orderItems.cardListing', function ($q) use ($user) {
                     $q->where('seller_id', $user->id);
                 })->count(),
@@ -710,7 +710,7 @@ class OrderController extends Controller
                 })->whereIn('status', ['delivered', 'shipped', 'completed', 'delivered_pending_72h'])
                     ->whereMonth('created_at', now()->month)
                     ->whereYear('created_at', now()->year)
-                    ->sum('total_amount')
+                    ->sum(DB::raw('subtotal + shipping_cost'))
             ];
 
             return response()->json([

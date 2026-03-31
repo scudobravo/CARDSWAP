@@ -621,10 +621,11 @@ class PaymentController extends Controller
             $subtotal += $sellerSubtotal;
         }
 
-        // Calcola tassa acquirente (costo di gestione): 1.5% sul subtotale
-        $taxAmount = $subtotal * 0.015;
-        
-        // Totale = subtotale + spedizione + tassa acquirente
+        // Costo di gestione acquirente: percentuale su (subtotale + spedizione), vedi config/services.php
+        $feeRate = (float) config('services.cardswap.buyer_management_fee_rate', 0.035);
+        $taxAmount = round(($subtotal + $totalShippingCost) * $feeRate, 2);
+
+        // Totale = subtotale + spedizione + costo di gestione
         $totalAmount = $subtotal + $totalShippingCost + $taxAmount;
 
         return [
@@ -670,7 +671,7 @@ class PaymentController extends Controller
             'status' => 'pending',
             'subtotal' => $orderData['subtotal'] ?? ($orderData['total_amount'] - $orderData['total_shipping_cost'] - ($orderData['tax_amount'] ?? 0)),
             'shipping_cost' => $orderData['total_shipping_cost'], // Totale spedizione (somma di tutti i seller)
-            'tax_amount' => $orderData['tax_amount'] ?? 0, // Costo di gestione (1.5% sul subtotale)
+            'tax_amount' => $orderData['tax_amount'] ?? 0, // Costo di gestione acquirente (% su merce+spedizione)
             'total_amount' => $orderData['total_amount'],
             'shipping_address' => $orderData['shipping_address'],
             'billing_address' => $orderData['shipping_address'], // Per ora uguale
@@ -842,13 +843,13 @@ class PaymentController extends Controller
         // application_fee = amount - (subtotale * 0.94)
         // = (subtotale + spedizione + buyer_tax) - (subtotale * 0.94)
         // = subtotale * 0.06 + spedizione + buyer_tax
-        $buyerTax = $orderData['total_amount'] - $totalSellerAmount; // Spedizione + Tassa acquirente (1.5%)
+        $buyerTax = $orderData['total_amount'] - $totalSellerAmount; // Spedizione + costo di gestione acquirente
         $applicationFee = ($totalSellerAmount * 0.06) + $buyerTax;
         
         // NOTA: Oltre a queste commissioni, ci saranno anche:
         // - Trattenuta Stripe: ~3,5% + 0,30€ (dedotta automaticamente da Stripe sul totale pagato)
         // NOTA: Shippo è DEPRECATO - CardSwap V1 NON usa Shippo
-        // Il netto per CardSwap sarà: 6% + 1,5% + spedizione - costi Stripe
+        // Il netto per CardSwap sarà: 6% + costo gestione acquirente + spedizione - costi Stripe
 
         return [
             'order_id' => $order->id,

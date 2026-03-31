@@ -167,4 +167,15 @@ return [
         ]
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | CardSwap — costo di gestione (commissione acquirente in checkout)
+    |--------------------------------------------------------------------------
+    | Percentuale applicata al totale merce + spedizione (non alla sola merce).
+    | Override: BUYER_MANAGEMENT_FEE_RATE nel .env (es. 0.035).
+    */
+    'cardswap' => [
+        'buyer_management_fee_rate' => (float) env('BUYER_MANAGEMENT_FEE_RATE', 0.035),
+    ],
+
 ];
