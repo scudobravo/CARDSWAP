@@ -427,8 +427,13 @@
               >
                 Annulla checkout
               </button>
-              <p class="text-sm text-gray-600 text-center">
-                Effettuando l'ordine accetti i <router-link to="/terms-and-conditions" class="text-secondary hover:underline font-medium">Termini e Condizioni</router-link> e la <router-link to="/privacy-policy" class="text-secondary hover:underline font-medium">Privacy Policy</router-link>.
+              <p class="text-sm text-gray-600 text-center leading-relaxed">
+                Effettuando l'ordine accetti i
+                <router-link to="/terms-and-conditions" class="text-secondary hover:underline font-medium">Termini e Condizioni</router-link>,
+                la
+                <router-link to="/privacy-policy" class="text-secondary hover:underline font-medium">Privacy Policy</router-link>
+                e i
+                <router-link to="/platform-terms" class="text-secondary hover:underline font-medium">Termini della piattaforma</router-link>.
               </p>
               <button 
                 type="submit" 

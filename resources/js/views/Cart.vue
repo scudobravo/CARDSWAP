@@ -115,33 +115,12 @@
 
           <dl class="mt-6 space-y-4">
             <div class="flex items-center justify-between">
-              <dt class="text-sm text-gray-600">Subtotale</dt>
-              <dd class="text-sm font-medium text-gray-900">€{{ formatPrice(subtotal) }}</dd>
+              <dt class="text-base font-medium text-gray-900">Subtotale</dt>
+              <dd class="text-base font-medium text-gray-900">€{{ formatPrice(subtotal) }}</dd>
             </div>
-            <div class="flex items-center justify-between border-t border-gray-200 pt-4">
-              <dt class="flex items-center text-sm text-gray-600">
-                <span>Spedizione</span>
-                <a href="#" class="ml-2 shrink-0 text-gray-400 hover:text-gray-500">
-                  <span class="sr-only">Scopri di più su come viene calcolata la spedizione</span>
-                  <QuestionMarkCircleIcon class="size-5" aria-hidden="true" />
-                </a>
-              </dt>
-              <dd class="text-sm font-medium text-gray-900">€{{ formatPrice(totalShippingCost) }}</dd>
-            </div>
-            <div class="flex items-center justify-between border-t border-gray-200 pt-4">
-              <dt class="flex text-sm text-gray-600">
-                <span>Commissioni di servizio</span>
-                <a href="#" class="ml-2 shrink-0 text-gray-400 hover:text-gray-500">
-                  <span class="sr-only">Scopri di più su come viene calcolato il costo di gestione</span>
-                  <QuestionMarkCircleIcon class="size-5" aria-hidden="true" />
-                </a>
-              </dt>
-              <dd class="text-sm font-medium text-gray-900">€{{ formatPrice(taxAmount) }}</dd>
-            </div>
-            <div class="flex items-center justify-between border-t border-gray-200 pt-4">
-              <dt class="text-base font-medium text-gray-900">Totale ordine</dt>
-              <dd class="text-base font-medium text-gray-900">€{{ formatPrice(grandTotal) }}</dd>
-            </div>
+            <p class="text-xs text-gray-500">
+              Spedizione e commissioni verranno calcolate al checkout dopo la scelta della spedizione.
+            </p>
           </dl>
 
           <div class="mt-6">
@@ -169,7 +148,7 @@ import { useCartStore } from '../stores/cart'
 import Header from '../components/Header.vue'
 import Footer from '../components/Footer.vue'
 import { ChevronDownIcon } from '@heroicons/vue/16/solid'
-import { CheckIcon, ClockIcon, QuestionMarkCircleIcon, XMarkIcon } from '@heroicons/vue/20/solid'
+import { CheckIcon, ClockIcon, XMarkIcon } from '@heroicons/vue/20/solid'
 import { formatPriceItaliana, normalizePrice } from '../utils/priceFormatter'
 
 const router = useRouter()
@@ -201,26 +180,6 @@ const subtotal = computed(() => {
     return sum + (price * quantity)
   }, 0)
 })
-const totalShippingCost = computed(() => {
-  // Normalizza il costo di spedizione dal cartStore
-  return normalizePrice(cartStore.totalShippingCost)
-})
-const BUYER_MANAGEMENT_FEE_RATE = 0.035 // Allineare a config/services.php → services.cardswap.buyer_management_fee_rate
-
-const taxAmount = computed(() => {
-  const subtotalValue = normalizePrice(subtotal.value)
-  const shippingValue = normalizePrice(totalShippingCost.value)
-  const base = subtotalValue + shippingValue
-  return Math.round(base * BUYER_MANAGEMENT_FEE_RATE * 100) / 100
-})
-const grandTotal = computed(() => {
-  // Assicurati che tutti i valori siano numeri normalizzati
-  const subtotalValue = normalizePrice(subtotal.value)
-  const shippingValue = normalizePrice(totalShippingCost.value)
-  const taxValue = normalizePrice(taxAmount.value)
-  return subtotalValue + shippingValue + taxValue
-})
-
 const canProceedToCheckout = computed(() => {
   return !isEmpty.value && allCartItems.value.length > 0
 })
