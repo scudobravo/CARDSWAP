@@ -191,7 +191,6 @@
               :category="selectedCategory"
               :show-player="!['disney', 'spongebob'].includes(selectedCategory)"
               :show-team="!['disney', 'spongebob'].includes(selectedCategory)"
-              :show-number="true"
               :show-price="false"
               :show-search-button="false"
               :initial-filters="filters"
@@ -225,7 +224,6 @@
             <ChainedFilters 
               :category="selectedCategory"
               :show-player="false"
-              :show-number="false"
               :show-price="false"
               :show-search-button="true"
               :initial-filters="filters"
@@ -280,7 +278,6 @@
               :show-player="false"
               :show-team="false"
               :show-rarity="false"
-              :show-number="false"
               :show-price="false"
               :show-search-button="false"
               :initial-filters="filters"
@@ -314,7 +311,6 @@
               :show-player="false"
               :show-team="false"
               :show-rarity="false"
-              :show-number="false"
               :show-price="false"
               :show-search-button="false"
               :initial-filters="filters"
@@ -1159,9 +1155,9 @@ const searchSingleCard = async (filters) => {
           card_set_id: filters.set, // Corretto: card_set_id invece di set_id
           brand: filters.brand,
           rarity: filters.rarity,
-          year: filters.year,
-          number: filters.number
+          year: filters.year
           // RIMOSSO: price non è un filtro di ricerca, è un input dell'utente
+          // La numerazione (card_number_in_set) non è un query param supportato da /api/cards/search; si sceglie la variante in elenco
         }
         
         // Aggiungi filtri per numerazione (min e max)
@@ -1948,10 +1944,9 @@ const createNewSingleListing = async () => {
     const condition = additionalDetails.value.condition || 'mint'
     formData.append('condition', condition)
     
-    // Add autograph_condition (optional) - from additionalDetails, defaults to condition if not set
-    const autographCondition = additionalDetails.value.autographCondition || condition
-    if (autographCondition) {
-      formData.append('autograph_condition', autographCondition)
+    // Condizione autografo solo se esplicita (non copiare dalla condizione carta)
+    if (additionalDetails.value.autographCondition) {
+      formData.append('autograph_condition', additionalDetails.value.autographCondition)
     }
   }
   
@@ -2157,11 +2152,8 @@ const createBulkListings = async () => {
     formData.append('price', normalizedPrice.toString())
     formData.append('quantity', listing.quantity || 1)
     formData.append('condition', listing.condition)
-    // Add autograph_condition if available, otherwise use condition
     if (listing.autograph_condition) {
       formData.append('autograph_condition', listing.autograph_condition)
-    } else if (listing.condition) {
-      formData.append('autograph_condition', listing.condition)
     }
     formData.append('language', listing.language || 'italian')
     
@@ -2579,7 +2571,8 @@ const getSingleCardData = computed(() => {
       ...baseData,
       // Dati dell'inserzione esistente
       condition: listingData.value.condition,
-      autographCondition: listingData.value.autograph_condition || listingData.value.condition,
+      // Non usare condition come fallback: altrimenti Near Mint carta finisce in condizione autografo
+      autographCondition: listingData.value.autograph_condition || '',
       quantity: listingData.value.quantity,
       language: listingData.value.language,
       description: listingData.value.description,
@@ -2597,7 +2590,8 @@ const getSingleCardData = computed(() => {
       // Caratteristiche speciali - USA additionalDetails che legge dal CardModel
       autograph: additionalDetails.value.autograph || (listingData.value.is_signed ? 'yes' : 'no'),
       relic: additionalDetails.value.relic || (listingData.value.is_altered ? 'yes' : 'no'),
-      onCardAuto: additionalDetails.value.onCardAuto || (listingData.value.is_signed ? 'yes' : 'no'),
+      // On-card auto è solo is_on_card_auto sul CardModel, non va confuso con autografo (is_signed)
+      onCardAuto: additionalDetails.value.onCardAuto || '',
       rookie: additionalDetails.value.rookie || (listingData.value.is_first_edition ? 'yes' : 'no'),
       jewel: additionalDetails.value.jewel || (listingData.value.is_foil ? 'yes' : 'no'),
       sketch: additionalDetails.value.sketch || '',
@@ -3129,7 +3123,7 @@ const initializeEditMode = async (listing) => {
       card_model_id: freshListing.card_model_id,
       price: freshListing.price,
       condition: freshListing.condition,
-      autograph_condition: freshListing.autograph_condition || freshListing.condition,
+      autograph_condition: freshListing.autograph_condition ?? null,
       quantity: freshListing.quantity,
       language: freshListing.language,
       description: freshListing.description || '',
@@ -3296,7 +3290,7 @@ const initializeEditMode = async (listing) => {
     const isAutograph = cardModel?.is_autograph === true || cardModel?.is_autograph === 1 || cardModel?.is_autograph === '1' || listing.is_signed
     const isRelic = cardModel?.is_relic === true || cardModel?.is_relic === 1 || cardModel?.is_relic === '1' || listing.is_altered
     const isJewel = cardModel?.is_jewel === true || cardModel?.is_jewel === 1 || cardModel?.is_jewel === '1' || listing.is_foil
-    const isOnCardAuto = cardModel?.is_on_card_auto === true || cardModel?.is_on_card_auto === 1 || cardModel?.is_on_card_auto === '1' || listing.is_signed
+    const isOnCardAuto = cardModel?.is_on_card_auto === true || cardModel?.is_on_card_auto === 1 || cardModel?.is_on_card_auto === '1'
     
     // Determina multiAutograph dal CardModel
     let multiAutograph = ''
@@ -3343,7 +3337,7 @@ const initializeEditMode = async (listing) => {
     
     additionalDetails.value = {
       condition: freshListing.condition || '',
-      autographCondition: freshListing.autograph_condition || freshListing.condition || '',
+      autographCondition: freshListing.autograph_condition ?? '',
       gradingCompany: freshListing.grading_company_id || freshListing.grading_company || '',
       gradingScore: freshListing.grading_score || '',
       cardConditionScore: freshListing.card_condition_score || '',
@@ -3784,11 +3778,8 @@ const updateSingleListing = async () => {
       if (listingData.value.condition || additionalDetails.value.condition) {
         formData.append('condition', listingData.value.condition || additionalDetails.value.condition)
       }
-      // Add autograph_condition if available
       if (listingData.value.autograph_condition || additionalDetails.value.autographCondition) {
         formData.append('autograph_condition', listingData.value.autograph_condition || additionalDetails.value.autographCondition)
-      } else if (listingData.value.condition || additionalDetails.value.condition) {
-        formData.append('autograph_condition', listingData.value.condition || additionalDetails.value.condition)
       }
     }
     if (listingData.value.quantity !== undefined && listingData.value.quantity !== null) {

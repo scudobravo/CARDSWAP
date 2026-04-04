@@ -201,21 +201,6 @@
       
     </div>
 
-    <!-- Terza riga: Number (Solo per Single Card) -->
-    <div v-if="showNumber" class="mb-4">
-      <!-- Number Input (Solo per Single Card) -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Numbered *</label>
-        <input 
-          v-model="localFilters.number"
-          type="text" 
-          placeholder="Inserisci numero carta (es. 30, RF-18, BA-ZI)"
-          class="block w-full h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none sm:text-sm/6"
-          @input="onFiltersChanged"
-        />
-      </div>
-    </div>
-
     <!-- Search Button (Solo per Bulk Cards) -->
     <div v-if="showSearchButton" class="mb-4">
       <button 
@@ -370,10 +355,6 @@ const props = defineProps({
     default: 'football'
   },
   showPlayer: {
-    type: Boolean,
-    default: true
-  },
-  showNumber: {
     type: Boolean,
     default: true
   },
