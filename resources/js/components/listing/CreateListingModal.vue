@@ -1,13 +1,16 @@
 <template>
-  <div v-if="isOpen" class="fixed inset-0 z-50 overflow-y-auto">
+  <div v-if="isOpen" class="fixed inset-0 z-50 overflow-hidden md:overflow-y-auto">
     <!-- Overlay -->
     <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" @click="closeModal"></div>
     
-    <!-- Modal -->
-    <div class="flex min-h-full items-center justify-center p-4">
-      <div class="relative w-full max-w-4xl transform overflow-visible rounded-lg bg-white shadow-xl transition-all">
+    <!-- Modal: su mobile tutta larghezza/altezza viewport (no margini laterali); su md centrata come prima -->
+    <div class="flex min-h-full w-full items-stretch justify-center p-0 md:items-center md:p-4">
+      <div
+        class="relative flex h-[100dvh] max-h-[100dvh] w-full max-w-none flex-col overflow-hidden bg-white shadow-xl md:h-auto md:max-h-[calc(100dvh-2rem)] md:max-w-4xl md:rounded-lg md:overflow-visible md:transform"
+        @click.stop
+      >
         <!-- Header -->
-        <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+        <div class="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-4">
           <div class="flex items-center space-x-3">
             <h3 class="text-lg font-semibold text-gray-900">
               {{ isEdit ? 'Modifica Inserzione' : 'Crea Inserzione' }}
@@ -22,8 +25,8 @@
         </div>
 
 
-        <!-- Content -->
-        <div class="px-6 py-6">
+        <!-- Content (scroll interno su mobile così header/footer restano usabili) -->
+        <div class="min-h-0 flex-1 overflow-y-auto px-6 py-6 md:overflow-visible">
           <!-- Step 0: Controllo Tabelle Prezzi (CardSwap V1 – non più zone di spedizione legacy) -->
           <div v-if="currentStep === 0" class="space-y-6">
             <!-- Messaggio se non ci sono tabelle prezzi con paesi -->
@@ -679,7 +682,7 @@
         </div>
 
         <!-- Footer -->
-        <div v-if="!(currentStep === 3 && selectedMode === 'bulk') && !(currentStep === 2 && selectedMode === 'bulk') && !(currentStep === 1 && selectedMode === 'bulk')" class="flex items-center justify-between border-t border-gray-200 px-6 py-4">
+        <div v-if="!(currentStep === 3 && selectedMode === 'bulk') && !(currentStep === 2 && selectedMode === 'bulk') && !(currentStep === 1 && selectedMode === 'bulk')" class="flex shrink-0 items-center justify-between border-t border-gray-200 bg-white px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <button 
             v-if="currentStep > 0"
             @click="previousStep"
@@ -721,7 +724,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import ChainedFilters from './ChainedFilters.vue'
 import BulkCardSelectionTable from './BulkCardSelectionTable.vue'
 import BulkEditForm from './BulkEditForm.vue'
@@ -2805,6 +2808,12 @@ onMounted(async () => {
   loadGradingCompanies()
 })
 
+onUnmounted(() => {
+  if (typeof document !== 'undefined') {
+    document.body.style.overflow = ''
+  }
+})
+
 // Watch per modalità edit
 watch(() => props.editingListing, (newListing) => {
   if (newListing && props.isEdit) {
@@ -2845,6 +2854,9 @@ watch(() => props.editingListing, (newListing) => {
 
 // Watch per controllo zone di spedizione quando il modal si apre
 watch(() => props.isOpen, async (isOpen) => {
+  if (typeof document !== 'undefined') {
+    document.body.style.overflow = isOpen ? 'hidden' : ''
+  }
   if (isOpen) {
     console.log(' Modal aperto, controllo zone di spedizione...')
     await checkShippingZones()

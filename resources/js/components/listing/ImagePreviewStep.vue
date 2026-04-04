@@ -346,7 +346,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { formatPriceItaliana } from '../../utils/priceFormatter'
 
 // Props
@@ -439,6 +439,19 @@ const autographConditionScores = computed(() => {
 // Flag per evitare loop infiniti
 const isInitializing = ref(false)
 const hasInitialized = ref(false) // Flag per tracciare se l'inizializzazione è già stata fatta
+/** Evita emit verso il parent quando si aggiorna additionalDetails da props.cardData (altrimenti loop reattivo e UI bloccata su mobile al cambio On Card) */
+const suppressAdditionalDetailsEmit = ref(false)
+
+function applyAdditionalDetailsFromCardData(updater) {
+  suppressAdditionalDetailsEmit.value = true
+  try {
+    updater()
+  } finally {
+    nextTick(() => {
+      suppressAdditionalDetailsEmit.value = false
+    })
+  }
+}
 
 // Watch per cardData per popolare i campi esistenti in modalità edit
 watch(() => props.cardData, (newCardData) => {
@@ -502,8 +515,9 @@ watch(() => props.cardData, (newCardData) => {
   // IMPORTANTE: In modalità edit, popola sempre quando arrivano dati nuovi
   if (newCardData) {
     // Controlla se ci sono valori nuovi da applicare (non vuoti)
-    const hasNewValues = newCardData.autograph || newCardData.relic || newCardData.rookie || 
-                         newCardData.jewel || newCardData.onCardAuto || newCardData.multiAutograph ||
+    // onCardAuto escluso: altrimenti ogni eco dal parent (getSingleCardData) resetta lo stato e può amplificare re-render
+    const hasNewValues = newCardData.autograph || newCardData.relic || newCardData.rookie ||
+                         newCardData.jewel || newCardData.multiAutograph ||
                          newCardData.sketch || newCardData.condition || newCardData.gradingCompany
     
     // Se ci sono nuovi valori, resetta hasInitialized per forzare il popolamento
@@ -521,6 +535,7 @@ watch(() => props.cardData, (newCardData) => {
     
     if (shouldPopulate) {
         // Se ci sono nuovi valori, usa quelli, altrimenti mantieni quelli esistenti
+      applyAdditionalDetailsFromCardData(() => {
       additionalDetails.value = {
           condition: newCardData.condition !== undefined ? newCardData.condition : (additionalDetails.value.condition || ''),
         // NON usare condition come fallback per autographCondition
@@ -540,6 +555,7 @@ watch(() => props.cardData, (newCardData) => {
           description: newCardData.description !== undefined ? newCardData.description : (additionalDetails.value.description || ''),
           notes: newCardData.notes !== undefined ? newCardData.notes : (additionalDetails.value.notes || '')
         }
+      })
         
         console.log('ImagePreviewStep - additionalDetails popolato:', {
           autograph: additionalDetails.value.autograph,
@@ -566,7 +582,9 @@ watch(() => props.cardData, (newCardData) => {
   
   // Aggiorna sempre le note se presenti nei dati (per supportare la modifica di listing esistenti)
   if (newCardData && newCardData.notes !== undefined && newCardData.notes !== null) {
-    additionalDetails.value.notes = newCardData.notes
+    applyAdditionalDetailsFromCardData(() => {
+      additionalDetails.value.notes = newCardData.notes
+    })
   }
 }, { immediate: true, deep: false, flush: 'post' }) // Aggiunto flush: 'post' per eseguire dopo il rendering
 
@@ -743,6 +761,7 @@ const processBulkImages = (files) => {
 
 // Watch for changes
 watch(additionalDetails, (newDetails) => {
+  if (suppressAdditionalDetailsEmit.value) return
   emit('additional-details-changed', newDetails)
 }, { deep: true })
 
