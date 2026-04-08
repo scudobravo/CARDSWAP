@@ -151,7 +151,12 @@ class BasketballFilterController extends Controller
             ->limit(200)
             ->get(['id', 'name', 'slug', 'position', 'nationality']);
 
-        $transformedPlayers = $players->map(function($player) {
+        $transformedPlayers = $players
+            ->unique(function($player) {
+                return mb_strtolower(trim((string) $player->name));
+            })
+            ->values()
+            ->map(function($player) {
             return [
                 'id' => $player->id,
                 'name' => $player->name,
