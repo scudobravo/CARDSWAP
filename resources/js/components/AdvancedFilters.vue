@@ -432,6 +432,9 @@ const conditionAvailable = ref(true)
 const showPlayerDropdown = ref(false)
 const showTeamDropdown = ref(false)
 const showSetDropdown = ref(false)
+let playerSearchRequestId = 0
+let teamSearchRequestId = 0
+let setSearchRequestId = 0
 
 // Computed property per determinare se mostrare solo i filtri essenziali
 const isSealed = computed(() => {
@@ -490,8 +493,13 @@ watch(() => localFilters.value.multiPlayer, (newValue) => {
 
 // Functions
 const searchPlayers = async () => {
+  const requestId = ++playerSearchRequestId
   try {
-    const query = localFilters.value.playerSearch || ''
+    const query = (localFilters.value.playerSearch || '').trim()
+    if (query.length < 2) {
+      filteredPlayers.value = []
+      return
+    }
     // Costruisci i parametri con i filtri correnti per interdipendenza
     const params = new URLSearchParams({ q: query })
     if (localFilters.value.team) params.append('team_id', localFilters.value.team)
@@ -501,17 +509,24 @@ const searchPlayers = async () => {
     
     const response = await fetch(`/api/${props.category}/filters/players/search?${params.toString()}`)
     const data = await response.json()
+    // Evita che una risposta vecchia sovrascriva quella più recente
+    if (requestId !== playerSearchRequestId) return
     filteredPlayers.value = data.players || []
   } catch (error) {
     console.error('Errore nella ricerca giocatori:', error)
+    if (requestId !== playerSearchRequestId) return
     filteredPlayers.value = []
   }
 }
 
 const onPlayerFocus = async () => {
   showPlayerDropdown.value = true
-  // Carica tutti i giocatori disponibili quando si fa focus
-  await searchPlayers()
+  // Non caricare tutto a focus: cerca solo con almeno 2 caratteri
+  if ((localFilters.value.playerSearch || '').trim().length >= 2) {
+    await searchPlayers()
+  } else {
+    filteredPlayers.value = []
+  }
 }
 
 const onPlayerBlur = () => {
@@ -522,8 +537,13 @@ const onPlayerBlur = () => {
 }
 
 const searchTeams = async () => {
+  const requestId = ++teamSearchRequestId
   try {
-    const query = localFilters.value.teamSearch || ''
+    const query = (localFilters.value.teamSearch || '').trim()
+    if (query.length < 2) {
+      filteredTeams.value = []
+      return
+    }
     // Costruisci i parametri con i filtri correnti per interdipendenza
     const params = new URLSearchParams({ q: query })
     // Se c'è un giocatore selezionato, filtra solo i team di quel giocatore
@@ -536,17 +556,22 @@ const searchTeams = async () => {
     
     const response = await fetch(`/api/${props.category}/filters/teams/search?${params.toString()}`)
     const data = await response.json()
+    if (requestId !== teamSearchRequestId) return
     filteredTeams.value = data.teams || []
   } catch (error) {
     console.error('Errore nella ricerca squadre:', error)
+    if (requestId !== teamSearchRequestId) return
     filteredTeams.value = []
   }
 }
 
 const onTeamFocus = async () => {
   showTeamDropdown.value = true
-  // Carica tutte le squadre disponibili quando si fa focus
-  await searchTeams()
+  if ((localFilters.value.teamSearch || '').trim().length >= 2) {
+    await searchTeams()
+  } else {
+    filteredTeams.value = []
+  }
 }
 
 const onTeamBlur = () => {
@@ -557,8 +582,13 @@ const onTeamBlur = () => {
 }
 
 const searchCardSets = async () => {
+  const requestId = ++setSearchRequestId
   try {
-    const query = localFilters.value.setSearch || ''
+    const query = (localFilters.value.setSearch || '').trim()
+    if (query.length < 2) {
+      filteredCardSets.value = []
+      return
+    }
     // Costruisci i parametri con i filtri correnti per interdipendenza
     const params = new URLSearchParams({ q: query })
     // Se c'è un giocatore selezionato, filtra solo i set di quel giocatore
@@ -571,17 +601,22 @@ const searchCardSets = async () => {
     
     const response = await fetch(`/api/${props.category}/filters/card-sets/search?${params.toString()}`)
     const data = await response.json()
+    if (requestId !== setSearchRequestId) return
     filteredCardSets.value = data.card_sets || []
   } catch (error) {
     console.error('Errore nella ricerca set:', error)
+    if (requestId !== setSearchRequestId) return
     filteredCardSets.value = []
   }
 }
 
 const onSetFocus = async () => {
   showSetDropdown.value = true
-  // Carica tutti i set disponibili quando si fa focus
-  await searchCardSets()
+  if ((localFilters.value.setSearch || '').trim().length >= 2) {
+    await searchCardSets()
+  } else {
+    filteredCardSets.value = []
+  }
 }
 
 const onSetBlur = () => {

@@ -529,8 +529,12 @@ const canSearch = computed(() => {
 })
 
 // Methods
-let searchTimeout = null
-let currentSearchId = 0
+let raritySearchTimeout = null
+let raritySearchId = 0
+let playerSearchTimeout = null
+let playerSearchId = 0
+let teamSearchId = 0
+let setSearchId = 0
 let activeRequests = new Set()
 let chainedDataTimeout = null
 
@@ -601,15 +605,15 @@ const fetchPlayerDetails = async (playerId) => {
 
 const searchRarities = async () => {
   // Clear previous timeout
-  if (searchTimeout) {
-    clearTimeout(searchTimeout)
+  if (raritySearchTimeout) {
+    clearTimeout(raritySearchTimeout)
   }
   
   // Increment search ID to cancel previous requests
-  const searchId = ++currentSearchId
+  const searchId = ++raritySearchId
   
   // Set new timeout for debounced search
-  searchTimeout = setTimeout(async () => {
+  raritySearchTimeout = setTimeout(async () => {
     const query = localFilters.value.raritySearch || ''
     
     // Skip search if query is empty
@@ -638,7 +642,7 @@ const searchRarities = async () => {
       const response = await makeApiCall(url, requestId)
       
       // Check if this is still the current search and response is valid
-      if (searchId !== currentSearchId || !response) {
+      if (searchId !== raritySearchId || !response) {
         console.log('Search cancelled or no response')
         return
       }
@@ -649,14 +653,14 @@ const searchRarities = async () => {
       console.log('Response data:', data)
       
       // Only update if this is still the current search
-      if (searchId === currentSearchId) {
+      if (searchId === raritySearchId) {
         filteredRarities.value = data.rarities || []
         console.log('Filtered rarities:', filteredRarities.value)
       }
     } catch (error) {
       console.error('Errore nella ricerca rarità:', error)
       // Only update if this is still the current search
-      if (searchId === currentSearchId) {
+      if (searchId === raritySearchId) {
         filteredRarities.value = []
       }
     }
@@ -713,15 +717,15 @@ const searchPlayers = async () => {
   }
   
   // Clear previous timeout
-  if (searchTimeout) {
-    clearTimeout(searchTimeout)
+  if (playerSearchTimeout) {
+    clearTimeout(playerSearchTimeout)
   }
   
   // Increment search ID to cancel previous requests
-  const searchId = ++currentSearchId
+  const searchId = ++playerSearchId
   
   // Set new timeout for debounced search
-  searchTimeout = setTimeout(async () => {
+  playerSearchTimeout = setTimeout(async () => {
     const query = localFilters.value.playerSearch || ''
     
     // Skip search if query is too short
@@ -749,7 +753,7 @@ const searchPlayers = async () => {
       const response = await makeApiCall(url, requestId)
       
       // Check if this is still the current search and response is valid
-      if (searchId !== currentSearchId || !response) {
+      if (searchId !== playerSearchId || !response) {
         console.log('Search cancelled or no response')
         return
       }
@@ -760,14 +764,14 @@ const searchPlayers = async () => {
       console.log('Response data:', data)
       
       // Only update if this is still the current search
-      if (searchId === currentSearchId) {
+      if (searchId === playerSearchId) {
       filteredPlayers.value = data.players || []
       console.log('Filtered players:', filteredPlayers.value)
       }
     } catch (error) {
       console.error('Errore nella ricerca giocatori:', error)
       // Only update if this is still the current search
-      if (searchId === currentSearchId) {
+      if (searchId === playerSearchId) {
       filteredPlayers.value = []
     }
     }
@@ -808,6 +812,7 @@ const onPlayerInputChange = () => {
 }
 
 const searchTeams = async () => {
+  const requestId = ++teamSearchId
   const query = localFilters.value.teamSearch || ''
   
   console.log(' searchTeams chiamata con query:', query)
@@ -845,9 +850,11 @@ const searchTeams = async () => {
     console.log(' URL team:', url)
     
     const response = await fetch(url)
+    if (requestId !== teamSearchId) return
     console.log(' Response status team:', response.status)
     
     const data = await response.json()
+    if (requestId !== teamSearchId) return
     console.log(' Response data team:', data)
     
     filteredTeams.value = data.teams || []
@@ -887,6 +894,7 @@ const onTeamBlur = () => {
 let setSearchTimeout = null
 
 const searchCardSets = async () => {
+  const requestId = ++setSearchId
   const query = localFilters.value.setSearch || ''
   
   // Skip search if query is too short
@@ -918,6 +926,7 @@ const searchCardSets = async () => {
     console.log(' URL set:', url)
     
     const response = await fetch(url)
+    if (requestId !== setSearchId) return
     console.log(' Response status set:', response.status)
     
     if (!response.ok) {
@@ -926,6 +935,7 @@ const searchCardSets = async () => {
     }
     
     const data = await response.json()
+    if (requestId !== setSearchId) return
     console.log(' Response data set:', data)
     
     if (data.card_sets && data.card_sets.length > 0) {

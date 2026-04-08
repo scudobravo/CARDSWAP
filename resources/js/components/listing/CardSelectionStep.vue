@@ -353,6 +353,9 @@ const filteredTeams = ref([])
 const filteredCardSets = ref([])
 const images = ref([null, null, null, null])
 const selectedImageIndex = ref(-1)
+let playerSearchRequestId = 0
+let teamSearchRequestId = 0
+let setSearchRequestId = 0
 
 // Available options
 const availableBrands = ref([])
@@ -372,7 +375,8 @@ const selectedImage = computed(() => {
 
 // Methods
 const searchPlayers = async () => {
-  if (localFilters.value.playerSearch.length < 2) {
+  const requestId = ++playerSearchRequestId
+  if ((localFilters.value.playerSearch || '').trim().length < 2) {
     filteredPlayers.value = []
     return
   }
@@ -380,15 +384,18 @@ const searchPlayers = async () => {
   try {
     const response = await fetch(`/api/${props.category}/filters/players/search?q=${encodeURIComponent(localFilters.value.playerSearch)}`)
     const data = await response.json()
+    if (requestId !== playerSearchRequestId) return
     filteredPlayers.value = data.players || []
   } catch (error) {
     console.error('Errore nella ricerca giocatori:', error)
+    if (requestId !== playerSearchRequestId) return
     filteredPlayers.value = []
   }
 }
 
 const searchTeams = async () => {
-  if (localFilters.value.teamSearch.length < 2) {
+  const requestId = ++teamSearchRequestId
+  if ((localFilters.value.teamSearch || '').trim().length < 2) {
     filteredTeams.value = []
     return
   }
@@ -396,15 +403,18 @@ const searchTeams = async () => {
   try {
     const response = await fetch(`/api/${props.category}/filters/teams/search?q=${encodeURIComponent(localFilters.value.teamSearch)}`)
     const data = await response.json()
+    if (requestId !== teamSearchRequestId) return
     filteredTeams.value = data.teams || []
   } catch (error) {
     console.error('Errore nella ricerca squadre:', error)
+    if (requestId !== teamSearchRequestId) return
     filteredTeams.value = []
   }
 }
 
 const searchCardSets = async () => {
-  if (localFilters.value.setSearch.length < 2) {
+  const requestId = ++setSearchRequestId
+  if ((localFilters.value.setSearch || '').trim().length < 2) {
     filteredCardSets.value = []
     return
   }
@@ -412,9 +422,11 @@ const searchCardSets = async () => {
   try {
     const response = await fetch(`/api/${props.category}/filters/card-sets/search?q=${encodeURIComponent(localFilters.value.setSearch)}`)
     const data = await response.json()
+    if (requestId !== setSearchRequestId) return
     filteredCardSets.value = data.card_sets || []
   } catch (error) {
     console.error('Errore nella ricerca set:', error)
+    if (requestId !== setSearchRequestId) return
     filteredCardSets.value = []
   }
 }
