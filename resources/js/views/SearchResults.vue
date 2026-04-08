@@ -45,10 +45,11 @@
         <div v-else class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
           <ProductCard 
             v-for="card in cards" 
-            :key="card.id"
+            :key="card.listing_id ? `${card.id}-${card.listing_id}` : card.id"
             :product="transformCardToProduct(card)"
             class="cursor-pointer"
             @click="goToCardDetail(card)"
+            @add-to-cart="handleAddToCart"
           />
         </div>
 
@@ -73,11 +74,6 @@
           </div>
         </div>
         
-        <!-- Debug info (temporaneo per troubleshooting) -->
-        <div class="text-xs text-gray-400 mt-4 p-2 bg-gray-100 rounded">
-          Debug: hasMoreResults={{ hasMoreResults }}, isLoading={{ isLoading }}, isLoadingMore={{ isLoadingMore }}, 
-          cards.length={{ cards.length }}, currentPage={{ currentPage }}, totalResults={{ totalResults }}
-        </div>
       </div>
     </div>
     
@@ -93,9 +89,11 @@ import Header from '../components/Header.vue'
 import Footer from '../components/Footer.vue'
 import ProductCard from '../components/ProductCard.vue'
 import { formatCondition } from '../utils/conditionFormatter'
+import { useCartStore } from '../stores/cart.js'
 
 const route = useRoute()
 const router = useRouter()
+const cartStore = useCartStore()
 
 // Refs
 const searchQuery = ref('')
@@ -204,6 +202,46 @@ const goToCardDetail = (card) => {
   router.push(`/product/${card.id}`)
 }
 
+const handleAddToCart = async (product) => {
+  if (!product.listing_id) {
+    console.error('Product senza listing_id:', product)
+    alert('Errore: Impossibile aggiungere al carrello. Inserzione non disponibile.')
+    return
+  }
+
+  const listing = {
+    id: String(product.listing_id),
+    card_model_id: product.id,
+    seller_id: product.seller_id || product.seller?.id || 1,
+    price: parseFloat(String(product.price || 0).replace(/€/g, '').replace(/,/g, '')) || 0,
+    condition: formatCondition(product),
+    description: product.description || '',
+    images: product.images?.length ? product.images : (product.imageUrl ? [product.imageUrl] : []),
+    seller: product.seller || null,
+    card_model: product.card_model || null,
+    shipping_zones: product.shipping_zones || []
+  }
+
+  try {
+    const result = await cartStore.addToCart(listing, 1)
+    if (result.success) {
+      alert(`${product.name || 'Carta'} aggiunta al carrello!`)
+    } else {
+      alert(result.message || 'Errore nell\'aggiunta al carrello')
+    }
+  } catch (error) {
+    console.error('Errore nell\'aggiunta al carrello:', error)
+    if (error.response?.data?.errors) {
+      const errorMessages = Object.values(error.response.data.errors).flat().join(', ')
+      alert(`Errore: ${errorMessages}`)
+    } else if (error.response?.data?.message) {
+      alert(`Errore: ${error.response.data.message}`)
+    } else {
+      alert('Errore nell\'aggiunta al carrello. Controlla la console per i dettagli.')
+    }
+  }
+}
+
 // Funzione per trasformare i dati della carta nel formato ProductCard
 const transformCardToProduct = (card) => {
   // Se i dati della listing sono già presenti direttamente nell'oggetto (ricerca testuale),
@@ -239,10 +277,19 @@ const transformCardToProduct = (card) => {
     }
   }
   
+  const imageUrl = card.imageUrl || card.image_url
+
   return {
     id: card.id,
+    listing_id: card.listing_id ?? null,
+    seller_id: card.seller?.id ?? card.seller_id ?? null,
+    seller: card.seller || null,
+    description: card.description || '',
+    images: card.images?.length ? card.images : (imageUrl ? [imageUrl] : []),
+    shipping_zones: card.shipping_zones || [],
+    card_model: card.card_model || null,
     name: card.name,
-    imageUrl: card.imageUrl || card.image_url,
+    imageUrl,
     team: card.team?.name || card.team || 'N/A',
     set: card.set_name || card.cardSet?.name || 'N/A',
     year: card.year,
