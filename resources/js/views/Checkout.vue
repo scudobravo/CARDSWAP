@@ -516,6 +516,31 @@ const deliveryMethods = ref({}) // seller_id -> array di opzioni
 const shippingData = ref({}) // seller_id -> { package_bucket, logistic_units_total, options }
 const loadingShippingRates = ref(false)
 
+/** ISO 3166-1 alpha-2 per API spedizione (il backend richiede esattamente 2 caratteri). */
+function normalizeShippingCountryCode(raw) {
+  if (raw == null || raw === '') return ''
+  const s = String(raw).trim()
+  if (s.length === 2) return s.toUpperCase()
+  const u = s.toUpperCase()
+  const aliases = {
+    ITALIA: 'IT',
+    ITALY: 'IT',
+    FRANCIA: 'FR',
+    FRANCE: 'FR',
+    GERMANIA: 'DE',
+    GERMANY: 'DE',
+    SPAGNA: 'ES',
+    SPAIN: 'ES',
+    'REGNO UNITO': 'GB',
+    'UNITED KINGDOM': 'GB',
+    UK: 'GB',
+    USA: 'US',
+    'STATI UNITI': 'US',
+    'UNITED STATES': 'US',
+  }
+  return aliases[u] || ''
+}
+
 // Metodo di pagamento fisso: Stripe
 const paymentMethod = 'stripe'
 
@@ -591,10 +616,16 @@ const selectAddress = (address) => {
   formData.value.address = address.address_line_1
   formData.value.apartment = address.address_line_2 || ''
   formData.value.city = address.city
-  formData.value.country = address.country
+  const co = normalizeShippingCountryCode(address.country) || address.country
+  formData.value.country = co.length === 2 ? co : address.country
   formData.value.region = address.state_province || ''
   formData.value.postalCode = address.postal_code
   formData.value.phone = address.phone || ''
+  nextTick(() => {
+    if (formData.value.country && cartStore.sellers.length > 0) {
+      calculateShippingRates()
+    }
+  })
 }
 
 const removeFromCart = async (product) => {
@@ -879,7 +910,8 @@ const populateUserData = () => {
       console.log('CAP precompilato:', formData.value.postalCode)
     }
     if (authStore.user.country) {
-      formData.value.country = authStore.user.country
+      const nc = normalizeShippingCountryCode(authStore.user.country)
+      formData.value.country = nc || authStore.user.country
       console.log('Paese precompilato:', formData.value.country)
     }
     
@@ -908,32 +940,45 @@ watch(() => userAddresses.value, (newAddresses) => {
       formData.value.address = authStore.user.address || ''
       formData.value.city = authStore.user.city || ''
       formData.value.postalCode = authStore.user.postal_code || ''
-      formData.value.country = authStore.user.country || 'IT'
+      const nc = normalizeShippingCountryCode(authStore.user.country)
+      formData.value.country = nc || authStore.user.country || 'IT'
     }
   }
 }, { immediate: true })
 
-// Watcher per calcolare i prezzi CardSwap V1 quando cambia l'indirizzo
-watch([
-  () => formData.value.country,
-  () => cartStore.sellers.length
-], () => {
-  // Calcola i prezzi solo se abbiamo il paese e ci sono venditori
-  // CardSwap V1 richiede solo country_code, non serve city/postalCode per il calcolo
-  if (formData.value.country && cartStore.sellers.length > 0) {
-    calculateShippingRates()
-  }
-}, { deep: true })
+// Watcher per calcolare i prezzi CardSwap V1 quando cambiano indirizzo o carrello.
+// Importante: includere città e CAP — altrimenti, con country già "IT" di default, al completamento
+// dell'indirizzo il watcher non scatta e resta il banner giallo "nessuna opzione".
+watch(
+  [
+    () => formData.value.country,
+    () => formData.value.city,
+    () => formData.value.postalCode,
+    () => cartStore.sellers,
+  ],
+  () => {
+    if (formData.value.country && cartStore.sellers.length > 0) {
+      calculateShippingRates()
+    }
+  },
+  { deep: true }
+)
 
 // Metodi di utilità
 const getShippingMethodsForSeller = (sellerId) => {
-  // Ottieni i metodi di spedizione disponibili per questo venditore
-  return deliveryMethods.value[sellerId] || []
+  const id = sellerId != null ? String(sellerId) : ''
+  return deliveryMethods.value[id] || deliveryMethods.value[sellerId] || []
 }
 
 // Calcola i prezzi di spedizione usando CardSwap Shipping V1
 const calculateShippingRates = async () => {
-  if (!formData.value.country || !formData.value.city || !formData.value.postalCode) {
+  const countryCode =
+    normalizeShippingCountryCode(formData.value.country) ||
+    (String(formData.value.country || '').trim().length === 2
+      ? String(formData.value.country).trim().toUpperCase()
+      : '')
+
+  if (!countryCode || countryCode.length !== 2 || !cartStore.sellers.length) {
     return
   }
 
@@ -942,16 +987,16 @@ const calculateShippingRates = async () => {
     
     // Prepara i dati dei venditori con items dal carrello
     const sellers = cartStore.sellers.map(seller => ({
-      seller_id: seller.id,
+      seller_id: Number(seller.id),
       items: seller.items.map(item => ({
         listing_id: item.id,
         quantity: item.quantity
       }))
     }))
 
-    // Prepara l'indirizzo di spedizione (solo country_code richiesto)
+    // Prepara l'indirizzo di spedizione (solo country_code richiesto dall'API V1)
     const shippingAddress = {
-      country_code: formData.value.country
+      country_code: countryCode
     }
 
     // Chiama l'API CardSwap Shipping V1
@@ -966,15 +1011,16 @@ const calculateShippingRates = async () => {
       const newShippingData = {}
       
       Object.entries(response.data.data).forEach(([sellerId, sellerData]) => {
+        const sid = String(sellerId)
         // Verifica se c'è un errore
         if (sellerData.error) {
-          console.error(`Errore per venditore ${sellerId}:`, sellerData.error)
-          newDeliveryMethods[sellerId] = []
+          console.error(`Errore per venditore ${sid}:`, sellerData.error)
+          newDeliveryMethods[sid] = []
           return
         }
 
         // Salva i dati completi per questo venditore
-        newShippingData[sellerId] = {
+        newShippingData[sid] = {
           package_bucket: sellerData.package_bucket,
           package_bucket_label: sellerData.package_bucket_label,
           logistic_units_total: sellerData.logistic_units_total,
@@ -983,7 +1029,7 @@ const calculateShippingRates = async () => {
 
         // Processa le opzioni di spedizione
         if (sellerData.options && sellerData.options.length > 0) {
-          newDeliveryMethods[sellerId] = sellerData.options.map(option => ({
+          newDeliveryMethods[sid] = sellerData.options.map(option => ({
             key: option.shipping_method,
             shipping_method: option.shipping_method,
             label: option.label,
@@ -997,7 +1043,7 @@ const calculateShippingRates = async () => {
           }))
         } else {
           // Nessuna opzione disponibile
-          newDeliveryMethods[sellerId] = []
+          newDeliveryMethods[sid] = []
         }
       })
       
@@ -1006,9 +1052,10 @@ const calculateShippingRates = async () => {
       
       // Seleziona automaticamente il metodo più economico per ogni venditore
       Object.keys(newDeliveryMethods).forEach(sellerId => {
-        if (!selectedShippingMethods.value[sellerId] && newDeliveryMethods[sellerId].length > 0) {
+        const sid = String(sellerId)
+        if (!selectedShippingMethods.value[sid] && newDeliveryMethods[sid].length > 0) {
           // Seleziona la prima opzione (già ordinata per prezzo dal backend)
-          selectedShippingMethods.value[sellerId] = newDeliveryMethods[sellerId][0].shipping_method
+          selectedShippingMethods.value[sid] = newDeliveryMethods[sid][0].shipping_method
         }
       })
     }
@@ -1018,8 +1065,9 @@ const calculateShippingRates = async () => {
     // In caso di errore, mostra messaggio e non imposta fallback
     // L'utente non potrà procedere senza opzioni valide
     cartStore.sellers.forEach(seller => {
-      deliveryMethods.value[seller.id] = []
-      shippingData.value[seller.id] = null
+      const sid = String(seller.id)
+      deliveryMethods.value[sid] = []
+      shippingData.value[sid] = null
     })
   } finally {
     loadingShippingRates.value = false

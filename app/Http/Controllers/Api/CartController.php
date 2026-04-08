@@ -8,8 +8,9 @@ use App\Models\ShippingZone;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class CartController extends Controller
 {
@@ -115,6 +116,14 @@ class CartController extends Controller
         ]);
 
         if ($validator->fails()) {
+            Log::warning('Cart addItem: validazione fallita', [
+                'listing_id' => $request->input('listing_id'),
+                'quantity' => $request->input('quantity'),
+                'errors' => $validator->errors()->toArray(),
+                'user_id' => Auth::id(),
+                'ip' => $request->ip(),
+            ]);
+
             return response()->json([
                 'success' => false,
                 'errors' => $validator->errors()
@@ -122,6 +131,13 @@ class CartController extends Controller
         }
 
         try {
+            Log::info('Cart addItem: richiesta', [
+                'listing_id' => $request->listing_id,
+                'quantity' => (int) $request->quantity,
+                'user_id' => Auth::id(),
+                'ip' => $request->ip(),
+            ]);
+
             // Per ora, gestiamo solo mock listings per il testing
             // In futuro, questo dovrebbe cercare nel database
             if (str_starts_with($request->listing_id, 'listing_')) {
@@ -150,6 +166,12 @@ class CartController extends Controller
                     'shippingZones' => []
                 ];
 
+                Log::info('Cart addItem: mock listing OK', [
+                    'listing_id' => $request->listing_id,
+                    'quantity' => (int) $request->quantity,
+                    'user_id' => Auth::id(),
+                ]);
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Articolo aggiunto al carrello',
@@ -169,6 +191,15 @@ class CartController extends Controller
             ])->find($request->listing_id);
 
             if (!$listing || $listing->status !== 'active') {
+                Log::warning('Cart addItem: inserzione non disponibile', [
+                    'listing_id' => $request->listing_id,
+                    'found' => (bool) $listing,
+                    'status' => $listing?->status,
+                    'quantity' => (int) $request->quantity,
+                    'user_id' => Auth::id(),
+                    'ip' => $request->ip(),
+                ]);
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Inserzione non disponibile'
@@ -176,6 +207,14 @@ class CartController extends Controller
             }
 
             if ($listing->quantity < $request->quantity) {
+                Log::warning('Cart addItem: quantità insufficiente', [
+                    'listing_id' => $listing->id,
+                    'requested' => (int) $request->quantity,
+                    'available' => $listing->quantity,
+                    'user_id' => Auth::id(),
+                    'ip' => $request->ip(),
+                ]);
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Quantità non disponibile'
@@ -198,6 +237,15 @@ class CartController extends Controller
                 'shippingZones' => $listing->shippingZones
             ];
 
+            Log::info('Cart addItem: successo', [
+                'listing_id' => $listing->id,
+                'seller_id' => $listing->seller_id,
+                'quantity' => (int) $request->quantity,
+                'listing_type' => $listing->listing_type,
+                'user_id' => Auth::id(),
+                'ip' => $request->ip(),
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Articolo aggiunto al carrello',
@@ -205,6 +253,14 @@ class CartController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Cart addItem: eccezione', [
+                'listing_id' => $request->input('listing_id'),
+                'quantity' => $request->input('quantity'),
+                'user_id' => Auth::id(),
+                'ip' => $request->ip(),
+                'message' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Errore durante l\'aggiunta al carrello',

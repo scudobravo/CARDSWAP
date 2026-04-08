@@ -114,14 +114,15 @@ export const useCartStore = defineStore('cart', () => {
           cartItems.value[sellerId] = []
         }
 
-        // Cerca se l'articolo è già nel carrello
+        // Cerca se l'articolo è già nel carrello (confronto stringa: API può restituire id numerico o stringa)
+        const listingKey = String(cartItemData.id ?? listing.id ?? listingId)
         const existingItemIndex = cartItems.value[sellerId].findIndex(
-          item => item.id === listing.id
+          item => String(item.id) === listingKey
         )
 
         if (existingItemIndex !== -1) {
           // Aggiorna la quantità
-          cartItems.value[sellerId][existingItemIndex].quantity += quantity
+          cartItems.value[sellerId][existingItemIndex].quantity += quantityInt
         } else {
           // Aggiungi nuovo articolo usando i dati dalla risposta API quando disponibili
           cartItems.value[sellerId].push({
@@ -129,7 +130,7 @@ export const useCartStore = defineStore('cart', () => {
             card_model_id: cartItemData.card_model_id || listing.card_model_id,
             seller_id: cartItemData.seller_id || listing.seller_id,
             price: cartItemData.price || listing.price,
-            quantity: quantity,
+            quantity: quantityInt,
             available_quantity: cartItemData.available_quantity || listing.quantity || 1,
             condition: cartItemData.condition || listing.condition,
             description: cartItemData.description || listing.description,

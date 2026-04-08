@@ -951,13 +951,29 @@ class PokemonFilterController extends Controller
                     in_array($filters['subcategory'], ['sealed-packs', 'sealed-boxes']);
         
         // Base query per card_models con join per ordinamento
-        $query = CardModel::with(['player', 'team', 'cardSet', 'gradingCompany'])
+        // Solo modelli che hanno almeno un'inserzione attiva (stesso concetto di Football/Basket: senza listing_id il carrello non funziona)
+        $query = CardModel::with([
+                'player',
+                'team',
+                'cardSet',
+                'gradingCompany',
+                'cardListings' => function ($q) {
+                    $q->where('status', 'active')
+                        ->where('quantity', '>', 0)
+                        ->orderBy('price', 'asc')
+                        ->with(['gradingCompany', 'seller']);
+                },
+            ])
             ->leftJoin('players', 'card_models.player_id', '=', 'players.id')
             ->leftJoin('teams', 'card_models.team_id', '=', 'teams.id')
             ->select('card_models.*')
             ->where('card_models.is_active', true)
             ->whereHas('category', function($query) {
                 $query->where('slug', 'pokemon');
+            })
+            ->whereHas('cardListings', function ($q) {
+                $q->where('status', 'active')
+                    ->where('quantity', '>', 0);
             });
 
         // Per sealed packs/boxes, applica solo Set, Year e Brand
@@ -1293,34 +1309,66 @@ class PokemonFilterController extends Controller
         
         $products = $query->paginate($perPage, ['*'], 'page', $page);
 
-        // Trasforma i dati per il frontend
-        $transformedProducts = $products->map(function($cardModel) {
+        // Trasforma i dati per il frontend: una riga per CardModel con la miglior inserzione (prezzo più basso)
+        $transformedProducts = $products->map(function ($cardModel) {
+            $listing = $cardModel->cardListings->first();
+            if (!$listing) {
+                return null;
+            }
+
+            $imageUrl = null;
+            if ($listing->images && is_array($listing->images) && count($listing->images) > 0) {
+                $firstImage = $listing->images[0];
+                if (! str_starts_with($firstImage, '/storage/') && ! str_starts_with($firstImage, 'http')) {
+                    $imageUrl = '/storage/'.$firstImage;
+                } else {
+                    $imageUrl = $firstImage;
+                }
+            } elseif ($cardModel->image_url) {
+                $imageUrl = $cardModel->image_url;
+            }
+
             return [
                 'id' => $cardModel->id,
+                'listing_id' => $listing->id,
+                'seller_id' => $listing->seller_id,
                 'name' => $cardModel->player->name ?? 'Unknown Player',
                 'team' => $cardModel->team->name ?? 'Unknown Team',
                 'set' => $cardModel->cardSet->name ?? 'Unknown Set',
                 'year' => $cardModel->year,
                 'rarity' => $cardModel->rarity,
-                'condition' => 'excellent', // Default condition since we don't have card_listings yet
-                'price' => number_format($cardModel->price ?? 0, 2, ',', '.'), // Formato italiano: punto per migliaia, virgola per decimali
+                'condition' => $listing->condition ?? 'excellent',
+                'price' => number_format($listing->price ?? 0, 2, ',', '.'),
+                'quantity' => $listing->quantity ?? 1,
                 'card_number_in_set' => $cardModel->card_number_in_set,
+                'card_number' => $cardModel->card_number,
                 'is_rookie' => $cardModel->is_rookie ?? false,
                 'is_autograph' => $cardModel->is_autograph ?? false,
                 'is_relic' => $cardModel->is_relic ?? false,
                 'is_star' => $cardModel->is_star ?? false,
                 'is_legend' => $cardModel->is_legend ?? false,
-                'imageUrl' => $cardModel->image_url,
+                'imageUrl' => $imageUrl,
+                'images' => $listing->images ?? [],
                 'playerId' => $cardModel->player_id,
                 'teamId' => $cardModel->team_id,
                 'setId' => $cardModel->card_set_id,
                 'brand' => $cardModel->cardSet->brand ?? null,
                 'hasAutograph' => $cardModel->is_autograph ?? false,
                 'hasRelic' => $cardModel->is_relic ?? false,
+                'grading_company_id' => $listing->grading_company_id ?? null,
+                'grading_company' => $listing->gradingCompany ? [
+                    'id' => $listing->gradingCompany->id,
+                    'name' => $listing->gradingCompany->name,
+                    'slug' => $listing->gradingCompany->slug,
+                ] : null,
+                'card_condition_score' => $listing->card_condition_score ?? null,
+                'autograph_condition_score' => $listing->autograph_condition_score ?? null,
                 'gradingScore' => $cardModel->grading_score,
-                'gradingCompany' => $cardModel->gradingCompany->name ?? null
+                'gradingCompany' => $cardModel->gradingCompany->name ?? null,
+                'listing_type' => $listing->listing_type,
+                'seller' => $listing->seller,
             ];
-        });
+        })->filter()->values();
 
         return response()->json([
             'data' => $transformedProducts,
