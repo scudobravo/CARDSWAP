@@ -2859,6 +2859,9 @@ watch(() => props.isOpen, async (isOpen) => {
   }
   if (isOpen) {
     console.log(' Modal aperto, controllo zone di spedizione...')
+    // Ricalcola anche le tabelle prezzi: onMounted può essere eseguito prima del login/token,
+    // lasciando hasPriceTablesWithCountries=false fino al refresh pagina.
+    await checkPriceTables()
     await checkShippingZones()
     if (hasShippingZones.value) {
       loadShippingZones()
