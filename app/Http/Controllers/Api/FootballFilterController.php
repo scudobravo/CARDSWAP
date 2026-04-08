@@ -225,125 +225,20 @@ class FootballFilterController extends Controller
 
         PlayerSearchQuery::orderPlayerNameForAutocomplete($playersQuery, $query);
 
-        $players = $playersQuery->with(['team', 'cardModels' => function($query) {
-                $query->whereHas('category', function($catQuery) {
-                    $catQuery->where('slug', 'calcio');
-                })->select('id', 'player_id', 'card_number', 'card_number_in_set', 'name', 'year', 'rarity', 'rarity_variation', 'is_rookie', 'is_autograph', 'is_relic', 'is_on_card_auto', 'is_jewel', 'is_booklet', 'is_multi_player_dual', 'is_multi_player_triple', 'is_multi_player_quad', 'card_set_id', 'team_id')
-                ->with(['cardSet:id,name,brand', 'team:id,name']);
-            }])
+        $players = $playersQuery
             ->limit(200)
-            ->get(['id', 'name', 'slug', 'position', 'nationality', 'team_id']);
+            ->get(['id', 'name', 'slug', 'position', 'nationality']);
 
-        // Raggruppa i giocatori per nome per evitare duplicati
-        $groupedPlayers = $players->groupBy('name');
-        
-        // Trasforma i dati per includere informazioni delle carte e squadra
-        $transformedPlayers = $groupedPlayers->map(function($playerGroup, $playerName) {
-            // Prendi il primo giocatore del gruppo come rappresentante
-            $representativePlayer = $playerGroup->first();
-            
-            // Raccogli tutte le carte di tutti i giocatori con lo stesso nome
-            $allCards = collect();
-            $allCardNumbers = collect();
-            $allCardNumbersInSet = collect();
-            $allTeams = collect();
-            
-            foreach ($playerGroup as $player) {
-                $allCards = $allCards->merge($player->cardModels);
-                $allCardNumbers = $allCardNumbers->merge($player->cardModels->pluck('card_number')->filter());
-                $allCardNumbersInSet = $allCardNumbersInSet->merge($player->cardModels->pluck('card_number_in_set')->filter());
-                if ($player->team) {
-                    $allTeams->push($player->team);
-                }
-            }
-            
-            // Per giocatori famosi come Messi, cerca tutte le squadre dalle carte
-            // indipendentemente dal filtro team corrente
-            // Prima cerca TUTTI i giocatori con lo stesso nome nel database
-            $allPlayerIdsWithSameName = Player::where('name', $playerName)
-                ->pluck('id')
-                ->toArray();
-            
-            // Query completamente separata che ignora il filtro team corrente
-            // per trovare tutte le squadre di questo giocatore
-            $allTeamsFromCards = \App\Models\CardModel::whereIn('player_id', $allPlayerIdsWithSameName)
-                ->whereHas('category', function($catQuery) {
-                    $catQuery->where('slug', 'calcio');
-                })
-                ->with('team:id,name,slug')
-                ->get()
-                ->pluck('team')
-                ->filter()
-                ->unique('id');
-            
-            // Se abbiamo trovato squadre dalle carte, sostituisci completamente
-            // le squadre del team corrente con quelle trovate dalle carte
-            if ($allTeamsFromCards->count() > 0) {
-                $allTeams = $allTeamsFromCards;
-                Log::info('✅ Trovate ' . $allTeamsFromCards->count() . ' squadre per ' . $playerName);
-            }
-            
-            // Rimuovi duplicati
-            $uniqueCardNumbers = $allCardNumbers->unique()->values();
-            $uniqueCardNumbersInSet = $allCardNumbersInSet->unique()->values();
-            $uniqueTeams = $allTeams->unique('id')->values();
-            
-            // Usa sempre card_number_in_set (colonna C) invece di card_number (colonna A)
-            $effectiveCardNumbers = $uniqueCardNumbersInSet;
-            
+        $transformedPlayers = $players->map(function($player) {
             return [
-                'id' => $representativePlayer->id, // Usa l'ID del primo giocatore come rappresentante
-                'name' => $playerName,
-                'slug' => $representativePlayer->slug,
-                'position' => $representativePlayer->position,
-                'nationality' => $representativePlayer->nationality,
-                'team' => $uniqueTeams->first() ? [
-                    'id' => $uniqueTeams->first()->id,
-                    'name' => $uniqueTeams->first()->name,
-                    'slug' => $uniqueTeams->first()->slug
-                ] : null,
-                'display_name' => $playerName,
-                'card_numbers' => $effectiveCardNumbers,
-                'card_numbers_in_set' => $uniqueCardNumbersInSet,
-                'has_cards' => $allCards->count() > 0,
-                'cards' => $allCards->map(function($card) {
-                    return [
-                        'id' => $card->id,
-                        'name' => $card->name,
-                        'year' => $card->year,
-                        'rarity' => $card->rarity,
-                        'rarity_variation' => $card->rarity_variation,
-                        'card_number' => $card->card_number,
-                        'card_number_in_set' => $card->card_number_in_set,
-                        'is_rookie' => $card->is_rookie ?? false,
-                        'is_autograph' => $card->is_autograph ?? false,
-                        'is_relic' => $card->is_relic ?? false,
-                        'is_on_card_auto' => $card->is_on_card_auto ?? false,
-                        'is_jewel' => $card->is_jewel ?? false,
-                        'is_booklet' => $card->is_booklet ?? false,
-                        'is_multi_player_dual' => $card->is_multi_player_dual ?? false,
-                        'is_multi_player_triple' => $card->is_multi_player_triple ?? false,
-                        'is_multi_player_quad' => $card->is_multi_player_quad ?? false,
-                        'card_set' => $card->cardSet ? [
-                            'id' => $card->cardSet->id,
-                            'name' => $card->cardSet->name,
-                            'brand' => $card->cardSet->brand
-                        ] : null,
-                        'team' => $card->team ? [
-                            'id' => $card->team->id,
-                            'name' => $card->team->name
-                        ] : null
-                    ];
-                })->toArray(),
-                'all_teams' => $uniqueTeams->map(function($team) {
-                    return [
-                        'id' => $team->id,
-                        'name' => $team->name,
-                        'slug' => $team->slug
-                    ];
-                })->values()->toArray() // Converti in array per compatibilità con il frontend
+                'id' => $player->id,
+                'name' => $player->name,
+                'slug' => $player->slug,
+                'position' => $player->position,
+                'nationality' => $player->nationality,
+                'display_name' => $player->name,
             ];
-        })->values(); // Converte la Collection in array
+        })->values();
 
         return response()->json(['players' => $transformedPlayers]);
     }
@@ -475,7 +370,34 @@ class FootballFilterController extends Controller
      */
     public function getPlayerById($id)
     {
-        $player = Player::with(['team', 'cardModels.cardSet:id,name,brand', 'cardModels.team:id,name'])->find($id);
+        $player = Player::with([
+            'team',
+            'cardModels' => function($query) {
+                $query->whereHas('category', function($catQuery) {
+                    $catQuery->where('slug', 'calcio');
+                })->select(
+                    'id',
+                    'player_id',
+                    'card_number',
+                    'card_number_in_set',
+                    'name',
+                    'year',
+                    'rarity',
+                    'rarity_variation',
+                    'is_rookie',
+                    'is_autograph',
+                    'is_relic',
+                    'is_on_card_auto',
+                    'is_jewel',
+                    'is_booklet',
+                    'is_multi_player_dual',
+                    'is_multi_player_triple',
+                    'is_multi_player_quad',
+                    'card_set_id',
+                    'team_id'
+                )->with(['cardSet:id,name,brand', 'team:id,name,slug']);
+            }
+        ])->find($id);
         
         if (!$player) {
             return response()->json([
@@ -490,6 +412,12 @@ class FootballFilterController extends Controller
         // Usa card_number_in_set se card_number è vuoto
         $effectiveCardNumbers = $cardNumbers->count() > 0 ? $cardNumbers : $cardNumbersInSet;
         
+        $allTeams = $player->cardModels
+            ->pluck('team')
+            ->filter()
+            ->unique('id')
+            ->values();
+
         $transformedPlayer = [
             'id' => $player->id,
             'name' => $player->name,
@@ -530,10 +458,18 @@ class FootballFilterController extends Controller
                     ] : null,
                     'team' => $card->team ? [
                         'id' => $card->team->id,
-                        'name' => $card->team->name
+                        'name' => $card->team->name,
+                        'slug' => $card->team->slug ?? null,
                     ] : null
                 ];
-            })
+            }),
+            'all_teams' => $allTeams->map(function($team) {
+                return [
+                    'id' => $team->id,
+                    'name' => $team->name,
+                    'slug' => $team->slug ?? null,
+                ];
+            })->values()->toArray(),
         ];
 
         return response()->json([

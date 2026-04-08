@@ -588,6 +588,17 @@ const makeApiCall = async (url, requestId) => {
   }
 }
 
+const fetchPlayerDetails = async (playerId) => {
+  try {
+    const response = await fetch(`/api/${props.category}/filters/players/${playerId}`)
+    const data = await response.json()
+    return data?.data?.player || data?.player || null
+  } catch (error) {
+    console.error('Errore nel caricamento dettagli giocatore:', error)
+    return null
+  }
+}
+
 const searchRarities = async () => {
   // Clear previous timeout
   if (searchTimeout) {
@@ -1008,8 +1019,22 @@ const onSetBlur = () => {
   }, 200)
 }
 
-const selectPlayer = (player) => {
+const selectPlayer = async (player) => {
   console.log(' Selezionando giocatore:', player)
+  const detailedPlayer = await fetchPlayerDetails(player.id)
+  if (detailedPlayer) {
+    player = { ...player, ...detailedPlayer }
+  }
+  if ((!player.all_teams || player.all_teams.length === 0) && player.cards && player.cards.length > 0) {
+    player.all_teams = Array.from(
+      new Map(
+        player.cards
+          .map(card => card.team)
+          .filter(Boolean)
+          .map(team => [team.id, team])
+      ).values()
+    )
+  }
   console.log(' Dati giocatore completi:', {
     id: player.id,
     name: player.name,

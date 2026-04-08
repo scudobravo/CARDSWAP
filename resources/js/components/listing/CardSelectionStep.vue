@@ -419,8 +419,20 @@ const searchCardSets = async () => {
   }
 }
 
-const selectPlayer = (player) => {
-  selectedPlayer.value = player
+const fetchPlayerDetails = async (playerId) => {
+  try {
+    const response = await fetch(`/api/${props.category}/filters/players/${playerId}`)
+    const data = await response.json()
+    return data?.data?.player || data?.player || null
+  } catch (error) {
+    console.error('Errore nel caricamento dettagli giocatore:', error)
+    return null
+  }
+}
+
+const selectPlayer = async (player) => {
+  const detailedPlayer = await fetchPlayerDetails(player.id)
+  selectedPlayer.value = detailedPlayer ? { ...player, ...detailedPlayer } : player
   localFilters.value.playerSearch = ''
   filteredPlayers.value = []
   emit('filters-changed', localFilters.value)
