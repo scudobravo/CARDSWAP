@@ -61,60 +61,45 @@ class StripeService
                 ];
             }
             
-            // IMPORTANTE: Stripe determina il paese dai dati utente (indirizzo)
-            // Assicuriamoci che l'utente abbia un indirizzo italiano configurato
+            // Paese per metadata / log (non imposta il paese nel form Stripe Identity)
             $userCountry = $user->country ?? null;
-            
-            // Verifica se l'utente ha un indirizzo predefinito
             $defaultAddress = $user->defaultAddress;
             if ($defaultAddress && $defaultAddress->country) {
                 $userCountry = $defaultAddress->country;
             }
-            
-            // Se non abbiamo un paese, usa IT come default
             if (!$userCountry) {
                 $userCountry = 'IT';
-                Log::warning('Utente ' . $user->id . ' non ha un paese configurato, usando IT come default');
+                Log::warning('Utente ' . $user->id . ' non ha un paese configurato, usando IT come default nei metadata');
             }
-            
-            // Verifica che il paese sia IT (Italia) - Stripe Identity funziona meglio con dati completi
             if ($userCountry !== 'IT') {
-                Log::warning('Utente ' . $user->id . ' ha paese ' . $userCountry . ' invece di IT. Stripe potrebbe richiedere documenti diversi.');
+                Log::warning('Utente ' . $user->id . ' ha paese profilo/indirizzo ' . $userCountry . ' (metadata). Marketplace IT: verificare indirizzo se il flusso Identity è anomalo.');
             }
-            
-            // IMPORTANTE: Stripe Identity NON supporta 'provided_details' nella creazione della VerificationSession
-            // Stripe determina il paese dall'account Stripe principale o dai dati che l'utente inserisce nel form
-            // Il paese viene determinato quando l'utente compila il form di verifica su Stripe
-            
-            Log::info('Creating verification session for user ' . $user->id . ' (User country: ' . ($userCountry ?? 'IT') . ')');
-            
-            // Prepara le opzioni per la sessione di verifica
-            // Stripe determina il paese dall'account principale o dai dati inseriti dall'utente nel form
+
+            Log::info('Creating verification session for user ' . $user->id . ' (metadata user_country: ' . $userCountry . ')');
+
+            // require_id_number=true attiva il controllo ID number di Stripe, disponibile solo per gli USA (ultime 4 cifre SSN).
+            // Per utenti italiani deve restare false; le sessioni già create con true vanno sostituite (vedi controller).
             $sessionOptions = [
                 'type' => 'document',
+                'client_reference_id' => (string) $user->id,
                 'metadata' => [
-                    'user_id' => $user->id,
+                    'user_id' => (string) $user->id,
                     'user_email' => $user->email,
-                    'user_country' => $userCountry, // Aggiungiamo nel metadata (non influisce sul paese richiesto)
+                    'user_country' => $userCountry,
                 ],
                 'options' => [
                     'document' => [
-                        // Tipi di documento compatibili con l'Italia: carta d'identità, patente, passaporto
                         'allowed_types' => ['id_card', 'driving_license', 'passport'],
-                        // PROVA: disabilitiamo require_id_number e lasciamo che Stripe lo determini dal documento
-                        // Se l'utente carica un documento italiano, Stripe dovrebbe richiedere codice fiscale, non SSN
-                        'require_id_number' => false, // CAMBIATO: false per evitare richiesta SSN forzata
+                        'require_id_number' => false,
                         'require_live_capture' => true,
                         'require_matching_selfie' => true,
                     ],
                 ],
                 'return_url' => config('app.url') . '/dashboard/kyc',
-                // Nota: Stripe Identity non supporta il parametro 'locale' nella VerificationSession
-                // La localizzazione viene gestita automaticamente da Stripe in base al paese dell'utente
             ];
 
-            // Applica opzioni aggiuntive se fornite
-            $sessionOptions = array_merge_recursive($sessionOptions, $options);
+            // array_replace_recursive: sovrascrive le chiavi; array_merge_recursive duplicava bool in array misti.
+            $sessionOptions = array_replace_recursive($sessionOptions, $options);
 
             $session = VerificationSession::create($sessionOptions);
 
@@ -156,11 +141,18 @@ class StripeService
     {
         try {
             $session = VerificationSession::retrieve($sessionId);
-            
+
+            $documentOpts = $session->options->document ?? null;
+            $documentRequireIdNumber = false;
+            if ($documentOpts !== null) {
+                $documentRequireIdNumber = (bool) ($documentOpts->require_id_number ?? false);
+            }
+
             return [
                 'success' => true,
                 'status' => $session->status,
                 'url' => $session->url ?? null,
+                'document_require_id_number' => $documentRequireIdNumber,
                 'verified_outputs' => $session->verified_outputs ?? null,
                 'last_verification_report' => $session->last_verification_report ?? null,
             ];

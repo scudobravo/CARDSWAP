@@ -4,8 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\StripeService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class DashboardKycController extends Controller
 {
@@ -49,15 +50,21 @@ class DashboardKycController extends Controller
         if ($user->stripe_verification_session_id) {
             $sessionStatus = $this->stripeService->getVerificationSessionStatus($user->stripe_verification_session_id);
             
-            if ($sessionStatus['success'] && $sessionStatus['status'] === 'requires_input') {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Sessione di verifica già attiva',
-                    'data' => [
-                        'verification_url' => $sessionStatus['url'],
-                        'session_id' => $user->stripe_verification_session_id
-                    ]
-                ]);
+            if ($sessionStatus['success'] && $sessionStatus['status'] === 'requires_input' && isset($sessionStatus['url'])) {
+                if (!empty($sessionStatus['document_require_id_number'])) {
+                    Log::info('Sostituzione sessione Identity con require_id_number (flusso SSN USA): ' . $user->stripe_verification_session_id);
+                    $this->stripeService->resetVerificationSession($user);
+                    $user->refresh();
+                } else {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Sessione di verifica già attiva',
+                        'data' => [
+                            'verification_url' => $sessionStatus['url'],
+                            'session_id' => $user->stripe_verification_session_id,
+                        ],
+                    ]);
+                }
             }
         }
 

@@ -536,16 +536,22 @@ class KycController extends Controller
                 Log::info('User has existing verification session: ' . $user->stripe_verification_session_id);
                 $sessionStatus = $stripeService->getVerificationSessionStatus($user->stripe_verification_session_id);
                 
-                // Se la sessione è ancora attiva e richiede input, restituisci l'URL
+                // Sessione ancora utilizzabile: restituisci l'URL, salvo che sia una sessione legacy con controllo SSN (solo USA).
                 if ($sessionStatus['success'] && $sessionStatus['status'] === 'requires_input' && isset($sessionStatus['url'])) {
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Sessione di verifica già attiva',
-                        'data' => [
-                            'verification_url' => $sessionStatus['url'],
-                            'session_id' => $user->stripe_verification_session_id
-                        ]
-                    ]);
+                    if (!empty($sessionStatus['document_require_id_number'])) {
+                        Log::info('Sostituzione sessione Identity con require_id_number (flusso SSN USA): ' . $user->stripe_verification_session_id);
+                        $stripeService->resetVerificationSession($user);
+                        $user->refresh();
+                    } else {
+                        return response()->json([
+                            'success' => true,
+                            'message' => 'Sessione di verifica già attiva',
+                            'data' => [
+                                'verification_url' => $sessionStatus['url'],
+                                'session_id' => $user->stripe_verification_session_id,
+                            ],
+                        ]);
+                    }
                 }
                 
                 // Se la sessione è verificata, non creare una nuova
