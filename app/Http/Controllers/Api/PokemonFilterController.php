@@ -291,45 +291,60 @@ class PokemonFilterController extends Controller
      */
     public function getPlayerById($id)
     {
-        $player = Player::with([
-            'team',
-            'cardModels' => function($query) {
-                $query->whereHas('category', function($catQuery) {
-                    $catQuery->where('slug', 'pokemon');
-                })->select(
-                    'id',
-                    'player_id',
-                    'card_number',
-                    'card_number_in_set',
-                    'name',
-                    'year',
-                    'rarity',
-                    'rarity_variation',
-                    'is_rookie',
-                    'is_autograph',
-                    'is_relic',
-                    'is_on_card_auto',
-                    'is_jewel',
-                    'is_booklet',
-                    'is_multi_player_dual',
-                    'is_multi_player_triple',
-                    'is_multi_player_quad',
-                    'card_set_id',
-                    'team_id'
-                )->with(['cardSet:id,name,brand', 'team:id,name,slug']);
-            }
-        ])->find($id);
-        
+        $player = Player::with('team')->find($id);
+
         if (!$player) {
             return response()->json([
                 'error' => 'Player not found'
             ], 404);
         }
 
-        $cardNumbers = $player->cardModels->pluck('card_number')->filter()->unique()->values();
-        $cardNumbersInSet = $player->cardModels->pluck('card_number_in_set')->filter()->unique()->values();
+        $sameNameIds = Player::where('name', $player->name)->pluck('id');
+
+        $cardModels = CardModel::query()
+            ->whereIn('player_id', $sameNameIds)
+            ->whereHas('category', function ($catQuery) {
+                $catQuery->where('slug', 'pokemon');
+            })
+            ->with(['cardSet:id,name,brand', 'team:id,name,slug'])
+            ->select(
+                'id',
+                'player_id',
+                'card_number',
+                'card_number_in_set',
+                'name',
+                'year',
+                'rarity',
+                'rarity_variation',
+                'is_rookie',
+                'is_autograph',
+                'is_relic',
+                'is_on_card_auto',
+                'is_jewel',
+                'is_booklet',
+                'is_multi_player_dual',
+                'is_multi_player_triple',
+                'is_multi_player_quad',
+                'card_set_id',
+                'team_id'
+            )
+            ->get();
+
+        $cardNumbers = $cardModels->pluck('card_number')->filter()->unique()->values();
+        $cardNumbersInSet = $cardModels->pluck('card_number_in_set')->filter()->unique()->values();
         $effectiveCardNumbers = $cardNumbersInSet->count() > 0 ? $cardNumbersInSet : $cardNumbers;
-        $allTeams = $player->cardModels->pluck('team')->filter()->unique('id')->values();
+        $allTeams = $cardModels->pluck('team')->filter()->unique('id')->values();
+
+        $firstTeamFromCards = $allTeams->first();
+        $teamDisplay = $firstTeamFromCards ? [
+            'id' => $firstTeamFromCards->id,
+            'name' => $firstTeamFromCards->name,
+            'slug' => $firstTeamFromCards->slug ?? null,
+        ] : ($player->team ? [
+            'id' => $player->team->id,
+            'name' => $player->team->name,
+            'slug' => $player->team->slug,
+        ] : null);
 
         $transformedPlayer = [
             'id' => $player->id,
@@ -337,16 +352,12 @@ class PokemonFilterController extends Controller
             'slug' => $player->slug,
             'position' => $player->position,
             'nationality' => $player->nationality,
-            'team' => $player->team ? [
-                'id' => $player->team->id,
-                'name' => $player->team->name,
-                'slug' => $player->team->slug,
-            ] : null,
+            'team' => $teamDisplay,
             'display_name' => $player->name,
             'card_numbers' => $effectiveCardNumbers,
             'card_numbers_in_set' => $cardNumbersInSet,
-            'has_cards' => $player->cardModels->count() > 0,
-            'cards' => $player->cardModels->map(function($card) {
+            'has_cards' => $cardModels->count() > 0,
+            'cards' => $cardModels->map(function ($card) {
                 return [
                     'id' => $card->id,
                     'name' => $card->name,
@@ -375,14 +386,14 @@ class PokemonFilterController extends Controller
                         'slug' => $card->team->slug ?? null,
                     ] : null,
                 ];
-            })->toArray(),
-            'all_teams' => $allTeams->map(function($team) {
+            })->values()->all(),
+            'all_teams' => $allTeams->map(function ($team) {
                 return [
                     'id' => $team->id,
                     'name' => $team->name,
                     'slug' => $team->slug ?? null,
                 ];
-            })->values()->toArray(),
+            })->values()->all(),
         ];
 
         return response()->json([
