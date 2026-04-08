@@ -258,11 +258,12 @@
                     <div class="mt-3 flex items-center justify-between">
                       <p class="text-lg font-bold text-gray-900">€{{ formatPrice(product.price) }}</p>
                       <button 
-                        @click="handleAddToCart(product, $event)"
-                        class="w-8 h-8 bg-blue-600 rounded-md flex items-center justify-center hover:bg-blue-700 transition-colors"
+                        type="button"
+                        @click.stop.prevent="handleAddToCart(product, $event)"
+                        class="min-h-[44px] min-w-[44px] h-11 w-11 shrink-0 bg-blue-600 rounded-md flex items-center justify-center hover:bg-blue-700 active:bg-blue-800 transition-colors [touch-action:manipulation]"
                         aria-label="Aggiungi al carrello"
                       >
-                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                         </svg>
                       </button>
@@ -427,8 +428,9 @@
                     <div class="mt-4 flex items-center justify-between">
                       <p class="text-lg font-bold text-gray-900">€{{ formatPrice(product.price) }}</p>
                       <button 
-                        @click="handleAddToCart(product, $event)"
-                        class="w-10 h-10 bg-blue-600 rounded-md flex items-center justify-center hover:bg-blue-700 transition-colors"
+                        type="button"
+                        @click.stop.prevent="handleAddToCart(product, $event)"
+                        class="min-h-[44px] min-w-[44px] h-11 w-11 shrink-0 bg-blue-600 rounded-md flex items-center justify-center hover:bg-blue-700 active:bg-blue-800 transition-colors [touch-action:manipulation]"
                         aria-label="Aggiungi al carrello"
                       >
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

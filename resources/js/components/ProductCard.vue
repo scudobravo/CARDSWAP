@@ -145,8 +145,9 @@
         €{{ formatPrice(product.price) }}
       </div>
       <button 
+        type="button"
         @click.stop="addToCart"
-        class="w-10 h-10 bg-blue-600 rounded-md flex items-center justify-center hover:bg-blue-700 transition-colors"
+        class="min-h-[44px] min-w-[44px] h-11 w-11 shrink-0 bg-blue-600 rounded-md flex items-center justify-center hover:bg-blue-700 active:bg-blue-800 transition-colors [touch-action:manipulation]"
         :disabled="loading"
         aria-label="Aggiungi al carrello"
       >
@@ -271,21 +272,11 @@ const handleImageError = (event) => {
   }
 }
 
-const addToCart = async () => {
+const addToCart = () => {
+  // Nessun delay artificiale: su mobile sembrava che il tap non funzionasse (spinner 1s senza feedback reale).
   loading.value = true
-  
   try {
-    // Simula chiamata API
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // Emetti evento
     emit('add-to-cart', props.product)
-    
-    // Feedback visivo
-    console.log('Aggiunto al carrello:', props.product.name)
-    
-  } catch (error) {
-    console.error('Errore aggiunta al carrello:', error)
   } finally {
     loading.value = false
   }
