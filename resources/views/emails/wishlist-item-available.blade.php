@@ -1,16 +1,29 @@
 @extends('emails.base')
 
 @section('content')
+    @php
+        $isRookieCard = (bool) optional($listing->cardModel)->is_rookie;
+        $emailTitle = $listing->title;
+
+        if ($isRookieCard) {
+            if (str_contains($emailTitle, '(Prima Edizione)')) {
+                $emailTitle = str_replace('(Prima Edizione)', '(Rookie)', $emailTitle);
+            } elseif (!str_contains($emailTitle, '(Rookie)')) {
+                $emailTitle .= ' (Rookie)';
+            }
+        }
+    @endphp
+
     <div class="greeting">
         Ciao {{ $user->first_name }}! 🔔
     </div>
 
     <div class="message">
-        Ottima notizia! La carta <strong>"{{ $listing->title }}"</strong> che hai nella tua wishlist è ora disponibile per l'acquisto.
+        Ottima notizia! La carta <strong>"{{ $emailTitle }}"</strong> che hai nella tua wishlist è ora disponibile per l'acquisto.
     </div>
 
     <div class="card-info">
-        <div class="card-title">{{ $listing->title }}</div>
+        <div class="card-title">{{ $emailTitle }}</div>
         <div class="card-details">
             <strong>Condizione:</strong> {{ ucfirst(str_replace('_', ' ', $listing->condition)) }}<br>
             <strong>Quantità disponibile:</strong> {{ $listing->quantity }}<br>
@@ -22,7 +35,7 @@
                 <strong>Firmata:</strong> Sì<br>
             @endif
             @if($listing->is_first_edition)
-                <strong>Prima Edizione:</strong> Sì<br>
+                <strong>{{ $isRookieCard ? 'Rookie' : 'Prima Edizione' }}:</strong> Sì<br>
             @endif
             @if($listing->is_negotiable)
                 <strong>Prezzo negoziabile:</strong> Sì<br>
