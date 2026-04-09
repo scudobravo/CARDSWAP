@@ -502,7 +502,7 @@ const kycCompleted = computed(() => authStore.user?.kyc_status === 'approved')
 
 // State
 const listings = ref([])
-const loading = ref(false)
+const loading = ref(true)
 const loadingMore = ref(false)
 const error = ref(null)
 const deletingListing = ref(null)
@@ -753,6 +753,8 @@ onMounted(async () => {
   await checkStripeConnect()
   if (kycCompleted.value) {
     loadListings()
+  } else {
+    loading.value = false
   }
 })
 </script>
