@@ -29,8 +29,15 @@
         <div class="min-h-0 flex-1 overflow-y-auto px-6 py-6 md:overflow-visible">
           <!-- Step 0: Controllo Tabelle Prezzi (CardSwap V1 – non più zone di spedizione legacy) -->
           <div v-if="currentStep === 0" class="space-y-6">
+            <!-- Finché l'API non risponde, non mostrare il messaggio "manca configurazione" (evita flash falsi positivi) -->
+            <div v-if="priceTablesCheckPending" class="text-center py-12">
+              <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto"></div>
+              <p class="mt-4 text-sm text-gray-600 font-gill-sans">
+                Verifica configurazione spedizioni in corso…
+              </p>
+            </div>
             <!-- Messaggio se non ci sono tabelle prezzi con paesi -->
-            <div v-if="!hasPriceTablesWithCountries" class="text-center">
+            <div v-else-if="!hasPriceTablesWithCountries" class="text-center">
               <div class="w-20 h-20 mx-auto mb-4 bg-amber-100 rounded-full flex items-center justify-center">
                 <svg class="w-10 h-10 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -776,6 +783,9 @@ const isDragOver = ref(false) // For drag & drop
 const selectedCategory = ref('football') // Categoria selezionata
 const hasShippingZones = ref(false) // Controllo esistenza zone di spedizione (legacy)
 const hasPriceTablesWithCountries = ref(false) // CardSwap V1: almeno una tabella prezzi con paesi
+/** Contatore per parallel calls: pending finché almeno una richiesta è in flight */
+let priceTablesCheckInFlight = 0
+const priceTablesCheckPending = ref(true)
 const priceError = ref(false) // Stato errore validazione prezzo
 
 // Listing data
@@ -1600,6 +1610,8 @@ const goToShippingZones = () => {
 
 /** CardSwap V1: verifica se il venditore ha almeno una tabella prezzi con paesi configurati */
 const checkPriceTables = async () => {
+  priceTablesCheckInFlight++
+  priceTablesCheckPending.value = true
   try {
     const response = await fetch('/api/seller/shipping/price-tables', {
       headers: {
@@ -1617,6 +1629,11 @@ const checkPriceTables = async () => {
   } catch (e) {
     console.error('Controllo tabelle prezzi:', e)
     hasPriceTablesWithCountries.value = false
+  } finally {
+    priceTablesCheckInFlight = Math.max(0, priceTablesCheckInFlight - 1)
+    if (priceTablesCheckInFlight === 0) {
+      priceTablesCheckPending.value = false
+    }
   }
 }
 
@@ -2817,6 +2834,9 @@ onUnmounted(() => {
 // Watch per modalità edit
 watch(() => props.editingListing, (newListing) => {
   if (newListing && props.isEdit) {
+    // Salta subito lo step 0: altrimenti finché checkPriceTables / initializeEditMode non finiscono
+    // hasPriceTablesWithCountries è false e compare il messaggio "Configurazione spedizioni" (flash)
+    currentStep.value = 1
     // Delay per permettere al componente di montarsi
     nextTick(() => {
       initializeEditMode(newListing)
@@ -2859,6 +2879,9 @@ watch(() => props.isOpen, async (isOpen) => {
   }
   if (isOpen) {
     console.log(' Modal aperto, controllo zone di spedizione...')
+    if (props.isEdit && props.editingListing) {
+      currentStep.value = 1
+    }
     // Ricalcola anche le tabelle prezzi: onMounted può essere eseguito prima del login/token,
     // lasciando hasPriceTablesWithCountries=false fino al refresh pagina.
     await checkPriceTables()
@@ -3084,6 +3107,7 @@ const initializePreselectedCard = async () => {
 const initializeEditMode = async (listing) => {
   try {
     console.log(' Inizializzazione modalità edit con listing:', listing)
+    currentStep.value = 1
     
     // IMPORTANTE: Ricarica sempre la listing dal backend per avere i dati più aggiornati del CardModel
     let freshListing = listing
