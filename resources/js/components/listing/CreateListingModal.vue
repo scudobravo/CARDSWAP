@@ -15,7 +15,7 @@
             <h3 class="text-lg font-semibold text-gray-900">
               {{ isEdit ? 'Modifica Inserzione' : 'Crea Inserzione' }}
             </h3>
-            <span class="text-sm text-gray-500">Passo {{ currentStep }} di {{ totalSteps }}</span>
+            <span class="text-sm text-gray-500">Passo {{ headerStepIndex }} di {{ totalSteps }}</span>
           </div>
           <button @click="closeModal" class="text-gray-400 hover:text-gray-600">
             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -28,7 +28,8 @@
         <!-- Content (scroll interno su mobile così header/footer restano usabili) -->
         <div class="min-h-0 flex-1 overflow-y-auto px-6 py-6 md:overflow-visible">
           <!-- Step 0: Controllo Tabelle Prezzi (CardSwap V1 – non più zone di spedizione legacy) -->
-          <div v-if="currentStep === 0" class="space-y-6">
+          <!-- In modifica non mostrare mai questo blocco (evita flash "Configurazione spedizioni" sul primo frame) -->
+          <div v-if="currentStep === 0 && !isEditingListingFlow" class="space-y-6">
             <!-- Finché l'API non risponde, non mostrare il messaggio "manca configurazione" (evita flash falsi positivi) -->
             <div v-if="priceTablesCheckPending" class="text-center py-12">
               <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto"></div>
@@ -179,6 +180,17 @@
                 </div>
               </div>
             </div>
+          </div>
+
+          <!-- Modifica: frame in cui currentStep è ancora 0 (es. istanza persistente) — niente wizard spedizioni -->
+          <div
+            v-else-if="currentStep === 0 && isEditingListingFlow"
+            class="flex min-h-[40vh] flex-col items-center justify-center py-12 px-4"
+          >
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+            <p class="mt-4 text-sm text-gray-600 text-center">
+              Caricamento inserzione…
+            </p>
           </div>
 
           <!-- Step 1: Selezione Modello Carta (Singola) -->
@@ -700,7 +712,7 @@
           <div v-else></div>
           
           <button 
-            v-if="currentStep === 0"
+            v-if="currentStep === 0 && !isEditingListingFlow"
             @click="nextStep"
             :disabled="!canProceed"
             class="px-6 py-2 text-sm font-medium text-white bg-primary border border-transparent rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
@@ -708,7 +720,7 @@
             Avanti
           </button>
           <button 
-            v-else-if="currentStep < totalSteps - 1 && !(currentStep === 1 && selectedMode === 'bulk')"
+            v-else-if="currentStep > 0 && currentStep < totalSteps - 1 && !(currentStep === 1 && selectedMode === 'bulk')"
             @click="nextStep"
             :disabled="!canProceed"
             class="px-6 py-2 text-sm font-medium text-white bg-primary border border-transparent rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
@@ -762,8 +774,20 @@ const props = defineProps({
 // Emits
 const emit = defineEmits(['close', 'created', 'updated'])
 
-// State
-const currentStep = ref(0)
+// State — in modifica con listing già passato (es. v-if sul modale) partiamo dallo step 1 per evitare un frame allo step 0
+const currentStep = ref(props.isEdit && props.editingListing ? 1 : 0)
+
+/** True quando si modifica un’inserzione esistente: non mostrare mai il wizard step 0 (gate spedizioni / scelta modalità) */
+const isEditingListingFlow = computed(() => props.isEdit && props.editingListing != null)
+
+/** Evita "Passo 0 di 5" in modifica se uno stato intermedio ha ancora currentStep === 0 */
+const headerStepIndex = computed(() => {
+  if (isEditingListingFlow.value && currentStep.value === 0) {
+    return 1
+  }
+  return currentStep.value
+})
+
 const selectedMode = ref('single')
 const isSubmitting = ref(false) // For form submission state
 const selectedCardModel = ref(null)
