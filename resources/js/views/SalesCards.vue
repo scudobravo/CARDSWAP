@@ -137,7 +137,7 @@
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="!listings.length" class="bg-white rounded-lg border border-gray-200 p-6">
+    <div v-else-if="!listings.length && !hasActiveFilters" class="bg-white rounded-lg border border-gray-200 p-6">
       <div class="text-center py-12">
         <FolderIcon class="mx-auto h-12 w-12 text-gray-400" />
         <h3 class="mt-2 text-sm font-gill-sans-semibold text-gray-900">Nessuna carta in vendita</h3>
@@ -514,6 +514,10 @@ const totalListings = ref(0)
 const hasMorePages = ref(false)
 const stripeConnectConfigured = ref(false)
 let searchTimeout = null
+
+const hasActiveFilters = computed(() => {
+  return searchQuery.value.trim() !== '' || statusFilter.value !== 'all'
+})
 
 const listingsWithoutStripe = computed(() => {
   if (!listings.value || stripeConnectConfigured.value) {
