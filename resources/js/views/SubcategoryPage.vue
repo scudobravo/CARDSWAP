@@ -186,8 +186,12 @@
             <div v-if="displayedProducts.length > 0" class="lg:hidden space-y-3">
               <div v-for="product in displayedProducts" :key="product.id" class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
                 <div class="flex">
-                  <!-- Small Image Area -->
-                  <div class="w-20 min-h-full bg-gray-100 overflow-hidden flex-shrink-0 relative">
+                  <!-- Small Image Area (stesso link del titolo) -->
+                  <router-link
+                    :to="getCardUrl(product)"
+                    class="w-20 min-h-full bg-gray-100 overflow-hidden flex-shrink-0 relative block self-stretch focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                    :aria-label="`Vedi dettagli: ${product.name || 'carta'}`"
+                  >
                     <img 
                       v-if="product.imageUrl" 
                       :src="product.imageUrl" 
@@ -200,7 +204,7 @@
                         <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
                       </svg>
                     </div>
-                  </div>
+                  </router-link>
                   
                   <!-- Product Details -->
                   <div class="flex-1 p-3 flex flex-col justify-between min-w-0">
@@ -277,8 +281,12 @@
             <div v-if="displayedProducts.length > 0 && viewMode === 'list'" class="hidden lg:block space-y-4">
               <div v-for="product in displayedProducts" :key="product.id" class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
                 <div class="flex">
-                  <!-- Image Area -->
-                  <div class="w-48 h-screen max-h-64 bg-gray-100 overflow-hidden flex-shrink-0 relative">
+                  <!-- Image Area (stesso link del titolo) -->
+                  <router-link
+                    :to="getCardUrl(product)"
+                    class="w-48 h-screen max-h-64 bg-gray-100 overflow-hidden flex-shrink-0 relative block self-stretch focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                    :aria-label="`Vedi dettagli: ${product.name || 'carta'}`"
+                  >
                     <img 
                       v-if="product.imageUrl" 
                       :src="product.imageUrl" 
@@ -291,7 +299,7 @@
                         <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
                       </svg>
                     </div>
-                  </div>
+                  </router-link>
                   
                   <!-- Product Details -->
                   <div class="flex-1 p-4 flex flex-col justify-between">
