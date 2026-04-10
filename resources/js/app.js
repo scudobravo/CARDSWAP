@@ -17,6 +17,7 @@ import PokemonCategory from './views/PokemonCategory.vue';
 import DisneyCategory from './views/DisneyCategory.vue';
 import SpongeBobCategory from './views/SpongeBobCategory.vue';
 import LabubuCategory from './views/LabubuCategory.vue';
+import TemplatesPokemonCategory from './views/TemplatesPokemonCategory.vue';
 import SubcategoryPage from './views/SubcategoryPage.vue';
 import ProductDetail from './views/ProductDetail.vue';
 import Dashboard from './views/Dashboard.vue';
@@ -91,6 +92,7 @@ const routes = [
     { path: '/category/disney', component: DisneyCategory, name: 'disney.category' },
     { path: '/category/spongebob', component: SpongeBobCategory, name: 'spongebob.category' },
     { path: '/category/labubu', component: LabubuCategory, name: 'labubu.category' },
+    { path: '/category/templates-pokemon', component: TemplatesPokemonCategory, name: 'templates-pokemon.category' },
     { path: '/categories/:category/:subcategory', component: SubcategoryPage, name: 'subcategory' },
     { path: '/product/:id', component: ProductDetail, name: 'product.detail' },
     { path: '/dashboard', component: Dashboard, name: 'dashboard' },
@@ -207,7 +209,7 @@ router.beforeEach(async (to, from, next) => {
 
   const path = to.path.replace(/\/$/, '') || '/'
   // Pagine pubbliche che non richiedono autenticazione
-  const publicPages = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/categories', '/category/football', '/category/basketball', '/category/pokemon', '/category/disney', '/category/spongebob', '/category/labubu', '/terms-of-service', '/terms-and-conditions', '/platform-terms', '/privacy-policy', '/cookie-policy', '/contact', '/search']
+  const publicPages = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/categories', '/category/football', '/category/basketball', '/category/pokemon', '/category/disney', '/category/spongebob', '/category/labubu', '/category/templates-pokemon', '/terms-of-service', '/terms-and-conditions', '/platform-terms', '/privacy-policy', '/cookie-policy', '/contact', '/search']
   const isPublicPage = publicPages.includes(path) || to.path.startsWith('/category/') || to.path.startsWith('/categories/') || to.path.startsWith('/top/') || to.path.match(/^\/[^\/]+\/[^\/]+$/)
   
   // Se è una pagina pubblica, lascia passare senza controlli

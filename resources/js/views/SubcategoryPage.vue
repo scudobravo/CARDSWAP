@@ -525,6 +525,10 @@ const categoryName = computed(() => {
     case 'football': return 'Calcio'
     case 'basketball': return 'Basket'
     case 'pokemon': return 'Pokemon'
+    case 'disney': return 'Disney'
+    case 'spongebob': return 'SpongeBob'
+    case 'labubu': return 'Labubu'
+    case 'templates-pokemon': return 'Templates pokemon'
     default: return 'Categoria'
   }
 })
@@ -727,7 +731,9 @@ const getCategoryDisplayName = () => {
     'basketball': 'Basketball',
     'pokemon': 'Pokemon',
     'disney': 'Disney',
-    'spongebob': 'Spongebob'
+    'spongebob': 'Spongebob',
+    'labubu': 'Labubu',
+    'templates-pokemon': 'Templates pokemon'
   }
   return categoryMap[category.value] || 'Categoria'
 }

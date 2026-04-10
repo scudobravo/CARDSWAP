@@ -398,6 +398,36 @@ const navigation = {
         },
       ],
     },
+    {
+      name: 'Templates pokemon',
+      icon: '/images/icons/Categorie/TemplatesPokemon.png',
+      featured: [
+        {
+          name: 'Singles',
+          href: '/categories/templates-pokemon/singles',
+          imageSrc: '/images/icons/Sottocategorie/card.png',
+          imageAlt: 'Carte singole Templates pokemon',
+        },
+        {
+          name: 'Sealed Packs',
+          href: '/categories/templates-pokemon/sealed-packs',
+          imageSrc: '/images/icons/Sottocategorie/Pack.png',
+          imageAlt: 'Buste sigillate Templates pokemon',
+        },
+        {
+          name: 'Sealed Boxes',
+          href: '/categories/templates-pokemon/sealed-boxes',
+          imageSrc: '/images/icons/Sottocategorie/Box.png',
+          imageAlt: 'Scatole sigillate Templates pokemon',
+        },
+        {
+          name: 'Lot',
+          href: '/categories/templates-pokemon/lot',
+          imageSrc: '/images/icons/Sottocategorie/Lot.png',
+          imageAlt: 'Lotti Templates pokemon',
+        },
+      ],
+    },
   ],
   pages: [
     { name: 'Azienda', href: '/about' },

@@ -43,6 +43,8 @@ const getCategoryRoute = (type) => {
       return '/category/spongebob'
     case 'labubu':
       return '/category/labubu'
+    case 'templates-pokemon':
+      return '/category/templates-pokemon'
     default:
       return '/categories'
   }

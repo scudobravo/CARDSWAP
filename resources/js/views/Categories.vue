@@ -10,7 +10,7 @@
       </div>
 
       <!-- Lista categorie principali -->
-      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8 mb-16">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-8 mb-16">
         <CategoryCard 
           v-for="category in categories" 
           :key="category.id" 
@@ -67,6 +67,13 @@ const categories = ref([
     description: "Colleziona le tue carte Labubu preferite",
     type: "labubu",
     icon: "/images/icons/Categorie/Labubu.png"
+  },
+  {
+    id: 6,
+    name: "Templates pokemon",
+    description: "Template e collezioni Pokémon in arrivo",
+    type: "templates-pokemon",
+    icon: "/images/icons/Categorie/TemplatesPokemon.png"
   }
 ])
 
