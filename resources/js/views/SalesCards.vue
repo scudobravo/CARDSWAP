@@ -286,7 +286,7 @@
                     €{{ formatPriceItaliana(listing.price) }}
                   </p>
                   <p class="text-xs text-gray-500 capitalize">
-                    {{ formatCondition(listing) }} - Qty: {{ listing.quantity }}
+                    {{ formatCondition(listing) }} - Qt: {{ listing.quantity ?? 0 }}
                   </p>
                 </div>
                 <div class="flex space-x-2">
@@ -422,12 +422,17 @@
                   </div>
                 </div>
                 
-                <!-- Bottom section: Price and Actions -->
-                <div class="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
-                  <p class="text-base font-gill-sans-bold text-gray-900">
-                    €{{ formatPriceItaliana(listing.price) }}
-                  </p>
-                  <div class="flex space-x-2">
+                <!-- Bottom section: Price, quantity and Actions -->
+                <div class="flex items-center justify-between gap-2 mt-3 pt-2 border-t border-gray-100">
+                  <div class="flex items-baseline flex-wrap gap-x-2 gap-y-0.5 min-w-0">
+                    <p class="text-base font-gill-sans-bold text-gray-900">
+                      €{{ formatPriceItaliana(listing.price) }}
+                    </p>
+                    <span class="text-sm font-gill-sans text-gray-500 tabular-nums shrink-0" title="Quantità disponibile">
+                      Qt: {{ listing.quantity ?? 0 }}
+                    </span>
+                  </div>
+                  <div class="flex space-x-2 shrink-0">
                     <button
                       v-if="statusFilter !== 'sold'"
                       @click="editListing(listing)"
