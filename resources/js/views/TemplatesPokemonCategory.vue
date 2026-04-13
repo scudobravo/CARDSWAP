@@ -8,9 +8,9 @@
       <!-- Breadcrumbs -->
       <nav class="mb-6">
         <ol class="flex items-center space-x-2 text-sm font-gill-sans">
-          <li><a href="/categories" class="text-cardswap-600 hover:text-cardswap-700">Categories</a></li>
+          <li><a href="/categories" class="text-primary hover:text-secondary">Categories</a></li>
           <li class="text-gray-500">></li>
-          <li class="text-gray-500">Templates pokemon</li>
+          <li class="text-gray-500">Pokemon</li>
         </ol>
       </nav>
 
@@ -19,24 +19,24 @@
         <div class="flex items-center justify-center space-x-2">
           <!-- Icon -->
           <div class="flex-shrink-0">
-            <img src="/images/icons/Categorie/TemplatesPokemon.png" alt="Templates pokemon" class="w-24 md:w-48 h-auto" />
+            <img src="/images/icons/Categorie/TemplatesPokemon.png" alt="Pokemon" class="w-24 md:w-48 h-auto" />
           </div>
           
           <!-- Category Info -->
           <div>
-            <h1 class="text-4xl font-futura-bold text-cardswap-600">Templates pokemon</h1>
+            <h1 class="text-4xl font-futura-bold text-primary">Pokemon</h1>
           </div>
         </div>
       </div>
 
       <!-- Coming Soon Message -->
-      <div class="bg-white rounded-lg shadow-lg p-12 text-center mb-12 border border-cardswap-100">
+      <div class="bg-white rounded-lg shadow-lg p-12 text-center mb-12">
         <div class="max-w-2xl mx-auto">
-          <h2 class="text-4xl md:text-5xl font-futura-bold text-cardswap-600 mb-6">
+          <h2 class="text-4xl md:text-5xl font-futura-bold text-primary mb-6">
             Coming Soon
           </h2>
           <p class="text-xl text-gray-600 font-gill-sans mb-8">
-            Stiamo lavorando per portarti i migliori template Pokémon. Torna presto per scoprire la nostra collezione!
+            Stiamo lavorando per portarti i migliori prodotti Pokemon. Torna presto per scoprire la nostra collezione!
           </p>
         </div>
       </div>
@@ -45,7 +45,7 @@
         <div 
           v-for="productType in productTypes" 
           :key="productType.id"
-          class="bg-white rounded-lg shadow-lg p-8 text-center hover:shadow-xl transition-shadow duration-300 cursor-pointer group opacity-50 border border-cardswap-50"
+          class="bg-white rounded-lg shadow-lg p-8 text-center hover:shadow-xl transition-shadow duration-300 cursor-pointer group opacity-50"
         >
           <!-- Product Type Icon -->
           <div class="mb-6 h-24 flex items-center justify-center">
@@ -57,7 +57,7 @@
           </div>
           
           <!-- Product Type Name -->
-          <h3 class="text-xl font-futura-bold text-cardswap-600 group-hover:text-cardswap-700 transition-colors duration-300">
+          <h3 class="text-xl font-futura-bold text-primary group-hover:text-secondary transition-colors duration-300">
             {{ productType.name }}
           </h3>
         </div>

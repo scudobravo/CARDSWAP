@@ -154,8 +154,8 @@ const categories = ref([
   },
   {
     id: 6,
-    name: "Templates pokemon",
-    description: "Template e collezioni Pokémon in arrivo",
+    name: "Pokemon",
+    description: "Colleziona le tue carte Pokemon preferite",
     type: "templates-pokemon",
     icon: "/images/icons/Categorie/TemplatesPokemon.png"
   }

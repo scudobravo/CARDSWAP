@@ -399,32 +399,32 @@ const navigation = {
       ],
     },
     {
-      name: 'Templates pokemon',
+      name: 'Pokemon',
       icon: '/images/icons/Categorie/TemplatesPokemon.png',
       featured: [
         {
           name: 'Singles',
           href: '/categories/templates-pokemon/singles',
           imageSrc: '/images/icons/Sottocategorie/card.png',
-          imageAlt: 'Carte singole Templates pokemon',
+          imageAlt: 'Carte singole Pokemon',
         },
         {
           name: 'Sealed Packs',
           href: '/categories/templates-pokemon/sealed-packs',
           imageSrc: '/images/icons/Sottocategorie/Pack.png',
-          imageAlt: 'Buste sigillate Templates pokemon',
+          imageAlt: 'Buste sigillate Pokemon',
         },
         {
           name: 'Sealed Boxes',
           href: '/categories/templates-pokemon/sealed-boxes',
           imageSrc: '/images/icons/Sottocategorie/Box.png',
-          imageAlt: 'Scatole sigillate Templates pokemon',
+          imageAlt: 'Scatole sigillate Pokemon',
         },
         {
           name: 'Lot',
           href: '/categories/templates-pokemon/lot',
           imageSrc: '/images/icons/Sottocategorie/Lot.png',
-          imageAlt: 'Lotti Templates pokemon',
+          imageAlt: 'Lotti di carte Pokemon',
         },
       ],
     },

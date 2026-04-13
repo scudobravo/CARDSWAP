@@ -528,7 +528,7 @@ const categoryName = computed(() => {
     case 'disney': return 'Disney'
     case 'spongebob': return 'SpongeBob'
     case 'labubu': return 'Labubu'
-    case 'templates-pokemon': return 'Templates pokemon'
+    case 'templates-pokemon': return 'Pokemon'
     default: return 'Categoria'
   }
 })
@@ -733,7 +733,7 @@ const getCategoryDisplayName = () => {
     'disney': 'Disney',
     'spongebob': 'Spongebob',
     'labubu': 'Labubu',
-    'templates-pokemon': 'Templates pokemon'
+    'templates-pokemon': 'Pokemon'
   }
   return categoryMap[category.value] || 'Categoria'
 }
