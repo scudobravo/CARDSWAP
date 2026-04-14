@@ -632,7 +632,7 @@
                     <img 
                       v-if="previewImageSrc"
                       :src="previewImageSrc" 
-                      :alt="selectedCardModel?.name"
+                      :alt="previewCardDisplayName || selectedCardModel?.name || 'Carta'"
                       class="w-20 h-28 object-cover rounded"
                     />
                     <div v-else class="absolute inset-0 flex items-center justify-center bg-gray-300">
@@ -645,7 +645,7 @@
                     </div>
                   </div>
                   <div class="flex-1">
-                    <h5 class="font-semibold text-gray-900">{{ selectedCardModel?.name }}</h5>
+                    <h5 class="font-semibold text-gray-900">{{ previewCardDisplayName }}</h5>
                     <p class="text-sm text-gray-600">{{ selectedCardModel?.set_name }} {{ selectedCardModel?.year }}</p>
                     <p class="text-sm text-gray-500">{{ previewCondition }}</p>
                     <div v-if="additionalDetails.notes" class="mt-2 text-sm text-gray-600">
@@ -913,6 +913,13 @@ const previewCondition = computed(() => {
     // Fallback: mostra la condizione testuale o un default
     return previewData.condition || 'Excellent'
   }
+})
+
+// Nome carta in anteprima: in catalogo la serial è spesso con "#" ma in TCG si legge come "/10"
+const previewCardDisplayName = computed(() => {
+  const n = selectedCardModel.value?.name
+  if (!n) return ''
+  return n.replace(/#/g, '/')
 })
 
 const canProceed = computed(() => {
