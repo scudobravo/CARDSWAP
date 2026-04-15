@@ -42,7 +42,8 @@
           />
         </div>
 
-        <!-- Basketball Top Players -->
+        <!-- Basketball Top Players — nascosto finché c’è poco flusso (ripristinare dopo) -->
+        <!--
         <div class="mb-12">
           <ProductCarousel 
             title="Top Player - Basket" 
@@ -54,6 +55,7 @@
             :limit="20"
           />
         </div>
+        -->
 
         <!-- Disney Top Characters -->
         <div>

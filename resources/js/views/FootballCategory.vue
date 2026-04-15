@@ -66,7 +66,8 @@
       </div>
     </div>
 
-    <!-- Top Trend Section with fullwidth border -->
+    <!-- Top Trend — nascosto finché c’è poco flusso (ripristinare dopo) -->
+    <!--
     <div class="border-b border-gray-300 py-12">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <ProductCarousel 
@@ -78,6 +79,7 @@
         />
       </div>
     </div>
+    -->
 
     <!-- New Section with fullwidth border -->
     <div class="border-b border-gray-300 py-12">
@@ -184,7 +186,8 @@ const topPlayers = ref([
   }
 ])
 
-// Top trend data
+// Top trend data (sezione UI commentata — decommentare insieme al blocco template Top Trend)
+/*
 const topTrend = ref([
   {
     id: 1,
@@ -227,6 +230,7 @@ const topTrend = ref([
     image_url: null
   }
 ])
+*/
 
 // New players data
 const newPlayers = ref([

@@ -67,7 +67,8 @@
       </div>
     </div>
 
-    <!-- Top Trend Section with fullwidth border -->
+    <!-- Top Trend — nascosto finché c’è poco flusso (ripristinare dopo) -->
+    <!--
     <div class="border-b border-gray-300 py-12">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <ProductCarousel 
@@ -80,6 +81,7 @@
         />
       </div>
     </div>
+    -->
 
     <!-- New Section with fullwidth border -->
     <div class="border-b border-gray-300 py-12">
