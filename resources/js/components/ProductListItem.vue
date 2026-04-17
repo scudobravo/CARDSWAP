@@ -5,7 +5,7 @@
   >
     <div class="flex">
       <!-- Image Area -->
-      <div class="w-48 h-screen max-h-64 bg-gray-100 overflow-hidden flex-shrink-0 relative">
+      <div class="w-28 sm:w-48 h-40 sm:h-screen sm:max-h-64 bg-gray-100 overflow-hidden flex-shrink-0 relative">
         <img 
           v-if="product.imageUrl || product.image_url" 
           :src="product.imageUrl || product.image_url" 
@@ -21,9 +21,9 @@
       </div>
       
       <!-- Product Details -->
-      <div class="flex-1 p-4 flex flex-col justify-between">
+      <div class="flex-1 min-w-0 p-3 sm:p-4 flex flex-col justify-between">
         <div>
-          <h3 class="text-lg font-bold text-gray-900 hover:text-primary">
+          <h3 class="text-base sm:text-lg font-bold text-gray-900 hover:text-primary line-clamp-3 sm:line-clamp-none">
             {{ product.name || 'Player' }}
           </h3>
           
@@ -58,15 +58,15 @@
           <div class="mt-2 text-sm text-gray-600 space-y-1">
             <div v-if="shouldShowTeam" class="flex justify-between">
               <span>Team:</span>
-              <span class="font-medium">{{ product.team && product.team !== 'Team' && product.team !== 'Team Name' && product.team !== 'Unknown Team' ? product.team : '-' }}</span>
+              <span class="font-medium truncate ml-2">{{ product.team && product.team !== 'Team' && product.team !== 'Team Name' && product.team !== 'Unknown Team' ? product.team : '-' }}</span>
             </div>
             <div class="flex justify-between">
               <span>Set:</span>
-              <span class="font-medium">{{ (product.set || product.set_name) && (product.set !== 'Set' && product.set !== 'Set Name' && product.set !== 'Unknown Set') ? (product.set || product.set_name) : '-' }}</span>
+              <span class="font-medium truncate ml-2">{{ (product.set || product.set_name) && (product.set !== 'Set' && product.set !== 'Set Name' && product.set !== 'Unknown Set') ? (product.set || product.set_name) : '-' }}</span>
             </div>
             <div class="flex justify-between">
               <span>Rarity:</span>
-              <span class="font-medium">{{ product.rarity ? (product.rarity + (product.rarity_variation ? ` (${product.rarity_variation})` : '')) : '-' }}</span>
+              <span class="font-medium truncate ml-2">{{ product.rarity ? (product.rarity + (product.rarity_variation ? ` (${product.rarity_variation})` : '')) : '-' }}</span>
             </div>
           </div>
         </div>
