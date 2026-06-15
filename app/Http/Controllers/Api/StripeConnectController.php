@@ -155,17 +155,20 @@ class StripeConnectController extends Controller
         }
 
         // Aggiorna stato locale
-        $user->update([
-            'stripe_charges_enabled' => $result['charges_enabled'],
-            'stripe_payouts_enabled' => $result['payouts_enabled'],
-            'stripe_details_submitted' => $result['details_submitted'],
+        $user->updateStripeAccountStatus([
+            'charges_enabled' => $result['charges_enabled'],
+            'payouts_enabled' => $result['payouts_enabled'],
+            'details_submitted' => $result['details_submitted'],
         ]);
+        $user->refresh();
 
         return response()->json([
             'account_id' => $user->stripe_account_id,
             'charges_enabled' => $result['charges_enabled'],
             'payouts_enabled' => $result['payouts_enabled'],
             'details_submitted' => $result['details_submitted'],
+            'role' => $user->role,
+            'can_sell' => $user->canSellWithStripe(),
             'account' => $result['account']
         ]);
     }

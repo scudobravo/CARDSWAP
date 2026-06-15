@@ -162,10 +162,7 @@ class KycController extends Controller
             DB::beginTransaction();
 
             // Aggiorna stato KYC
-            $user->update([
-                'kyc_status' => 'approved',
-                'kyc_verified_at' => now(),
-            ]);
+            $user->updateKycStatus('approved');
 
             // Log dell'approvazione
             $this->logKycAction($user, 'approved', $request->notes, Auth::user());
@@ -486,11 +483,8 @@ class KycController extends Controller
             
             if ($result['success'] && $result['status'] === 'verified') {
                 // Aggiorna lo stato dell'utente se la verifica è completata
-                $user->update([
-                    'kyc_status' => 'approved',
-                    'stripe_identity_verified' => true,
-                    'stripe_identity_verified_at' => now()
-                ]);
+                $user->markStripeIdentityVerified();
+                $user->refresh();
                 
                 // Crea notifica
                 $user->notifications()->create([
@@ -666,11 +660,8 @@ class KycController extends Controller
 
         // Aggiorna lo stato dell'utente se necessario
         if ($result['status'] === 'verified') {
-            $user->update([
-                'kyc_status' => 'approved',
-                'stripe_identity_verified' => true,
-                'stripe_identity_verified_at' => now()
-            ]);
+            $user->markStripeIdentityVerified();
+            $user->refresh();
         }
 
         return response()->json([
@@ -679,6 +670,8 @@ class KycController extends Controller
                 'status' => $result['status'],
                 'kyc_status' => $user->kyc_status,
                 'stripe_identity_verified' => $user->stripe_identity_verified,
+                'role' => $user->role,
+                'can_sell' => $user->canSellWithStripe(),
                 'is_complete' => $result['status'] === 'verified'
             ]
         ]);

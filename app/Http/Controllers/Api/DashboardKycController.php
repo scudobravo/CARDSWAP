@@ -121,11 +121,8 @@ class DashboardKycController extends Controller
 
         // Aggiorna lo stato dell'utente se necessario
         if ($result['status'] === 'verified') {
-            $user->update([
-                'kyc_status' => 'approved',
-                'stripe_identity_verified' => true,
-                'stripe_identity_verified_at' => now()
-            ]);
+            $user->markStripeIdentityVerified();
+            $user->refresh();
         }
 
         return response()->json([
@@ -134,6 +131,8 @@ class DashboardKycController extends Controller
                 'status' => $result['status'],
                 'kyc_status' => $user->kyc_status,
                 'stripe_identity_verified' => $user->stripe_identity_verified,
+                'role' => $user->role,
+                'can_sell' => $user->canSellWithStripe(),
                 'is_complete' => $result['status'] === 'verified'
             ]
         ]);

@@ -976,12 +976,11 @@ class PaymentController extends Controller
                     
                     if ($accountStatus['success']) {
                         // Aggiorna lo stato locale con i dati più recenti da Stripe
-                        $seller->update([
-                            'stripe_charges_enabled' => $accountStatus['charges_enabled'],
-                            'stripe_payouts_enabled' => $accountStatus['payouts_enabled'],
-                            'stripe_details_submitted' => $accountStatus['details_submitted'],
+                        $seller->updateStripeAccountStatus([
+                            'charges_enabled' => $accountStatus['charges_enabled'],
+                            'payouts_enabled' => $accountStatus['payouts_enabled'],
+                            'details_submitted' => $accountStatus['details_submitted'],
                         ]);
-                        // Ricarica il modello per avere i valori aggiornati
                         $seller->refresh();
                     }
                 } catch (\Exception $e) {

@@ -296,6 +296,8 @@ class AuthController extends Controller
         
         return response()->json([
             'can_sell' => $user->canSell(),
+            'can_sell_with_stripe' => $user->canSellWithStripe(),
+            'can_use_buyer_features' => $user->canUseBuyerFeatures(),
             'kyc_status' => $user->kyc_status,
             'needs_kyc' => $user->needsKyc(),
             'role' => $user->role,

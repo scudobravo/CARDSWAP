@@ -542,7 +542,7 @@ class StripeService
         $user->notifications()->create([
             'type' => 'kyc_update',
             'title' => 'Verifica identità completata',
-            'message' => 'La tua verifica identità è stata completata con successo. Ora puoi vendere sulla piattaforma.',
+            'message' => 'La tua verifica identità è stata completata con successo. Ora puoi acquistare e, se hai collegato Stripe Connect, vendere sulla piattaforma.',
             'data' => [
                 'verification_session_id' => $session->id,
                 'status' => 'approved'
@@ -583,10 +583,10 @@ class StripeService
         if (!$user) return;
 
         // Aggiorna stato account
-        $user->update([
-            'stripe_charges_enabled' => $account->charges_enabled,
-            'stripe_payouts_enabled' => $account->payouts_enabled,
-            'stripe_details_submitted' => $account->details_submitted,
+        $user->updateStripeAccountStatus([
+            'charges_enabled' => $account->charges_enabled,
+            'payouts_enabled' => $account->payouts_enabled,
+            'details_submitted' => $account->details_submitted,
         ]);
     }
 

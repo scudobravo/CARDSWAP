@@ -222,6 +222,8 @@ class AdminController extends Controller
             }
 
             $user->update($updateData);
+            $user->refresh();
+            $user->promoteToSellerIfEligible();
 
             DB::commit();
 

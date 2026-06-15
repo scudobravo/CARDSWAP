@@ -78,12 +78,9 @@ class CheckStripeIdentityStatus extends Command
                 // Aggiorna stato se necessario
                 if ($result['status'] === 'verified' && !$user->stripe_identity_verified) {
                     $this->info('🔄 Aggiornando stato utente...');
-                    $user->update([
-                        'kyc_status' => 'approved',
-                        'stripe_identity_verified' => true,
-                        'stripe_identity_verified_at' => now()
-                    ]);
-                    $this->info('✅ Stato aggiornato!');
+                    $user->markStripeIdentityVerified();
+                    $user->refresh();
+                    $this->info('✅ Stato aggiornato! Ruolo: ' . $user->role);
                 }
                 
             } else {

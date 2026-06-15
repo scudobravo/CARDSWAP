@@ -263,11 +263,54 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user needs to complete KYC
+     * Check if user needs to complete KYC (acquirente o venditore)
      */
     public function needsKyc(): bool
     {
-        return $this->isSeller() && !$this->hasSubmittedKyc();
+        return !$this->hasCompletedKyc();
+    }
+
+    /**
+     * KYC approvato: funzioni acquirente (pagamenti, ordini, checkout).
+     */
+    public function canUseBuyerFeatures(): bool
+    {
+        return $this->hasCompletedKyc();
+    }
+
+    /**
+     * Può essere promosso a venditore (KYC + Stripe Connect operativo).
+     */
+    public function isEligibleForSellerPromotion(): bool
+    {
+        return $this->role === 'buyer'
+            && $this->hasCompletedKyc()
+            && $this->canReceivePayments();
+    }
+
+    /**
+     * Promuove l'utente a seller quando KYC e Stripe Connect sono completi.
+     */
+    public function promoteToSellerIfEligible(): bool
+    {
+        if (!$this->isEligibleForSellerPromotion()) {
+            return false;
+        }
+
+        $this->update(['role' => 'seller']);
+        $this->refresh();
+
+        $this->notifications()->create([
+            'type' => 'role_update',
+            'title' => 'Account venditore attivato',
+            'message' => 'Il tuo account venditore è attivo. Configura le tabelle prezzi spedizioni per pubblicare le tue carte.',
+            'data' => [
+                'role' => 'seller',
+                'trigger' => 'kyc_and_stripe_complete',
+            ],
+        ]);
+
+        return true;
     }
 
     /**
@@ -404,6 +447,11 @@ class User extends Authenticatable
         }
         
         $this->update($data);
+        $this->refresh();
+
+        if ($status === 'approved') {
+            $this->promoteToSellerIfEligible();
+        }
     }
 
     // METODI STRIPE
@@ -469,6 +517,8 @@ class User extends Authenticatable
             'stripe_payouts_enabled' => $status['payouts_enabled'] ?? $this->stripe_payouts_enabled,
             'stripe_details_submitted' => $status['details_submitted'] ?? $this->stripe_details_submitted,
         ]);
+        $this->refresh();
+        $this->promoteToSellerIfEligible();
     }
 
     /**
@@ -479,8 +529,11 @@ class User extends Authenticatable
         $this->update([
             'stripe_identity_verified' => true,
             'stripe_identity_verified_at' => now(),
-            'kyc_status' => 'approved'
+            'kyc_status' => 'approved',
+            'kyc_verified_at' => $this->kyc_verified_at ?? now(),
         ]);
+        $this->refresh();
+        $this->promoteToSellerIfEligible();
     }
 
     /**
@@ -488,21 +541,8 @@ class User extends Authenticatable
      */
     public function canSellWithStripe(): bool
     {
-        // Deve essere un venditore
-        if (!$this->isSeller()) {
-            return false;
-        }
-
-        // Deve avere KYC completato (Stripe Identity o manuale)
-        if (!$this->hasCompletedKyc() && !$this->hasStripeIdentityVerified()) {
-            return false;
-        }
-
-        // Deve avere account Stripe Connect configurato
-        if (!$this->canReceivePayments()) {
-            return false;
-        }
-
-        return true;
+        return $this->isSeller()
+            && $this->hasCompletedKyc()
+            && $this->canReceivePayments();
     }
 }

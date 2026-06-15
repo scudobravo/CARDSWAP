@@ -82,11 +82,8 @@ class ForceKycCheck extends Command
         if ($result['status'] === 'verified' && $user->kyc_status !== 'approved') {
             $this->info("🔄 Aggiornando stato utente...");
             
-            $user->update([
-                'kyc_status' => 'approved',
-                'stripe_identity_verified' => true,
-                'stripe_identity_verified_at' => now()
-            ]);
+            $user->markStripeIdentityVerified();
+            $user->refresh();
             
             // Crea notifica
             $user->notifications()->create([
