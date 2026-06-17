@@ -29,7 +29,7 @@
     <!-- Player Name / Product Title -->
     <div class="px-2 sm:px-4 pt-2 sm:pt-4 pb-1 sm:pb-2 flex-shrink-0">
       <h3 class="text-sm sm:text-lg font-bold text-gray-900 text-center line-clamp-2">
-        {{ product.name || (product.listing_type && ['sealed-pack', 'sealed-box', 'lot'].includes(product.listing_type) ? 'Carta' : 'Player') }}
+        {{ displayName }}
       </h3>
     </div>
 
@@ -164,6 +164,7 @@
 import { ref, computed } from 'vue'
 import { formatPriceItaliana } from '../utils/priceFormatter'
 import { formatCondition } from '../utils/conditionFormatter'
+import { formatCardDisplayName } from '../utils/cardNameFormatter'
 
 // Props
 const props = defineProps({
@@ -193,6 +194,13 @@ const props = defineProps({
     type: String,
     default: null
   }
+})
+
+const displayName = computed(() => {
+  const fallback = props.product.listing_type && ['sealed-pack', 'sealed-box', 'lot'].includes(props.product.listing_type)
+    ? 'Carta'
+    : 'Player'
+  return formatCardDisplayName(props.product.name) || fallback
 })
 
 // Verifica se card_number_in_set è valido (non è un identificatore errato)

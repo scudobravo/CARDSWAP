@@ -73,7 +73,7 @@
             <!-- Contenuto del suggerimento -->
             <div class="flex-1 min-w-0">
               <p class="text-sm font-gill-sans-semibold text-gray-900 truncate">
-                {{ suggestion.text }}
+                {{ formatCardDisplayName(suggestion.text) }}
               </p>
               <p v-if="suggestion.subtext" class="text-xs text-gray-500 truncate">
                 {{ suggestion.subtext }}
@@ -116,6 +116,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { formatCardDisplayName } from '../utils/cardNameFormatter'
 
 const router = useRouter()
 
